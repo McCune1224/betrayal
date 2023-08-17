@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -39,61 +38,25 @@ func main() {
 	if err != nil {
 		log.Fatal("error creating Discord session,", err)
 	}
+
 	betrayalBot.Identify.Intents = discordgo.PermissionAdministrator
 
-	// Open a websocket connection to Discord and begin listening.
 	err = betrayalBot.Open()
 	if err != nil {
-		fmt.Println("error opening connection,", err)
+		log.Println("error opening connection,", err)
 		return
 	}
+	defer betrayalBot.Close()
 
 	betrayalCM := commands.NewSlashCommandManager()
-	betrayalCM.AddCommand(commands.Ping)
-	betrayalCM.AddCommand(commands.Whoami)
+	betrayalCM.MapCommand(commands.Ping)
+	betrayalCM.MapCommand(commands.Whoami)
 
-	// betrayalBot.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	// 	log.Print(i.ApplicationCommandData().Name)
-	// 	if cmd, ok := betrayalCM.MappedCommands[i.ApplicationCommandData().Name]; ok {
-	// 		log.Printf("Command %s found, attempting to add", i.ApplicationCommandData().Name)
-	// 		cmd.Handler(s, i)
-	// 	} else {
-	// 		log.Printf("Command %s not found", i.ApplicationCommandData().Name)
-	// 	}
-	// })
 	registeredCommandsTally := betrayalCM.RegisterCommands(betrayalBot)
 
-	fmt.Printf("%s is now running. %d commands available. Press CTRL-C to exit.\n", betrayalBot.State.User.Username, registeredCommandsTally)
+	log.Printf("%s is now running. %d commands available. Press CTRL-C to exit.\n", betrayalBot.State.User.Username, registeredCommandsTally)
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
 
-	// Cleanly close down the Discord session.
-	betrayalBot.Close()
-}
-
-// This function will be called (due to AddHandler above) every time a new
-// message is created on any channel that the authenticated bot has access to.
-func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-
-	// Ignore all messages created by the bot itself
-	// This isn't required in this specific example but it's a good practice.
-	if m.Author.ID == s.State.User.ID {
-		return
-	}
-	// If the message is "ping" reply with "Pong!"
-	if m.Content == "ping" {
-		s.ChannelMessageSend(m.ChannelID, "Pong!")
-	}
-
-	// If the message is "pong" reply with "Ping!"
-	if m.Content == "pong" {
-		s.ChannelMessageSend(m.ChannelID, "Ping!")
-	}
-}
-
-func messagePapa(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Content == "hello my son" {
-		s.ChannelMessageSend(m.ChannelID, "Hello Papa!")
-	}
 }

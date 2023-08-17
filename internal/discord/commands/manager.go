@@ -6,8 +6,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-//Centeralized location for managing commands
-
 type SlashCommand struct {
 	Feature discordgo.ApplicationCommand
 	Handler func(s *discordgo.Session, i *discordgo.InteractionCreate)
@@ -23,16 +21,13 @@ func NewSlashCommandManager() *SlashCommandManager {
 	}
 }
 
-func (scm *SlashCommandManager) AddCommand(sc SlashCommand) {
+func (scm *SlashCommandManager) MapCommand(sc SlashCommand) {
 	scm.MappedCommands[sc.Feature.Name] = sc
 }
 
-// From the map of SlashCommands stored in the SCM, make them available for the current session.
-// Requires Discord Websocket Connection to be open first before calling this function
-
-// Returns a tally of successful applications created for the session
 func (scm *SlashCommandManager) RegisterCommands(session *discordgo.Session) int {
 
+	// Pass the function to the handler so long as the command is registered [has a key in MappedCommand]
 	session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// Likely will want to add a check for the command's guild ID here at some point...
 		log.Printf("%s invoked by %s", i.ApplicationCommandData().Name, i.Member.User.Username)
@@ -44,15 +39,16 @@ func (scm *SlashCommandManager) RegisterCommands(session *discordgo.Session) int
 		}
 	})
 
-	tally := 0
-	for _, slashcmd := range scm.MappedCommands {
-		_, err := session.ApplicationCommandCreate(session.State.User.ID, "", &slashcmd.Feature)
+	// Register the Slash Commands with Discord
+	totalAddedCommands := 0
+	for _, slashCmd := range scm.MappedCommands {
+		_, err := session.ApplicationCommandCreate(session.State.User.ID, "", &slashCmd.Feature)
 		if err != nil {
-			log.Printf("Failed to add command %s\nError: %s", slashcmd.Feature.Name, err.Error())
+			log.Printf("Failed to add command %s\nError: %s", slashCmd.Feature.Name, err.Error())
 			continue
 		}
-		tally++
+		totalAddedCommands++
 	}
 
-	return tally
+	return totalAddedCommands
 }
