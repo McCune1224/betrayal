@@ -19,3 +19,16 @@
 
 # Go workspace file
 go.work
+
+
+# No environment variable leaks today!
+.env
+
+
+# Local Air configuration file
+.air.toml
+
+# any directory named tmp
+tmp/
+
+
