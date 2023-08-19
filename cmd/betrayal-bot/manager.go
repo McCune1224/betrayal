@@ -1,4 +1,4 @@
-package commands
+package main
 
 import (
 	"log"
@@ -6,18 +6,16 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type SlashCommand struct {
-	Feature discordgo.ApplicationCommand
-	Handler func(s *discordgo.Session, i *discordgo.InteractionCreate)
-}
-
 type SlashCommandManager struct {
 	MappedCommands map[string]SlashCommand
+	CommandIDs     map[string]string
 }
 
-func NewSlashCommandManager() *SlashCommandManager {
+func (a *app) NewSlashCommandManager() *SlashCommandManager {
 	return &SlashCommandManager{
-		make(map[string]SlashCommand),
+		// TODO: move this elsewhere so we don't have to pass it around, works for now at least ;)
+		MappedCommands: make(map[string]SlashCommand),
+		CommandIDs:     make(map[string]string),
 	}
 }
 
@@ -42,11 +40,12 @@ func (scm *SlashCommandManager) RegisterCommands(session *discordgo.Session) int
 	// Register the Slash Commands with Discord
 	totalAddedCommands := 0
 	for _, slashCmd := range scm.MappedCommands {
-		_, err := session.ApplicationCommandCreate(session.State.User.ID, "", &slashCmd.Feature)
+		rcmd, err := session.ApplicationCommandCreate(session.State.User.ID, "", &slashCmd.Feature)
 		if err != nil {
 			log.Printf("Failed to add command %s\nError: %s", slashCmd.Feature.Name, err.Error())
 			continue
 		}
+		scm.CommandIDs[rcmd.ID] = rcmd.Name
 		totalAddedCommands++
 	}
 

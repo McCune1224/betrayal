@@ -6,57 +6,98 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/mccune1224/betrayal/config"
-	"github.com/mccune1224/betrayal/internal/discord/commands"
+	"github.com/mccune1224/betrayal/internal/data"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/spf13/viper"
 )
 
-var botEnv struct {
-	DISCORD_CLIENT_ID     string
-	DISCORD_CLIENT_SECRET string
-	DISCORD_BOT_TOKEN     string
+// config struct to hold env variables and any other config settings
+type config struct {
+	discord struct {
+		clientID     string
+		clientSecret string
+		botToken     string
+	}
+	database struct {
+		dsn string
+	}
 }
 
-// Initialize config and bot
-func init() {
-	config.LoadBetrayalConfig()
-	botEnv.DISCORD_BOT_TOKEN = viper.GetString("DISCORD_BOT_TOKEN")
-	botEnv.DISCORD_CLIENT_ID = viper.GetString("DISCORD_CLIENT_ID")
-	botEnv.DISCORD_CLIENT_SECRET = viper.GetString("DISCORD_CLIENT_SECRET")
-
-	for _, env := range []string{"DISCORD_BOT_TOKEN", "DISCORD_CLIENT_ID", "DISCORD_CLIENT_SECRET"} {
-		if botEnv.DISCORD_BOT_TOKEN == "" {
-			log.Fatalf("Environment variable %s not set", env)
-		}
-	}
+// Global app struct
+type app struct {
+	conifg         config
+	models         data.Models
+	discordSession *discordgo.Session
 }
 
 func main() {
-	betrayalBot, err := discordgo.New("Bot " + botEnv.DISCORD_BOT_TOKEN)
+	viper.SetConfigFile(".env")
+	viper.ReadInConfig()
+	var cfg config
+	cfg.discord.botToken = viper.GetString("DISCORD_BOT_TOKEN")
+	cfg.discord.clientID = viper.GetString("DISCORD_CLIENT_ID")
+	cfg.discord.clientID = viper.GetString("DISCORD_CLIENT_SECRET")
+
+	cfg.database.dsn = viper.GetString("DATABASE_URL")
+
+	discordSession, err := discordgo.New("Bot " + cfg.discord.botToken)
 	if err != nil {
 		log.Fatal("error creating Discord session,", err)
 	}
+	discordSession.Identify.Intents = discordgo.PermissionAdministrator
 
-	betrayalBot.Identify.Intents = discordgo.PermissionAdministrator
-
-	err = betrayalBot.Open()
+	err = discordSession.Open()
 	if err != nil {
-		log.Println("error opening connection,", err)
-		return
+		log.Fatal("error opening connection,", err)
 	}
-	defer betrayalBot.Close()
 
-	betrayalCM := commands.NewSlashCommandManager()
-	betrayalCM.MapCommand(commands.Ping)
-	betrayalCM.MapCommand(commands.Whoami)
+	db, err := gorm.Open(postgres.Open(cfg.database.dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatal("error opening database,", err)
+	}
 
-	registeredCommandsTally := betrayalCM.RegisterCommands(betrayalBot)
+	dbModels := data.NewModels(db, true)
+	app := &app{
+		conifg:         cfg,
+		models:         dbModels,
+		discordSession: discordSession,
+	}
 
-	log.Printf("%s is now running. %d commands available. Press CTRL-C to exit.\n", betrayalBot.State.User.Username, registeredCommandsTally)
+	betrayalCM := app.NewSlashCommandManager()
+	betrayalCM.MapCommand(app.PingCommand())
+	betrayalCM.MapCommand(app.GetRoleCommand())
+	betrayalCM.MapCommand(app.WhoAmICommand())
+	betrayalCM.MapCommand(app.EchoCommand())
+	registeredCommandsTally := betrayalCM.RegisterCommands(app.discordSession)
+
+	defer app.discordSession.Close()
+
+	log.Printf(
+		"%s is now running. %d commands available. Press CTRL-C to exit.\n",
+		discordSession.State.User.Username,
+		registeredCommandsTally,
+	)
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
+
+	if err := app.discordSession.Close(); err != nil {
+		log.Fatal("error closing connection,", err)
+	}
+
+	// Commands Cleanup
+	for id, name := range betrayalCM.CommandIDs {
+		err := app.discordSession.ApplicationCommandDelete(
+			app.discordSession.State.User.ID,
+			"",
+			id,
+		)
+		if err != nil {
+			log.Printf("error deleting command %s: %s on Cleanup", name, err)
+		}
+	}
 
 }
