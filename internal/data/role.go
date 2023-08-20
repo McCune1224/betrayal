@@ -8,9 +8,10 @@ import (
 // General representation of a role in the game in db.
 type Role struct {
 	gorm.Model
-	Name      string                  `gorm:"unique;not null"`
-	Alignment enum.ActionCategoryEnum `gorm:"not null"`
-	IsActive  bool                    `gorm:"not null;default:true"`
+	Name        string                  `gorm:"unique;not null"`
+	Description string                  `gorm:"not null"`
+	Alignment   enum.ActionCategoryEnum `gorm:"not null"`
+	IsActive    bool                    `gorm:"not null;default:true"`
 }
 
 type RoleModel struct {

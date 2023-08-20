@@ -71,6 +71,8 @@ func main() {
 	betrayalCM.MapCommand(app.GetRoleCommand())
 	betrayalCM.MapCommand(app.WhoAmICommand())
 	betrayalCM.MapCommand(app.EchoCommand())
+	betrayalCM.MapCommand(app.InsultCommand())
+	betrayalCM.MapCommand(app.RandomInsultCommand())
 	registeredCommandsTally := betrayalCM.RegisterCommands(app.discordSession)
 
 	defer app.discordSession.Close()
@@ -97,6 +99,8 @@ func main() {
 		)
 		if err != nil {
 			log.Printf("error deleting command %s: %s on Cleanup", name, err)
+		} else {
+			log.Println("deleted command", name)
 		}
 	}
 
