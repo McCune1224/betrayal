@@ -36,11 +36,11 @@ type app struct {
 func main() {
 	viper.SetConfigFile(".env")
 	viper.ReadInConfig()
+
 	var cfg config
 	cfg.discord.botToken = viper.GetString("DISCORD_BOT_TOKEN")
 	cfg.discord.clientID = viper.GetString("DISCORD_CLIENT_ID")
 	cfg.discord.clientID = viper.GetString("DISCORD_CLIENT_SECRET")
-
 	cfg.database.dsn = viper.GetString("DATABASE_URL")
 
 	discordSession, err := discordgo.New("Bot " + cfg.discord.botToken)

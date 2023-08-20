@@ -6,16 +6,18 @@ import (
 
 // All interested models to be used in the application
 type Models struct {
-	Roles   RoleModel
-	Insults InsultModel
+	Roles    RoleModel
+	Insults  InsultModel
+	Abilitys AbilityModel
 }
 
 // NewModels creates a new instance of the Models struct and attaches the database connection to it.
 func NewModels(db *gorm.DB, auto ...bool) Models {
 
 	ModelHandlers := Models{
-		Roles:   RoleModel{DB: db},
-		Insults: InsultModel{DB: db},
+		Roles:    RoleModel{DB: db},
+		Insults:  InsultModel{DB: db},
+		Abilitys: AbilityModel{DB: db},
 	}
 
 	if len(auto) > 0 && auto[0] {
@@ -23,10 +25,11 @@ func NewModels(db *gorm.DB, auto ...bool) Models {
 		// 	&Role{},
 		// 	&Insult{},
 		// )
-		db.AutoMigrate(
-			Role{},
-			Insult{},
-		)
+		// db.AutoMigrate(
+		// 	Role{},
+		// 	Insult{},
+		// 	Ability{},
+		// )
 	}
 	return ModelHandlers
 }

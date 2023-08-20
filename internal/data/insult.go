@@ -17,6 +17,7 @@ func (im *InsultModel) Insert(insult Insult) error {
 
 func (im *InsultModel) GetRandomInsult() (Insult, error) {
 	var i Insult
+	//Get random insult from db
 	return i, im.DB.Order("RANDOM()").First(&i).Error
 }
 

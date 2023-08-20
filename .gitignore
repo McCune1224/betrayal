@@ -32,3 +32,7 @@ go.work
 tmp/
 
 
+# Data entry stuff
+*.csv
+*.xls
+*.json

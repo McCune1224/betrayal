@@ -12,6 +12,8 @@ type Role struct {
 	Description string                  `gorm:"not null"`
 	Alignment   enum.ActionCategoryEnum `gorm:"not null"`
 	IsActive    bool                    `gorm:"not null;default:true"`
+	Abilities   []Ability               `gorm:"many2many:role_abilities;"`
+	Perks       []Perk                  `gorm:"many2many:role_perks;"`
 }
 
 type RoleModel struct {
