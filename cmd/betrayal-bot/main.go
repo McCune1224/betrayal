@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/joho/godotenv"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/mccune1224/betrayal/internal/data"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -35,10 +35,6 @@ type app struct {
 }
 
 func main() {
-	envErr := godotenv.Load(".env")
-	if envErr != nil {
-		log.Fatal("Error loading .env file")
-	}
 	var cfg config
 	cfg.discord.botToken = os.Getenv("DISCORD_BOT_TOKEN")
 	cfg.discord.clientID = os.Getenv("DISCORD_CLIENT_ID")
