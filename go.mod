@@ -2,10 +2,14 @@ module github.com/mccune1224/betrayal
 
 go 1.21.0
 
-require gorm.io/driver/postgres v1.5.2
+require (
+	github.com/bwmarrin/discordgo v0.27.1
+	github.com/spf13/viper v1.16.0
+	gorm.io/driver/postgres v1.5.2
+	gorm.io/gorm v1.25.3
+)
 
 require (
-	github.com/bwmarrin/discordgo v0.27.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
@@ -21,12 +25,10 @@ require (
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.16.0 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	golang.org/x/crypto v0.9.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/gorm v1.25.3 // indirect
 )
