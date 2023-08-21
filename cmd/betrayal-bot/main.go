@@ -1,17 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/bwmarrin/discordgo"
+	"github.com/joho/godotenv"
 	"github.com/mccune1224/betrayal/internal/data"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-
-	"github.com/bwmarrin/discordgo"
-	"github.com/spf13/viper"
 )
 
 // config struct to hold env variables and any other config settings
@@ -35,14 +35,19 @@ type app struct {
 }
 
 func main() {
-	viper.SetConfigFile(".env")
-	viper.ReadInConfig()
-
+	envErr := godotenv.Load(".env")
+	if envErr != nil {
+		log.Fatal("Error loading .env file")
+	}
 	var cfg config
-	cfg.discord.botToken = viper.GetString("DISCORD_BOT_TOKEN")
-	cfg.discord.clientID = viper.GetString("DISCORD_CLIENT_ID")
-	cfg.discord.clientID = viper.GetString("DISCORD_CLIENT_SECRET")
-	cfg.database.dsn = viper.GetString("DATABASE_URL")
+	cfg.discord.botToken = os.Getenv("DISCORD_BOT_TOKEN")
+	cfg.discord.clientID = os.Getenv("DISCORD_CLIENT_ID")
+	cfg.discord.clientSecret = os.Getenv("DISCORD_CLIENT_SECRET")
+	cfg.database.dsn = os.Getenv("DATABASE_URL")
+	fmt.Println(cfg.discord.botToken)
+	fmt.Println(cfg.discord.clientID)
+	fmt.Println(cfg.discord.clientSecret)
+	fmt.Println(cfg.database.dsn)
 
 	discordSession, err := discordgo.New("Bot " + cfg.discord.botToken)
 	if err != nil {
