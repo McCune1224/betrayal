@@ -51,3 +51,11 @@ func (scm *SlashCommandManager) RegisterCommands(session *discordgo.Session) int
 
 	return totalAddedCommands
 }
+
+func (scm *SlashCommandManager) GetCommands() []SlashCommand {
+	var commands []SlashCommand
+	for _, cmd := range scm.MappedCommands {
+		commands = append(commands, cmd)
+	}
+	return commands
+}

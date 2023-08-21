@@ -31,6 +31,7 @@ type app struct {
 	conifg         config
 	models         data.Models
 	discordSession *discordgo.Session
+	commandHandler *SlashCommandManager
 }
 
 func main() {
@@ -73,7 +74,10 @@ func main() {
 	betrayalCM.MapCommand(app.EchoCommand())
 	betrayalCM.MapCommand(app.InsultCommand())
 	betrayalCM.MapCommand(app.RandomInsultCommand())
+	betrayalCM.MapCommand(app.HelpCommand())
 	registeredCommandsTally := betrayalCM.RegisterCommands(app.discordSession)
+
+	app.commandHandler = betrayalCM
 
 	defer app.discordSession.Close()
 
