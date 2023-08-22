@@ -72,8 +72,13 @@ func (c *csvRole) SanitizePerks() ([]perk, error) {
 	splitPerks := []perk{}
 	for _, perkString := range c.PerksString {
 		split := strings.Split(perkString, "- ")
-		if len(split) != 2 {
-			return nil, errors.New("Failed to split perk string")
+		if len(split) < 2 {
+			return nil, errors.New("Failed to split perk string:\n " + perkString + "\n")
+		}
+		if len(split) > 2 {
+			for i := 2; i < len(split); i++ {
+				split[1] += split[i]
+			}
 		}
 		splitPerks = append(splitPerks, perk{
 			Name:        split[0],
