@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/csv"
 	"errors"
-	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mccune1224/betrayal/internal/data"
 )
@@ -31,9 +31,61 @@ func (app *application) ParseCsv(filepath string) error {
 	return nil
 }
 
+type ability struct {
+	Name        string
+	Description string
+	AbilityType string
+	Charges     int
+}
+type perk struct {
+	Name        string
+	Description string
+}
+type csvRole struct {
+	Name            string
+	Description     string
+	AbilitiesString []string
+	PerksString     []string
+}
 
-func (a *application) ParseRoles(roleType string) ([]data.Role, error) {
-	roles := []data.Role{}
+/*
+	Convert Ability string chunks to Ability struct
+
+Examples lines to parse include:
+Solve [x0]* (Investigation/Positive/Non-visiting) - Figure out any piece of information of your choice about a player. Gain a charge for this every even day if you are Detective.
+Soul Seer [∞]^ (Investigation/Neutral/Non-visiting) - Select a player, upon their death, you can see their role, their items, money and their last actions. You gain a charge upon the selected player dying. If used on yourself and you die, you may continue to make chats with the living.
+*/
+func (c *csvRole) SanitizeAbilities() ([]ability, error) {
+	name := ""
+	//name is up until we hit the first [
+	for _, char := range c.AbilitiesString[0] {
+		if char == '[' {
+			break
+		}
+		name += string(char)
+	}
+	return nil, nil
+}
+
+// Convert Perk string chunks to Perk struct
+func (c *csvRole) SanitizePerks() ([]perk, error) {
+	splitPerks := []perk{}
+	for _, perkString := range c.PerksString {
+		split := strings.Split(perkString, "- ")
+		if len(split) != 2 {
+			return nil, errors.New("Failed to split perk string")
+		}
+		splitPerks = append(splitPerks, perk{
+			Name:        split[0],
+			Description: split[1],
+		})
+	}
+	return nil, nil
+}
+
+// Parse Roles in CSV's to string chunks
+func (a *application) SplitRoles(roleType string) ([]csvRole, error) {
+	roleList := []csvRole{}
 	if len(a.csv) == 0 {
 		return nil, errors.New("csv is empty")
 	}
@@ -50,12 +102,12 @@ func (a *application) ParseRoles(roleType string) ([]data.Role, error) {
 	// ,"Organised - Your vote cannot be stolen, blocked or tampered with in any way.",
 	// ,"Tracker - If anyone in your alliance does a positive action to someone outside of your alliance, you will know who gave who, but not what it was.",
 
-	currRole := data.Role{}
+	currRole := csvRole{}
 	for i, line := range a.csv {
 		if len(line) == 0 {
 			continue
 		}
-		fmt.Println(line[1 : len(line)-1])
+		// fmt.Println(line[1 : len(line)-1])
 		switch line[1] {
 		case "Name ": // ,Name ,Description
 			roleName := a.csv[i+1][1]
@@ -70,16 +122,11 @@ func (a *application) ParseRoles(roleType string) ([]data.Role, error) {
 				// If we hit Perk: then we are done with abilities
 				if a.csv[j][1] == "Perks:" {
 					// Go through each ability and parse it
-					for _, ability := range abilities {
-						// TODO: Parse ability
-						// parsedAbility, err := parseAbilityLine(ability)
-						fmt.Println(ability)
-
-					}
 					break
 				}
 				abilities = append(abilities, a.csv[j][1])
 			}
+			currRole.AbilitiesString = abilities
 		case "Perks:": // ,Perks:,
 			perks := []string{}
 
@@ -89,13 +136,15 @@ func (a *application) ParseRoles(roleType string) ([]data.Role, error) {
 				}
 				perks = append(perks, a.csv[j][1])
 			}
+			currRole.PerksString = perks
 		case "": // ,,
-			fmt.Println("NEW ROLE ===============================")
+			// fmt.Println("NEW ROLE ===============================")
+			roleList = append(roleList, currRole)
 		default: // Empty line
 			continue
 		}
 	}
-	return roles, nil
+	return roleList, nil
 }
 
 func (a *application) InsertAbility(ability data.Ability) {
