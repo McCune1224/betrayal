@@ -2,22 +2,64 @@ package main
 
 import "github.com/bwmarrin/discordgo"
 
-// Slash Command to return the user ID and username back to the user
-func (a *app) WhoAmICommand() SlashCommand {
-	whoAmICommand := SlashCommand{
+// (#6A5ACD)
+
+func (a *app) ChannelDetailsCommand() SlashCommand {
+	return SlashCommand{
 		Feature: discordgo.ApplicationCommand{
-			Name:        "whoami",
-			Description: "Responds with your user ID and your username",
+			Name:        "channel",
+			Description: "Get Channel Details",
+			Options: []*discordgo.ApplicationCommandOption{
+				EphermalOptional(),
+			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "Your user ID is " + i.Member.User.ID + " and your username is " + i.Member.User.Username,
+			embeded := &discordgo.MessageEmbed{
+				Title: "Channel Details",
+				Color: 0x6A5ACD,
+				Fields: []*discordgo.MessageEmbedField{
+					{
+						Name:   "Channel ID",
+						Value:  i.ChannelID,
+						Inline: true,
+					}, {
+						Name:   "Guild ID",
+						Value:  i.GuildID,
+						Inline: true,
+					},
 				},
-			})
+			}
+			SendChannelEmbededMessage(s, i, embeded)
 		},
 	}
+}
 
-	return whoAmICommand
+func (a *app) UserDetailsCommand() SlashCommand {
+	return SlashCommand{
+		Feature: discordgo.ApplicationCommand{
+			Name:        "user",
+			Description: "Get User Details",
+			Options: []*discordgo.ApplicationCommandOption{
+				EphermalOptional(),
+			},
+		},
+		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			embeded := &discordgo.MessageEmbed{
+				Title: "User Details",
+				Color: 0x6A5ACD,
+				Fields: []*discordgo.MessageEmbedField{
+					{
+						Name:   "User ID",
+						Value:  i.Member.User.ID,
+						Inline: true,
+					}, {
+						Name:   "Guild ID",
+						Value:  i.GuildID,
+						Inline: true,
+					},
+				},
+			}
+			SendChannelEmbededMessage(s, i, embeded)
+		},
+	}
 }

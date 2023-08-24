@@ -25,3 +25,16 @@ func SendChannelMessage(
 		},
 	})
 }
+
+func SendChannelEmbededMessage(
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+	embeded *discordgo.MessageEmbed,
+) {
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: []*discordgo.MessageEmbed{embeded},
+		},
+	})
+}

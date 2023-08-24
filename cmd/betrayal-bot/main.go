@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -40,10 +39,6 @@ func main() {
 	cfg.discord.clientID = os.Getenv("DISCORD_CLIENT_ID")
 	cfg.discord.clientSecret = os.Getenv("DISCORD_CLIENT_SECRET")
 	cfg.database.dsn = os.Getenv("DATABASE_URL")
-	fmt.Println(cfg.discord.botToken)
-	fmt.Println(cfg.discord.clientID)
-	fmt.Println(cfg.discord.clientSecret)
-	fmt.Println(cfg.database.dsn)
 
 	discordSession, err := discordgo.New("Bot " + cfg.discord.botToken)
 	if err != nil {
@@ -71,11 +66,13 @@ func main() {
 	betrayalCM := app.NewSlashCommandManager()
 	betrayalCM.MapCommand(app.PingCommand())
 	betrayalCM.MapCommand(app.GetRoleCommand())
-	betrayalCM.MapCommand(app.WhoAmICommand())
 	betrayalCM.MapCommand(app.EchoCommand())
 	betrayalCM.MapCommand(app.InsultCommand())
 	betrayalCM.MapCommand(app.RandomInsultCommand())
 	betrayalCM.MapCommand(app.HelpCommand())
+	betrayalCM.MapCommand(app.ChannelDetailsCommand())
+	betrayalCM.MapCommand(app.UserDetailsCommand())
+	betrayalCM.MapCommand(app.FunnelCommand())
 	registeredCommandsTally := betrayalCM.RegisterCommands(app.discordSession)
 
 	app.commandHandler = betrayalCM
