@@ -1,19 +1,18 @@
 package data
 
 import (
-	"github.com/mccune1224/betrayal/internal/data/enum"
 	"gorm.io/gorm"
 )
 
 // General representation of a role in the game in db.
 type Role struct {
 	gorm.Model
-	Name        string                  `gorm:"unique;not null"`
-	Description string                  `gorm:"not null"`
-	Alignment   enum.ActionCategoryEnum `gorm:"not null"`
-	IsActive    bool                    `gorm:"not null;default:true"`
-	Abilities   []Ability               `gorm:"many2many:role_abilities;"`
-	Perks       []Perk                  `gorm:"many2many:role_perks;"`
+	Name        string    `gorm:"unique;not null"`
+	Description string    `gorm:"not null"`
+	Alignment   string    `gorm:"not null"`
+	IsActive    bool      `gorm:"not null;default:true"`
+	Abilities   []Ability `gorm:"many2many:role_abilities;"`
+	Perks       []Perk    `gorm:"many2many:role_perks;"`
 }
 
 type RoleModel struct {

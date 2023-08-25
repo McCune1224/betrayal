@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -34,23 +35,30 @@ func TestSplitRoles(t *testing.T) {
 	// }
 }
 
-// func TestSanitizeAbilities(t *testing.T) {
-// 	app := &application{}
-// 	err := app.ParseCsv("./fat-dumpy/good_roles.csv")
-// 	if err != nil {
-// 		t.Errorf("Error parsing csv: %v", err)
-// 	}
-// 	roles, err := app.SplitRoles("role")
-// 	if err != nil {
-// 		t.Errorf("Error splitting roles: %v", err)
-// 	}
-// 	for _, role := range roles {
-// 		_, err := role.SanitizeAbilities()
-// 		if err != nil {
-// 			t.Errorf("Error sanitizing abilities: %v", err)
-// 		}
-// 	}
-// }
+func TestSanitizeAbilities(t *testing.T) {
+	app := &application{}
+	err := app.ParseCsv("./fat-dumpy/good_roles.csv")
+	if err != nil {
+		t.Errorf("Error parsing csv: %v", err)
+	}
+	roles, err := app.SplitRoles("role")
+	if err != nil {
+		t.Errorf("Error splitting roles: %v", err)
+	}
+	for _, role := range roles {
+		fmt.Println(role.Name)
+		abilities, err := role.SanitizeAbilities()
+		for _, ability := range abilities {
+			fmt.Println(ability.Name)
+			fmt.Println(ability.Effect)
+			fmt.Println(ability.Charges)
+			fmt.Println(ability.ActionType)
+		}
+		if err != nil {
+			t.Errorf("Error sanitizing abilities: %v", err)
+		}
+	}
+}
 
 func TestSanitizePerks(t *testing.T) {
 	app := &application{}
@@ -63,9 +71,13 @@ func TestSanitizePerks(t *testing.T) {
 		t.Errorf("Error splitting roles: %v", err)
 	}
 	for _, role := range roles {
-		_, err := role.SanitizePerks()
+		perks, err := role.SanitizePerks()
 		if err != nil {
 			t.Errorf("Error sanitizing perks: %v", err)
+		}
+		for _, perk := range perks {
+			fmt.Println(perk.Name)
+			fmt.Println(perk.Effect)
 		}
 	}
 }

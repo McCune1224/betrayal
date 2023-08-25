@@ -1,14 +1,13 @@
 package data
 
 import (
-	"github.com/mccune1224/betrayal/internal/data/enum"
 	"gorm.io/gorm"
 )
 
 type Perk struct {
 	gorm.Model
 	Name          string `gorm:"unique;not null"`
-	Categories    enum.PerkCategoryEnum
+	Categories    string `gorm:"not null"`
 	Effect        string `gorm:"not null"`
 	OrderPriority int    `gorm:"not null;default:0"`
 }
@@ -21,5 +20,5 @@ type PerkAttachment struct {
 }
 
 type PerkModel struct {
-	Db *gorm.DB
+	DB *gorm.DB
 }
