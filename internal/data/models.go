@@ -1,7 +1,14 @@
 package data
 
 import (
-	"gorm.io/gorm"
+	"errors"
+
+	"github.com/jmoiron/sqlx"
+)
+
+var (
+	ErrRecordNotFound      = errors.New("record not found")
+	ErrRecordAlreadyExists = errors.New("record already exists")
 )
 
 // All interested models to be used in the application
@@ -13,25 +20,13 @@ type Models struct {
 }
 
 // NewModels creates a new instance of the Models struct and attaches the database connection to it.
-func NewModels(db *gorm.DB, auto ...bool) Models {
+func NewModels(db *sqlx.DB) Models {
 
 	ModelHandlers := Models{
 		Roles:    RoleModel{DB: db},
 		Insults:  InsultModel{DB: db},
 		Abilitys: AbilityModel{DB: db},
 		Category: CategoryModel{DB: db},
-	}
-
-	if len(auto) > 0 && auto[0] {
-		// db.Migrator().DropTable(
-		// 	&Role{},
-		// 	&Insult{},
-		// )
-		// db.AutoMigrate(
-		// 	Role{},
-		// 	Insult{},
-		// 	Ability{},
-		// )
 	}
 	return ModelHandlers
 }

@@ -2,6 +2,7 @@ package main
 
 import "github.com/bwmarrin/discordgo"
 
+const mckusaID = "206268866714796032"
 // Give the option to allow this command to be ephemeral (hidden to other users)
 func EphermalOptional() *discordgo.ApplicationCommandOption {
 	return &discordgo.ApplicationCommandOption{

@@ -6,17 +6,17 @@ import (
 
 type Perk struct {
 	gorm.Model
-	Name          string `gorm:"unique;not null"`
-	Categories    string `gorm:"not null"`
-	Effect        string `gorm:"not null"`
-	OrderPriority int    `gorm:"not null;default:0"`
+	Name          string
+	Categories    string
+	Effect        string
+	OrderPriority int
 }
 
 type PerkAttachment struct {
 	gorm.Model
-	Abilities Ability `gorm:"foreignKey:AbilityID"`
-	AbilityID uint    `gorm:"not null"`
-	Roles     []Role  `gorm:"many2many:perk_attachment_roles;"`
+	Abilities Ability
+	AbilityID uint
+	Roles     []Role
 }
 
 type PerkModel struct {

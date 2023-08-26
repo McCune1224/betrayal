@@ -1,7 +1,7 @@
 package data
 
 import (
-	"gorm.io/gorm"
+	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -33,31 +33,29 @@ const (
 
 // Game representation of an AbilityModel.
 type Ability struct {
-	gorm.Model
-	Name       string     `gorm:"unique;not null"`
-	ActionType string     `gorm:"not null"`
-	Categories []Category `gorm:"many2many:ability_categories;"`
+	Name       string
+	ActionType string
+	Categories []Category
 	// -1 is unlimited
-	Charges        int    `gorm:"not null"`
-	IsAnyAbility   bool   `gorm:"not null;default:false"`
-	IsRoleSpecific bool   `gorm:"not null"`
-	Rarity         string `gorm:"not null"`
-	Effect         string `gorm:"not null"`
+	Charges        int
+	IsAnyAbility   bool
+	IsRoleSpecific bool
+	Rarity         string
+	Effect         string
 	DetailedEffect string
-	OrderPriority  int  `gorm:"not null;default:0"`
-	ShowCategories bool `gorm:"not null;default:true"`
+	OrderPriority  int
+	ShowCategories bool
 }
 
 type AbilityModel struct {
-	DB *gorm.DB
+	DB *sqlx.DB
 }
 
 // made since SQL doesn't support string arrays
 type Category struct {
-	gorm.Model
-	Name string `gorm:"unique;not null"`
+	Name string
 }
 
 type CategoryModel struct {
-	DB *gorm.DB
+	DB *sqlx.DB
 }

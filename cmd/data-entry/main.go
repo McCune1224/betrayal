@@ -2,13 +2,13 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/spf13/viper"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 // Flags for CLI app
@@ -51,11 +51,12 @@ func main() {
 	if cfg.database.dns == "" {
 		app.logger.Fatal("DATABASE_URL is required")
 	}
-	db, err := gorm.Open(postgres.Open(cfg.database.dns), &gorm.Config{})
+	db, err := sqlx.Open("postgres", cfg.database.dns)
 	if err != nil {
 		log.Fatal("error opening database,", err)
 	}
-	roleEntry := data.RoleModel{DB: db}
+	fmt.Println(db.Stats())
+	// roleEntry := data.RoleModel{DB: db}
 	// abilityEntry := data.AbilityModel{DB: db}
 	// perkEntry := data.PerkModel{DB: db}
 
@@ -72,12 +73,6 @@ func main() {
 
 	// make tables just in case
 
-	db.AutoMigrate(
-		&data.Role{},
-		&data.Ability{},
-		&data.Perk{},
-		&data.Category{},
-	)
 	for _, role := range roles {
 
 		abilities, err := role.SanitizeAbilities()
@@ -89,11 +84,11 @@ func main() {
 			Perks:       perks,
 			Alignment:   "GOOD",
 		}
-		err = roleEntry.DB.Create(&role).Error
-
 		if err != nil {
 			logger.Println(err)
 		}
+
+		fmt.Println(role)
 	}
 
 }

@@ -9,9 +9,7 @@ func (a *app) ChannelDetailsCommand() SlashCommand {
 		Feature: discordgo.ApplicationCommand{
 			Name:        "channel",
 			Description: "Get Channel Details",
-			Options: []*discordgo.ApplicationCommandOption{
-				EphermalOptional(),
-			},
+			Options:     []*discordgo.ApplicationCommandOption{},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			embeded := &discordgo.MessageEmbed{
@@ -39,9 +37,7 @@ func (a *app) UserDetailsCommand() SlashCommand {
 		Feature: discordgo.ApplicationCommand{
 			Name:        "user",
 			Description: "Get User Details",
-			Options: []*discordgo.ApplicationCommandOption{
-				EphermalOptional(),
-			},
+			Options:     []*discordgo.ApplicationCommandOption{},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			embeded := &discordgo.MessageEmbed{

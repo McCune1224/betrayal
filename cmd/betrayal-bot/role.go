@@ -20,19 +20,7 @@ func (a *app) GetRoleCommand() SlashCommand {
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			query := i.ApplicationCommandData().Options[0].StringValue()
-			role, err := a.models.Roles.GetByName(query)
-			if err != nil {
-				SendChannelMessage(s, i, "Role not found")
-				return
-			}
-			SendChannelEmbededMessage(s, i,
-				&discordgo.MessageEmbed{
-					Title:       role.Name,
-					Description: role.Description,
-					Color:       0x6A5ACD,
-				},
-			)
+			SendChannelMessage(s, i, "wip")
 		},
 	}
 

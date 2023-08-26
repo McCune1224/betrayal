@@ -1,21 +1,30 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
 )
 
-func (a *app) InsultCommand() SlashCommand {
+// All slash commands for the insult feature
+func (a *app) InsultCommandBundle() []SlashCommand {
+	return []SlashCommand{
+		a.InsultAddComand(),
+		a.InsultGetCommand(),
+	}
+}
+
+func (a *app) InsultAddComand() SlashCommand {
 	return SlashCommand{
 		Feature: discordgo.ApplicationCommand{
-			Name:        "insult",
-			Description: "Let mckusa know he's a bad programmer",
+			Name:        "insult_add",
+			Description: "new insult for mckusa",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Name:        "message",
-					Description: "Give him your most brutal insult",
+					Description: "The message to send to mckusa",
 					Type:        discordgo.ApplicationCommandOptionString,
 					Required:    true,
 				},
@@ -24,42 +33,64 @@ func (a *app) InsultCommand() SlashCommand {
 
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			insult := i.ApplicationCommandData().Options[0].StringValue()
-			message := ""
-			foo := a.models.Insults.DB.Create(&data.Insult{Insult: insult})
-			if foo.Error != nil {
-				message = "Alex is a REALLY bad programmer. Can't even make a way to complain about his bad programming work, ironic."
-			} else {
-				message = "Thanks for the insult. I'll make sure he sees it. use /insult_random to see what you others have said at random."
+
+			insultEntry := data.Insult{
+				Insult:   insult,
+				AuthorID: i.Member.User.ID,
 			}
+			a.logger.Println(insultEntry)
+			err := a.models.Insults.Insert(&insultEntry)
+			if errors.Is(err, data.ErrRecordAlreadyExists) {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "You've already said that to mckusa, but I'll let him know again",
+						Flags:   64,
+					},
+				})
+				s.ChannelMessageSend(
+					i.ChannelID,
+					fmt.Sprintf("hey <@%s>, %s", mckusaID, insult),
+				)
+				return
+			}
+			if err != nil {
+				a.logger.Println(err)
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "Something went wrong, ping mckusa and let him know if urgent",
+						Flags:   64,
+					},
+				})
+			}
+
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: message,
-				},
+				Data: &discordgo.InteractionResponseData{},
 			})
 		},
 	}
 }
 
-func (a *app) RandomInsultCommand() SlashCommand {
+func (a *app) InsultGetCommand() SlashCommand {
+
 	return SlashCommand{
 		Feature: discordgo.ApplicationCommand{
-			Name:        "insult_random",
+			Name:        "insult_get",
 			Description: "Get a random insult saved for Alex and let him know how bad he is",
 		},
+
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			message := ""
-			insult, err := a.models.Insults.GetRandomInsult()
+			insult, err := a.models.Insults.GetRandom()
 			if err != nil {
-				message = "Alex is a REALLY bad programmer. Can't even make a way to complain about his bad programming work, ironic."
-			} else {
-				mentionUser := fmt.Sprintf("<@%s>", "206268866714796032")
-				message = fmt.Sprintf("Hey %s, %s", mentionUser, insult.Insult)
+				a.logger.Println(err)
 			}
+			a.logger.Println(insult)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: message,
+					Content: fmt.Sprintf("hey <@%s>, %s", mckusaID, insult.Insult),
 				},
 			},
 			)

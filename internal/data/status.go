@@ -11,9 +11,8 @@ import "gorm.io/gorm"
 // }
 
 type Status struct {
-	gorm.Model
-	Name           string `gorm:"unique;not null"`
-	Effect         string `gorm:"not null"`
+	Name           string
+	Effect         string
 	DetailedEffect string
 }
 

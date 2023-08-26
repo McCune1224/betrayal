@@ -14,6 +14,7 @@ type SlashCommandManager struct {
 func (a *app) NewSlashCommandManager() *SlashCommandManager {
 	return &SlashCommandManager{
 		// TODO: move this elsewhere so we don't have to pass it around, works for now at least ;)
+
 		MappedCommands: make(map[string]SlashCommand),
 		CommandIDs:     make(map[string]string),
 	}
@@ -24,7 +25,6 @@ func (scm *SlashCommandManager) MapCommand(sc SlashCommand) {
 }
 
 func (scm *SlashCommandManager) RegisterCommands(session *discordgo.Session) int {
-
 	// Pass the function to the handler so long as the command is registered [has a key in MappedCommand]
 	session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// Likely will want to add a check for the command's guild ID here at some point...
