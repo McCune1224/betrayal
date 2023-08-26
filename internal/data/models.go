@@ -9,6 +9,7 @@ type Models struct {
 	Roles    RoleModel
 	Insults  InsultModel
 	Abilitys AbilityModel
+	Category CategoryModel
 }
 
 // NewModels creates a new instance of the Models struct and attaches the database connection to it.
@@ -18,6 +19,7 @@ func NewModels(db *gorm.DB, auto ...bool) Models {
 		Roles:    RoleModel{DB: db},
 		Insults:  InsultModel{DB: db},
 		Abilitys: AbilityModel{DB: db},
+		Category: CategoryModel{DB: db},
 	}
 
 	if len(auto) > 0 && auto[0] {

@@ -59,15 +59,7 @@ func main() {
 	// abilityEntry := data.AbilityModel{DB: db}
 	// perkEntry := data.PerkModel{DB: db}
 
-	err = db.AutoMigrate(
-		&data.Role{},
-		&data.Ability{},
-		&data.Category{},
-		&data.Perk{},
-	)
-	if err != nil {
-		app.logger.Fatal(err)
-	}
+	//Cascade delet tables and recreate them
 
 	err = app.ParseCsv("./fat-dumpy/good_roles.csv")
 	if err != nil {
@@ -77,6 +69,15 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+
+	// make tables just in case
+
+	db.AutoMigrate(
+		&data.Role{},
+		&data.Ability{},
+		&data.Perk{},
+		&data.Category{},
+	)
 	for _, role := range roles {
 
 		abilities, err := role.SanitizeAbilities()
@@ -89,6 +90,7 @@ func main() {
 			Alignment:   "GOOD",
 		}
 		err = roleEntry.DB.Create(&role).Error
+
 		if err != nil {
 			logger.Println(err)
 		}

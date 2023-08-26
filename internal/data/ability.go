@@ -34,9 +34,9 @@ const (
 // Game representation of an AbilityModel.
 type Ability struct {
 	gorm.Model
-	Name       string `gorm:"unique;not null"`
-	ActionType string `gorm:"not null"`
-	Categories string `gorm:"many2many:ability_categories;"`
+	Name       string     `gorm:"unique;not null"`
+	ActionType string     `gorm:"not null"`
+	Categories []Category `gorm:"many2many:ability_categories;"`
 	// -1 is unlimited
 	Charges        int    `gorm:"not null"`
 	IsAnyAbility   bool   `gorm:"not null;default:false"`
@@ -48,26 +48,16 @@ type Ability struct {
 	ShowCategories bool `gorm:"not null;default:true"`
 }
 
+type AbilityModel struct {
+	DB *gorm.DB
+}
+
+// made since SQL doesn't support string arrays
 type Category struct {
 	gorm.Model
 	Name string `gorm:"unique;not null"`
 }
 
-type AbilityChange struct {
-	gorm.Model
-	Ability    Ability `gorm:"foreignKey:AbilityID"`
-	AbilityID  uint    `gorm:"not null"`
-	Change     string  `gorm:"not null"`
-	ChangeType string  `gorm:"not null"`
-}
-
-type AbilityAttachment struct {
-	gorm.Model
-	Ability   Ability `gorm:"foreignKey:AbilityID"`
-	AbilityID uint    `gorm:"not null"`
-	Roles     []Role  `gorm:"many2many:ability_attachment_roles;"`
-}
-
-type AbilityModel struct {
+type CategoryModel struct {
 	DB *gorm.DB
 }

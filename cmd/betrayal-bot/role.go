@@ -6,40 +6,35 @@ import (
 
 func (a *app) GetRoleCommand() SlashCommand {
 
-	roleCommand := SlashCommand{
+	role := SlashCommand{
 		Feature: discordgo.ApplicationCommand{
-			Name:        "getrole",
+			Name:        "role",
 			Description: "Get a role",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "role",
-					Description: "The role to get",
+					Name:        "role2",
+					Description: "The role to get new and improved",
 					Required:    true,
 				},
 			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			response := ""
-			searchTerm := i.ApplicationCommandData().Options[0].StringValue()
-
-			dbRole := a.models.Roles
-
-			data, err := dbRole.GetByName(searchTerm)
+			query := i.ApplicationCommandData().Options[0].StringValue()
+			role, err := a.models.Roles.GetByName(query)
 			if err != nil {
-				response = err.Error()
-			} else {
-				response = "Role: " + data.Name
+				SendChannelMessage(s, i, "Role not found")
+				return
 			}
-
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: response,
+			SendChannelEmbededMessage(s, i,
+				&discordgo.MessageEmbed{
+					Title:       role.Name,
+					Description: role.Description,
+					Color:       0x6A5ACD,
 				},
-			})
-
+			)
 		},
 	}
-	return roleCommand
+
+	return role
 }

@@ -113,10 +113,30 @@ func (c *csvRole) SanitizeAbilities() ([]data.Ability, error) {
 				fmt.Sprintf("FAILED LINE %d: FAILED CHARGE INT CONVERT %s", i, currAbilityString),
 			)
 		}
+
+		categoriesOpenIndex := strings.Index(snipString, "(")
+		categoriesCloseIndex := strings.Index(snipString, ")")
+
+		if categoriesOpenIndex == -1 || categoriesCloseIndex == -1 {
+			return nil, errors.New(
+				fmt.Sprintf("FAILED LINE %d: FAILED CATEGORY PARSE %s", i, currAbilityString),
+			)
+		}
+		categoriesString := snipString[categoriesOpenIndex+1 : categoriesCloseIndex]
+		categoriesParse := strings.Split(categoriesString, "/")
+		categories := []data.Category{}
+		for _, category := range categoriesParse {
+			category = strings.TrimSpace(category)
+			categories = append(categories, data.Category{
+				Name: category,
+			})
+		}
+
 		currAbility.Name = name
 		currAbility.Effect = description
 		currAbility.Charges = chargeInt
 		currAbility.ActionType = abilityType
+		currAbility.Categories = categories
 
 		abilities = append(abilities, currAbility)
 	}

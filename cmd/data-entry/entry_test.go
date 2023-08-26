@@ -51,8 +51,10 @@ func TestSanitizeAbilities(t *testing.T) {
 		for _, ability := range abilities {
 			fmt.Println(ability.Name)
 			fmt.Println(ability.Effect)
-			fmt.Println(ability.Charges)
-			fmt.Println(ability.ActionType)
+			fmt.Println("CATS: ")
+			for _, cat := range ability.Categories {
+				fmt.Println(cat.Name)
+			}
 		}
 		if err != nil {
 			t.Errorf("Error sanitizing abilities: %v", err)
