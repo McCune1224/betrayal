@@ -7,55 +7,78 @@ import "github.com/bwmarrin/discordgo"
 func (a *app) ChannelDetailsCommand() SlashCommand {
 	return SlashCommand{
 		Feature: discordgo.ApplicationCommand{
-			Name:        "channel",
-			Description: "Get Channel Details",
-			Options:     []*discordgo.ApplicationCommandOption{},
+			Name:        "whoami_channel",
+			Description: "Get requested channel details",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionChannel,
+					Name:        "channel",
+					Description: "The channel to get details from",
+					Required:    true,
+				},
+			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			embeded := &discordgo.MessageEmbed{
+			channel, err := s.Channel(i.ApplicationCommandData().Options[0].ChannelValue(s).ID)
+			if err != nil {
+				a.logger.Println(err)
+				SendEphermalChannelMessage(s, i, "Error: "+err.Error())
+				return
+			}
+			SendChannelEmbededMessage(s, i, &discordgo.MessageEmbed{
 				Title: "Channel Details",
 				Color: 0x6A5ACD,
 				Fields: []*discordgo.MessageEmbedField{
 					{
-						Name:   "Channel ID",
-						Value:  i.ChannelID,
-						Inline: true,
-					}, {
-						Name:   "Guild ID",
-						Value:  i.GuildID,
-						Inline: true,
+						Name:  "Name",
+						Value: channel.Name,
+					},
+					{
+						Name:  "ID",
+						Value: channel.ID,
 					},
 				},
-			}
-			SendChannelEmbededMessage(s, i, embeded)
+			})
 		},
 	}
+
 }
 
 func (a *app) UserDetailsCommand() SlashCommand {
 	return SlashCommand{
 		Feature: discordgo.ApplicationCommand{
-			Name:        "user",
-			Description: "Get User Details",
-			Options:     []*discordgo.ApplicationCommandOption{},
+			Name:        "whoami_user",
+			Description: "Get requested details",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Name:        "user",
+					Description: "The user to get details from",
+					Required:    true,
+				},
+			},
 		},
 		Handler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			embeded := &discordgo.MessageEmbed{
+			user, err := s.User(i.ApplicationCommandData().Options[0].UserValue(s).ID)
+			if err != nil {
+				a.logger.Println(err)
+				SendEphermalChannelMessage(s, i, "Error: "+err.Error())
+				return
+			}
+			SendChannelEmbededMessage(s, i, &discordgo.MessageEmbed{
 				Title: "User Details",
 				Color: 0x6A5ACD,
 				Fields: []*discordgo.MessageEmbedField{
 					{
-						Name:   "User ID",
-						Value:  i.Member.User.ID,
-						Inline: true,
-					}, {
-						Name:   "Guild ID",
-						Value:  i.GuildID,
-						Inline: true,
+						Name:  "Name",
+						Value: user.Username,
+					},
+					{
+						Name:  "ID",
+						Value: user.ID,
 					},
 				},
-			}
-			SendChannelEmbededMessage(s, i, embeded)
+			})
 		},
 	}
 }

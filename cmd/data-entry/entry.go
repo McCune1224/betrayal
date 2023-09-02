@@ -11,11 +11,6 @@ import (
 	"github.com/mccune1224/betrayal/internal/data"
 )
 
-// Simple Interface to write to databse to not worry about differnt model types
-type DBWriter interface {
-	Insert(modelType interface{}, jsonPayload []byte)
-}
-
 // Load in csv and append to app struct
 func (app *application) ParseCsv(filepath string) error {
 	file, err := os.Open(filepath)
@@ -37,6 +32,7 @@ type perk struct {
 	Name        string
 	Description string
 }
+
 type csvRole struct {
 	Name             string
 	Description      string
@@ -51,9 +47,11 @@ Examples lines to parse include:
 Solve [x0]* (Investigation/Positive/Non-visiting) - Figure out any piece of information of your choice about a player. Gain a charge for this every even day if you are Detective.
 Soul Seer [∞]^ (Investigation/Neutral/Non-visiting) - Select a player, upon their death, you can see their role, their items, money and their last actions. You gain a charge upon the selected player dying. If used on yourself and you die, you may continue to make chats with the living.
 */
-func (c *csvRole) SanitizeAbilities() ([]data.Ability, error) {
+func (c *csvRole) GetAbilities() ([]data.Ability, error) {
+
 	abilities := []data.Ability{}
 	for i, currAbilityString := range c.AbilitiesStrings {
+        fmt.Println(currAbilityString)
 
 		name := ""
 		currAbility := data.Ability{}
@@ -82,6 +80,13 @@ func (c *csvRole) SanitizeAbilities() ([]data.Ability, error) {
 		}
 
 		abilityType := charge[abilityTypeIndex:]
+		switch abilityType {
+		case "*":
+			currAbility.AnyAbility = true
+		default:
+			currAbility.AnyAbility = false
+		}
+
 		description := strings.Split(currAbilityString, "- ")[1]
 
 		// Get number inside of [ ]
@@ -100,7 +105,6 @@ func (c *csvRole) SanitizeAbilities() ([]data.Ability, error) {
 		}
 
 		charge = charge[foo+1 : bar]
-		// fmt.Println(charge)
 		if charge == "∞" {
 			charge = "-1"
 		} else {
@@ -124,18 +128,15 @@ func (c *csvRole) SanitizeAbilities() ([]data.Ability, error) {
 		}
 		categoriesString := snipString[categoriesOpenIndex+1 : categoriesCloseIndex]
 		categoriesParse := strings.Split(categoriesString, "/")
-		categories := []data.Category{}
+		categories := []string{}
 		for _, category := range categoriesParse {
 			category = strings.TrimSpace(category)
-			categories = append(categories, data.Category{
-				Name: category,
-			})
+			categories = append(categories, category)
 		}
 
 		currAbility.Name = name
-		currAbility.Effect = description
+		currAbility.Description = description
 		currAbility.Charges = chargeInt
-		currAbility.ActionType = abilityType
 		currAbility.Categories = categories
 
 		abilities = append(abilities, currAbility)
@@ -144,7 +145,7 @@ func (c *csvRole) SanitizeAbilities() ([]data.Ability, error) {
 }
 
 // Convert Perk string chunks to Perk struct
-func (c *csvRole) SanitizePerks() ([]data.Perk, error) {
+func (c *csvRole) GetPerks() ([]data.Perk, error) {
 	splitPerks := []data.Perk{}
 	for _, perkString := range c.PerksStrings {
 		split := strings.Split(perkString, "- ")
@@ -188,9 +189,6 @@ func (a *application) SplitRoles(roleType string) ([]csvRole, error) {
 
 	currRole := csvRole{}
 	for i, line := range a.csv {
-		if len(line) == 0 {
-			continue
-		}
 		// fmt.Println(line[1 : len(line)-1])
 		switch line[1] {
 		case "Name ": // ,Name ,Description

@@ -38,7 +38,6 @@ func (a *app) InsultAddComand() SlashCommand {
 				Insult:   insult,
 				AuthorID: i.Member.User.ID,
 			}
-			a.logger.Println(insultEntry)
 			err := a.models.Insults.Insert(&insultEntry)
 			if errors.Is(err, data.ErrRecordAlreadyExists) {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -67,7 +66,9 @@ func (a *app) InsultAddComand() SlashCommand {
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{},
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf("hey <@%s>, %s", mckusaID, insult),
+				},
 			})
 		},
 	}
@@ -86,7 +87,6 @@ func (a *app) InsultGetCommand() SlashCommand {
 			if err != nil {
 				a.logger.Println(err)
 			}
-			a.logger.Println(insult)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{

@@ -9,8 +9,6 @@ import (
 	// New import
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv/autoload"
@@ -66,27 +64,6 @@ func main() {
 
 	dbModels := data.NewModels(db)
 
-	migrationDriver, err := postgres.WithInstance(db.DB, &postgres.Config{})
-	if err != nil {
-		logger.Fatal(err, nil)
-	}
-
-	migrator, err := migrate.NewWithDatabaseInstance(
-		"file://migrations",
-		"postgres",
-		migrationDriver,
-	)
-	if err != nil {
-		logger.Fatal(err, nil)
-	}
-
-	err = migrator.Up()
-	if err != nil && err != migrate.ErrNoChange {
-		logger.Fatal(err, nil)
-	}
-
-	logger.Printf("database migrations applied")
-
 	app := &app{
 		conifg:         cfg,
 		models:         dbModels,
@@ -95,16 +72,16 @@ func main() {
 	}
 
 	betrayalCM := app.NewSlashCommandManager()
-	betrayalCM.MapCommand(app.PingCommand())
 	betrayalCM.MapCommand(app.GetRoleCommand())
-	betrayalCM.MapCommand(app.EchoCommand())
-	betrayalCM.MapCommand(app.HelpCommand())
-	betrayalCM.MapCommand(app.ChannelDetailsCommand())
-	betrayalCM.MapCommand(app.UserDetailsCommand())
-	betrayalCM.MapCommand(app.FunnelCommand())
-	for _, insultCommand := range app.InsultCommandBundle() {
-		betrayalCM.MapCommand(insultCommand)
-	}
+	// betrayalCM.MapCommand(app.PingCommand())
+	// betrayalCM.MapCommand(app.EchoCommand())
+	// betrayalCM.MapCommand(app.HelpCommand())
+	// betrayalCM.MapCommand(app.ChannelDetailsCommand())
+	// betrayalCM.MapCommand(app.UserDetailsCommand())
+	// betrayalCM.MapCommand(app.FunnelCommand())
+	// for _, insultCommand := range app.InsultCommandBundle() {
+	// 	betrayalCM.MapCommand(insultCommand)
+	// }
 	registeredCommandsTally := betrayalCM.RegisterCommands(app.discordSession)
 
 	app.commandHandler = betrayalCM

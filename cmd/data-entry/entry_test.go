@@ -47,14 +47,14 @@ func TestSanitizeAbilities(t *testing.T) {
 	}
 	for _, role := range roles {
 		fmt.Println(role.Name)
-		abilities, err := role.SanitizeAbilities()
+		abilities, err := role.GetAbilities()
 		for _, ability := range abilities {
 			fmt.Println(ability.Name)
-			fmt.Println(ability.Effect)
-			fmt.Println("CATS: ")
-			for _, cat := range ability.Categories {
-				fmt.Println(cat.Name)
-			}
+			fmt.Println(ability.Description)
+            fmt.Println(ability.Charges)
+            fmt.Println(ability.Categories)
+            fmt.Println(ability.AnyAbility)
+            fmt.Println()
 		}
 		if err != nil {
 			t.Errorf("Error sanitizing abilities: %v", err)
@@ -73,7 +73,7 @@ func TestSanitizePerks(t *testing.T) {
 		t.Errorf("Error splitting roles: %v", err)
 	}
 	for _, role := range roles {
-		perks, err := role.SanitizePerks()
+		perks, err := role.GetPerks()
 		if err != nil {
 			t.Errorf("Error sanitizing perks: %v", err)
 		}

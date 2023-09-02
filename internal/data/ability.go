@@ -9,53 +9,19 @@ const (
 	unlimited = -1
 )
 
-// model Ability {
-//     id             Int              @id @default(autoincrement())
-//     name           String           @unique
-//     actionType     ActionType?
-//     categories     ActionCategory[]
-//     charges        Int // -1 is unlimited
-//     isAnyAbility   Boolean          @default(false)
-//     isRoleSpecific Boolean?
-//     rarity         Rarity?
-//     effect         String
-//     detailedEffect String?
-//     orderPriority  Int              @default(0)
-//     showCategories Boolean          @default(true)
-//
-//     changes            AbilityChange[]
-//     abilityAttachments AbilityAttachment?
-//
-//     updatedAt   DateTime?    @updatedAt
-//     statusLinks StatusLink[]
-// }
-//
-
-// Game representation of an AbilityModel.
+// Ability that is role specific.
 type Ability struct {
-	Name       string
-	ActionType string
-	Categories []Category
-	// -1 is unlimited
-	Charges        int
-	IsAnyAbility   bool
-	IsRoleSpecific bool
-	Rarity         string
-	Effect         string
-	DetailedEffect string
-	OrderPriority  int
-	ShowCategories bool
+	ID          int64    `db:"id"`
+	Name        string   `db:"name"`
+	Description string   `db:"description"`
+	Categories  []string `db:"categories"`
+	Charges     int      `db:"charges"`
+	AnyAbility  bool     `db:"any_ability"`
+	// will be listed as 'Role' if AA ability
+	Rarity    string `db:"rarity"`
+	CreatedAt string `db:"created_at"`
 }
 
 type AbilityModel struct {
-	DB *sqlx.DB
-}
-
-// made since SQL doesn't support string arrays
-type Category struct {
-	Name string
-}
-
-type CategoryModel struct {
 	DB *sqlx.DB
 }

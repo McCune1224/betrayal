@@ -1,24 +1,16 @@
 package data
 
-import (
-	"gorm.io/gorm"
-)
+import "github.com/jmoiron/sqlx"
 
 type Perk struct {
-	gorm.Model
-	Name          string
-	Categories    string
-	Effect        string
-	OrderPriority int
-}
-
-type PerkAttachment struct {
-	gorm.Model
-	Abilities Ability
-	AbilityID uint
-	Roles     []Role
+	ID         int64  `db:"id"`
+	Name       string `db:"name"`
+	Rarity     string `db:"rarity"`
+	Categories string `db:"categories"`
+	Effect     string `db:"effect"`
+	CreatedAt  string `db:"created_at"`
 }
 
 type PerkModel struct {
-	DB *gorm.DB
+	DB *sqlx.DB
 }

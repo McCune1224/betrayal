@@ -5,6 +5,7 @@ import (
 )
 
 type Insult struct {
+	Id        int64  `db:"id"`
 	Insult    string `db:"insult"`
 	AuthorID  string `db:"author_id"`
 	CreatedAt string `db:"created_at"`
@@ -19,7 +20,7 @@ func (m *InsultModel) GetRandom() (*Insult, error) {
 
 	err := m.DB.Get(
 		&i,
-		"SELECT insult, author_id, created_at FROM insults ORDER BY RANDOM() LIMIT 1",
+		"SELECT * FROM insults ORDER BY RANDOM() LIMIT 1",
 	)
 	if err != nil {
 		return nil, err
@@ -29,13 +30,9 @@ func (m *InsultModel) GetRandom() (*Insult, error) {
 }
 
 func (m *InsultModel) Insert(i *Insult) error {
-	var err error
+	query := `INSERT INTO insults (insult, author_id) VALUES (:insult, :author_id)`
 
-	_, err = m.DB.Exec(
-		"INSERT INTO insults (insult, author_id) VALUES ($1, $2)",
-		i.Insult,
-		i.AuthorID,
-	)
+	_, err := m.DB.NamedExec(query, &i)
 	if err != nil {
 		return err
 	}
