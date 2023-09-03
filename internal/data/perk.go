@@ -1,6 +1,8 @@
 package data
 
-import "github.com/jmoiron/sqlx"
+import (
+	"github.com/jmoiron/sqlx"
+)
 
 type Perk struct {
 	ID          int64  `db:"id"`

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -60,58 +59,84 @@ func main() {
 	if err != nil {
 		log.Fatal("error opening database,", err)
 	}
+	defer db.Close()
+
+}
+
+// Catch all for entering InsertJoins into daatbase
+func (a *application) InsertJoins(db *sqlx.DB) error {
 
 	roleEntry := data.RoleModel{DB: db}
 	abilityEntry := data.AbilityModel{DB: db}
 	perkEntry := data.PerkModel{DB: db}
 	fmt.Println(perkEntry, abilityEntry, roleEntry)
 
-	err = app.ParseCsv(*file)
+	err := a.ParseCsv(*file)
 	if err != nil {
-		logger.Fatal(err)
+		a.logger.Fatal(err)
 	}
 
-	roles, err := app.SplitRoles("role")
+	roles, err := a.SplitRoles("role")
 	if err != nil {
-		logger.Fatal(err)
+		a.logger.Fatal(err)
 	}
 
 	for i, role := range roles {
 		if i == 0 {
 			continue
 		}
-		fmt.Println(role.Name)
+
+		dbRole, err := roleEntry.GetByName(role.Name)
+		if err != nil {
+			a.logger.Fatal(err)
+		}
+		if dbRole.ID == -1 {
+			a.logger.Fatal("Ability not found")
+		}
+
 		abilities, err := role.GetAbilities()
 		if err != nil {
-			app.logger.Fatal(err)
+			a.logger.Fatal(err)
 		}
-		for _, ability := range abilities {
-			fmt.Println(ability)
-			abilityID, err := abilityEntry.Insert(&ability)
-			if err != nil {
-				if !strings.Contains(err.Error(), "duplicate key value violate") {
-					app.logger.Fatal(err)
-				}
-			}
-			fmt.Println(abilityID)
-		}
-
 		perks, err := role.GetPerks()
 		if err != nil {
-			app.logger.Fatal(err)
+			a.logger.Fatal(err)
 		}
 
-		for _, perk := range perks {
-			fmt.Println(perk)
-			fmt.Println(perk.Name, perk.Description)
-			perkID, err := perkEntry.Insert(&perk)
+		fmt.Println("JOINING ABILITIES")
+		for _, ability := range abilities {
+			fmt.Println(ability.Name)
+			dbAbl, err := abilityEntry.GetByName(ability.Name)
+
 			if err != nil {
-				if !strings.Contains(err.Error(), "duplicate key value violate") {
-					app.logger.Fatal(err)
-				}
+				a.logger.Fatal(err)
 			}
-			fmt.Println(perkID)
-		}
 
+			if dbAbl.ID == -1 {
+				a.logger.Fatal("Ability not found")
+			}
+
+			err = roleEntry.JoinAbility(dbRole.ID, dbAbl.ID)
+			if err != nil {
+				a.logger.Fatal(err)
+			}
+		}
+		fmt.Println("JOINING PERKS")
+		for _, perk := range perks {
+			fmt.Println(perk.Name)
+			dbPerk, err := perkEntry.GetByName(perk.Name)
+			if err != nil {
+				a.logger.Fatal(err)
+			}
+			if dbPerk.ID == -1 {
+				a.logger.Fatal("Perk not found")
+			}
+			err = roleEntry.JoinPerk(dbRole.ID, dbPerk.ID)
+			if err != nil {
+				a.logger.Fatal(err)
+			}
+
+		}
 	}
+	return nil
 }

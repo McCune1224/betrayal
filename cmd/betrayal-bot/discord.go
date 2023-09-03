@@ -54,3 +54,27 @@ func SendChannelEmbededMessage(
 		},
 	})
 }
+
+// Helper to send an error message to the user in ephemeral mode
+func SendErrorMessage(s *discordgo.Session, i *discordgo.InteractionCreate, message string) {
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: message,
+			Flags:   64,
+		},
+	})
+}
+
+func Underline(s string) string {
+	return "__" + s + "__"
+}
+
+func Bold(s string) string {
+	return "**" + s + "**"
+}
+
+func Italic(s string) string {
+	return "*" + s + "*"
+}
+

@@ -1,6 +1,8 @@
 package data
 
-import "github.com/jmoiron/sqlx"
+import (
+	"github.com/jmoiron/sqlx"
+)
 
 // General representation of a role in the game in db.
 type Role struct {
@@ -20,9 +22,9 @@ type RoleComplete struct {
 
 // Join table for roles and abilities 'role_abilities'
 type RoleAbility struct {
-	RoleID     int64  `db:"role_id"`
-	AbilityID  int64  `db:"ability_id"`
-	CREATED_AT string `db:"created_at"`
+	RoleID    int64  `db:"role_id"`
+	AbilityID int64  `db:"ability_id"`
+	CreatedAt string `db:"created_at"`
 }
 
 // Join table for roles and perks 'roles_perks'
@@ -90,8 +92,8 @@ func (rm *RoleModel) WipeTable() error {
 	return nil
 }
 
-func (rm *RoleModel) GetAll() ([]Role, error) {
-	var roles []Role
+func (rm *RoleModel) GetAll() ([]*Role, error) {
+	var roles []*Role
 	err := rm.DB.Select(&roles, "SELECT * FROM roles")
 	if err != nil {
 		return nil, err
@@ -115,4 +117,32 @@ func (rm *RoleModel) JoinPerk(roleID int64, perkID int64) error {
 		return err
 	}
 	return nil
+}
+
+func (rm *RoleModel) GetAbilities(roleID int64) ([]*Ability, error) {
+	query := `SELECT (abilities.*) FROM abilities INNER JOIN roles_abilities ON abilities.id = roles_abilities.ability_id WHERE roles_abilities.role_id = $1`
+	var abilities []*Ability
+	err := rm.DB.Select(
+		&abilities,
+		query,
+		roleID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return abilities, nil
+}
+
+func (rm *RoleModel) GetPerks(RoleID int64) ([]*Perk, error) {
+	query := `SELECT (perks.*) FROM perks INNER JOIN roles_perks ON perks.id = roles_perks.perk_id WHERE roles_perks.role_id = $1`
+	var perks []*Perk
+	err := rm.DB.Select(
+		&perks,
+		query,
+		RoleID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return perks, nil
 }
