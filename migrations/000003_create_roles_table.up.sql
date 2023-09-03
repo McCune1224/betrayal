@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS abilities (
     id SERIAL PRIMARY KEY,
     name varchar NOT NULL UNIQUE,
     description TEXT NOT NULL, 
-    action_type varchar NOT null,
+    categories varchar[] NOT NULL,
+    charges integer NOT NULL default 0,
     any_ability boolean NOT NULL default false,
     rarity varchar NOT NULL default 'Role',
     created_at timestamp(0) with time zone NOT NULL DEFAULT NOW()
@@ -25,7 +26,6 @@ CREATE TABLE IF NOT EXISTS perks (
     id SERIAL PRIMARY KEY,
     name varchar NOT NULL UNIQUE,
     description TEXT NOT NULL,
-    rarity varchar NOT NULL default 'role perk',
     created_at timestamp(0) with time zone NOT NULL DEFAULT NOW()
 );
 

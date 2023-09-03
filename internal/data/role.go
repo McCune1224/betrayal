@@ -20,11 +20,12 @@ type RoleComplete struct {
 
 // Join table for roles and abilities 'role_abilities'
 type RoleAbility struct {
-	RoleID    int64 `db:"role_id"`
-	AbilityID int64 `db:"ability_id"`
+	RoleID     int64  `db:"role_id"`
+	AbilityID  int64  `db:"ability_id"`
+	CREATED_AT string `db:"created_at"`
 }
 
-// Join table for roles and perks 'role_perks'
+// Join table for roles and perks 'roles_perks'
 type RolePerk struct {
 	RoleID int64 `db:"role_id"`
 	PerkID int64 `db:"perk_id"`
@@ -40,10 +41,10 @@ func (rm *RoleModel) Insert(r *Role) (int64, error) {
 	if err != nil {
 		return -1, err
 	}
-	var insertID int64
-	err = rm.DB.Get(&insertID, "SELECT last_insert_rowid()")
+	var lastInsert Role
+	err = rm.DB.Get(&lastInsert, "SELECT * FROM roles ORDER BY id DESC LIMIT 1")
 
-	return insertID, nil
+	return lastInsert.ID, nil
 }
 
 func (rm *RoleModel) Get(id int64) (*Role, error) {
@@ -96,4 +97,22 @@ func (rm *RoleModel) GetAll() ([]Role, error) {
 		return nil, err
 	}
 	return roles, nil
+}
+
+func (rm *RoleModel) JoinAbility(roleID int64, abilityID int64) error {
+	query := `INSERT INTO roles_abilities (role_id, ability_id) VALUES ($1, $2)`
+	_, err := rm.DB.Exec(query, roleID, abilityID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (rm *RoleModel) JoinPerk(roleID int64, perkID int64) error {
+	query := `INSERT INTO roles_perks (role_id, perk_id) VALUES ($1, $2)`
+	_, err := rm.DB.Exec(query, roleID, perkID)
+	if err != nil {
+		return err
+	}
+	return nil
 }

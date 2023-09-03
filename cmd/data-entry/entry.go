@@ -51,7 +51,7 @@ func (c *csvRole) GetAbilities() ([]data.Ability, error) {
 
 	abilities := []data.Ability{}
 	for i, currAbilityString := range c.AbilitiesStrings {
-        fmt.Println(currAbilityString)
+        // fmt.Println(currAbilityString)
 
 		name := ""
 		currAbility := data.Ability{}
@@ -162,7 +162,7 @@ func (c *csvRole) GetPerks() ([]data.Perk, error) {
 		splitPerks = append(splitPerks, data.Perk{
 
 			Name:   split[0],
-			Effect: split[1],
+			Description: split[1],
 		})
 	}
 	return splitPerks, nil

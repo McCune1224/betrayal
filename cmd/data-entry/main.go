@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -61,9 +62,9 @@ func main() {
 	}
 
 	roleEntry := data.RoleModel{DB: db}
-	if err != nil {
-		app.logger.Fatal(err)
-	}
+	abilityEntry := data.AbilityModel{DB: db}
+	perkEntry := data.PerkModel{DB: db}
+	fmt.Println(perkEntry, abilityEntry, roleEntry)
 
 	err = app.ParseCsv(*file)
 	if err != nil {
@@ -79,47 +80,38 @@ func main() {
 		if i == 0 {
 			continue
 		}
-		dbRole := data.Role{
-			Name:        role.Name,
-			Description: role.Description,
-		}
+		fmt.Println(role.Name)
 		abilities, err := role.GetAbilities()
 		if err != nil {
 			app.logger.Fatal(err)
 		}
+		for _, ability := range abilities {
+			fmt.Println(ability)
+			abilityID, err := abilityEntry.Insert(&ability)
+			if err != nil {
+				if !strings.Contains(err.Error(), "duplicate key value violate") {
+					app.logger.Fatal(err)
+				}
+			}
+			fmt.Println(abilityID)
+		}
+
 		perks, err := role.GetPerks()
 		if err != nil {
 			app.logger.Fatal(err)
 		}
-		fmt.Println(len(abilities))
-		fmt.Println(len(perks))
-		// fmt.Println("---------------")
-		// fmt.Println(role.Name)
-		// fmt.Println(role.Description)
-		// for _, ability := range abilities {
-		// 	fmt.Println(ability.Name)
-		// 	fmt.Println(ability.Description)
-		// 	fmt.Println(ability.Charges)
-		// 	fmt.Println(ability.Categories)
-		// 	fmt.Println(ability.AnyAbility)
-		// 	fmt.Println("---")
-		// }
-		// for _, perk := range perks {
-		// 	fmt.Println(perk.Name)
-		// 	fmt.Println(perk.Effect)
-		// 	fmt.Println("---")
-		// }
-		// fmt.Println("---------------")
 
-		dbRole.Name = role.Name
-		dbRole.Description = role.Description
-		dbRole.Alignment = "NEUTRAL"
-		fmt.Println("|", dbRole.Name, dbRole.Description, "|")
-		_, err = roleEntry.Insert(&dbRole)
-		if err != nil {
-			app.logger.Fatal(err)
+		for _, perk := range perks {
+			fmt.Println(perk)
+			fmt.Println(perk.Name, perk.Description)
+			perkID, err := perkEntry.Insert(&perk)
+			if err != nil {
+				if !strings.Contains(err.Error(), "duplicate key value violate") {
+					app.logger.Fatal(err)
+				}
+			}
+			fmt.Println(perkID)
 		}
-		fmt.Println()
-	}
 
+	}
 }

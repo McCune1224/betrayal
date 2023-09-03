@@ -79,7 +79,7 @@ func TestSanitizePerks(t *testing.T) {
 		}
 		for _, perk := range perks {
 			fmt.Println(perk.Name)
-			fmt.Println(perk.Effect)
+			fmt.Println(perk.Description)
 		}
 	}
 }
