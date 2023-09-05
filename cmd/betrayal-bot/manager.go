@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -40,6 +41,7 @@ func (scm *SlashCommandManager) RegisterCommands(session *discordgo.Session) int
 	// Register the Slash Commands with Discord
 	totalAddedCommands := 0
 	for _, slashCmd := range scm.MappedCommands {
+		start := time.Now()
 		rcmd, err := session.ApplicationCommandCreate(session.State.User.ID, "", &slashCmd.Feature)
 		if err != nil {
 			log.Printf("Failed to add command %s\nError: %s", slashCmd.Feature.Name, err.Error())
@@ -47,6 +49,8 @@ func (scm *SlashCommandManager) RegisterCommands(session *discordgo.Session) int
 		}
 		scm.CommandIDs[rcmd.ID] = rcmd.Name
 		totalAddedCommands++
+		elapsed := time.Since(start)
+		log.Printf("Registered command %s in %s", slashCmd.Feature.Name, elapsed)
 	}
 
 	return totalAddedCommands
@@ -58,4 +62,25 @@ func (scm *SlashCommandManager) GetCommands() []SlashCommand {
 		commands = append(commands, cmd)
 	}
 	return commands
+}
+
+// Discord doesn't play well sometimes with cleaning up commands that are no longer in use
+func (scm *SlashCommandManager) RemoveCached(s *discordgo.Session) []error {
+	//use session to get guild commands
+	//iterate through guild commands and add to list
+	//return list
+
+	var errors []error
+
+	commands, _ := s.ApplicationCommands(
+		s.State.User.ID,
+		"",
+	)
+	for _, cmd := range commands {
+		err := s.ApplicationCommandDelete(s.State.User.ID, "", cmd.ID)
+		if err != nil {
+			errors = append(errors, err)
+		}
+	}
+	return errors
 }

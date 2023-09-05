@@ -72,6 +72,13 @@ func main() {
 	}
 
 	betrayalCM := app.NewSlashCommandManager()
+
+	errs := betrayalCM.RemoveCached(app.discordSession)
+
+	for _, err := range errs {
+		app.logger.Println("error deleting command", err)
+	}
+
 	betrayalCM.MapCommand(app.GetRoleCommand())
 	betrayalCM.MapCommand(app.PingCommand())
 	betrayalCM.MapCommand(app.EchoCommand())
@@ -79,9 +86,11 @@ func main() {
 	betrayalCM.MapCommand(app.ChannelDetailsCommand())
 	betrayalCM.MapCommand(app.UserDetailsCommand())
 	betrayalCM.MapCommand(app.FunnelCommand())
+
 	for _, insultCommand := range app.InsultCommandBundle() {
 		betrayalCM.MapCommand(insultCommand)
 	}
+
 	registeredCommandsTally := betrayalCM.RegisterCommands(app.discordSession)
 
 	app.commandHandler = betrayalCM
@@ -99,18 +108,9 @@ func main() {
 	if err := app.discordSession.Close(); err != nil {
 		app.logger.Fatal("error closing connection,", err)
 	}
-
-	// Commands Cleanup
-	for id, name := range betrayalCM.CommandIDs {
-		err := app.discordSession.ApplicationCommandDelete(
-			app.discordSession.State.User.ID,
-			"",
-			id,
-		)
-		if err != nil {
-			app.logger.Printf("error deleting command %s: %s on Cleanup\n", name, err)
-		} else {
-			app.logger.Println("deleted command", name)
-		}
+	errs = betrayalCM.RemoveCached(app.discordSession)
+	for _, err := range errs {
+		app.logger.Println("error deleting command", err)
 	}
+
 }
