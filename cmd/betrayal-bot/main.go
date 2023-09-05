@@ -73,15 +73,15 @@ func main() {
 
 	betrayalCM := app.NewSlashCommandManager()
 	betrayalCM.MapCommand(app.GetRoleCommand())
-	// betrayalCM.MapCommand(app.PingCommand())
-	// betrayalCM.MapCommand(app.EchoCommand())
-	// betrayalCM.MapCommand(app.HelpCommand())
-	// betrayalCM.MapCommand(app.ChannelDetailsCommand())
-	// betrayalCM.MapCommand(app.UserDetailsCommand())
-	// betrayalCM.MapCommand(app.FunnelCommand())
-	// for _, insultCommand := range app.InsultCommandBundle() {
-	// 	betrayalCM.MapCommand(insultCommand)
-	// }
+	betrayalCM.MapCommand(app.PingCommand())
+	betrayalCM.MapCommand(app.EchoCommand())
+	betrayalCM.MapCommand(app.HelpCommand())
+	betrayalCM.MapCommand(app.ChannelDetailsCommand())
+	betrayalCM.MapCommand(app.UserDetailsCommand())
+	betrayalCM.MapCommand(app.FunnelCommand())
+	for _, insultCommand := range app.InsultCommandBundle() {
+		betrayalCM.MapCommand(insultCommand)
+	}
 	registeredCommandsTally := betrayalCM.RegisterCommands(app.discordSession)
 
 	app.commandHandler = betrayalCM

@@ -116,7 +116,7 @@ func (a *application) InsertJoins(db *sqlx.DB) error {
 				a.logger.Fatal("Ability not found")
 			}
 
-			err = roleEntry.JoinAbility(dbRole.ID, dbAbl.ID)
+			err = roleEntry.InsertJoinAbility(dbRole.ID, dbAbl.ID)
 			if err != nil {
 				a.logger.Fatal(err)
 			}
@@ -131,7 +131,7 @@ func (a *application) InsertJoins(db *sqlx.DB) error {
 			if dbPerk.ID == -1 {
 				a.logger.Fatal("Perk not found")
 			}
-			err = roleEntry.JoinPerk(dbRole.ID, dbPerk.ID)
+			err = roleEntry.InsertJoinPerk(dbRole.ID, dbPerk.ID)
 			if err != nil {
 				a.logger.Fatal(err)
 			}

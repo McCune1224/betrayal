@@ -4,33 +4,13 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// General representation of a role in the game in db.
+// How roles are stored in the database.
 type Role struct {
 	ID          int64  `db:"id"`
 	Name        string `db:"name"`
 	Description string `db:"description"`
 	Alignment   string `db:"alignment"`
 	CreatedAt   string `db:"created_at"`
-}
-
-// Entire role with all abilities and perks.
-type RoleComplete struct {
-	Role      Role
-	Abilities []Ability
-	Perks     []Perk
-}
-
-// Join table for roles and abilities 'role_abilities'
-type RoleAbility struct {
-	RoleID    int64  `db:"role_id"`
-	AbilityID int64  `db:"ability_id"`
-	CreatedAt string `db:"created_at"`
-}
-
-// Join table for roles and perks 'roles_perks'
-type RolePerk struct {
-	RoleID int64 `db:"role_id"`
-	PerkID int64 `db:"perk_id"`
 }
 
 type RoleModel struct {
@@ -101,7 +81,7 @@ func (rm *RoleModel) GetAll() ([]*Role, error) {
 	return roles, nil
 }
 
-func (rm *RoleModel) JoinAbility(roleID int64, abilityID int64) error {
+func (rm *RoleModel) InsertJoinAbility(roleID int64, abilityID int64) error {
 	query := `INSERT INTO roles_abilities (role_id, ability_id) VALUES ($1, $2)`
 	_, err := rm.DB.Exec(query, roleID, abilityID)
 	if err != nil {
@@ -110,7 +90,7 @@ func (rm *RoleModel) JoinAbility(roleID int64, abilityID int64) error {
 	return nil
 }
 
-func (rm *RoleModel) JoinPerk(roleID int64, perkID int64) error {
+func (rm *RoleModel) InsertJoinPerk(roleID int64, perkID int64) error {
 	query := `INSERT INTO roles_perks (role_id, perk_id) VALUES ($1, $2)`
 	_, err := rm.DB.Exec(query, roleID, perkID)
 	if err != nil {
