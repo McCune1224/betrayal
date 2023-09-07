@@ -7,7 +7,7 @@ import (
 
 func TestParseCsv(t *testing.T) {
 	app := &application{}
-	err := app.ParseCsv("./fat-dumpy/good_roles.csv")
+	err := app.ParseRoleCsv("./fat-dumpy/good_roles.csv")
 	if err != nil {
 		t.Errorf("Error parsing csv: %v", err)
 	}
@@ -15,7 +15,7 @@ func TestParseCsv(t *testing.T) {
 
 func TestSplitRoles(t *testing.T) {
 	app := &application{}
-	err := app.ParseCsv("./fat-dumpy/good_roles.csv")
+	err := app.ParseRoleCsv("./fat-dumpy/good_roles.csv")
 	if err != nil {
 		t.Errorf("Error parsing csv: %v", err)
 	}
@@ -37,7 +37,7 @@ func TestSplitRoles(t *testing.T) {
 
 func TestSanitizeAbilities(t *testing.T) {
 	app := &application{}
-	err := app.ParseCsv("./fat-dumpy/good_roles.csv")
+	err := app.ParseRoleCsv("./fat-dumpy/good_roles.csv")
 	if err != nil {
 		t.Errorf("Error parsing csv: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestSanitizeAbilities(t *testing.T) {
 
 func TestSanitizePerks(t *testing.T) {
 	app := &application{}
-	err := app.ParseCsv("./fat-dumpy/good_roles.csv")
+	err := app.ParseRoleCsv("./fat-dumpy/good_roles.csv")
 	if err != nil {
 		t.Errorf("Error parsing csv: %v", err)
 	}

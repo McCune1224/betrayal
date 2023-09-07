@@ -61,6 +61,16 @@ func main() {
 	}
 	defer db.Close()
 
+	err = app.ParsePerkCsv(*file)
+	if err != nil {
+		app.logger.Fatal(err)
+	}
+
+	statuses := GetStatuses(app.csv)
+	for _, status := range statuses {
+		app.logger.Println(status.Name, "-", status.Description)
+	}
+
 }
 
 // Catch all for entering InsertJoins into daatbase
@@ -71,7 +81,7 @@ func (a *application) InsertJoins(db *sqlx.DB) error {
 	perkEntry := data.PerkModel{DB: db}
 	fmt.Println(perkEntry, abilityEntry, roleEntry)
 
-	err := a.ParseCsv(*file)
+	err := a.ParseRoleCsv(*file)
 	if err != nil {
 		a.logger.Fatal(err)
 	}
@@ -139,4 +149,5 @@ func (a *application) InsertJoins(db *sqlx.DB) error {
 		}
 	}
 	return nil
+
 }

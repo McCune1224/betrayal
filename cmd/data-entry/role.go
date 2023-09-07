@@ -12,7 +12,7 @@ import (
 )
 
 // Load in csv and append to app struct
-func (app *application) ParseCsv(filepath string) error {
+func (app *application) ParseRoleCsv(filepath string) error {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return err
@@ -28,10 +28,6 @@ func (app *application) ParseCsv(filepath string) error {
 	return nil
 }
 
-type perk struct {
-	Name        string
-	Description string
-}
 
 type csvRole struct {
 	Name             string
