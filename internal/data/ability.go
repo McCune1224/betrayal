@@ -121,3 +121,23 @@ func (am *AbilityModel) WipeTable() error {
 	}
 	return nil
 }
+
+func (am *AbilityModel) Upsert(a *Ability) error {
+	query := `INSERT INTO Abilities (name, description, categories, charges, any_ability, rarity)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    ON CONFLICT (name) DO UPDATE
+    SET name = $1, description = $2, categories = $3, charges = $4, any_ability = $5, rarity = $6`
+	_, err := am.DB.Exec(
+		query,
+		a.Name,
+		a.Description,
+		a.Categories,
+		a.Charges,
+		a.AnyAbility,
+		a.Rarity,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}

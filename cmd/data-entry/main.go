@@ -14,8 +14,7 @@ import (
 
 // Flags for CLI app
 var (
-	entryType = flag.String("type", "", "Type of entry to create")
-	file      = flag.String("file", "", "File to read from")
+	file = flag.String("file", "", "File to read from")
 )
 
 type config struct {
@@ -61,25 +60,36 @@ func main() {
 	}
 	defer db.Close()
 
-	err = app.ParsePerkCsv(*file)
+	app.models = data.NewModels(db)
+
+	err = app.ParseAnyAbilityCsv(*file)
 	if err != nil {
 		app.logger.Fatal(err)
 	}
 
-	statuses := GetStatuses(app.csv)
-	for _, status := range statuses {
-		app.logger.Println(status.Name, "-", status.Description)
+	app.InsertAnyAbilities()
+}
+
+func (a *application) InsertStatuses(db *sqlx.DB) {
+	statusEntry := data.StatusModel{DB: db}
+	for _, status := range GetStatuses(a.csv) {
+		id, err := statusEntry.Insert(&status)
+		if err != nil {
+			a.logger.Fatal(err)
+		}
+		a.logger.Println(id, status.Name)
+
 	}
 
 }
 
-// Catch all for entering InsertJoins into daatbase
-func (a *application) InsertJoins(db *sqlx.DB) error {
+// Catch all for entering InsertRoleJoins into daatbase
+func (a *application) InsertRoleJoins(db *sqlx.DB) error {
 
 	roleEntry := data.RoleModel{DB: db}
 	abilityEntry := data.AbilityModel{DB: db}
 	perkEntry := data.PerkModel{DB: db}
-	fmt.Println(perkEntry, abilityEntry, roleEntry)
+	a.logger.Println(perkEntry, abilityEntry, roleEntry)
 
 	err := a.ParseRoleCsv(*file)
 	if err != nil {
@@ -113,9 +123,9 @@ func (a *application) InsertJoins(db *sqlx.DB) error {
 			a.logger.Fatal(err)
 		}
 
-		fmt.Println("JOINING ABILITIES")
+		a.logger.Println("JOINING ABILITIES")
 		for _, ability := range abilities {
-			fmt.Println(ability.Name)
+			a.logger.Println(ability.Name)
 			dbAbl, err := abilityEntry.GetByName(ability.Name)
 
 			if err != nil {
@@ -131,9 +141,9 @@ func (a *application) InsertJoins(db *sqlx.DB) error {
 				a.logger.Fatal(err)
 			}
 		}
-		fmt.Println("JOINING PERKS")
+		a.logger.Println("JOINING PERKS")
 		for _, perk := range perks {
-			fmt.Println(perk.Name)
+			a.logger.Println(perk.Name)
 			dbPerk, err := perkEntry.GetByName(perk.Name)
 			if err != nil {
 				a.logger.Fatal(err)
@@ -150,4 +160,31 @@ func (a *application) InsertJoins(db *sqlx.DB) error {
 	}
 	return nil
 
+}
+
+func (app *application) InsertItems() {
+	itemEntry := app.models.Items
+	parsedItems, err := GetItems(app.csv)
+	if err != nil {
+		app.logger.Fatal(err)
+	}
+
+	for _, item := range parsedItems {
+		fmt.Println("ITEM:", item.Name, item.Rarity)
+		id, err := itemEntry.Insert(&item)
+		if err != nil {
+			app.logger.Fatal(err)
+		}
+		app.logger.Println(id, item.Name)
+
+	}
+}
+
+func (app *application) InsertAnyAbilities() {
+	// abilityEntry := app.models.Abilities
+	parsedAnyAbilities, err := GetAnyAbilities(app.csv)
+	if err != nil {
+		app.logger.Fatal(err)
+	}
+	fmt.Println(len(parsedAnyAbilities))
 }

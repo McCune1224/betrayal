@@ -61,3 +61,13 @@ func (pm *PerkModel) Delete(id int64) error {
 	}
 	return nil
 }
+
+func (pm *PerkModel) Upsert(p *Perk) error {
+	query := `INSERT INTO perks (name, description) VALUES ($1, $2) 
+    ON CONFLICT (name) DO UPDATE SET name = $1, description = $2`
+	_, err := pm.DB.Exec(query, p.Name, p.Description)
+	if err != nil {
+		return err
+	}
+	return nil
+}

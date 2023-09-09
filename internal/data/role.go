@@ -126,3 +126,20 @@ func (rm *RoleModel) GetPerks(RoleID int64) ([]*Perk, error) {
 	}
 	return perks, nil
 }
+
+func (rm *RoleModel) Upsert(r *Role) error {
+	query := `INSERT INTO roles (name, description, alignment)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (name) DO UPDATE
+    SET name = $1, description = $2, alignment = $3`
+	_, err := rm.DB.Exec(
+		query,
+		r.Name,
+		r.Description,
+		r.Alignment,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}

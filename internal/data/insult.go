@@ -15,10 +15,10 @@ type InsultModel struct {
 	DB *sqlx.DB
 }
 
-func (m *InsultModel) GetRandom() (*Insult, error) {
+func (im *InsultModel) GetRandom() (*Insult, error) {
 	var i Insult
 
-	err := m.DB.Get(
+	err := im.DB.Get(
 		&i,
 		"SELECT * FROM insults ORDER BY RANDOM() LIMIT 1",
 	)
@@ -29,10 +29,10 @@ func (m *InsultModel) GetRandom() (*Insult, error) {
 	return &i, nil
 }
 
-func (m *InsultModel) Insert(i *Insult) error {
+func (im *InsultModel) Insert(i *Insult) error {
 	query := `INSERT INTO insults (insult, author_id) VALUES (:insult, :author_id)`
 
-	_, err := m.DB.NamedExec(query, &i)
+	_, err := im.DB.NamedExec(query, &i)
 	if err != nil {
 		return err
 	}
@@ -40,10 +40,10 @@ func (m *InsultModel) Insert(i *Insult) error {
 	return nil
 }
 
-func (m *InsultModel) DeleteInsult(i *Insult) error {
+func (im *InsultModel) DeleteInsult(i *Insult) error {
 	var err error
 
-	_, err = m.DB.Exec(
+	_, err = im.DB.Exec(
 		"DELETE FROM insults WHERE insult = $1",
 		i.Insult,
 	)
@@ -53,3 +53,4 @@ func (m *InsultModel) DeleteInsult(i *Insult) error {
 
 	return nil
 }
+

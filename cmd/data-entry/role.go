@@ -28,7 +28,6 @@ func (app *application) ParseRoleCsv(filepath string) error {
 	return nil
 }
 
-
 type csvRole struct {
 	Name             string
 	Description      string
@@ -47,7 +46,7 @@ func (c *csvRole) GetAbilities() ([]data.Ability, error) {
 
 	abilities := []data.Ability{}
 	for i, currAbilityString := range c.AbilitiesStrings {
-        // fmt.Println(currAbilityString)
+		// fmt.Println(currAbilityString)
 
 		name := ""
 		currAbility := data.Ability{}
@@ -140,7 +139,6 @@ func (c *csvRole) GetAbilities() ([]data.Ability, error) {
 	return abilities, nil
 }
 
-// Convert Perk string chunks to Perk struct
 func (c *csvRole) GetPerks() ([]data.Perk, error) {
 	splitPerks := []data.Perk{}
 	for _, perkString := range c.PerksStrings {
@@ -157,7 +155,7 @@ func (c *csvRole) GetPerks() ([]data.Perk, error) {
 
 		splitPerks = append(splitPerks, data.Perk{
 
-			Name:   split[0],
+			Name:        split[0],
 			Description: split[1],
 		})
 	}
@@ -223,11 +221,4 @@ func (a *application) SplitRoles(roleType string) ([]csvRole, error) {
 		}
 	}
 	return roleList, nil
-}
-
-func (a *application) InsertAbility(ability data.Ability) {
-
-}
-
-func (a *application) InsertPerk(perk data.Perk) {
 }
