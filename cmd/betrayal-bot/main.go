@@ -113,6 +113,7 @@ func main() {
 	if err != nil {
 		app.logger.Fatal("error opening connection,", err)
 	}
+	defer bot.Close()
 
 	app.logger.Printf(
 		"%s is now running with %d commands. Press CTRL-C to exit.\n",
