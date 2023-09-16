@@ -104,6 +104,8 @@ func main() {
 		new(commands.InsultAdd),
 		new(commands.InsultGet),
 		new(commands.RoleGet),
+		new(commands.SubsCommand),
+		new(commands.View),
 	)
 	defer app.betrayalManager.Unregister()
 

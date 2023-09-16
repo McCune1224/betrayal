@@ -47,7 +47,7 @@ func (im *ItemModel) Get(id int64) (*Item, error) {
 func (im *ItemModel) GetByName(name string) (*Item, error) {
 	var item Item
 
-	err := im.DB.Get(&item, "SELECT * FROM items")
+	err := im.DB.Get(&item, "SELECT * FROM items WHERE name ILIKE $1", name)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (im *ItemModel) GetByName(name string) (*Item, error) {
 func (im *ItemModel) GetByRarity(rarity string) ([]Item, error) {
 	var items []Item
 
-	err := im.DB.Select(&items, "SELECT * FROM items")
+	err := im.DB.Select(&items, "SELECT * FROM items WHERE rarity ILIKE $1", rarity)
 	if err != nil {
 		return nil, err
 	}

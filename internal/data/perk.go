@@ -45,6 +45,15 @@ func (pm *PerkModel) GetByName(name string) (*Perk, error) {
 	return &p, nil
 }
 
+func (pm *PerkModel) GetAll() ([]Perk, error) {
+	var perks []Perk
+	err := pm.DB.Select(&perks, "SELECT * FROM perks")
+	if err != nil {
+		return nil, err
+	}
+	return perks, nil
+}
+
 func (pm *PerkModel) Update(p *Perk) error {
 	query := `UPDATE perks SET name = $1, description = $2 WHERE id = $3`
 	_, err := pm.DB.Exec(query, p.Name, p.Description, p.ID)

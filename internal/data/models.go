@@ -16,6 +16,7 @@ type Models struct {
 	Roles     RoleModel
 	Insults   InsultModel
 	Abilities AbilityModel
+	Perks     PerkModel
 	Statuses  StatusModel
 	Items     ItemModel
 }
@@ -27,6 +28,7 @@ func NewModels(db *sqlx.DB) Models {
 		Roles:     RoleModel{DB: db},
 		Insults:   InsultModel{DB: db},
 		Abilities: AbilityModel{DB: db},
+		Perks:     PerkModel{DB: db},
 		Statuses:  StatusModel{DB: db},
 		Items:     ItemModel{DB: db},
 	}

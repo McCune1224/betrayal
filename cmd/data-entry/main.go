@@ -35,9 +35,9 @@ type application struct {
 func main() {
 
 	flag.Parse()
-	if *file == "" {
-		log.Fatal("file is required")
-	}
+	// if *file == "" {
+	// 	log.Fatal("file is required")
+	// }
 
 	var cfg config
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
@@ -60,12 +60,7 @@ func main() {
 
 	app.models = data.NewModels(db)
 
-	err = app.ParseAnyAbilityCsv(*file)
-	if err != nil {
-		app.logger.Fatal(err)
-	}
-
-	app.InsertAnyAbilities()
+	app.UpdatePerks()
 }
 
 func (a *application) InsertStatuses(db *sqlx.DB) {
@@ -178,11 +173,62 @@ func (app *application) InsertItems() {
 	}
 }
 
-func (app *application) InsertAnyAbilities() {
-	// abilityEntry := app.models.Abilities
-	parsedAnyAbilities, err := GetAnyAbilities(app.csv)
+func (app *application) UpdateAbilities() {
+	abilityEntry := app.models.Abilities
+
+	abilities, err := abilityEntry.GetAll()
 	if err != nil {
 		app.logger.Fatal(err)
 	}
-	fmt.Println(len(parsedAnyAbilities))
+	for i := range abilities {
+		ability := &abilities[i]
+		fmt.Println(ability.Name)
+		//Abilities have a whitespace at the end of their name, so we need to trim it
+		if ability.Name[len(ability.Name)-1] != ' ' {
+			continue
+		}
+		app.logger.Println(
+			fmt.Sprintf("WAS '%s'", ability.Name),
+		)
+		ability.Name = ability.Name[:len(ability.Name)-1]
+		app.logger.Println(
+			fmt.Sprintf("NOW '%s'", ability.Name))
+
+		err = abilityEntry.Update(ability)
+		if err != nil {
+			app.logger.Fatal(err)
+		}
+		fmt.Println()
+	}
+
+}
+
+func (app *application) UpdatePerks() {
+	perkEntry := app.models.Perks
+
+	perks, err := perkEntry.GetAll()
+	if err != nil {
+		app.logger.Fatal(err)
+	}
+	for i := range perks {
+		perk := &perks[i]
+		fmt.Println(perk.Name)
+		//Abilities have a whitespace at the end of their name, so we need to trim it
+		if perk.Name[len(perk.Name)-1] != ' ' {
+			continue
+		}
+		app.logger.Println(
+			fmt.Sprintf("WAS '%s'", perk.Name),
+		)
+		perk.Name = perk.Name[:len(perk.Name)-1]
+		app.logger.Println(
+			fmt.Sprintf("NOW '%s'", perk.Name))
+
+		err = perkEntry.Update(perk)
+		if err != nil {
+			app.logger.Fatal(err)
+		}
+		fmt.Println()
+	}
+
 }

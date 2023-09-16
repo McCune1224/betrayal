@@ -1,7 +1,5 @@
 package main
 
-// Alex-action-funnel (TODO: make this reassignable/modular)
-const funnelChannelID = "1144040897617612920"
 
 //
 // func (a *app) FunnelCommand() SlashCommand {

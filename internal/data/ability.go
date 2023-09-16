@@ -70,6 +70,15 @@ func (am *AbilityModel) GetByName(name string) (*Ability, error) {
 	return &a, nil
 }
 
+func (am *AbilityModel) GetAll() ([]Ability, error) {
+	var abilities []Ability
+	err := am.DB.Select(&abilities, "SELECT * FROM Abilities")
+	if err != nil {
+		return nil, err
+	}
+	return abilities, nil
+}
+
 func (am *AbilityModel) GetByCategory(category string) ([]Ability, error) {
 	var abilities []Ability
 	err := am.DB.Select(&abilities, "SELECT * FROM Abilities WHERE categories ILIKE $1", category)
