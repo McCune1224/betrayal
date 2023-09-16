@@ -7,9 +7,9 @@ import (
 	"os"
 
 	"github.com/jmoiron/sqlx"
+	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
 	"github.com/mccune1224/betrayal/internal/data"
-	"github.com/spf13/viper"
 )
 
 // Flags for CLI app
@@ -47,9 +47,7 @@ func main() {
 		logger: logger,
 	}
 
-	viper.SetConfigFile(".env")
-	viper.ReadInConfig()
-	cfg.database.dsn = viper.GetString("DATABASE_URL")
+	cfg.database.dsn = os.Getenv("DATABASE_URL")
 	if cfg.database.dsn == "" {
 		app.logger.Fatal("DATABASE_URL is required")
 	}
