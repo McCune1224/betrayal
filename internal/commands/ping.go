@@ -10,11 +10,11 @@ import (
 )
 
 type Ping struct {
-	Db data.Models
+	models data.Models
 }
 
 func (p *Ping) SetModels(models data.Models) {
-	p.Db = models
+	p.models = models
 }
 
 var _ ken.SlashCommand = (*Ping)(nil)

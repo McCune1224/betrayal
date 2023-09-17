@@ -46,20 +46,47 @@ CREATE TABLE IF NOT EXISTS items (
 );
 
 
+CREATE TABLE IF NOT EXISTS players (
+    id SERIAL PRIMARY KEY,
+    discord_id varchar NOT NULL UNIQUE,
+
+    created_at timestamp(0) with time zone NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS players (
+    id SERIAL PRIMARY KEY,
+    discord_id varchar NOT NULL UNIQUE,
+    role_id integer NOT NULL REFERENCES roles(id),
+    coins integer NOT NULL default 0,
+
+    created_at timestamp(0) with time zone NOT NULL DEFAULT NOW()
+);
+
+
+CREATE TABLE IF NOT EXISTS inventories (
+    id SERIAL PRIMARY KEY,
+    player_id integer NOT NULL REFERENCES players(id),
+    base_abilities integer[] NOT NULL,
+    base_perks integer[] NOT NULL,
+    any_abilities integer[] NOT NULL,
+    author_notes TEXT[],
+    created_at timestamp(0) with time zone NOT NULL DEFAULT NOW()
+);
+
 -- AHOY MATEY YE BE ENTERING THE DANGER ZONE, YE BE WARNED OF THE DANGER AHEAD OF MANY JOINTABLES AND FOREIGN KEYS
 
 CREATE TABLE IF NOT EXISTS roles_abilities (
     id SERIAL PRIMARY KEY,
-    role_id integer NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    ability_id integer NOT NULL REFERENCES abilities(id) ON DELETE CASCADE,
+    role_id integer NOT NULL REFERENCES roles(id),
+    ability_id integer NOT NULL REFERENCES abilities(id),
     created_at timestamp(0) with time zone NOT NULL DEFAULT NOW()
 );
 
 
 CREATE TABLE IF NOT EXISTS roles_perks (
     id SERIAL PRIMARY KEY,
-    role_id integer NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    perk_id integer NOT NULL REFERENCES perks(id) ON DELETE CASCADE,
+    role_id integer NOT NULL REFERENCES roles(id),
+    perk_id integer NOT NULL REFERENCES perks(id),
     created_at timestamp(0) with time zone NOT NULL DEFAULT NOW()
 );
 

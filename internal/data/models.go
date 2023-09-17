@@ -19,6 +19,7 @@ type Models struct {
 	Perks     PerkModel
 	Statuses  StatusModel
 	Items     ItemModel
+	Players   PlayerModel
 }
 
 // NewModels creates a new instance of the Models struct and attaches the database connection to it.
@@ -31,6 +32,7 @@ func NewModels(db *sqlx.DB) Models {
 		Perks:     PerkModel{DB: db},
 		Statuses:  StatusModel{DB: db},
 		Items:     ItemModel{DB: db},
+		Players:   PlayerModel{DB: db},
 	}
 	return ModelHandlers
 }

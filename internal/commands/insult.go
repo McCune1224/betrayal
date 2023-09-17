@@ -8,130 +8,86 @@ import (
 	"github.com/zekrotja/ken"
 )
 
-type InsultAdd struct {
+type Insult struct {
 	models data.Models
 }
 
-type InsultGet struct {
-	models data.Models
+func (i *Insult) SetModels(models data.Models) {
+	i.models = models
 }
 
-func (igm *InsultGet) SetModels(models data.Models) {
-	igm.models = models
-}
-
-func (iac *InsultAdd) SetModels(models data.Models) {
-	iac.models = models
-}
-
-var _ ken.SlashCommand = (*InsultAdd)(nil)
-var _ ken.SlashCommand = (*InsultGet)(nil)
+var _ ken.SlashCommand = (*Insult)(nil)
 
 // Description implements ken.SlashCommand.
-func (*InsultAdd) Description() string {
-	return "Insult to provide to Alex"
+func (*Insult) Description() string {
+	return "Get and add insults for Alex to read"
 }
 
 // Name implements ken.SlashCommand.
-func (*InsultAdd) Name() string {
-	return "insult_add"
+func (*Insult) Name() string {
+	return "insult"
 }
 
 // Options implements ken.SlashCommand.
-func (*InsultAdd) Options() []*discordgo.ApplicationCommandOption {
+func (*Insult) Options() []*discordgo.ApplicationCommandOption {
 	return []*discordgo.ApplicationCommandOption{
 		{
-			Type:        discordgo.ApplicationCommandOptionString,
-			Name:        "insult",
-			Description: "Insult to provide to Alex",
-			Required:    true,
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "add",
+			Description: "Add an insult",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "insult",
+					Description: "The insult to add",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "get",
+			Description: "Get an insult",
 		},
 	}
 }
 
 // Run implements ken.SlashCommand.
-func (iac *InsultAdd) Run(ctx ken.Context) (err error) {
+func (i *Insult) Run(ctx ken.Context) (err error) {
+	err = ctx.HandleSubCommands(
+		ken.SubCommandHandler{Name: "add", Run: i.add},
+		ken.SubCommandHandler{Name: "get", Run: i.get},
+	)
+	return err
+}
 
+func (i *Insult) add(ctx ken.SubCommandContext) (err error) {
+	args := ctx.Options()
+	insultArg := args.GetByName("insult")
 	var insult data.Insult
-	data := ctx.Options().GetByName("insult").StringValue()
-
-	insult.Insult = data
-	insult.AuthorID = ctx.User().ID
-
-	err = iac.models.Insults.Insert(&insult)
+	insult.Insult = insultArg.StringValue()
+	insult.AuthorID = ctx.GetEvent().User.ID
+	err = i.models.Insults.Insert(&insult)
 	if err != nil {
-		ctx.RespondError("Failed to add insult", err.Error())
+		ctx.RespondError(err.Error(), "Error adding insult")
 		return err
 	}
+	return err
+}
 
+func (i *Insult) get(ctx ken.SubCommandContext) (err error) {
+	insult, err := i.models.Insults.GetRandom()
+	if err != nil {
+		ctx.SetEphemeral(true)
+		return err
+	}
 	err = ctx.RespondMessage(
-		fmt.Sprintf(
-			"Hey %s, %s",
-			Mention(mckusaID),
-			insult.Insult,
-		),
+		fmt.Sprintf("Hey %s, %s", Mention(mckusaID), insult.Insult),
 	)
-
 	return err
 }
 
 // Version implements ken.SlashCommand.
-func (*InsultAdd) Version() string {
-	return "1.0.0"
-}
-
-// Description implements ken.SlashCommand.
-func (*InsultGet) Description() string {
-	return "Get a random insult to throw at Alex"
-}
-
-// Name implements ken.SlashCommand.
-func (*InsultGet) Name() string {
-	return "insult_get"
-}
-
-// Options implements ken.SlashCommand.
-func (*InsultGet) Options() []*discordgo.ApplicationCommandOption {
-	return nil
-}
-
-// Run implements ken.SlashCommand.
-func (igc *InsultGet) Run(ctx ken.Context) (err error) {
-	if err = ctx.Defer(); err != nil {
-		return
-	}
-
-	b := ctx.FollowUpEmbed(&discordgo.MessageEmbed{
-		Description: "Press the button below to get a random insult for Alex to read",
-	})
-
-	b.AddComponents(func(cb *ken.ComponentBuilder) {
-		cb.AddActionsRow(func(b ken.ComponentAssembler) {
-			b.Add(discordgo.Button{
-				CustomID: "b_insult_get",
-				Label:    "Get Insult",
-			}, func(ctx ken.ComponentContext) bool {
-				insult, err := igc.models.Insults.GetRandom()
-				if err != nil {
-					ctx.RespondError("Failed to get insult", err.Error())
-					return false
-				}
-				ctx.RespondMessage(
-					fmt.Sprintf(
-						"Hey %s, %s",
-						Mention(mckusaID),
-						insult.Insult,
-					),
-				)
-				return true
-			})
-		})
-	})
-	fum := b.Send()
-	return fum.Error
-}
-
-// Version implements ken.SlashCommand.
-func (*InsultGet) Version() string {
+func (*Insult) Version() string {
 	return "1.0.0"
 }

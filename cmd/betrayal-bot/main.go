@@ -99,13 +99,16 @@ func main() {
 		app.logger.Fatal(err)
 	}
 
+	// Call unregister twice to remove any lingering commands from previous runs
+	app.betrayalManager.Unregister()
+
 	tally := app.RegisterBetrayalCommands(
-		new(commands.Ping),
-		new(commands.InsultAdd),
-		new(commands.InsultGet),
-		new(commands.RoleGet),
-		new(commands.SubsCommand),
-		new(commands.View),
+		// new(commands.Ping),
+		new(commands.Insult),
+		// new(commands.RoleGet),
+		// new(commands.SubsCommand),
+		// new(commands.View),
+		new(commands.Player),
 	)
 	defer app.betrayalManager.Unregister()
 
