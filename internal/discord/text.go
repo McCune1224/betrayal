@@ -1,6 +1,7 @@
-package commands
+package discord
 
-const mckusaID = "206268866714796032"
+// ID of bot owner (me)
+const McKusaID = "206268866714796032"
 
 func Mention(userID string) string {
 	return "<@" + userID + ">"

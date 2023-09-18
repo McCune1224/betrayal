@@ -5,6 +5,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
 )
 
@@ -82,7 +83,7 @@ func (i *Insult) get(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	err = ctx.RespondMessage(
-		fmt.Sprintf("Hey %s, %s", Mention(mckusaID), insult.Insult),
+		fmt.Sprintf("Hey %s, %s", discord.Mention(discord.McKusaID), insult.Insult),
 	)
 	return err
 }

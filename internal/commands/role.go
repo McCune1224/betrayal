@@ -3,6 +3,7 @@ package commands
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
 )
 
@@ -70,7 +71,7 @@ func (rg *RoleGet) Run(ctx ken.Context) (err error) {
 
 	var embededAbilitiesFields []*discordgo.MessageEmbedField
 	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
-		Name:   "\n\n" + Underline("Abilities") + "\n",
+		Name:   "\n\n" + discord.Underline("Abilities") + "\n",
 		Value:  "",
 		Inline: false,
 	})
@@ -91,7 +92,7 @@ func (rg *RoleGet) Run(ctx ken.Context) (err error) {
 
 	var embededPerksFields []*discordgo.MessageEmbedField
 	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
-		Name:   Underline("Perks"),
+		Name:   discord.Underline("Perks"),
 		Value:  "",
 		Inline: false,
 	})

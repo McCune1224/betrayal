@@ -5,6 +5,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
 )
 
@@ -150,7 +151,7 @@ func (v *View) ViewRole(ctx ken.SubCommandContext) (err error) {
 
 	var embededAbilitiesFields []*discordgo.MessageEmbedField
 	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
-		Name:   "\n\n" + Underline("Abilities") + "\n",
+		Name:   "\n\n" + discord.Underline("Abilities") + "\n",
 		Value:  "",
 		Inline: false,
 	})
@@ -179,7 +180,7 @@ func (v *View) ViewRole(ctx ken.SubCommandContext) (err error) {
 
 	var embededPerksFields []*discordgo.MessageEmbedField
 	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
-		Name:   Underline("Perks"),
+		Name:   discord.Underline("Perks"),
 		Value:  "",
 		Inline: false,
 	})
