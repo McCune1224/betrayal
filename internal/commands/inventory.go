@@ -21,7 +21,7 @@ func (*Inventory) Description() string {
 
 // Name implements ken.SlashCommand.
 func (*Inventory) Name() string {
-	return "inventory"
+	return debugCMD + "inventory"
 }
 
 // Options implements ken.SlashCommand.

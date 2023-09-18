@@ -9,6 +9,9 @@ import (
 	"github.com/zekrotja/ken"
 )
 
+// Temporary prefix for debugging commands.
+const debugCMD = "z_"
+
 type Ping struct {
 	models data.Models
 }
@@ -26,7 +29,7 @@ func (*Ping) Description() string {
 
 // Name implements ken.SlashCommand.
 func (*Ping) Name() string {
-	return "ping"
+	return debugCMD + "ping"
 }
 
 // Options implements ken.SlashCommand.

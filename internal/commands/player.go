@@ -25,7 +25,7 @@ func (*Player) Description() string {
 
 // Name implements ken.SlashCommand.
 func (*Player) Name() string {
-	return "player"
+	return debugCMD + "player"
 }
 
 // Options implements ken.SlashCommand.

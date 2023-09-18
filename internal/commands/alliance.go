@@ -22,7 +22,7 @@ var (
 )
 
 func (c *SubsCommand) Name() string {
-	return "subsgroups"
+	return debugCMD + "subsgroups"
 }
 
 func (c *SubsCommand) Description() string {

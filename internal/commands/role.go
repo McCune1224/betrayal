@@ -24,7 +24,7 @@ func (*RoleGet) Description() string {
 
 // Name implements ken.SlashCommand.
 func (*RoleGet) Name() string {
-	return "role_get"
+	return debugCMD + "role_get"
 }
 
 // Options implements ken.SlashCommand.
