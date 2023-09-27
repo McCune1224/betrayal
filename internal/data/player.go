@@ -6,7 +6,7 @@ type Player struct {
 	ID        int64  `db:"id"`
 	DiscordID string `db:"discord_id"`
 	RoleID    int64  `db:"role_id"`
-	Coins     int  `db:"coins"`
+	Coins     int    `db:"coins"`
 	CreatedAt string `db:"created_at"`
 }
 

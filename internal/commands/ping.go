@@ -6,11 +6,9 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
 )
-
-// Temporary prefix for debugging commands.
-const debugCMD = "z_"
 
 type Ping struct {
 	models data.Models
@@ -29,7 +27,7 @@ func (*Ping) Description() string {
 
 // Name implements ken.SlashCommand.
 func (*Ping) Name() string {
-	return debugCMD + "ping"
+	return discord.DebugCmd + "ping"
 }
 
 // Options implements ken.SlashCommand.

@@ -13,26 +13,28 @@ var (
 
 // All interested models to be used in the application
 type Models struct {
-	Roles     RoleModel
-	Insults   InsultModel
-	Abilities AbilityModel
-	Perks     PerkModel
-	Statuses  StatusModel
-	Items     ItemModel
-	Players   PlayerModel
+	Roles       RoleModel
+	Insults     InsultModel
+	Abilities   AbilityModel
+	Perks       PerkModel
+	Statuses    StatusModel
+	Items       ItemModel
+	Players     PlayerModel
+	Inventories InventoryModel
 }
 
 // NewModels creates a new instance of the Models struct and attaches the database connection to it.
 func NewModels(db *sqlx.DB) Models {
 
 	ModelHandlers := Models{
-		Roles:     RoleModel{DB: db},
-		Insults:   InsultModel{DB: db},
-		Abilities: AbilityModel{DB: db},
-		Perks:     PerkModel{DB: db},
-		Statuses:  StatusModel{DB: db},
-		Items:     ItemModel{DB: db},
-		Players:   PlayerModel{DB: db},
+		Roles:       RoleModel{DB: db},
+		Insults:     InsultModel{DB: db},
+		Abilities:   AbilityModel{DB: db},
+		Perks:       PerkModel{DB: db},
+		Statuses:    StatusModel{DB: db},
+		Items:       ItemModel{DB: db},
+		Players:     PlayerModel{DB: db},
+		Inventories: InventoryModel{DB: db},
 	}
 	return ModelHandlers
 }

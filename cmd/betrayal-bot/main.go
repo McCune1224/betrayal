@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -13,7 +12,9 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
 	"github.com/mccune1224/betrayal/internal/commands"
+	"github.com/mccune1224/betrayal/internal/commands/inventory"
 	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/internal/middlewares"
 	"github.com/zekrotja/ken"
 )
 
@@ -48,13 +49,11 @@ type BetrayalCommand interface {
 func (a *app) RegisterBetrayalCommands(commands ...BetrayalCommand) int {
 	tally := 0
 	for _, command := range commands {
-		start := time.Now()
 		command.SetModels(a.models)
 		err := a.betrayalManager.RegisterCommands(command)
 		if err != nil {
 			a.logger.Fatal(err)
 		}
-		a.logger.Printf("Registered command %s in %s", command.Name(), time.Since(start))
 		tally += 1
 
 	}
@@ -103,13 +102,20 @@ func main() {
 	app.betrayalManager.Unregister()
 
 	tally := app.RegisterBetrayalCommands(
-		new(commands.Ping),
-		new(commands.Insult),
-		new(commands.RoleGet),
-		new(commands.SubsCommand),
-		new(commands.View),
-		new(commands.Player),
+		// new(commands.Ping),
+		// new(commands.Insult),
+		// new(commands.RoleGet),
+		// new(commands.SubsCommand),
+		// new(commands.View),
+		// new(commands.Player),
+		new(commands.List),
+		new(inventory.Inventory),
 	)
+	err = app.betrayalManager.RegisterMiddlewares(new(middlewares.PermissionsMiddleware))
+	if err != nil {
+		app.logger.Fatal(err)
+	}
+
 	defer app.betrayalManager.Unregister()
 
 	err = bot.Open()

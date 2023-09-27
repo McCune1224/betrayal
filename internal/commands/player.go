@@ -5,6 +5,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
 )
 
@@ -25,7 +26,7 @@ func (*Player) Description() string {
 
 // Name implements ken.SlashCommand.
 func (*Player) Name() string {
-	return debugCMD + "player"
+	return discord.DebugCmd + "player"
 }
 
 // Options implements ken.SlashCommand.

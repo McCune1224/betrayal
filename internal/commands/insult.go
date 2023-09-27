@@ -26,7 +26,7 @@ func (*Insult) Description() string {
 
 // Name implements ken.SlashCommand.
 func (*Insult) Name() string {
-	return debugCMD + "insult"
+	return discord.DebugCmd + "insult"
 }
 
 // Options implements ken.SlashCommand.

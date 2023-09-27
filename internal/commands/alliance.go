@@ -5,6 +5,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
 )
 
@@ -22,7 +23,7 @@ var (
 )
 
 func (c *SubsCommand) Name() string {
-	return debugCMD + "subsgroups"
+	return discord.DebugCmd + "subsgroups"
 }
 
 func (c *SubsCommand) Description() string {

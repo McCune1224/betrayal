@@ -31,7 +31,7 @@ func (*View) Description() string {
 
 // Name implements ken.SlashCommand.
 func (*View) Name() string {
-	return debugCMD + "view"
+	return discord.DebugCmd + "view"
 }
 
 // Options implements ken.SlashCommand.
