@@ -37,18 +37,8 @@ func (*Player) Options() []*discordgo.ApplicationCommandOption {
 			Name:        "add",
 			Description: "Add a player with a role",
 			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionUser,
-					Name:        "name",
-					Description: "Name of the player",
-					Required:    true,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "role",
-					Description: "Name of the role",
-					Required:    true,
-				},
+				discord.UserCommandArg(true),
+				discord.StringCommandArg("role", "Role to assign to the player", true),
 			},
 		},
 		{
@@ -77,14 +67,14 @@ func (p *Player) Run(ctx ken.Context) (err error) {
 }
 
 func (p *Player) add(ctx ken.SubCommandContext) (err error) {
+	ctx.SetEphemeral(true)
 	args := ctx.Options()
-	name := args.Get(0).UserValue(ctx)
-	roleArg := args.Get(1).StringValue()
+	name := args.GetByName("name").UserValue(ctx)
+	roleArg := args.GetByName("role").StringValue()
 
 	role, err := p.models.Roles.GetByName(roleArg)
 	if err != nil {
-		ctx.SetEphemeral(true)
-		ctx.RespondError(err.Error(), "Role not found")
+		discord.SendSilentError(ctx, "Unable to find Role", "No known role of name "+roleArg)
 		return err
 	}
 
@@ -96,8 +86,7 @@ func (p *Player) add(ctx ken.SubCommandContext) (err error) {
 
 	playerID, err := p.models.Players.Insert(&player)
 	if err != nil {
-		ctx.SetEphemeral(true)
-		ctx.RespondError(err.Error(), "Error adding player")
+		discord.SendSilentError(ctx, "Unable to add Player", "Unable to add Player "+name.Username)
 		return err
 	}
 
@@ -112,20 +101,23 @@ func (p *Player) add(ctx ken.SubCommandContext) (err error) {
 }
 
 func (p *Player) get(ctx ken.SubCommandContext) (err error) {
+	ctx.SetEphemeral(true)
 	args := ctx.Options()
 	name := args.Get(0).UserValue(ctx)
 
 	player, err := p.models.Players.GetByDiscordID(name.ID)
 	if err != nil {
-		ctx.SetEphemeral(true)
-		ctx.RespondError(err.Error(), "Player not found")
+		discord.SendSilentError(
+			ctx,
+			"Unable to find Player",
+			"No known player of name "+name.Username,
+		)
 		return err
 	}
 
 	role, err := p.models.Roles.Get(player.RoleID)
 	if err != nil {
-		ctx.SetEphemeral(true)
-		ctx.RespondError(err.Error(), "Player not found")
+		discord.SendSilentError(ctx, "Unable to find Role", "No known role of name "+name.Username)
 		return err
 	}
 

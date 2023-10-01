@@ -10,6 +10,7 @@ import (
 // Now this is peak cybersec.
 type RequiresRoleCommand interface {
 	RequiresRole() string
+    
 }
 
 type PermissionsMiddleware struct {

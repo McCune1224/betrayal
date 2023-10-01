@@ -27,10 +27,21 @@ func Italic(s string) string {
 // Temporary prefix for debugging commands.
 const DebugCmd = "z_"
 
-func SendSilentError(ctx ken.Context, title string, message string) error {
-	ctx.SetEphemeral(true)
-	err := ctx.RespondError(message, title)
-	ctx.SetEphemeral(false)
+func SendSilentError(ctx ken.Context, title string, message string) (err error) {
+	resp := &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: discordgo.MessageFlagsEphemeral,
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Title:       title,
+					Description: message,
+					Color:       0xff0000,
+				},
+			},
+		},
+	}
+	err = ctx.Respond(resp)
 	return err
 }
 

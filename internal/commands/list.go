@@ -63,11 +63,9 @@ func (*List) Options() []*discordgo.ApplicationCommandOption {
 // Run implements ken.SlashCommand.
 func (*List) Run(ctx ken.Context) (err error) {
 	options := ctx.Options()
-
 	return ctx.RespondMessage(
 		fmt.Sprintf("Got options %s", options.Get(0).StringValue()),
 	)
-
 }
 
 // Version implements ken.SlashCommand.

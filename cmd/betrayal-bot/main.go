@@ -102,7 +102,7 @@ func main() {
 	app.betrayalManager.Unregister()
 
 	tally := app.RegisterBetrayalCommands(
-		// new(commands.Ping),
+		new(commands.Ping),
 		// new(commands.Insult),
 		// new(commands.RoleGet),
 		// new(commands.SubsCommand),
