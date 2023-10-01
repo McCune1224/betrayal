@@ -38,3 +38,6 @@ fat-dumpy/
 *.csv
 *.xls
 *.json
+
+# Production
+build/
