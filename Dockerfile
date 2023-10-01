@@ -35,11 +35,11 @@ FROM alpine:latest AS prod
 WORKDIR /build
 
 # Create directory for our React application to live.
-RUN mkdir -p /www/build
+RUN mkdir -p /www/dist
 
 # Copy our executable and our built React application.
 COPY --from=backend-builder /backendcompile/webapp .
-COPY --from=frontend-builder /frontendcompile/build /www/build
+COPY --from=frontend-builder /frontendcompile/dist /www/dist
 
 # Declare entrypoints and activation commands.
 EXPOSE 8080
