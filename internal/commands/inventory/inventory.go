@@ -662,6 +662,7 @@ func (i *Inventory) imLazyMiddleware(ctx ken.SubCommandContext) (inv *data.Inven
 	return inv, nil
 }
 
+// Helper to handle getting the pinned message for inventory and updating it
 func (i *Inventory) updateInventoryMessage(
 	ctx ken.SubCommandContext,
 	inventory *data.Inventory,
