@@ -37,7 +37,6 @@ fat-dumpy/
 # Data entry stuff
 *.csv
 *.xls
-*.json
 
 # Production
 build/
