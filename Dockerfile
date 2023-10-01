@@ -39,7 +39,7 @@ RUN mkdir -p /www/build
 
 # Copy our executable and our built React application.
 COPY --from=backend-builder /backendcompile/webapp .
-COPY --from=frontend-builder /frontendcompile/build ./www/build
+COPY --from=frontend-builder /frontendcompile/build /www/build
 
 # Declare entrypoints and activation commands.
 EXPOSE 8080
