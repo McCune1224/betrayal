@@ -21,7 +21,7 @@ type Inventory struct {
 	ItemsLimit     int64          `db:"item_limit"`
 	Perks          pq.StringArray `db:"perks"`
 	Coins          int64          `db:"coins"`
-	Coin_Bonus     int64          `db:"coin_bonus"`
+	CoinBonus      float32        `db:"coin_bonus"`
 	Notes          pq.StringArray `db:"notes"`
 	CreatedAt      string         `db:"created_at"`
 }
@@ -79,6 +79,61 @@ func (m *InventoryModel) UpdateProperty(
 ) error {
 	query := `UPDATE inventories SET ` + property + `=$1 WHERE discord_id=$2`
 	_, err := m.DB.Exec(query, value, inventory.DiscordID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Overwrites the entire abilities column with the new abilities
+func (m *InventoryModel) UpdateAnyAbilities(inventory *Inventory) error {
+	query := `UPDATE inventories SET any_abilities=$1 WHERE discord_id=$2`
+	_, err := m.DB.Exec(query, inventory.AnyAbilities, inventory.DiscordID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *InventoryModel) UpdatePerks(inventory *Inventory) error {
+	query := `UPDATE inventories SET perks=$1 WHERE discord_id=$2`
+	_, err := m.DB.Exec(query, inventory.Perks, inventory.DiscordID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *InventoryModel) UpdateItems(inventory *Inventory) error {
+	query := `UPDATE inventories SET items=$1 WHERE discord_id=$2`
+	_, err := m.DB.Exec(query, inventory.Items, inventory.DiscordID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *InventoryModel) UpdateStatuses(inventory *Inventory) error {
+	query := `UPDATE inventories SET statuses=$1 WHERE discord_id=$2`
+	_, err := m.DB.Exec(query, inventory.Statuses, inventory.DiscordID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *InventoryModel) UpdateImmunities(inventory *Inventory) error {
+	query := `UPDATE inventories SET immunities=$1 WHERE discord_id=$2`
+	_, err := m.DB.Exec(query, inventory.Immunities, inventory.DiscordID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *InventoryModel) UpdateEffects(inventory *Inventory) error {
+	query := `UPDATE inventories SET effects=$1 WHERE discord_id=$2`
+	_, err := m.DB.Exec(query, inventory.Effects, inventory.DiscordID)
 	if err != nil {
 		return err
 	}

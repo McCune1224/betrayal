@@ -39,7 +39,7 @@ func (sm *StatusModel) Get(id int64) (*Status, error) {
 func (sm *StatusModel) GetByName(name string) (*Status, error) {
 	var status Status
 
-	err := sm.DB.Get(&status, "SELECT * FROM statuses")
+	err := sm.DB.Get(&status, "SELECT * FROM statuses WHERE name ILIKE $1", name)
 	if err != nil {
 		return nil, err
 	}

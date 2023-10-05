@@ -47,7 +47,7 @@ func (*Inventory) Description() string {
 
 // Name implements ken.SlashCommand.
 func (*Inventory) Name() string {
-	return discord.DebugCmd + "inventory"
+	return discord.DebugCmd + "inv"
 }
 
 // Options implements ken.SlashCommand.
@@ -159,10 +159,29 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "effect",
+					Description: "add an effect",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("name", "Name of the effect", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "coins",
 					Description: "add coins",
 					Options: []*discordgo.ApplicationCommandOption{
 						discord.IntCommandArg("amount", "Amount of coins to add", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "bonus",
+					Description: "add coin bonus",
+					Options: []*discordgo.ApplicationCommandOption{
+						// Discord is fucking stupid and doesn't allow decimals
+						discord.StringCommandArg("amount", "Amount of coin bonus to add", true),
 						discord.UserCommandArg(false),
 					},
 				},
@@ -187,8 +206,8 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 					Name:        "ability",
 					Description: "remove an ability",
 					Options: []*discordgo.ApplicationCommandOption{
-						discord.UserCommandArg(true),
 						discord.StringCommandArg("name", "Name of the ability", true),
+						discord.UserCommandArg(false),
 					},
 				},
 				{
@@ -196,8 +215,8 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 					Name:        "perk",
 					Description: "remove a perk",
 					Options: []*discordgo.ApplicationCommandOption{
-						discord.UserCommandArg(true),
 						discord.StringCommandArg("name", "Name of the perk", true),
+						discord.UserCommandArg(false),
 					},
 				},
 				{
@@ -205,8 +224,8 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 					Name:        "item",
 					Description: "remove an item",
 					Options: []*discordgo.ApplicationCommandOption{
-						discord.UserCommandArg(true),
 						discord.StringCommandArg("name", "Name of the item", true),
+						discord.UserCommandArg(false),
 					},
 				},
 				{
@@ -214,8 +233,8 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 					Name:        "status",
 					Description: "remove a status",
 					Options: []*discordgo.ApplicationCommandOption{
-						discord.UserCommandArg(true),
 						discord.StringCommandArg("name", "Name of the status", true),
+						discord.UserCommandArg(false),
 					},
 				},
 				{
@@ -223,8 +242,72 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 					Name:        "immunity",
 					Description: "remove an immunity",
 					Options: []*discordgo.ApplicationCommandOption{
-						discord.UserCommandArg(true),
 						discord.StringCommandArg("name", "Name of the immunity", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "effect",
+					Description: "remove an effect",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("name", "Name of the effect", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "coins",
+					Description: "remove coins",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.IntCommandArg("amount", "Amount of coins to remove", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "bonus",
+					Description: "remove coin bonus",
+					Options: []*discordgo.ApplicationCommandOption{
+						// Discord is fucking stupid and doesn't take decimals...need to use string arg
+						discord.StringCommandArg("amount", "Amount of coin bonus to remove", true),
+						discord.UserCommandArg(false),
+					},
+				},
+			},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+			Name:        "set",
+			Description: "set to player's inventory",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "ability",
+					Description: "set an ability",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("name", "Name of the ability", true),
+						discord.IntCommandArg("charges", "Number of charges", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "coins",
+					Description: "set coins",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.IntCommandArg("amount", "Amount of coins to set", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "bonus",
+					Description: "set coin bonus",
+					Options: []*discordgo.ApplicationCommandOption{
+						// Discord is fucking stupid and doesn't take decimals...need to use string arg
+						discord.StringCommandArg("amount", "Amount of coin bonus to set", true),
+						discord.UserCommandArg(false),
 					},
 				},
 			},
@@ -249,17 +332,26 @@ func (i *Inventory) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "item", Run: i.addItem},
 			ken.SubCommandHandler{Name: "status", Run: i.addStatus},
 			ken.SubCommandHandler{Name: "immunity", Run: i.addImmunity},
+			ken.SubCommandHandler{Name: "effect", Run: i.addEffect},
 			ken.SubCommandHandler{Name: "coins", Run: i.addCoins},
-			ken.SubCommandHandler{Name: "note", Run: i.addNote},
+			ken.SubCommandHandler{Name: "bonus", Run: i.addCoinBonus},
+			// ken.SubCommandHandler{Name: "note", Run: i.addNote},
 		}},
 		ken.SubCommandGroup{Name: "remove", SubHandler: []ken.CommandHandler{
-			ken.SubCommandHandler{Name: "ability", Run: i.removeAbility},
+			ken.SubCommandHandler{Name: "ability", Run: i.removeAnyAbility},
 			ken.SubCommandHandler{Name: "perk", Run: i.removePerk},
 			ken.SubCommandHandler{Name: "item", Run: i.removeItem},
 			ken.SubCommandHandler{Name: "status", Run: i.removeStatus},
-			ken.SubCommandHandler{Name: "immunity", Run: i.addImmunity},
-			// ken.SubCommandHandler{Name: "coins", Run: i.removeCoins},
+			ken.SubCommandHandler{Name: "immunity", Run: i.removeImmunity},
+			ken.SubCommandHandler{Name: "effect", Run: i.removeEffect},
+			ken.SubCommandHandler{Name: "coins", Run: i.removeCoins},
+			ken.SubCommandHandler{Name: "bonus", Run: i.removeCoinBonus},
 			// ken.SubCommandHandler{Name: "note", Run: i.removeNote},
+		}},
+		ken.SubCommandGroup{Name: "set", SubHandler: []ken.CommandHandler{
+			ken.SubCommandHandler{Name: "ability", Run: i.setAnyAbility},
+			ken.SubCommandHandler{Name: "coins", Run: i.setCoins},
+			ken.SubCommandHandler{Name: "bonus", Run: i.setCoinBonus},
 		}},
 	)
 }
@@ -476,7 +568,7 @@ func InventoryEmbedMessage(
 		Inline: true,
 	}
 
-	coinStr := fmt.Sprintf("%d", inv.Coins) + " [" + fmt.Sprintf("%d", inv.Coin_Bonus) + "%]"
+	coinStr := fmt.Sprintf("%d", inv.Coins) + " [" + fmt.Sprintf("%.2f", inv.CoinBonus) + "%]"
 	coinField := &discordgo.MessageEmbedField{
 		Name:   "Coins 💰",
 		Value:  coinStr,
