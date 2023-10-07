@@ -11,8 +11,66 @@ import (
 	"github.com/zekrotja/ken"
 )
 
+func (i *Inventory) addAbility(ctx ken.SubCommandContext) (err error) {
+	inventory, err := i.imLazyMiddleware(ctx)
+	if err != nil {
+		return err
+	}
+	abilityNameArg := ctx.Options().GetByName("name").StringValue()
+	charges := int64(-42069)
+	chargesArg, ok := ctx.Options().GetByNameOptional("charges")
+	if ok {
+		charges = chargesArg.IntValue()
+	}
+	for _, ability := range inventory.Abilities {
+		abilityName := strings.Split(ability, " [")[0]
+		if abilityName == abilityNameArg {
+			return discord.SendSilentError(
+				ctx,
+				fmt.Sprintf("Ability %s already exists in inventory", abilityNameArg),
+				"Did you mean to update the ability?",
+			)
+		}
+	}
+
+	ability, err := i.models.Abilities.GetByName(abilityNameArg)
+	if err != nil {
+		return discord.SendSilentError(
+			ctx,
+			fmt.Sprint("Cannot find Ability: ", abilityNameArg),
+			"Verify if the ability exists.",
+		)
+	}
+	if ability.AnyAbility {
+		return ctx.RespondMessage("Ability is an Any Ability. Use /inv add aa")
+	}
+	if charges == -42069 {
+		charges = int64(ability.Charges)
+	}
+	abilityString := fmt.Sprintf("%s [%d]", ability.Name, charges)
+	inventory.Abilities = append(inventory.Abilities, abilityString)
+	err = i.models.Inventories.Update(inventory)
+	if err != nil {
+		log.Println(err)
+		return discord.SendSilentError(
+			ctx,
+			"Failed to add ability",
+			"Alex is a bad programmer, and this is his fault.",
+		)
+	}
+
+	err = i.updateInventoryMessage(ctx, inventory)
+	if err != nil {
+		return err
+	}
+
+	err = ctx.RespondMessage(
+		fmt.Sprintf("Base Ability %s added", abilityNameArg),
+	)
+	return err
+}
+
 func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
-	ctx.SetEphemeral(true)
 	inventory, err := i.imLazyMiddleware(ctx)
 	if err != nil {
 		return err
@@ -363,7 +421,6 @@ func (i *Inventory) addCoinBonus(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 
-	// 2.5 -> 0.025
 	inventory.CoinBonus += (float32(fCoinBonusArg) / 100)
 	err = i.models.Inventories.Update(inventory)
 	if err != nil {
@@ -385,6 +442,46 @@ func (i *Inventory) addCoinBonus(ctx ken.SubCommandContext) (err error) {
 			coinBonusArg,
 			inventory.CoinBonus-float32(fCoinBonusArg),
 			inventory.CoinBonus,
+		),
+	)
+	return err
+}
+
+func (i *Inventory) addNote(ctx ken.SubCommandContext) (err error) {
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		err = discord.SendSilentError(
+			ctx,
+			"Unauthorized",
+			"You are not authorized to use this command.",
+		)
+		return err
+	}
+
+	inventory, err := i.imLazyMiddleware(ctx)
+	if err != nil {
+		return err
+	}
+
+	noteArg := ctx.Options().GetByName("message").StringValue()
+	inventory.Notes = append(inventory.Notes, noteArg)
+	err = i.models.Inventories.Update(inventory)
+	if err != nil {
+		log.Println(err)
+		return discord.SendSilentError(
+			ctx,
+			"Failed to add note",
+			"Alex is a bad programmer, and this is his fault.",
+		)
+	}
+	err = i.updateInventoryMessage(ctx, inventory)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = ctx.RespondMessage(
+		fmt.Sprintf(
+			"Added note %s",
+			noteArg,
 		),
 	)
 	return err

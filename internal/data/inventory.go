@@ -18,7 +18,7 @@ type Inventory struct {
 	Immunities     pq.StringArray `db:"immunities"`
 	Effects        pq.StringArray `db:"effects"`
 	Items          pq.StringArray `db:"items"`
-	ItemsLimit     int64          `db:"item_limit"`
+	ItemLimit      int64          `db:"item_limit"`
 	Perks          pq.StringArray `db:"perks"`
 	Coins          int64          `db:"coins"`
 	CoinBonus      float32        `db:"coin_bonus"`
@@ -74,11 +74,20 @@ func (m *InventoryModel) Update(inventory *Inventory) error {
 
 func (m *InventoryModel) UpdateProperty(
 	inventory *Inventory,
-	property string,
+	columnName string,
 	value interface{},
 ) error {
-	query := `UPDATE inventories SET ` + property + `=$1 WHERE discord_id=$2`
+	query := `UPDATE inventories SET ` + columnName + `=$1 WHERE discord_id=$2`
 	_, err := m.DB.Exec(query, value, inventory.DiscordID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *InventoryModel) UpdateAbilities(inventory *Inventory) error {
+	query := `UPDATE inventories SET abilities=$1 WHERE discord_id=$2`
+	_, err := m.DB.Exec(query, inventory.Abilities, inventory.DiscordID)
 	if err != nil {
 		return err
 	}
@@ -140,6 +149,15 @@ func (m *InventoryModel) UpdateEffects(inventory *Inventory) error {
 	return nil
 }
 
+func (m *InventoryModel) UpdateNotes(inventory *Inventory) error {
+	query := `UPDATE inventories SET notes=$1 WHERE discord_id=$2`
+	_, err := m.DB.Exec(query, inventory.Notes, inventory.DiscordID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (m *InventoryModel) Delete(discordID string) error {
 	query := `DELETE FROM inventories WHERE discord_id=$1`
 	_, err := m.DB.Exec(query, discordID)
@@ -148,6 +166,15 @@ func (m *InventoryModel) Delete(discordID string) error {
 	}
 	return nil
 
+}
+
+func (m *InventoryModel) UpdateItemLimit(inventory *Inventory) error {
+	query := `UPDATE inventories SET item_limit=$1 WHERE discord_id=$2`
+	_, err := m.DB.Exec(query, inventory.ItemLimit, inventory.DiscordID)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (m *InventoryModel) AdminPinUpdate(inventory *Inventory) error {

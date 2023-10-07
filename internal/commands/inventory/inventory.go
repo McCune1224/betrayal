@@ -114,7 +114,17 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "ability",
-					Description: "add an ability",
+					Description: "add a base ability",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("name", "Name of the ability", true),
+						discord.IntCommandArg("charges", "Number of charges", false),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "aa",
+					Description: "add an any ability",
 					Options: []*discordgo.ApplicationCommandOption{
 						discord.StringCommandArg("name", "Name of the ability", true),
 						discord.IntCommandArg("charges", "Number of charges", false),
@@ -188,9 +198,9 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "note",
-					Description: "add note",
+					Description: "add a note",
 					Options: []*discordgo.ApplicationCommandOption{
-						discord.StringCommandArg("data", "Note to add", true),
+						discord.StringCommandArg("message", "Note to add", true),
 						discord.UserCommandArg(false),
 					},
 				},
@@ -204,7 +214,16 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "ability",
-					Description: "remove an ability",
+					Description: "remove a base ability",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("name", "Name of the ability", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "aa",
+					Description: "remove an any ability",
 					Options: []*discordgo.ApplicationCommandOption{
 						discord.StringCommandArg("name", "Name of the ability", true),
 						discord.UserCommandArg(false),
@@ -274,6 +293,15 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 						discord.UserCommandArg(false),
 					},
 				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "note",
+					Description: "remove a note by index number",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.IntCommandArg("index", "Index # to remove", true),
+						discord.UserCommandArg(false),
+					},
+				},
 			},
 		},
 		{
@@ -284,7 +312,17 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "ability",
-					Description: "set an ability",
+					Description: "set a base ability",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("name", "Name of the ability", true),
+						discord.IntCommandArg("charges", "Number of charges", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "aa",
+					Description: "set an any ability",
 					Options: []*discordgo.ApplicationCommandOption{
 						discord.StringCommandArg("name", "Name of the ability", true),
 						discord.IntCommandArg("charges", "Number of charges", true),
@@ -310,6 +348,15 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 						discord.UserCommandArg(false),
 					},
 				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "limit",
+					Description: "Set item limit",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.IntCommandArg("size", "New size to set", true),
+						discord.UserCommandArg(false),
+					},
+				},
 			},
 		},
 	}
@@ -327,7 +374,8 @@ func (i *Inventory) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "list", Run: i.listWhitelist},
 		}},
 		ken.SubCommandGroup{Name: "add", SubHandler: []ken.CommandHandler{
-			ken.SubCommandHandler{Name: "ability", Run: i.addAnyAbility},
+			ken.SubCommandHandler{Name: "ability", Run: i.addAbility},
+			ken.SubCommandHandler{Name: "aa", Run: i.addAnyAbility},
 			ken.SubCommandHandler{Name: "perk", Run: i.addPerk},
 			ken.SubCommandHandler{Name: "item", Run: i.addItem},
 			ken.SubCommandHandler{Name: "status", Run: i.addStatus},
@@ -335,10 +383,11 @@ func (i *Inventory) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "effect", Run: i.addEffect},
 			ken.SubCommandHandler{Name: "coins", Run: i.addCoins},
 			ken.SubCommandHandler{Name: "bonus", Run: i.addCoinBonus},
-			// ken.SubCommandHandler{Name: "note", Run: i.addNote},
+			ken.SubCommandHandler{Name: "note", Run: i.addNote},
 		}},
 		ken.SubCommandGroup{Name: "remove", SubHandler: []ken.CommandHandler{
-			ken.SubCommandHandler{Name: "ability", Run: i.removeAnyAbility},
+			ken.SubCommandHandler{Name: "ability", Run: i.removeAbility},
+			ken.SubCommandHandler{Name: "aa", Run: i.removeAnyAbility},
 			ken.SubCommandHandler{Name: "perk", Run: i.removePerk},
 			ken.SubCommandHandler{Name: "item", Run: i.removeItem},
 			ken.SubCommandHandler{Name: "status", Run: i.removeStatus},
@@ -346,12 +395,14 @@ func (i *Inventory) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "effect", Run: i.removeEffect},
 			ken.SubCommandHandler{Name: "coins", Run: i.removeCoins},
 			ken.SubCommandHandler{Name: "bonus", Run: i.removeCoinBonus},
-			// ken.SubCommandHandler{Name: "note", Run: i.removeNote},
+			ken.SubCommandHandler{Name: "note", Run: i.removeNote},
 		}},
 		ken.SubCommandGroup{Name: "set", SubHandler: []ken.CommandHandler{
-			ken.SubCommandHandler{Name: "ability", Run: i.setAnyAbility},
+			ken.SubCommandHandler{Name: "ability", Run: i.setAbility},
+			ken.SubCommandHandler{Name: "aa", Run: i.setAnyAbility},
 			ken.SubCommandHandler{Name: "coins", Run: i.setCoins},
 			ken.SubCommandHandler{Name: "bonus", Run: i.setCoinBonus},
+			ken.SubCommandHandler{Name: "limit", Run: i.setItemsLimit},
 		}},
 	)
 }
@@ -365,12 +416,12 @@ func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
 		discord.SendSilentError(
 			ctx,
 			"Failed to Find Inventory",
-			fmt.Sprintf("Failed to find inventory for %s", player.Username),
+			fmt.Sprintf("Are you sure there's an inventory for %s?", player.Username),
 		)
 		return err
 	}
 
-	allowed := i.authorized(ctx, inv)
+	allowed := i.inventoryAuthorized(ctx, inv)
 
 	if !allowed {
 		ctx.SetEphemeral(true)
@@ -466,7 +517,7 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 		Abilities:      abilityNames,
 		Perks:          perkNames,
 		Coins:          defaultCoins,
-		ItemsLimit:     defaultItemsLimit,
+		ItemLimit:     defaultItemsLimit,
 	}
 
 	_, err = i.models.Inventories.Insert(newInv)
@@ -590,7 +641,7 @@ func InventoryEmbedMessage(
 		Inline: true,
 	}
 	itemsField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("Items (%d/%d) ⚔️", len(inv.Items), inv.ItemsLimit),
+		Name:   fmt.Sprintf("Items (%d/%d) ⚔️", len(inv.Items), inv.ItemLimit),
 		Value:  strings.Join(inv.Items, "\n"),
 		Inline: false,
 	}
@@ -629,9 +680,15 @@ func InventoryEmbedMessage(
 	}
 
 	if host {
+
+		noteListString := ""
+		for i, note := range inv.Notes {
+			noteListString += fmt.Sprintf("%d. %s\n", i+1, note)
+		}
+
 		embd.Fields = append(embd.Fields, &discordgo.MessageEmbedField{
 			Name:   "Notes 📝",
-			Value:  strings.Join(inv.Notes, "\n"),
+			Value:  noteListString,
 			Inline: false,
 		})
 		embd.Color = 0x00ff00
@@ -645,7 +702,7 @@ func InventoryEmbedMessage(
 // 2. Have the role "Host", "Co-Host", or "Bot Developer" AND
 //   - Be in the same channel as the pinned inventory message
 //   - Be within a whiteilsted channel (admin only channel...etc)
-func (i *Inventory) authorized(ctx ken.SubCommandContext, inv *data.Inventory) bool {
+func (i *Inventory) inventoryAuthorized(ctx ken.SubCommandContext, inv *data.Inventory) bool {
 	event := ctx.GetEvent()
 	invokeChannelID := event.ChannelID
 	invoker := event.Member
@@ -741,7 +798,7 @@ func (i *Inventory) imLazyMiddleware(ctx ken.SubCommandContext) (inv *data.Inven
 			return nil, err
 		}
 	}
-	if !i.authorized(ctx, inv) {
+	if !i.inventoryAuthorized(ctx, inv) {
 		return nil, discord.SendSilentError(
 			ctx,
 			"Unauthorized",

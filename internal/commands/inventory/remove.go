@@ -10,6 +10,42 @@ import (
 	"github.com/zekrotja/ken"
 )
 
+func (i *Inventory) removeAbility(ctx ken.SubCommandContext) (err error) {
+	inventory, err := i.imLazyMiddleware(ctx)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	abilityNameArg := ctx.Options().GetByName("name").StringValue()
+
+	for k, v := range inventory.Abilities {
+		abilityName := strings.Split(v, " [")[0]
+		if strings.EqualFold(abilityName, abilityNameArg) {
+			inventory.Abilities = append(
+				inventory.Abilities[:k],
+				inventory.Abilities[k+1:]...)
+			err = i.models.Inventories.UpdateAbilities(inventory)
+			if err != nil {
+				log.Println(err)
+				return discord.SendSilentError(
+					ctx,
+					"Failed to remove base ability",
+					"Alex is a bad programmer, and this is his fault.",
+				)
+			}
+			err = i.updateInventoryMessage(ctx, inventory)
+			if err != nil {
+				return err
+			}
+			return ctx.RespondMessage("Base ability removed from inventory.")
+		}
+	}
+
+	ctx.RespondMessage(fmt.Sprintf("Base ability %s not found in inventory.", abilityNameArg))
+
+	return err
+}
+
 func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
 	inventory, err := i.imLazyMiddleware(ctx)
 	if err != nil {
@@ -18,16 +54,12 @@ func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
 	}
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
 
-	log.Println(inventory.AnyAbilities)
-	for k, v := range inventory.AnyAbilities {
+	for k, v := range inventory.Abilities {
 		abilityName := strings.Split(v, " [")[0]
 		if strings.EqualFold(abilityName, abilityNameArg) {
-			log.Println("Removing ability from inventory")
-			log.Println(inventory.AnyAbilities)
-			inventory.AnyAbilities = append(
-				inventory.AnyAbilities[:k],
-				inventory.AnyAbilities[k+1:]...)
-			log.Println(inventory.AnyAbilities)
+			inventory.Abilities = append(
+				inventory.Abilities[:k],
+				inventory.Abilities[k+1:]...)
 			err = i.models.Inventories.UpdateAnyAbilities(inventory)
 			if err != nil {
 				log.Println(err)
@@ -339,4 +371,52 @@ func (i *Inventory) removeWhitelist(ctx ken.SubCommandContext) (err error) {
 	err = discord.SendSilentError(ctx, "Channel not found", "This channel is not whitelisted.")
 	return err
 
+}
+
+func (i *Inventory) removeNote(ctx ken.SubCommandContext) (err error) {
+
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.SendSilentError(
+			ctx,
+			"Unauthorized",
+			"You are not authorized to use this command.",
+		)
+	}
+
+	inventory, err := i.imLazyMiddleware(ctx)
+	if err != nil {
+		log.Println(err)
+		discord.SendSilentError(
+			ctx,
+			"Failed to get inventory",
+			"Alex is a bad programmer, and this is his fault.",
+		)
+		return err
+	}
+
+	noteArg := int(ctx.Options().GetByName("index").IntValue())
+	// Subtract 1 to account for 0 indexing
+	noteArg -= 1
+
+	if noteArg < 0 || noteArg > len(inventory.Notes)-1 {
+		return discord.SendSilentError(ctx,
+			"Invalid index",
+			fmt.Sprintf("Index must be between 1 and %d", len(inventory.Notes)))
+	}
+
+	removedNote := inventory.Notes[noteArg]
+	inventory.Notes = append(inventory.Notes[:noteArg], inventory.Notes[noteArg+1:]...)
+	err = i.models.Inventories.UpdateNotes(inventory)
+	if err != nil {
+		log.Println(err)
+		return discord.SendSilentError(
+			ctx,
+			"Failed to remove note",
+			"Alex is a bad programmer, and this is his fault.",
+		)
+	}
+
+	err = ctx.RespondMessage(fmt.Sprintf("Removed note:\n %s", removedNote))
+
+	return err
 }

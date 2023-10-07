@@ -10,6 +10,46 @@ import (
 	"github.com/zekrotja/ken"
 )
 
+func (i *Inventory) setAbility(ctx ken.SubCommandContext) (err error) {
+	ctx.SetEphemeral(true)
+	inventory, err := i.imLazyMiddleware(ctx)
+	if err != nil {
+		log.Println(err)
+		discord.SendSilentError(
+			ctx,
+			"Failed to get inventory",
+			"Alex is a bad programmer, and this is his fault.",
+		)
+		return err
+	}
+	abilityNameArg := ctx.Options().GetByName("name").StringValue()
+	chargesArg := ctx.Options().GetByName("charges").IntValue()
+
+	for k, v := range inventory.Abilities {
+		abilityName := strings.Split(v, " [")[0]
+		if strings.EqualFold(abilityName, abilityNameArg) {
+			inventory.Abilities[k] = fmt.Sprintf("%s [%d]", abilityName, chargesArg)
+			err = i.models.Inventories.UpdateAbilities(inventory)
+			if err != nil {
+				log.Println(err)
+				return discord.SendSilentError(
+					ctx,
+					"Failed to update ability",
+					"Alex is a bad programmer, and this is his fault.",
+				)
+			}
+			err = i.updateInventoryMessage(ctx, inventory)
+			if err != nil {
+				return err
+			}
+			return ctx.RespondMessage("Ability updated in inventory.")
+		}
+	}
+
+	ctx.RespondMessage(fmt.Sprintf("Ability %s not found in inventory.", abilityNameArg))
+	return err
+}
+
 func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
 	ctx.SetEphemeral(true)
 	inventory, err := i.imLazyMiddleware(ctx)
@@ -135,4 +175,41 @@ func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
 			inventory.CoinBonus,
 			fCoinBonusArg,
 		))
+}
+
+func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
+	ctx.SetEphemeral(true)
+	inventory, err := i.imLazyMiddleware(ctx)
+	if err != nil {
+		log.Println(err)
+		discord.SendSilentError(
+			ctx,
+			"Failed to get inventory",
+			"Alex is a bad programmer, and this is his fault.",
+		)
+		return err
+	}
+	itemsLimitArg := ctx.Options().GetByName("size").IntValue()
+	inventory.ItemLimit = itemsLimitArg
+	err = i.models.Inventories.UpdateProperty(inventory, "item_limit", itemsLimitArg)
+	if err != nil {
+		log.Println(err)
+		return discord.SendSilentError(
+			ctx,
+			"Failed to update items limit",
+			"Alex is a bad programmer, and this is his fault.",
+		)
+	}
+	err = i.updateInventoryMessage(ctx, inventory)
+	if err != nil {
+		return err
+	}
+
+	return ctx.RespondMessage(
+		fmt.Sprintf(
+			"Items limit set to %d",
+			inventory.ItemLimit,
+		),
+	)
+
 }
