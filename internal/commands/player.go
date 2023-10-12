@@ -74,7 +74,7 @@ func (p *Player) add(ctx ken.SubCommandContext) (err error) {
 
 	role, err := p.models.Roles.GetByName(roleArg)
 	if err != nil {
-		discord.SendSilentError(ctx, "Unable to find Role", "No known role of name "+roleArg)
+		discord.ErrorMessage(ctx, "Unable to find Role", "No known role of name "+roleArg)
 		return err
 	}
 
@@ -86,7 +86,7 @@ func (p *Player) add(ctx ken.SubCommandContext) (err error) {
 
 	playerID, err := p.models.Players.Insert(&player)
 	if err != nil {
-		discord.SendSilentError(ctx, "Unable to add Player", "Unable to add Player "+name.Username)
+		discord.ErrorMessage(ctx, "Unable to add Player", "Unable to add Player "+name.Username)
 		return err
 	}
 
@@ -107,7 +107,7 @@ func (p *Player) get(ctx ken.SubCommandContext) (err error) {
 
 	player, err := p.models.Players.GetByDiscordID(name.ID)
 	if err != nil {
-		discord.SendSilentError(
+		discord.ErrorMessage(
 			ctx,
 			"Unable to find Player",
 			"No known player of name "+name.Username,
@@ -117,7 +117,7 @@ func (p *Player) get(ctx ken.SubCommandContext) (err error) {
 
 	role, err := p.models.Roles.Get(player.RoleID)
 	if err != nil {
-		discord.SendSilentError(ctx, "Unable to find Role", "No known role of name "+name.Username)
+		discord.ErrorMessage(ctx, "Unable to find Role", "No known role of name "+name.Username)
 		return err
 	}
 

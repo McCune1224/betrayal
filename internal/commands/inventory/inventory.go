@@ -12,6 +12,9 @@ import (
 	"github.com/zekrotja/ken"
 )
 
+// emoji constants
+// TODO: Maybe make these configurable?
+
 const (
 	defaultCoins      = 200
 	defaultItemsLimit = 4
@@ -26,6 +29,11 @@ var optional = discordgo.ApplicationCommandOption{
 
 type Inventory struct {
 	models data.Models
+}
+
+// Components implements main.BetrayalCommand.
+func (*Inventory) Components() []*discordgo.MessageComponent {
+	return nil
 }
 
 var (
@@ -413,7 +421,7 @@ func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
 	player := ctx.Options().GetByName("user").UserValue(ctx)
 	inv, err := i.models.Inventories.GetByDiscordID(player.ID)
 	if err != nil {
-		discord.SendSilentError(
+		discord.ErrorMessage(
 			ctx,
 			"Failed to Find Inventory",
 			fmt.Sprintf("Are you sure there's an inventory for %s?", player.Username),
@@ -425,7 +433,7 @@ func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
 
 	if !allowed {
 		ctx.SetEphemeral(true)
-		err = discord.SendSilentError(ctx, "Unauthorized",
+		err = discord.ErrorMessage(ctx, "Unauthorized",
 			"You are not authorized to use this command.")
 		ctx.SetEphemeral(false)
 		return err
@@ -443,7 +451,7 @@ func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
 func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		err = discord.SendSilentError(
+		err = discord.ErrorMessage(
 			ctx,
 			"Unauthorized",
 			"You are not authorized to use this command.",
@@ -458,14 +466,14 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 	// Make sure role exists before creating inventory
 	role, err := i.models.Roles.GetByName(roleArg)
 	if err != nil {
-		discord.SendSilentError(ctx, "Failed to get Role", err.Error())
+		discord.ErrorMessage(ctx, "Failed to get Role", err.Error())
 		return err
 	}
 
 	// Check if inventory already exists
 	existingInv, _ := i.models.Inventories.GetByDiscordID(playerArg.ID)
 	if existingInv != nil {
-		discord.SendSilentError(
+		discord.ErrorMessage(
 			ctx,
 			"Inventory Already Exists",
 			fmt.Sprintf("Inventory already exists for %s", playerArg.Username),
@@ -479,17 +487,17 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 	}
 	pinMsg, err := ctx.GetSession().ChannelMessageSendEmbed(channelID, &inventoryCreateMsg)
 	if err != nil {
-		discord.SendSilentError(ctx, "Failed to send message", err.Error())
+		discord.ErrorMessage(ctx, "Failed to send message", err.Error())
 		return err
 	}
 	roleAbilities, err := i.models.Roles.GetAbilities(role.ID)
 	if err != nil {
-		discord.SendSilentError(ctx, "Failed to get Role Abilities", err.Error())
+		discord.ErrorMessage(ctx, "Failed to get Role Abilities", err.Error())
 		return err
 	}
 	rolePerks, err := i.models.Roles.GetPerks(role.ID)
 	if err != nil {
-		discord.SendSilentError(ctx, "Failed to get Role Perks", err.Error())
+		discord.ErrorMessage(ctx, "Failed to get Role Perks", err.Error())
 		return err
 	}
 	abilityNames := make([]string, len(roleAbilities))
@@ -517,20 +525,20 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 		Abilities:      abilityNames,
 		Perks:          perkNames,
 		Coins:          defaultCoins,
-		ItemLimit:     defaultItemsLimit,
+		ItemLimit:      defaultItemsLimit,
 	}
 
 	_, err = i.models.Inventories.Insert(newInv)
 	if err != nil {
 		log.Println(err)
-		discord.SendSilentError(ctx, "Alex is a bad programmer", "Failed to insert inventory")
+		discord.ErrorMessage(ctx, "Alex is a bad programmer", "Failed to insert inventory")
 		return err
 	}
 	embd := InventoryEmbedMessage(ctx.GetEvent(), newInv, false)
 	msg, err := ctx.GetSession().ChannelMessageEditEmbed(channelID, pinMsg.ID, embd)
 	if err != nil {
 		log.Println(err)
-		discord.SendSilentError(ctx, "Alex is a bad programmer", "Failed to edit message")
+		discord.ErrorMessage(ctx, "Alex is a bad programmer", "Failed to edit message")
 		return err
 	}
 	newInv.UserPinChannel = msg.ChannelID
@@ -538,12 +546,12 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 	err = i.models.Inventories.Update(newInv)
 	if err != nil {
 		log.Println(err)
-		discord.SendSilentError(ctx, "Alex is a bad programmer", "Failed to set Pinned Message")
+		discord.ErrorMessage(ctx, "Alex is a bad programmer", "Failed to set Pinned Message")
 		return err
 	}
 	err = ctx.GetSession().ChannelMessagePin(channelID, pinMsg.ID)
 	if err != nil {
-		discord.SendSilentError(ctx, "Discord is at fault for once", err.Error())
+		discord.ErrorMessage(ctx, "Discord is at fault for once", err.Error())
 		return err
 	}
 
@@ -553,7 +561,7 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 func (i *Inventory) delete(ctx ken.SubCommandContext) (err error) {
 	authed := discord.IsAdminRole(ctx, discord.AdminRoles...)
 	if !authed {
-		err = discord.SendSilentError(
+		err = discord.ErrorMessage(
 			ctx,
 			"Unauthorized",
 			"You are not authorized to use this command.",
@@ -565,7 +573,7 @@ func (i *Inventory) delete(ctx ken.SubCommandContext) (err error) {
 	ctx.SetEphemeral(true)
 	inv, err := i.models.Inventories.GetByDiscordID(userArg.ID)
 	if err != nil {
-		discord.SendSilentError(ctx, "Failed to Find Inventory",
+		discord.ErrorMessage(ctx, "Failed to Find Inventory",
 			fmt.Sprintf("Failed to find inventory for %s", userArg.Username))
 		return err
 	}
@@ -573,13 +581,13 @@ func (i *Inventory) delete(ctx ken.SubCommandContext) (err error) {
 	err = sesh.ChannelMessageDelete(inv.UserPinChannel, inv.UserPinMessage)
 	if err != nil {
 		channel, _ := sesh.Channel(inv.UserPinChannel)
-		discord.SendSilentError(ctx, "Failed to Delete Message",
+		discord.ErrorMessage(ctx, "Failed to Delete Message",
 			fmt.Sprintf("Failed to delete message for %s, could not find message in channel %s",
 				userArg.Username, channel.Name))
 	}
 	err = i.models.Inventories.Delete(userArg.ID)
 	if err != nil {
-		discord.SendSilentError(ctx, "Failed to Delete Inventory",
+		discord.ErrorMessage(ctx, "Failed to Delete Inventory",
 			fmt.Sprintf("Failed to delete inventory for %s", userArg.Username))
 	}
 	ctx.RespondMessage(fmt.Sprintf("Inventory for %s deleted", userArg.Username))
@@ -604,67 +612,60 @@ func InventoryEmbedMessage(
 		Value:  inv.RoleName,
 		Inline: true,
 	}
-	alignmentEmoji := ""
-	switch inv.Alignment {
-	case "GOOD":
-		alignmentEmoji += "👼"
-	case "EVIL":
-		alignmentEmoji += "👿"
-	case "NEUTRAL":
-		alignmentEmoji += "😐"
-	}
+	alignmentEmoji := discord.EmojiAlignment
 	alignmentField := &discordgo.MessageEmbedField{
-		Name:   "Alignment " + alignmentEmoji,
+		Name:   fmt.Sprintf("Alignment %s", alignmentEmoji),
 		Value:  inv.Alignment,
 		Inline: true,
 	}
 
-	coinStr := fmt.Sprintf("%d", inv.Coins) + " [" + fmt.Sprintf("%.2f", inv.CoinBonus) + "%]"
+	//show coin bonus x100
+	cb := inv.CoinBonus * 100
+	coinStr := fmt.Sprintf("%d", inv.Coins) + " [" + fmt.Sprintf("%.2f", cb) + "%]"
 	coinField := &discordgo.MessageEmbedField{
-		Name:   "Coins 💰",
+		Name:   fmt.Sprintf("Coins %s", discord.EmojiCoins),
 		Value:  coinStr,
 		Inline: false,
 	}
 	abilitiesField := &discordgo.MessageEmbedField{
-		Name:   "Base Abilities 💪",
+		Name:   fmt.Sprintf("Abilities %s", discord.EmojiAbility),
 		Value:  strings.Join(inv.Abilities, "\n"),
 		Inline: true,
 	}
 	perksField := &discordgo.MessageEmbedField{
-		Name:   "Perks ➕",
+		Name:   fmt.Sprintf("Perks %s", discord.EmojiPerk),
 		Value:  strings.Join(inv.Perks, "\n"),
 		Inline: true,
 	}
 	anyAbilitiesField := &discordgo.MessageEmbedField{
-		Name:   "Any Abilities 🃏",
+		Name:   fmt.Sprintf("Any Abilities %s", discord.EmojiAnyAbility),
 		Value:  strings.Join(inv.AnyAbilities, "\n"),
 		Inline: true,
 	}
 	itemsField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("Items (%d/%d) ⚔️", len(inv.Items), inv.ItemLimit),
+		Name:   fmt.Sprintf("Items (%d/%d) %s", len(inv.Items), inv.ItemLimit, discord.EmojiItem),
 		Value:  strings.Join(inv.Items, "\n"),
 		Inline: false,
 	}
 	statusesField := &discordgo.MessageEmbedField{
-		Name:   "Statuses 🔥",
+		Name:   fmt.Sprintf("Statuses %s", discord.EmojiStatus),
 		Value:  strings.Join(inv.Statuses, "\n"),
 		Inline: true,
 	}
 
 	immunitiesField := &discordgo.MessageEmbedField{
-		Name:   "Immunities 🛡️",
+		Name:   fmt.Sprintf("Immunities %s", discord.EmojiImmunity),
 		Value:  strings.Join(inv.Immunities, "\n"),
 		Inline: true,
 	}
 	effectsField := &discordgo.MessageEmbedField{
-		// firework emoji: 🎆
-		Name:   "Effects 🎆",
+		Name:   fmt.Sprintf("Effects %s", discord.EmojiEffect),
 		Value:  strings.Join(inv.Effects, "\n"),
 		Inline: true,
 	}
 
 	embd := &discordgo.MessageEmbed{
-		Title: "Inventory 🎒",
+		Title: fmt.Sprintf("Inventory %s", discord.EmojiInventory),
 		Fields: []*discordgo.MessageEmbedField{
 			roleField,
 			alignmentField,
@@ -687,7 +688,7 @@ func InventoryEmbedMessage(
 		}
 
 		embd.Fields = append(embd.Fields, &discordgo.MessageEmbedField{
-			Name:   "Notes 📝",
+			Name:   fmt.Sprintf("Notes %s", discord.EmojiNote),
 			Value:  noteListString,
 			Inline: false,
 		})
@@ -723,25 +724,13 @@ func (i *Inventory) inventoryAuthorized(ctx ken.SubCommandContext, inv *data.Inv
 		return false
 	}
 
-	// --- We know from this point on that the user is in the confessional channel ---
-	guildID := event.GuildID
-	guildRoles, err := ctx.GetSession().GuildRoles(guildID)
-	if err != nil {
-		return false
-	}
-	// Go through and make sure user has one of the following roles:
-	if inv.DiscordID != invoker.User.ID {
-		for _, roleID := range invoker.Roles {
-			for _, guildRole := range guildRoles {
-				if roleID == guildRole.ID {
-					if guildRole.Name == "Host" || guildRole.Name == "Co-Host" ||
-						guildRole.Name == "Bot Developer" {
-						return true
-					}
-				}
+	// Go through and make sure user has one of the allowed roles:
+	for _, role := range invoker.Roles {
+		for _, allowedRole := range discord.AdminRoles {
+			if role == allowedRole {
+				return true
 			}
 		}
-		return false
 	}
 	return true
 }
@@ -749,7 +738,7 @@ func (i *Inventory) inventoryAuthorized(ctx ken.SubCommandContext, inv *data.Inv
 func (i *Inventory) listWhitelist(ctx ken.SubCommandContext) (err error) {
 	wishlists, err := i.models.Whitelists.GetAll()
 	if len(wishlists) == 0 {
-		err = discord.SendSilentError(ctx, "No whitelisted channels", "Nothing here...")
+		err = discord.ErrorMessage(ctx, "No whitelisted channels", "Nothing here...")
 		return err
 	}
 
@@ -778,7 +767,7 @@ func (i *Inventory) imLazyMiddleware(ctx ken.SubCommandContext) (inv *data.Inven
 	if !ok {
 		inv, err = i.models.Inventories.GetByPinChannel(channelID)
 		if err != nil {
-			discord.SendSilentError(
+			discord.ErrorMessage(
 				ctx,
 				"Cannot get inventory",
 				"It appears you're not using this in a confessional channel, please specify a user.",
@@ -790,7 +779,7 @@ func (i *Inventory) imLazyMiddleware(ctx ken.SubCommandContext) (inv *data.Inven
 		inv, err = i.models.Inventories.GetByDiscordID(userArg.UserValue(ctx).ID)
 		if err != nil {
 			log.Println(err)
-			discord.SendSilentError(
+			discord.ErrorMessage(
 				ctx,
 				fmt.Sprint("Cannot find Inventory for user: ", userArg.UserValue(ctx).Username),
 				fmt.Sprintf("Verify if %s has an inventory", userArg.UserValue(ctx).Username),
@@ -799,11 +788,12 @@ func (i *Inventory) imLazyMiddleware(ctx ken.SubCommandContext) (inv *data.Inven
 		}
 	}
 	if !i.inventoryAuthorized(ctx, inv) {
-		return nil, discord.SendSilentError(
+		discord.ErrorMessage(
 			ctx,
 			"Unauthorized",
 			"You are not authorized to use this command.",
 		)
+		return nil, errors.New("Unauthorized to use command")
 	}
 	if inv == nil {
 		return nil, errors.New("Somehow inventory is nil in middleware...")
@@ -824,7 +814,25 @@ func (i *Inventory) updateInventoryMessage(
 	)
 	if err != nil {
 		log.Println(err)
-		return discord.SendSilentError(
+		return discord.ErrorMessage(
+			ctx,
+			"Failed to update inventory message",
+			"Alex is a bad programmer, and this is his fault.",
+		)
+	}
+	return nil
+}
+
+func UpdateInventoryMessage(ctx ken.Context, i *data.Inventory) (err error) {
+	sesh := ctx.GetSession()
+	_, err = sesh.ChannelMessageEditEmbed(
+		i.UserPinChannel,
+		i.UserPinMessage,
+		InventoryEmbedMessage(ctx.GetEvent(), i, false),
+	)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(
 			ctx,
 			"Failed to update inventory message",
 			"Alex is a bad programmer, and this is his fault.",

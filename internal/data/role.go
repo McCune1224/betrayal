@@ -143,3 +143,16 @@ func (rm *RoleModel) Upsert(r *Role) error {
 	}
 	return nil
 }
+
+func (rm *RoleModel) GetByAbilityID(abilityID int64) (*Role, error) {
+	var r Role
+	err := rm.DB.Get(
+		&r,
+		`SELECT (roles.*) FROM roles INNER JOIN roles_abilities ON roles.id = roles_abilities.role_id WHERE roles_abilities.ability_id = $1`,
+		abilityID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+}

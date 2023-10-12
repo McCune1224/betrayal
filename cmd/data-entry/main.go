@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv/autoload"
@@ -224,8 +225,12 @@ func (app *application) UpdatePerks() {
 		app.logger.Println(
 			fmt.Sprintf("NOW '%s'", perk.Name))
 
-		err = perkEntry.Update(perk)
+		err = perkEntry.UpdateName(perk)
 		if err != nil {
+            // check if err string has "pq: duplicate key value violates unique constraint"
+            if strings.Contains(err.Error(), "pq: duplicate key value violates unique constraint") {
+                continue
+            }
 			app.logger.Fatal(err)
 		}
 		fmt.Println()

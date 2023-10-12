@@ -13,6 +13,7 @@ type Insult struct {
 	models data.Models
 }
 
+
 func (i *Insult) SetModels(models data.Models) {
 	i.models = models
 }
@@ -37,12 +38,7 @@ func (*Insult) Options() []*discordgo.ApplicationCommandOption {
 			Name:        "add",
 			Description: "Add an insult",
 			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "insult",
-					Description: "The insult to add",
-					Required:    true,
-				},
+				discord.StringCommandArg("insult", "The insult to add", true),
 			},
 		},
 		{
@@ -67,12 +63,18 @@ func (i *Insult) add(ctx ken.SubCommandContext) (err error) {
 	insultArg := args.GetByName("insult")
 	var insult data.Insult
 	insult.Insult = insultArg.StringValue()
-	insult.AuthorID = ctx.GetEvent().User.ID
+	insult.AuthorID = ctx.GetEvent().Member.User.ID
 	err = i.models.Insults.Insert(&insult)
 	if err != nil {
-		ctx.RespondError(err.Error(), "Error adding insult")
-		return err
+		discord.ErrorMessage(
+			ctx,
+			fmt.Sprintf("Error adding insult: %s", err.Error()),
+			"Alex is a bag programmer and didn't handle this error",
+		)
 	}
+	err = ctx.RespondMessage(
+		fmt.Sprintf("Hey %s, %s", discord.Mention(discord.McKusaID), insult.Insult),
+	)
 	return err
 }
 

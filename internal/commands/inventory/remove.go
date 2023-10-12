@@ -16,8 +16,8 @@ func (i *Inventory) removeAbility(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
+	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
-
 	for k, v := range inventory.Abilities {
 		abilityName := strings.Split(v, " [")[0]
 		if strings.EqualFold(abilityName, abilityNameArg) {
@@ -27,7 +27,7 @@ func (i *Inventory) removeAbility(ctx ken.SubCommandContext) (err error) {
 			err = i.models.Inventories.UpdateAbilities(inventory)
 			if err != nil {
 				log.Println(err)
-				return discord.SendSilentError(
+				return discord.ErrorMessage(
 					ctx,
 					"Failed to remove base ability",
 					"Alex is a bad programmer, and this is his fault.",
@@ -37,11 +37,19 @@ func (i *Inventory) removeAbility(ctx ken.SubCommandContext) (err error) {
 			if err != nil {
 				return err
 			}
-			return ctx.RespondMessage("Base ability removed from inventory.")
+			return discord.SuccessfulMessage(
+				ctx,
+				"Removed Base Ability",
+				fmt.Sprintf("Removed %s from inventory.", abilityNameArg),
+			)
 		}
 	}
 
-	ctx.RespondMessage(fmt.Sprintf("Base ability %s not found in inventory.", abilityNameArg))
+	discord.ErrorMessage(
+		ctx,
+		"Failed to Remove Ability",
+		fmt.Sprintf("Base ability %s not found in inventory.", abilityNameArg),
+	)
 
 	return err
 }
@@ -52,6 +60,7 @@ func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
+	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
 
 	for k, v := range inventory.Abilities {
@@ -63,7 +72,7 @@ func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
 			err = i.models.Inventories.UpdateAnyAbilities(inventory)
 			if err != nil {
 				log.Println(err)
-				return discord.SendSilentError(
+				return discord.ErrorMessage(
 					ctx,
 					"Failed to remove ability",
 					"Alex is a bad programmer, and this is his fault.",
@@ -73,11 +82,19 @@ func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
 			if err != nil {
 				return err
 			}
-			return ctx.RespondMessage("Ability removed from inventory.")
+			return discord.SuccessfulMessage(
+				ctx,
+				"Ability removed from inventory.",
+				fmt.Sprintf("Removed %s from inventory.", abilityNameArg),
+			)
 		}
 	}
 
-	ctx.RespondMessage(fmt.Sprintf("Ability %s not found in inventory.", abilityNameArg))
+	discord.ErrorMessage(
+		ctx,
+		"Failed to Remove Ability",
+		fmt.Sprintf("Ability %s not found in inventory.", abilityNameArg),
+	)
 
 	return err
 }
@@ -88,6 +105,7 @@ func (i *Inventory) removePerk(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
+	ctx.SetEphemeral(false)
 	perkArg := ctx.Options().GetByName("name").StringValue()
 
 	for k, v := range inventory.Perks {
@@ -96,7 +114,7 @@ func (i *Inventory) removePerk(ctx ken.SubCommandContext) (err error) {
 			err = i.models.Inventories.UpdatePerks(inventory)
 			if err != nil {
 				log.Println(err)
-				return discord.SendSilentError(
+				return discord.ErrorMessage(
 					ctx,
 					"Failed to remove perk",
 					"Alex is a bad programmer, and this is his fault.",
@@ -106,11 +124,19 @@ func (i *Inventory) removePerk(ctx ken.SubCommandContext) (err error) {
 			if err != nil {
 				return err
 			}
-			return ctx.RespondMessage("Perk removed from inventory.")
+			return discord.SuccessfulMessage(
+				ctx,
+				"Perk removed from inventory",
+				fmt.Sprintf("Removed %s from inventory.", perkArg),
+			)
 		}
 	}
 
-	ctx.RespondMessage(fmt.Sprintf("Perk %s not found in inventory.", perkArg))
+	discord.ErrorMessage(
+		ctx,
+		"Failed to remove Perk",
+		fmt.Sprintf("Perk %s not found in inventory.", perkArg),
+	)
 	return err
 }
 
@@ -120,6 +146,7 @@ func (i *Inventory) removeItem(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
+	ctx.SetEphemeral(false)
 
 	itemArg := ctx.Options().GetByName("name").StringValue()
 
@@ -129,7 +156,7 @@ func (i *Inventory) removeItem(ctx ken.SubCommandContext) (err error) {
 			err = i.models.Inventories.UpdateItems(inventory)
 			if err != nil {
 				log.Println(err)
-				return discord.SendSilentError(
+				return discord.ErrorMessage(
 					ctx,
 					"Failed to remove item",
 					"Alex is a bad programmer, and this is his fault.",
@@ -139,11 +166,19 @@ func (i *Inventory) removeItem(ctx ken.SubCommandContext) (err error) {
 			if err != nil {
 				return err
 			}
-			return ctx.RespondMessage("Item removed from inventory.")
+			return discord.SuccessfulMessage(
+				ctx,
+				"Item removed from inventory.",
+				fmt.Sprintf("Removed %s from inventory.", itemArg),
+			)
 		}
 	}
 
-	ctx.RespondMessage(fmt.Sprintf("Item %s not found in inventory.", itemArg))
+	discord.ErrorMessage(
+		ctx,
+		"Failed to get Item",
+		fmt.Sprintf("Item %s not found in inventory.", itemArg),
+	)
 	return err
 }
 
@@ -153,6 +188,7 @@ func (i *Inventory) removeStatus(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
+	ctx.SetEphemeral(false)
 
 	statusArg := ctx.Options().GetByName("name").StringValue()
 
@@ -162,7 +198,7 @@ func (i *Inventory) removeStatus(ctx ken.SubCommandContext) (err error) {
 			err = i.models.Inventories.UpdateStatuses(inventory)
 			if err != nil {
 				log.Println(err)
-				return discord.SendSilentError(
+				return discord.ErrorMessage(
 					ctx,
 					"Failed to remove status",
 					"Alex is a bad programmer, and this is his fault.",
@@ -172,11 +208,19 @@ func (i *Inventory) removeStatus(ctx ken.SubCommandContext) (err error) {
 			if err != nil {
 				return err
 			}
-			return ctx.RespondMessage("Status removed from inventory.")
+			return discord.SuccessfulMessage(
+				ctx,
+				"Status removed from inventory",
+				fmt.Sprintf("Removed %s from inventory.", statusArg),
+			)
 		}
 	}
 
-	ctx.RespondMessage(fmt.Sprintf("Status %s not found in inventory.", statusArg))
+	discord.ErrorMessage(
+		ctx,
+		"Failed to find Status",
+		fmt.Sprintf("Status %s not found in inventory.", statusArg),
+	)
 	return err
 }
 
@@ -186,6 +230,7 @@ func (i *Inventory) removeImmunity(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
+	ctx.SetEphemeral(false)
 
 	immunityArg := ctx.Options().GetByName("name").StringValue()
 
@@ -195,7 +240,7 @@ func (i *Inventory) removeImmunity(ctx ken.SubCommandContext) (err error) {
 			err = i.models.Inventories.UpdateImmunities(inventory)
 			if err != nil {
 				log.Println(err)
-				return discord.SendSilentError(
+				return discord.ErrorMessage(
 					ctx,
 					"Failed to remove immunity",
 					"Alex is a bad programmer, and this is his fault.",
@@ -205,11 +250,19 @@ func (i *Inventory) removeImmunity(ctx ken.SubCommandContext) (err error) {
 			if err != nil {
 				return err
 			}
-			return ctx.RespondMessage("Immunity removed from inventory.")
+			return discord.SuccessfulMessage(
+				ctx,
+				"Immunity removed from inventory.",
+				fmt.Sprintf("Removed %s from inventory.", immunityArg),
+			)
 		}
 	}
 
-	ctx.RespondMessage(fmt.Sprintf("Immunity %s not found in inventory.", immunityArg))
+	discord.ErrorMessage(
+		ctx,
+		"Failed to get Immunity",
+		fmt.Sprintf("Immunity %s not found in inventory.", immunityArg),
+	)
 	return err
 }
 
@@ -219,6 +272,7 @@ func (i *Inventory) removeEffect(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
+	ctx.SetEphemeral(false)
 
 	effectArg := ctx.Options().GetByName("name").StringValue()
 
@@ -228,7 +282,7 @@ func (i *Inventory) removeEffect(ctx ken.SubCommandContext) (err error) {
 			err = i.models.Inventories.UpdateEffects(inventory)
 			if err != nil {
 				log.Println(err)
-				return discord.SendSilentError(
+				return discord.ErrorMessage(
 					ctx,
 					"Failed to remove effect",
 					"Alex is a bad programmer, and this is his fault.",
@@ -238,11 +292,19 @@ func (i *Inventory) removeEffect(ctx ken.SubCommandContext) (err error) {
 			if err != nil {
 				return err
 			}
-			return ctx.RespondMessage("Effect removed from inventory.")
+			return discord.SuccessfulMessage(
+				ctx,
+				"Effect removed from inventory.",
+				fmt.Sprintf("Removed %s from inventory.", effectArg),
+			)
 		}
 	}
 
-	ctx.RespondMessage(fmt.Sprintf("Effect %s not found in inventory.", effectArg))
+	discord.ErrorMessage(
+		ctx,
+		"Failed to get effect",
+		fmt.Sprintf("Effect %s not found in inventory.", effectArg),
+	)
 	return err
 }
 
@@ -251,13 +313,14 @@ func (i *Inventory) removeCoins(ctx ken.SubCommandContext) (err error) {
 	inventory, err := i.imLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
-		discord.SendSilentError(
+		discord.ErrorMessage(
 			ctx,
 			"Failed to get inventory",
 			"Alex is a bad programmer, and this is his fault.",
 		)
 		return err
 	}
+	ctx.SetEphemeral(false)
 
 	coinsArg := ctx.Options().GetByName("amount").IntValue()
 
@@ -265,19 +328,21 @@ func (i *Inventory) removeCoins(ctx ken.SubCommandContext) (err error) {
 	inventory.Coins -= coinsArg
 
 	if inventory.Coins < 0 {
-		return ctx.RespondMessage(fmt.Sprintf(
-			"You don't have enough coins to remove %d coins.\n %d - %d = %d",
-			coinsArg,
-			previousCoins,
-			coinsArg,
-			inventory.Coins,
-		))
+		return discord.ErrorMessage(ctx,
+			"Insufficient Funds",
+			fmt.Sprintf(
+				"You don't have enough coins to remove %d coins.\n %d - %d = %d",
+				coinsArg,
+				previousCoins,
+				coinsArg,
+				inventory.Coins,
+			))
 	}
 
-	err = i.models.Inventories.Update(inventory)
+	err = i.models.Inventories.UpdateCoins(inventory)
 	if err != nil {
 		log.Println(err)
-		return discord.SendSilentError(
+		return discord.ErrorMessage(
 			ctx,
 			"Failed to update coins",
 			"Alex is a bad programmer, and this is his fault.",
@@ -289,33 +354,36 @@ func (i *Inventory) removeCoins(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 	}
 
-	err = ctx.RespondMessage(fmt.Sprintf(
-		"Removed %d coins\n %d => %d",
-		coinsArg,
-		previousCoins,
-		inventory.Coins,
-	))
+	err = discord.SuccessfulMessage(ctx,
+		"Coins removed",
+		fmt.Sprintf(
+			"Removed %d coins\n %d => %d",
+			coinsArg,
+			previousCoins,
+			inventory.Coins,
+		))
 	return err
 }
 
 func (i *Inventory) removeCoinBonus(ctx ken.SubCommandContext) (err error) {
-	ctx.SetEphemeral(true)
 	inventory, err := i.imLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
-		discord.SendSilentError(
+		discord.ErrorMessage(
 			ctx,
 			"Failed to get inventory",
 			"Alex is a bad programmer, and this is his fault.",
 		)
 		return err
 	}
+	ctx.SetEphemeral(false)
 
 	coinBonusArg := ctx.Options().GetByName("amount").StringValue()
+	old := inventory.CoinBonus
 	fCoinBonusArg, err := strconv.ParseFloat(coinBonusArg, 32)
 	if err != nil {
 		log.Println(err)
-		return discord.SendSilentError(
+		return discord.ErrorMessage(
 			ctx,
 			"Failed to parse coin bonus",
 			"Alex is a bad programmer, and this is his fault.",
@@ -329,7 +397,7 @@ func (i *Inventory) removeCoinBonus(ctx ken.SubCommandContext) (err error) {
 	err = i.models.Inventories.UpdateProperty(inventory, "coin_bonus", inventory.CoinBonus)
 	if err != nil {
 		log.Println(err)
-		return discord.SendSilentError(
+		return discord.ErrorMessage(
 			ctx,
 			"Failed to update coin bonus",
 			"Alex is a bad programmer, and this is his fault.",
@@ -341,12 +409,14 @@ func (i *Inventory) removeCoinBonus(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 	}
 
-	err = ctx.RespondMessage(fmt.Sprintf(
-		"Removed %s coin bonus\n %f => %f",
-		coinBonusArg,
-		inventory.CoinBonus+float32(fCoinBonusArg),
-		inventory.CoinBonus,
-	))
+	err = discord.SuccessfulMessage(ctx,
+		"Coin bonus removed",
+		fmt.Sprintf(
+			"Removed %s%% coin bonus\n %s%% => %s%%",
+			strconv.FormatFloat(float64(fCoinBonusArg), 'f', 2, 32),
+			strconv.FormatFloat(float64(old*100), 'f', 2, 32),
+			strconv.FormatFloat(float64(inventory.CoinBonus*100), 'f', 2, 32),
+		))
 	return err
 }
 
@@ -356,7 +426,7 @@ func (i *Inventory) removeWhitelist(ctx ken.SubCommandContext) (err error) {
 
 	whitelists, _ := i.models.Whitelists.GetAll()
 	if len(whitelists) == 0 {
-		err = discord.SendSilentError(ctx, "No whitelisted channels", "Nothing here...")
+		err = discord.ErrorMessage(ctx, "No whitelisted channels", "Nothing here...")
 		return err
 	}
 
@@ -364,19 +434,20 @@ func (i *Inventory) removeWhitelist(ctx ken.SubCommandContext) (err error) {
 		if v.ChannelID == channelArg.ID {
 			i.models.Whitelists.Delete(v)
 		}
-		err = ctx.RespondMessage("Channel removed from whitelist.")
+		err = discord.SuccessfulMessage(ctx,
+			"Channel removed from whitelist.",
+			fmt.Sprintf("Removed %s from whitelist.", channelArg.Name))
 		return err
 	}
 
-	err = discord.SendSilentError(ctx, "Channel not found", "This channel is not whitelisted.")
+	err = discord.ErrorMessage(ctx, "Channel not found", "This channel is not whitelisted.")
 	return err
 
 }
 
 func (i *Inventory) removeNote(ctx ken.SubCommandContext) (err error) {
-
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		return discord.SendSilentError(
+		return discord.ErrorMessage(
 			ctx,
 			"Unauthorized",
 			"You are not authorized to use this command.",
@@ -386,7 +457,7 @@ func (i *Inventory) removeNote(ctx ken.SubCommandContext) (err error) {
 	inventory, err := i.imLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
-		discord.SendSilentError(
+		discord.ErrorMessage(
 			ctx,
 			"Failed to get inventory",
 			"Alex is a bad programmer, and this is his fault.",
@@ -399,7 +470,7 @@ func (i *Inventory) removeNote(ctx ken.SubCommandContext) (err error) {
 	noteArg -= 1
 
 	if noteArg < 0 || noteArg > len(inventory.Notes)-1 {
-		return discord.SendSilentError(ctx,
+		return discord.ErrorMessage(ctx,
 			"Invalid index",
 			fmt.Sprintf("Index must be between 1 and %d", len(inventory.Notes)))
 	}
@@ -409,14 +480,17 @@ func (i *Inventory) removeNote(ctx ken.SubCommandContext) (err error) {
 	err = i.models.Inventories.UpdateNotes(inventory)
 	if err != nil {
 		log.Println(err)
-		return discord.SendSilentError(
+		return discord.ErrorMessage(
 			ctx,
 			"Failed to remove note",
 			"Alex is a bad programmer, and this is his fault.",
 		)
 	}
 
-	err = ctx.RespondMessage(fmt.Sprintf("Removed note:\n %s", removedNote))
+	err = discord.SuccessfulMessage(
+		ctx,
+		"Note removed",
+		fmt.Sprintf("Removed note:\n %s", removedNote))
 
 	return err
 }

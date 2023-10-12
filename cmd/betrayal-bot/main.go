@@ -103,13 +103,15 @@ func main() {
 
 	tally := app.RegisterBetrayalCommands(
 		new(commands.Ping),
-		// new(commands.Insult),
+		new(commands.Insult),
+        new(commands.Buy),
 		// new(commands.RoleGet),
 		// new(commands.SubsCommand),
-		// new(commands.View),
+		new(commands.View),
 		// new(commands.Player),
 		new(commands.List),
 		new(inventory.Inventory),
+		new(commands.ActionFunnel),
 	)
 	err = app.betrayalManager.RegisterMiddlewares(new(middlewares.PermissionsMiddleware))
 	if err != nil {
@@ -139,3 +141,5 @@ func main() {
 	}
 
 }
+
+

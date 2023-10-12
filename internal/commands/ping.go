@@ -14,6 +14,7 @@ type Ping struct {
 	models data.Models
 }
 
+
 func (p *Ping) SetModels(models data.Models) {
 	p.models = models
 }

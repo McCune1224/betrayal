@@ -13,6 +13,7 @@ type List struct {
 	models data.Models
 }
 
+
 func (l *List) SetModels(models data.Models) {
 	l.models = models
 }

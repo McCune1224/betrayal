@@ -11,7 +11,8 @@ var AdminRoles = []string{
 	"Bot Developer",
 }
 
-func IsAdminRole(ctx ken.SubCommandContext, requiredRole ...string) bool {
+// Check if user who invoked command has required role
+func IsAdminRole(ctx ken.Context, requiredRole ...string) bool {
 	event := ctx.GetEvent()
 	guildRoles, _ := ctx.GetSession().GuildRoles(event.GuildID)
 

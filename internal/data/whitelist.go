@@ -5,7 +5,7 @@ import (
 )
 
 type Whitelist struct {
-	ID          int    `db:"id"`
+	ID          int64    `db:"id"`
 	ChannelID   string `db:"channel_id"`
 	GuildID     string `db:"guild_id"`
 	ChannelName string `db:"channel_name"`

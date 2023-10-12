@@ -63,6 +63,15 @@ func (pm *PerkModel) Update(p *Perk) error {
 	return nil
 }
 
+func (p *PerkModel) UpdateName(perk *Perk) error {
+	query := `UPDATE perks SET name = $1 WHERE id = $2`
+	_, err := p.DB.Exec(query, perk.Name, perk.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (pm *PerkModel) Delete(id int64) error {
 	_, err := pm.DB.Exec("DELETE FROM perks WHERE id = $1", id)
 	if err != nil {

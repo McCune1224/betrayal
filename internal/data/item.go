@@ -9,7 +9,7 @@ type Item struct {
 	ID          int64          `db:"id"`
 	Name        string         `db:"name"`
 	Description string         `db:"description"`
-	Cost        int64          `db:"cost"`
+	Cost        int64            `db:"cost"`
 	Rarity      string         `db:"rarity"`
 	Categories  pq.StringArray `db:"categories"`
 	CreatedAt   string         `db:"created_at"`

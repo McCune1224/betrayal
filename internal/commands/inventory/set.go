@@ -11,17 +11,17 @@ import (
 )
 
 func (i *Inventory) setAbility(ctx ken.SubCommandContext) (err error) {
-	ctx.SetEphemeral(true)
 	inventory, err := i.imLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
-		discord.SendSilentError(
+		discord.ErrorMessage(
 			ctx,
 			"Failed to get inventory",
 			"Alex is a bad programmer, and this is his fault.",
 		)
 		return err
 	}
+	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
 	chargesArg := ctx.Options().GetByName("charges").IntValue()
 
@@ -32,7 +32,7 @@ func (i *Inventory) setAbility(ctx ken.SubCommandContext) (err error) {
 			err = i.models.Inventories.UpdateAbilities(inventory)
 			if err != nil {
 				log.Println(err)
-				return discord.SendSilentError(
+				return discord.ErrorMessage(
 					ctx,
 					"Failed to update ability",
 					"Alex is a bad programmer, and this is his fault.",
@@ -51,17 +51,17 @@ func (i *Inventory) setAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
-	ctx.SetEphemeral(true)
 	inventory, err := i.imLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
-		discord.SendSilentError(
+		discord.ErrorMessage(
 			ctx,
 			"Failed to get inventory",
 			"Alex is a bad programmer, and this is his fault.",
 		)
 		return err
 	}
+	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
 	chargesArg := ctx.Options().GetByName("charges").IntValue()
 
@@ -72,7 +72,7 @@ func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
 			err = i.models.Inventories.UpdateAnyAbilities(inventory)
 			if err != nil {
 				log.Println(err)
-				return discord.SendSilentError(
+				return discord.ErrorMessage(
 					ctx,
 					"Failed to update ability",
 					"Alex is a bad programmer, and this is his fault.",
@@ -91,23 +91,23 @@ func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setCoins(ctx ken.SubCommandContext) (err error) {
-	ctx.SetEphemeral(true)
 	inventory, err := i.imLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
-		discord.SendSilentError(
+		discord.ErrorMessage(
 			ctx,
 			"Failed to get inventory",
 			"Alex is a bad programmer, and this is his fault.",
 		)
 		return err
 	}
+	ctx.SetEphemeral(false)
 	coinsArg := ctx.Options().GetByName("amount").IntValue()
 	inventory.Coins = coinsArg
-	err = i.models.Inventories.UpdateProperty(inventory, "coins", coinsArg)
+	err = i.models.Inventories.UpdateCoins(inventory)
 	if err != nil {
 		log.Println(err)
-		return discord.SendSilentError(
+		return discord.ErrorMessage(
 			ctx,
 			"Failed to update coins",
 			"Alex is a bad programmer, and this is his fault.",
@@ -117,84 +117,87 @@ func (i *Inventory) setCoins(ctx ken.SubCommandContext) (err error) {
 	if err != nil {
 		return err
 	}
-	return ctx.RespondMessage(
-		fmt.Sprintf(
-			"Coins set to %d",
-			inventory.Coins,
-		),
+	return discord.SuccessfulMessage(
+		ctx,
+		"Coins updated",
+		fmt.Sprintf("Set coins from %d to %d", coinsArg, inventory.Coins),
 	)
 }
 
 func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
-	ctx.SetEphemeral(true)
 	inventory, err := i.imLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
-		discord.SendSilentError(
+		discord.ErrorMessage(
 			ctx,
 			"Failed to get inventory",
 			"Alex is a bad programmer, and this is his fault.",
 		)
 		return err
 	}
+	ctx.SetEphemeral(false)
 
 	coinBonusArg := ctx.Options().GetByName("amount").StringValue()
-
+	old := inventory.CoinBonus
 	fCoinBonusArg, err := strconv.ParseFloat(coinBonusArg, 32)
 	if err != nil {
 		log.Println(err)
-		return discord.SendSilentError(
+		return discord.ErrorMessage(
 			ctx,
 			"Failed to parse coin bonus",
 			"Unable to parse coin bonus")
 	}
+    //FIXME: Remove round down 
 	inventory.CoinBonus = (float32(fCoinBonusArg) / 100)
 
 	err = i.models.Inventories.UpdateProperty(inventory, "coin_bonus", inventory.CoinBonus)
 	if err != nil {
 		log.Println(err)
-		return discord.SendSilentError(
+		return discord.ErrorMessage(
 			ctx,
 			"Failed to update coin bonus",
 			"Alex is a bad programmer, and this is his fault.",
 		)
 	}
+
 	err = i.updateInventoryMessage(ctx, inventory)
 	if err != nil {
 		log.Println(err)
-		return discord.SendSilentError(
+		return discord.ErrorMessage(
 			ctx,
 			"Failed to update inventory message",
 			"Alex is a bad programmer, and this is his fault.",
 		)
 	}
 
-	return ctx.RespondMessage(
+	return discord.SuccessfulMessage(
+		ctx,
+		"Coin bonus updated",
 		fmt.Sprintf(
-			"Coin bonus set to %f from %f",
-			inventory.CoinBonus,
-			fCoinBonusArg,
+			"Coin bonus set to %s%% (was %s%%)",
+			coinBonusArg,
+			strconv.FormatFloat(float64(old*100), 'f', 2, 32),
 		))
 }
 
 func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
-	ctx.SetEphemeral(true)
 	inventory, err := i.imLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
-		discord.SendSilentError(
+		discord.ErrorMessage(
 			ctx,
 			"Failed to get inventory",
 			"Alex is a bad programmer, and this is his fault.",
 		)
 		return err
 	}
+	ctx.SetEphemeral(false)
 	itemsLimitArg := ctx.Options().GetByName("size").IntValue()
-	inventory.ItemLimit = itemsLimitArg
+	inventory.ItemLimit = int(itemsLimitArg)
 	err = i.models.Inventories.UpdateProperty(inventory, "item_limit", itemsLimitArg)
 	if err != nil {
 		log.Println(err)
-		return discord.SendSilentError(
+		return discord.ErrorMessage(
 			ctx,
 			"Failed to update items limit",
 			"Alex is a bad programmer, and this is his fault.",
@@ -205,11 +208,12 @@ func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 
-	return ctx.RespondMessage(
+	return discord.SuccessfulMessage(
+		ctx,
+		"Items limit updated",
 		fmt.Sprintf(
 			"Items limit set to %d",
 			inventory.ItemLimit,
 		),
 	)
-
 }

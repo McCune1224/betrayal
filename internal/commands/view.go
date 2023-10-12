@@ -2,6 +2,8 @@ package commands
 
 import (
 	"fmt"
+	"log"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
@@ -10,7 +12,6 @@ import (
 )
 
 const infinity = "∞"
-const black = 0x000000
 
 type View struct {
 	models data.Models
@@ -42,12 +43,7 @@ func (*View) Options() []*discordgo.ApplicationCommandOption {
 			Name:        "role",
 			Description: "View a role",
 			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "name",
-					Description: "Name of the role",
-					Required:    true,
-				},
+				discord.StringCommandArg("name", "Name of the role", true),
 			},
 		},
 		{
@@ -55,12 +51,7 @@ func (*View) Options() []*discordgo.ApplicationCommandOption {
 			Name:        "ability",
 			Description: "View an ability",
 			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "name",
-					Description: "Name of the ability",
-					Required:    true,
-				},
+				discord.StringCommandArg("name", "Name of the role", true),
 			},
 		},
 		{
@@ -68,12 +59,7 @@ func (*View) Options() []*discordgo.ApplicationCommandOption {
 			Name:        "perk",
 			Description: "View a perk",
 			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "name",
-					Description: "Name of the perk",
-					Required:    true,
-				},
+				discord.StringCommandArg("name", "Name of the role", true),
 			},
 		},
 		{
@@ -81,12 +67,7 @@ func (*View) Options() []*discordgo.ApplicationCommandOption {
 			Name:        "item",
 			Description: "View an item",
 			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "name",
-					Description: "Name of the item",
-					Required:    true,
-				},
+				discord.StringCommandArg("name", "Name of the role", true),
 			},
 		},
 	}
@@ -96,22 +77,18 @@ func (*View) Options() []*discordgo.ApplicationCommandOption {
 
 func (v *View) Run(ctx ken.Context) (err error) {
 	err = ctx.HandleSubCommands(
-		ken.SubCommandHandler{Name: "role", Run: v.ViewRole},
-		ken.SubCommandHandler{Name: "ability", Run: v.ViewAbility},
-		ken.SubCommandHandler{Name: "perk", Run: v.ViewPerk},
-		ken.SubCommandHandler{Name: "item", Run: v.ViewItem},
+		ken.SubCommandHandler{Name: "role", Run: v.viewRole},
+		ken.SubCommandHandler{Name: "ability", Run: v.viewAbility},
+		ken.SubCommandHandler{Name: "perk", Run: v.viewPerk},
+		ken.SubCommandHandler{Name: "item", Run: v.viewItem},
 	)
 	return err
 }
 
-func (v *View) ViewRole(ctx ken.SubCommandContext) (err error) {
-	if err = ctx.Defer(); err != nil {
-		return err
-	}
+func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
 	nameArg := ctx.Options().GetByName("name").StringValue()
 	role, err := v.models.Roles.GetByName(nameArg)
 	if err != nil {
-		ctx.SetEphemeral(true)
 		ctx.RespondError(
 			fmt.Sprintf("Unable to find Role: %s", nameArg),
 			"Error Finding Role",
@@ -121,7 +98,6 @@ func (v *View) ViewRole(ctx ken.SubCommandContext) (err error) {
 
 	abilities, err := v.models.Roles.GetAbilities(role.ID)
 	if err != nil {
-		ctx.SetEphemeral(true)
 		ctx.RespondError(
 			fmt.Sprintf("Unable to find Abilities for Role: %s", nameArg),
 			"Error Finding Abilities",
@@ -131,7 +107,6 @@ func (v *View) ViewRole(ctx ken.SubCommandContext) (err error) {
 
 	perks, err := v.models.Roles.GetPerks(role.ID)
 	if err != nil {
-		ctx.SetEphemeral(true)
 		ctx.RespondError(
 			fmt.Sprintf("Unable to find Perks for Role: %s", nameArg),
 			"Error Finding Perks",
@@ -142,11 +117,11 @@ func (v *View) ViewRole(ctx ken.SubCommandContext) (err error) {
 	color := 0x000000
 	switch role.Alignment {
 	case "GOOD":
-		color = 0x00ff00
+		color = discord.ColorThemeGreen
 	case "EVIL":
-		color = 0xff3300
+		color = discord.ColorThemeRed
 	case "NEUTRAL":
-		color = 0xffee00
+		color = discord.ColorThemeYellow
 	}
 
 	var embededAbilitiesFields []*discordgo.MessageEmbedField
@@ -205,23 +180,20 @@ func (v *View) ViewRole(ctx ken.SubCommandContext) (err error) {
 		},
 	}
 
-	ctx.SetEphemeral(false)
 	err = ctx.RespondEmbed(embed)
 	return err
 }
 
-func (v *View) ViewAbility(ctx ken.SubCommandContext) (err error) {
+func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		return err
+		return
 	}
-
-	data := ctx.Options().GetByName("name").StringValue()
-	ability, err := v.models.Abilities.GetByName(data)
+	nameArg := ctx.Options().GetByName("name").StringValue()
+	ability, err := v.models.Abilities.GetByName(nameArg)
 	if err != nil {
-		ctx.SetEphemeral(true)
-		ctx.RespondError(
-			fmt.Sprintf("Unable to find Ability: %s", data),
+		discord.SuccessfulMessage(ctx,
 			"Error Finding Ability",
+			fmt.Sprintf("Unable to find Ability: %s", nameArg),
 		)
 		return err
 	}
@@ -232,6 +204,14 @@ func (v *View) ViewAbility(ctx ken.SubCommandContext) (err error) {
 		},
 	}
 
+	associatedRole, err := v.models.Roles.GetByAbilityID(ability.ID)
+	if err != nil {
+		log.Println(err)
+		discord.ErrorMessage(ctx,
+			"Error Finding Role",
+			fmt.Sprintf("Unable to find Associated Role for Ability: %s", nameArg))
+	}
+
 	abilityTitle := ability.Name
 	if !ability.AnyAbility {
 		abilityTitle = fmt.Sprintf("%s [%d]", ability.Name, ability.Charges)
@@ -239,20 +219,33 @@ func (v *View) ViewAbility(ctx ken.SubCommandContext) (err error) {
 
 	embed := &discordgo.MessageEmbed{
 		Title:  abilityTitle,
-		Color:  black,
+		Color:  determineColor(ability.Rarity),
 		Fields: embededFields,
 	}
 
-	ctx.SetEphemeral(false)
-	err = ctx.RespondEmbed(embed)
-	return err
+	b := ctx.FollowUpEmbed(embed)
+	var clearAll bool
+	b.AddComponents(func(cb *ken.ComponentBuilder) {
+		cb.AddActionsRow(func(b ken.ComponentAssembler) {
+			b.Add(discordgo.Button{
+				CustomID: "view-role",
+				Style:    discordgo.DangerButton,
+				Label:    fmt.Sprintf("View Role: %s", associatedRole.Name),
+			}, func(ctx ken.ComponentContext) bool {
+				ctx.RespondMessage(fmt.Sprintf("TODO: %s", associatedRole.Name))
+				return true
+			}, !clearAll)
+		}, clearAll).
+			Condition(func(cctx ken.ComponentContext) bool {
+				return cctx.User().ID == ctx.User().ID
+			})
+	})
+	fum := b.Send()
+
+	return fum.Error
 }
 
-func (v *View) ViewPerk(ctx ken.SubCommandContext) (err error) {
-	if err = ctx.Defer(); err != nil {
-		return err
-	}
-
+func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 	data := ctx.Options().GetByName("name").StringValue()
 	perk, err := v.models.Perks.GetByName(data)
 	if err != nil {
@@ -274,26 +267,27 @@ func (v *View) ViewPerk(ctx ken.SubCommandContext) (err error) {
 		Fields: embededFields,
 	}
 
-	ctx.SetEphemeral(true)
 	err = ctx.RespondEmbed(embed)
 	return err
 }
 
-func (v *View) ViewItem(ctx ken.SubCommandContext) (err error) {
-
-	if err = ctx.Defer(); err != nil {
-		return err
-	}
+func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
 
 	data := ctx.Options().GetByName("name").StringValue()
 	item, err := v.models.Items.GetByName(data)
 	if err != nil {
-		ctx.SetEphemeral(true)
-		ctx.RespondError(
+		discord.ErrorMessage(ctx,
+			"Unable to find Item",
 			fmt.Sprintf("Unable to find Item: %s", data),
-			"Error Finding Item",
 		)
 		return err
+	}
+
+	itemCostStr := ""
+	if item.Cost == 0 {
+		itemCostStr = infinity
+	} else {
+		itemCostStr = fmt.Sprintf("%d", item.Cost)
 	}
 
 	embededFields := []*discordgo.MessageEmbedField{
@@ -303,7 +297,7 @@ func (v *View) ViewItem(ctx ken.SubCommandContext) (err error) {
 		},
 		{
 			Name:   "Cost",
-			Value:  fmt.Sprintf("%d", item.Cost),
+			Value:  itemCostStr,
 			Inline: true,
 		},
 		{
@@ -315,11 +309,10 @@ func (v *View) ViewItem(ctx ken.SubCommandContext) (err error) {
 
 	embed := &discordgo.MessageEmbed{
 		Title:  item.Name,
-		Color:  0x000000,
+		Color:  determineColor(item.Rarity),
 		Fields: embededFields,
 	}
 
-	ctx.SetEphemeral(false)
 	err = ctx.RespondEmbed(embed)
 	return err
 }
@@ -327,4 +320,27 @@ func (v *View) ViewItem(ctx ken.SubCommandContext) (err error) {
 // Version implements ken.SlashCommand.
 func (*View) Version() string {
 	return "1.0.0"
+}
+
+func determineColor(rarity string) int {
+	rarity = strings.ToUpper(rarity)
+	switch rarity {
+	case "COMMON":
+		return discord.ColorItemCommon
+	case "UNCOMMON":
+		return discord.ColorItemUncommon
+	case "RARE":
+		return discord.ColorItemRare
+	case "EPIC":
+		return discord.ColorItemEpic
+	case "LEGENDARY":
+		return discord.ColorItemLegendary
+	case "MYTHICAL":
+		return discord.ColorItemMythical
+	case "UNIQUE":
+		return discord.ColorItemUnique
+
+	default:
+		return discord.ColorThemeWhite
+	}
 }

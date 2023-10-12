@@ -18,7 +18,7 @@ type Inventory struct {
 	Immunities     pq.StringArray `db:"immunities"`
 	Effects        pq.StringArray `db:"effects"`
 	Items          pq.StringArray `db:"items"`
-	ItemLimit      int64          `db:"item_limit"`
+	ItemLimit      int            `db:"item_limit"`
 	Perks          pq.StringArray `db:"perks"`
 	Coins          int64          `db:"coins"`
 	CoinBonus      float32        `db:"coin_bonus"`
@@ -37,7 +37,7 @@ func (m *InventoryModel) Insert(i *Inventory) (int64, error) {
 		return -1, err
 	}
 	var lastInsert Inventory
-	err = m.DB.Get(&lastInsert, "SELECT * FROM inventory ORDER BY id DESC LIMIT 1")
+	err = m.DB.Get(&lastInsert, "SELECT * FROM inventories ORDER BY id DESC LIMIT 1")
 	return lastInsert.ID, nil
 }
 
@@ -79,6 +79,15 @@ func (m *InventoryModel) UpdateProperty(
 ) error {
 	query := `UPDATE inventories SET ` + columnName + `=$1 WHERE discord_id=$2`
 	_, err := m.DB.Exec(query, value, inventory.DiscordID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *InventoryModel) UpdateCoins(inventory *Inventory) error {
+	query := `UPDATE inventories SET coins=$1 WHERE discord_id=$2`
+	_, err := m.DB.Exec(query, inventory.Coins, inventory.DiscordID)
 	if err != nil {
 		return err
 	}
@@ -175,8 +184,4 @@ func (m *InventoryModel) UpdateItemLimit(inventory *Inventory) error {
 		return err
 	}
 	return nil
-}
-
-func (m *InventoryModel) AdminPinUpdate(inventory *Inventory) error {
-	panic("not implemented")
 }

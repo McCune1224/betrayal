@@ -44,23 +44,22 @@ func (rg *RoleGet) Run(ctx ken.Context) (err error) {
 	data := ctx.Options().GetByName("name").StringValue()
 	role, err := rg.models.Roles.GetByName(data)
 	if err != nil {
-		discord.SendSilentError(ctx, "Unable to find Role", "No known role of name "+data)
+		discord.ErrorMessage(ctx, "Unable to find Role", "No known role of name "+data)
 		return err
 	}
 
 	abilities, err := rg.models.Roles.GetAbilities(role.ID)
 	if err != nil {
-		ctx.RespondError("Failed to Find base Abilities",
+		return discord.ErrorMessage(ctx, "Failed to Find base Abilities",
 			"Unable to find Abilities for Role "+role.Name,
 		)
-		return err
 	}
 
 	perks, err := rg.models.Roles.GetPerks(role.ID)
 	if err != nil {
-		ctx.RespondError("Failed to find role perks", 
-            "Unable to find Perks for Role "+role.Name,
-            )
+		discord.ErrorMessage(ctx, "Failed to find role perks",
+			"Unable to find Perks for Role "+role.Name,
+		)
 		return err
 	}
 
