@@ -2,6 +2,7 @@ package view
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
@@ -37,12 +38,12 @@ func (v *View) roleEmbed(role *data.Role) (*discordgo.MessageEmbed, error) {
 	})
 	for _, ability := range abilities {
 		title := ability.Name
-		if !ability.AnyAbility {
-			if ability.Charges == -1 {
-				title = fmt.Sprintf("%s [%s]", ability.Name, infinity)
-			} else {
-				title = fmt.Sprintf("%s [%d]", ability.Name, ability.Charges)
-			}
+		fStr := "%s [%d] - %s"
+		categories := strings.Join(ability.Categories, ", ")
+		if ability.Charges == -1 {
+			title = fmt.Sprintf(fStr, ability.Name, infinity,categories)
+		} else {
+			title = fmt.Sprintf(fStr, ability.Name, ability.Charges, categories)
 		}
 		embededAbilitiesFields = append(
 			embededAbilitiesFields,
@@ -75,6 +76,7 @@ func (v *View) roleEmbed(role *data.Role) (*discordgo.MessageEmbed, error) {
 			},
 		)
 	}
+
 	embed := &discordgo.MessageEmbed{
 		Title:       role.Name,
 		Description: role.Description,

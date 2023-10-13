@@ -2,13 +2,12 @@ package main
 
 import (
 	"encoding/csv"
-	"fmt"
 	"os"
-
-	"github.com/mccune1224/betrayal/internal/data"
+	"strings"
 )
 
-func (app *application) ParseAnyAbilityCsv(filepath string) error {
+// Take in a filepath and attach CSV data to app struct
+func (app *application) ParseCsv(filepath string) error {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return err
@@ -27,22 +26,43 @@ func (app *application) ParseAnyAbilityCsv(filepath string) error {
 
 }
 
-func GetAnyAbilities(csv [][]string) ([]data.Ability, error) {
-	var abilities []data.Ability
+type AnyAbilityLine struct {
+	Rarity      string
+	Name        string
+	Description string
+}
 
-	for i, entry := range csv {
-		if i == 0 {
+// Update the database with new AA's from CSV
+func (app *application) UpdateAbilityRarites() []AnyAbilityLine {
+	dbAbilityUpdater := app.models.Abilities
+	updates := []AnyAbilityLine{}
+	for i, line := range app.csv {
+		var aal AnyAbilityLine
+		// skip row 0 and 1
+		if i == 0 || i == 1 {
 			continue
 		}
 
-		ability := data.Ability{
-			Rarity:      entry[1],
-			Name:        entry[2],
-			Description: entry[3],
-		}
-		fmt.Println("ABILITY: ", ability)
-		abilities = append(abilities, ability)
-	}
+		aal.Rarity = strings.TrimSpace(line[1])
+		aal.Name = strings.TrimSpace(line[2])
+		aal.Description = strings.TrimSpace(line[3])
 
-	return abilities, nil
+		if aal.Rarity == "" || aal.Name == "" || aal.Description == "" {
+			app.logger.Println("!! FAILED TO PARSE LINE", i)
+			continue
+		}
+
+		currAA, err := dbAbilityUpdater.GetByName(aal.Name)
+		if err != nil {
+			app.logger.Printf("Error updating '%s', Skipping", aal.Name)
+			continue
+		}
+		currAA.Rarity = aal.Rarity
+		err = dbAbilityUpdater.Update(currAA)
+		if err != nil {
+			app.logger.Printf("Error updating '%s', Skipping", aal.Name)
+			continue
+		}
+	}
+	return updates
 }

@@ -58,10 +58,14 @@ func main() {
 		log.Fatal("error opening database,", err)
 	}
 	defer db.Close()
-
 	app.models = data.NewModels(db)
 
-	app.UpdatePerks()
+    app.ParseCsv(*file)
+	aals := app.UpdateAbilityRarites()
+	for _, aal := range aals {
+		app.logger.Println(aal)
+	}
+
 }
 
 func (a *application) InsertStatuses(db *sqlx.DB) {
@@ -74,7 +78,6 @@ func (a *application) InsertStatuses(db *sqlx.DB) {
 		a.logger.Println(id, status.Name)
 
 	}
-
 }
 
 // Catch all for entering InsertRoleJoins into daatbase
@@ -227,10 +230,10 @@ func (app *application) UpdatePerks() {
 
 		err = perkEntry.UpdateName(perk)
 		if err != nil {
-            // check if err string has "pq: duplicate key value violates unique constraint"
-            if strings.Contains(err.Error(), "pq: duplicate key value violates unique constraint") {
-                continue
-            }
+			// check if err string has "pq: duplicate key value violates unique constraint"
+			if strings.Contains(err.Error(), "pq: duplicate key value violates unique constraint") {
+				continue
+			}
 			app.logger.Fatal(err)
 		}
 		fmt.Println()

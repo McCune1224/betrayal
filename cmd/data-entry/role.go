@@ -222,3 +222,4 @@ func (a *application) SplitRoles(roleType string) ([]csvRole, error) {
 	}
 	return roleList, nil
 }
+
