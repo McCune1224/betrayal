@@ -10,6 +10,8 @@ import (
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // emoji constants
@@ -463,6 +465,8 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 	roleArg := ctx.Options().GetByName("role").StringValue()
 	channelID := ctx.GetEvent().ChannelID
 
+	caser := cases.Title(language.AmericanEnglish)
+	roleArg = caser.String(roleArg)
 	// Make sure role exists before creating inventory
 	role, err := i.models.Roles.GetByName(roleArg)
 	if err != nil {
