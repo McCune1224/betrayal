@@ -185,3 +185,35 @@ func (m *InventoryModel) UpdateItemLimit(inventory *Inventory) error {
 	}
 	return nil
 }
+
+func (m *InventoryModel) GetAll() ([]Inventory, error) {
+	query := `SELECT * FROM inventories`
+	var inventories []Inventory
+	err := m.DB.Select(&inventories, query)
+	if err != nil {
+		return nil, err
+	}
+	return inventories, nil
+}
+
+func (m *InventoryModel) GetAllActiveRoleNames() ([]string, error) {
+	query := `SELECT role_name FROM inventories`
+	var roleNames []string
+	err := m.DB.Select(&roleNames, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return roleNames, nil
+}
+
+func (m *InventoryModel) GetAllPlayerIDs() ([]string, error) {
+	query := `SELECT discord_id FROM inventories`
+	var discordIDs []string
+	err := m.DB.Select(&discordIDs, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return discordIDs, nil
+}

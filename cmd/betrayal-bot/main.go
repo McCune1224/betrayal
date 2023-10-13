@@ -13,6 +13,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/mccune1224/betrayal/internal/commands"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
+	"github.com/mccune1224/betrayal/internal/commands/view"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/middlewares"
 	"github.com/zekrotja/ken"
@@ -104,11 +105,8 @@ func main() {
 	tally := app.RegisterBetrayalCommands(
 		new(commands.Ping),
 		new(commands.Insult),
-        new(commands.Buy),
-		// new(commands.RoleGet),
-		// new(commands.SubsCommand),
-		new(commands.View),
-		// new(commands.Player),
+		new(commands.Buy),
+		new(view.View),
 		new(commands.List),
 		new(inventory.Inventory),
 		new(commands.ActionFunnel),
@@ -141,5 +139,3 @@ func main() {
 	}
 
 }
-
-

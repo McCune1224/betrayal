@@ -47,6 +47,24 @@ func (rm *RoleModel) GetByName(name string) (*Role, error) {
 	return &r, nil
 }
 
+func (rm *RoleModel) GetAllByID(ids []int64) ([]*Role, error) {
+	var roles []*Role
+	err := rm.DB.Select(&roles, "SELECT * FROM roles WHERE id = ANY($1)", ids)
+	if err != nil {
+		return nil, err
+	}
+	return roles, nil
+}
+
+func (rm *RoleModel) GetAllNames() ([]string, error) {
+	var names []string
+	err := rm.DB.Select(&names, "SELECT name FROM roles")
+	if err != nil {
+		return nil, err
+	}
+	return names, nil
+}
+
 func (rm *RoleModel) Update(r *Role) error {
 	query := `UPDATE roles SET name = $1, description = $2, alignment = $3 WHERE id = $4`
 	_, err := rm.DB.Exec(query, r.Name, r.Description, r.Alignment, r.ID)
@@ -155,4 +173,18 @@ func (rm *RoleModel) GetByAbilityID(abilityID int64) (*Role, error) {
 		return nil, err
 	}
 	return &r, nil
+}
+
+func (rm *RoleModel) GetByPerkID(perkID int64) (*Role, error) {
+	var r Role
+	err := rm.DB.Get(
+		&r,
+		`SELECT (perks.*) FROM perks INNER JOIN roles_perks ON perks.id = roles_perks.perk_id WHERE roles_perks.perk_id = $1`,
+		perkID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+
 }

@@ -41,6 +41,19 @@ func IntCommandArg(
 	}
 }
 
+func BoolCommandArg(
+	name string,
+	description string,
+	required bool,
+) *discordgo.ApplicationCommandOption {
+	return &discordgo.ApplicationCommandOption{
+		Type:        discordgo.ApplicationCommandOptionBoolean,
+		Name:        name,
+		Description: description,
+		Required:    required,
+	}
+}
+
 func ChannelCommandArg(required bool) *discordgo.ApplicationCommandOption {
 	return &discordgo.ApplicationCommandOption{
 		Type:        discordgo.ApplicationCommandOptionChannel,

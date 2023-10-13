@@ -1,4 +1,4 @@
-package commands
+package view
 
 import (
 	"fmt"
@@ -96,97 +96,21 @@ func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 
-	abilities, err := v.models.Roles.GetAbilities(role.ID)
+	roleEmbed, err := v.roleEmbed(role)
 	if err != nil {
-		ctx.RespondError(
-			fmt.Sprintf("Unable to find Abilities for Role: %s", nameArg),
-			"Error Finding Abilities",
-		)
-		return err
-	}
-
-	perks, err := v.models.Roles.GetPerks(role.ID)
-	if err != nil {
-		ctx.RespondError(
-			fmt.Sprintf("Unable to find Perks for Role: %s", nameArg),
-			"Error Finding Perks",
-		)
-		return err
-	}
-
-	color := 0x000000
-	switch role.Alignment {
-	case "GOOD":
-		color = discord.ColorThemeGreen
-	case "EVIL":
-		color = discord.ColorThemeRed
-	case "NEUTRAL":
-		color = discord.ColorThemeYellow
-	}
-
-	var embededAbilitiesFields []*discordgo.MessageEmbedField
-	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
-		Name:   "\n\n" + discord.Underline("Abilities") + "\n",
-		Value:  "",
-		Inline: false,
-	})
-	for _, ability := range abilities {
-		title := ability.Name
-		if !ability.AnyAbility {
-			if ability.Charges == -1 {
-				title = fmt.Sprintf("%s [%s]", ability.Name, infinity)
-			} else {
-				title = fmt.Sprintf("%s [%d]", ability.Name, ability.Charges)
-			}
-		}
-		embededAbilitiesFields = append(
-			embededAbilitiesFields,
-			&discordgo.MessageEmbedField{
-				Name:   title,
-				Value:  ability.Description,
-				Inline: false,
-			},
-		)
-	}
-	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
-		Name:  "\n\n",
-		Value: "\n",
-	})
-
-	var embededPerksFields []*discordgo.MessageEmbedField
-	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
-		Name:   discord.Underline("Perks"),
-		Value:  "",
-		Inline: false,
-	})
-	for _, perk := range perks {
-		embededPerksFields = append(
-			embededPerksFields,
-			&discordgo.MessageEmbedField{
-				Name:   perk.Name,
-				Value:  perk.Description + "\n",
-				Inline: false,
-			},
+		log.Println(err)
+		return discord.ErrorMessage(ctx,
+			"Failed to Get Full Role Details",
+			"Was not able to pull abilities and perk details for view.",
 		)
 	}
 
-	embed := &discordgo.MessageEmbed{
-		Title:       role.Name,
-		Description: role.Description,
-		Color:       color,
-		Fields:      append(embededAbilitiesFields, embededPerksFields...),
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: "Alignment: " + role.Alignment,
-		},
-	}
-
-	err = ctx.RespondEmbed(embed)
-	return err
+	return ctx.RespondEmbed(roleEmbed)
 }
 
 func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		return
+		return err
 	}
 	nameArg := ctx.Options().GetByName("name").StringValue()
 	ability, err := v.models.Abilities.GetByName(nameArg)
@@ -196,12 +120,6 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 			fmt.Sprintf("Unable to find Ability: %s", nameArg),
 		)
 		return err
-	}
-
-	embededFields := []*discordgo.MessageEmbedField{
-		{
-			Value: ability.Description,
-		},
 	}
 
 	associatedRole, err := v.models.Roles.GetByAbilityID(ability.ID)
@@ -220,19 +138,29 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 	embed := &discordgo.MessageEmbed{
 		Title:  abilityTitle,
 		Color:  determineColor(ability.Rarity),
-		Fields: embededFields,
+		Fields: []*discordgo.MessageEmbedField{{Value: ability.Description}},
 	}
 
 	b := ctx.FollowUpEmbed(embed)
 	var clearAll bool
+
 	b.AddComponents(func(cb *ken.ComponentBuilder) {
 		cb.AddActionsRow(func(b ken.ComponentAssembler) {
 			b.Add(discordgo.Button{
-				CustomID: "view-role",
-				Style:    discordgo.DangerButton,
-				Label:    fmt.Sprintf("View Role: %s", associatedRole.Name),
+				CustomID: "ability-view",
+				Style:    discordgo.PrimaryButton,
+				Label:    fmt.Sprintf("%s", associatedRole.Name),
 			}, func(ctx ken.ComponentContext) bool {
-				ctx.RespondMessage(fmt.Sprintf("TODO: %s", associatedRole.Name))
+				roleEmbed, err := v.roleEmbed(associatedRole)
+				if err != nil {
+					log.Println(err)
+					ctx.RespondError(
+						"Error Finding Role",
+						fmt.Sprintf("Unable to find Role: %s", associatedRole.Name),
+					)
+					return false
+				}
+				ctx.RespondEmbed(roleEmbed)
 				return true
 			}, !clearAll)
 		}, clearAll).
@@ -246,29 +174,63 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
-	data := ctx.Options().GetByName("name").StringValue()
-	perk, err := v.models.Perks.GetByName(data)
+	if err = ctx.Defer(); err != nil {
+		return err
+	}
+	nameArg := ctx.Options().GetByName("name").StringValue()
+	perk, err := v.models.Perks.GetByName(nameArg)
 	if err != nil {
-		ctx.RespondError("Unable to find Perk", err.Error())
+		ctx.RespondError("Unable to find Perk",
+			fmt.Sprintf("Unable to find Perk: %s", nameArg),
+		)
 		return err
 	}
 
-	embededFields := []*discordgo.MessageEmbedField{
-		{
-			Name:   perk.Name,
-			Value:  perk.Description,
-			Inline: false,
-		},
+	associatedRole, err := v.models.Roles.GetByPerkID(perk.ID)
+	if err != nil {
+		log.Println(err)
+		discord.ErrorMessage(ctx,
+			"Error Finding Role",
+			fmt.Sprintf("Unable to find Associated Role for Ability: %s", nameArg))
+		return err
 	}
 
 	embed := &discordgo.MessageEmbed{
 		Title:  perk.Name,
-		Color:  0x000000,
-		Fields: embededFields,
+		Color:  discord.ColorThemeWhite,
+		Fields: []*discordgo.MessageEmbedField{{Value: perk.Description}},
 	}
 
-	err = ctx.RespondEmbed(embed)
-	return err
+	b := ctx.FollowUpEmbed(embed)
+	var clearAll bool
+
+	b.AddComponents(func(cb *ken.ComponentBuilder) {
+		cb.AddActionsRow(func(b ken.ComponentAssembler) {
+			b.Add(discordgo.Button{
+				CustomID: "perk-view",
+				Style:    discordgo.PrimaryButton,
+				Label:    fmt.Sprintf("%s", associatedRole.Name),
+			}, func(ctx ken.ComponentContext) bool {
+				roleEmbed, err := v.roleEmbed(associatedRole)
+				if err != nil {
+					log.Println(err)
+					ctx.RespondError(
+						"Error Finding Role",
+						fmt.Sprintf("Unable to find Role: %s", associatedRole.Name),
+					)
+					return false
+				}
+				ctx.RespondEmbed(roleEmbed)
+				return true
+			}, !clearAll)
+		}, clearAll).
+			Condition(func(cctx ken.ComponentContext) bool {
+				return cctx.User().ID == ctx.User().ID
+			})
+	})
+
+	fum := b.Send()
+	return fum.Error
 }
 
 func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
