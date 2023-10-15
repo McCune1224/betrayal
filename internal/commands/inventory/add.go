@@ -12,7 +12,7 @@ import (
 )
 
 func (i *Inventory) addAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (i *Inventory) addAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addPerk(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func (i *Inventory) addPerk(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addItem(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		return err
 	}
@@ -213,7 +213,7 @@ func (i *Inventory) addItem(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addStatus(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		return err
 	}
@@ -252,7 +252,7 @@ func (i *Inventory) addStatus(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addImmunity(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -294,7 +294,7 @@ func (i *Inventory) addImmunity(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -337,7 +337,7 @@ func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addCoins(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -431,7 +431,7 @@ func (i *Inventory) addWhitelist(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addCoinBonus(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -490,7 +490,7 @@ func (i *Inventory) addNote(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		return err
 	}

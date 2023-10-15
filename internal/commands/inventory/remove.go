@@ -11,7 +11,7 @@ import (
 )
 
 func (i *Inventory) removeAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -55,7 +55,7 @@ func (i *Inventory) removeAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -100,7 +100,7 @@ func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removePerk(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -141,7 +141,7 @@ func (i *Inventory) removePerk(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeItem(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -183,7 +183,7 @@ func (i *Inventory) removeItem(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeStatus(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -225,7 +225,7 @@ func (i *Inventory) removeStatus(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeImmunity(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -267,7 +267,7 @@ func (i *Inventory) removeImmunity(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeEffect(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -310,7 +310,7 @@ func (i *Inventory) removeEffect(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inventory) removeCoins(ctx ken.SubCommandContext) (err error) {
 	ctx.SetEphemeral(true)
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		discord.ErrorMessage(
@@ -366,7 +366,7 @@ func (i *Inventory) removeCoins(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeCoinBonus(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		discord.ErrorMessage(
@@ -454,7 +454,7 @@ func (i *Inventory) removeNote(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		discord.ErrorMessage(

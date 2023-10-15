@@ -40,3 +40,7 @@ fat-dumpy/
 
 # Production
 build/
+
+
+# Local development stuff
+sandbox/

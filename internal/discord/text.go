@@ -78,8 +78,11 @@ const (
 // ID of bot owner
 const McKusaID = "206268866714796032"
 
-func Mention(userID string) string {
+func MentionUser(userID string) string {
 	return "<@" + userID + ">"
+}
+func MentionChannel(channelID string) string {
+	return "<#" + channelID + ">"
 }
 
 func Underline(s string) string {

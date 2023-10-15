@@ -77,6 +77,21 @@ func (im *ItemModel) GetAll() ([]Item, error) {
 	return items, nil
 }
 
+func (im *ItemModel) GetRandomByRarity(rarity string) (*Item, error) {
+	var item Item
+
+	err := im.DB.Get(
+		&item,
+		"SELECT * FROM items WHERE rarity ILIKE $1 ORDER BY RANDOM() LIMIT 1",
+		rarity,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &item, nil
+}
+
 func (im *ItemModel) Update(item *Item) error {
 	query := `UPDATE items SET name = $1, description = $2, cost = $3, categories = $4 WHERE id = $5`
 	_, err := im.DB.Exec(query, item.Name, item.Description, item.Cost, item.Categories, item.ID)

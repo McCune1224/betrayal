@@ -97,6 +97,19 @@ func (am *AbilityModel) GetByRarity(rarity string) ([]Ability, error) {
 	return abilities, nil
 }
 
+func (am *AbilityModel) GetRandomByRarity(rarity string) (*Ability, error) {
+	var a Ability
+	err := am.DB.Get(
+		&a,
+		"SELECT * FROM Abilities WHERE rarity ILIKE $1 ORDER BY RANDOM() LIMIT 1",
+		rarity,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &a, nil
+}
+
 func (am *AbilityModel) Update(a *Ability) error {
 	query := `UPDATE Abilities SET name = $1, description = $2, categories = $3, charges = $4, any_ability = $5, rarity = $6 WHERE id = $7`
 	_, err := am.DB.Exec(

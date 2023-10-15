@@ -594,8 +594,11 @@ func (i *Inventory) delete(ctx ken.SubCommandContext) (err error) {
 		discord.ErrorMessage(ctx, "Failed to Delete Inventory",
 			fmt.Sprintf("Failed to delete inventory for %s", userArg.Username))
 	}
-	ctx.RespondMessage(fmt.Sprintf("Inventory for %s deleted", userArg.Username))
-	return err
+	return discord.SuccessfulMessage(
+		ctx,
+		"Inventory Deleted",
+		fmt.Sprintf("Removed inventory for channel %s", discord.MentionChannel(inv.UserPinChannel)),
+	)
 }
 
 // Version implements ken.SlashCommand.
@@ -764,7 +767,7 @@ func (i *Inventory) listWhitelist(ctx ken.SubCommandContext) (err error) {
 // Set ephemeral to true to hide response, check if user is calling in confessional channel,
 // attempt to fetch inventory, if inventory is found check if user is authorized to view inventory
 // if not authorized send error message and return
-func (i *Inventory) imLazyMiddleware(ctx ken.SubCommandContext) (inv *data.Inventory, err error) {
+func (i *Inventory) ImLazyMiddleware(ctx ken.SubCommandContext) (inv *data.Inventory, err error) {
 	ctx.SetEphemeral(true)
 	userArg, ok := ctx.Options().GetByNameOptional("user")
 	channelID := ctx.GetEvent().ChannelID
@@ -835,12 +838,78 @@ func UpdateInventoryMessage(ctx ken.Context, i *data.Inventory) (err error) {
 		InventoryEmbedMessage(ctx.GetEvent(), i, false),
 	)
 	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update inventory message",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return err
 	}
 	return nil
+}
+
+// Helper to determine if user is authorized to use inventory command based on:
+// 1. In their confessional (and owner of inventory)
+// 2. In a whitelisted channel (and an admin)
+func InventoryAuthorized(
+	ctx ken.SubCommandContext,
+	inv *data.Inventory,
+	wl []*data.Whitelist,
+) bool {
+	event := ctx.GetEvent()
+	invokeChannelID := event.ChannelID
+	invoker := event.Member
+
+	// Base case of user is in confessional channel and is the owner of the inventory
+	if inv.DiscordID == invoker.User.ID && inv.UserPinChannel == invokeChannelID {
+		return true
+	}
+
+	// If not in confessional channel, check if in whitelist
+	if invokeChannelID != inv.UserPinChannel {
+		for _, whitelist := range wl {
+			if whitelist.ChannelID == invokeChannelID {
+				return true
+			}
+		}
+		return false
+	}
+
+	// Go through and make sure user has one of the allowed roles:
+	for _, role := range invoker.Roles {
+		for _, allowedRole := range discord.AdminRoles {
+			if role == allowedRole {
+				return true
+			}
+		}
+	}
+	return true
+}
+
+// Helper to attempt to fetch given user's inventory from user command option
+func Fetch(ctx ken.SubCommandContext, m data.Models) (inv *data.Inventory, err error) {
+	userArg, ok := ctx.Options().GetByNameOptional("user")
+	event := ctx.GetEvent()
+	channelID := event.ChannelID
+	if !ok {
+		inv, err = m.Inventories.GetByPinChannel(channelID)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+	}
+	if inv == nil {
+		inv, err = m.Inventories.GetByDiscordID(userArg.UserValue(ctx).ID)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+	}
+	wl, err := m.Whitelists.GetAll()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	if !InventoryAuthorized(ctx, inv, wl) {
+		return nil, errors.New("Unauthorized to use command")
+	}
+	if inv == nil {
+		return nil, errors.New("Somehow inventory is nil in middleware...")
+	}
+	return inv, nil
 }

@@ -73,7 +73,7 @@ func (i *Insult) add(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 	err = ctx.RespondMessage(
-		fmt.Sprintf("Hey %s, %s", discord.Mention(discord.McKusaID), insult.Insult),
+		fmt.Sprintf("Hey %s, %s", discord.MentionUser(discord.McKusaID), insult.Insult),
 	)
 	return err
 }
@@ -85,7 +85,7 @@ func (i *Insult) get(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	err = ctx.RespondMessage(
-		fmt.Sprintf("Hey %s, %s", discord.Mention(discord.McKusaID), insult.Insult),
+		fmt.Sprintf("Hey %s, %s", discord.MentionUser(discord.McKusaID), insult.Insult),
 	)
 	return err
 }

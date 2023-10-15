@@ -125,20 +125,24 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 	associatedRole, err := v.models.Roles.GetByAbilityID(ability.ID)
 	if err != nil {
 		log.Println(err)
-		discord.ErrorMessage(ctx,
+		return discord.ErrorMessage(ctx,
 			"Error Finding Role",
 			fmt.Sprintf("Unable to find Associated Role for Ability: %s", nameArg))
 	}
 
-	abilityTitle := ability.Name
-	if !ability.AnyAbility {
-		abilityTitle = fmt.Sprintf("%s [%d]", ability.Name, ability.Charges)
+	title := ability.Name
+	fStr := "%s [%d] - %s"
+	categories := strings.Join(ability.Categories, ", ")
+	if ability.Charges == -1 {
+		title = fmt.Sprintf(fStr, ability.Name, infinity, categories)
+	} else {
+		title = fmt.Sprintf(fStr, ability.Name, ability.Charges, categories)
 	}
 
 	embed := &discordgo.MessageEmbed{
-		Title:  abilityTitle,
-		Color:  determineColor(ability.Rarity),
-		Fields: []*discordgo.MessageEmbedField{{Value: ability.Description}},
+		Title:       title,
+		Description: ability.Description,
+		Color:       determineColor(ability.Rarity),
 	}
 
 	b := ctx.FollowUpEmbed(embed)

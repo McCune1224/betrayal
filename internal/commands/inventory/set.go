@@ -11,7 +11,7 @@ import (
 )
 
 func (i *Inventory) setAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		discord.ErrorMessage(
@@ -51,7 +51,7 @@ func (i *Inventory) setAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		discord.ErrorMessage(
@@ -91,7 +91,7 @@ func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setCoins(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		discord.ErrorMessage(
@@ -125,7 +125,7 @@ func (i *Inventory) setCoins(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		discord.ErrorMessage(
@@ -181,7 +181,7 @@ func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.imLazyMiddleware(ctx)
+	inventory, err := i.ImLazyMiddleware(ctx)
 	if err != nil {
 		log.Println(err)
 		discord.ErrorMessage(

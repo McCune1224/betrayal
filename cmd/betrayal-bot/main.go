@@ -13,6 +13,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/mccune1224/betrayal/internal/commands"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
+	"github.com/mccune1224/betrayal/internal/commands/luck"
 	"github.com/mccune1224/betrayal/internal/commands/view"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/middlewares"
@@ -103,13 +104,14 @@ func main() {
 	app.betrayalManager.Unregister()
 
 	tally := app.RegisterBetrayalCommands(
-		new(commands.Ping),
-		new(commands.Insult),
-		new(commands.Buy),
-		new(view.View),
-		new(commands.List),
+		new(luck.Luck),
 		new(inventory.Inventory),
 		new(commands.ActionFunnel),
+		new(view.View),
+		new(commands.Buy),
+		new(commands.List),
+		new(commands.Insult),
+		// new(commands.Ping),
 	)
 	err = app.betrayalManager.RegisterMiddlewares(new(middlewares.PermissionsMiddleware))
 	if err != nil {
