@@ -28,11 +28,11 @@ type Models struct {
 	Whitelists     WhitelistModel
 	Actions        ActionModel
 	FunnelChannels FunnelChannelModel
+	Duels          DuelModel
 }
 
 // NewModels creates a new instance of the Models struct and attaches the database connection to it.
 func NewModels(db *sqlx.DB) Models {
-
 	ModelHandlers := Models{
 		Roles:          RoleModel{DB: db},
 		Insults:        InsultModel{DB: db},
@@ -45,13 +45,13 @@ func NewModels(db *sqlx.DB) Models {
 		Whitelists:     WhitelistModel{DB: db},
 		Actions:        ActionModel{DB: db},
 		FunnelChannels: FunnelChannelModel{DB: db},
+		Duels:          DuelModel{DB: db},
 	}
 	return ModelHandlers
 }
 
 // Helper to automatically generate the PSQL query for the keys of a struct
 func SqlGenKeys(model interface{}) string {
-
 	v := reflect.Indirect(reflect.ValueOf(model))
 	var query []string
 	for i := 0; i < v.NumField(); i++ {
@@ -137,7 +137,6 @@ func PSQLGeneratedInsert(model interface{}) string {
 }
 
 func PSQLGeneratedUpdate(model interface{}) string {
-
 	v := reflect.Indirect(reflect.ValueOf(model))
 	var query []string
 	for i := 0; i < v.NumField(); i++ {
