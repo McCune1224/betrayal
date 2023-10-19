@@ -1,6 +1,7 @@
 package luck
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -17,9 +18,7 @@ type Luck struct {
 	models data.Models
 }
 
-var (
-	_ ken.SlashCommand = (*Luck)(nil)
-)
+var _ ken.SlashCommand = (*Luck)(nil)
 
 // Description implements ken.SlashCommand.
 func (*Luck) Description() string {
@@ -95,7 +94,6 @@ func (l *Luck) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "debug", Run: l.luckDebug},
 		ken.SubCommandHandler{Name: "care_package", Run: l.luckCarePackage},
 	)
-
 }
 
 func (l *Luck) luckRoll(ctx ken.SubCommandContext) (err error) {
@@ -122,7 +120,6 @@ func (l *Luck) luckRoll(ctx ken.SubCommandContext) (err error) {
 			"Failed to find inventory",
 			"If you're not in confessional, ensure you are in whitelist channel",
 		)
-
 	}
 
 	if target == "item" {
@@ -207,11 +204,9 @@ func (l *Luck) luckRoll(ctx ken.SubCommandContext) (err error) {
 	}
 
 	return discord.ErrorMessage(ctx, "Failed to get category", "Alex is a bad programmer")
-
 }
 
 func (l *Luck) luckDebug(ctx ken.SubCommandContext) (err error) {
-
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.ErrorMessage(
 			ctx,
@@ -228,7 +223,6 @@ func (l *Luck) luckDebug(ctx ken.SubCommandContext) (err error) {
 	view := tableView(float64(level), rng)
 
 	return ctx.RespondMessage(view)
-
 }
 
 func (l *Luck) luckCarePackage(ctx ken.SubCommandContext) (err error) {
@@ -255,14 +249,9 @@ func (l *Luck) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 	aRoll := RollLuck(float64(level), rand.Float64())
 	iRoll := RollLuck(float64(level), rand.Float64())
 
-	ability, err := l.models.Abilities.GetRandomByRarity(aRoll)
+	ability, err := l.getRandomAbility(inv.RoleName, aRoll)
 	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to get Random Ability",
-			"Alex is a bad programmer",
-		)
+		return discord.ErrorMessage(ctx, "Error getting random ability", "Alex is a bad programmer")
 	}
 
 	item, err := l.models.Items.GetRandomByRarity(iRoll)
@@ -312,7 +301,6 @@ func (l *Luck) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 			},
 		},
 	})
-
 }
 
 // Version implements ken.SlashCommand.
@@ -322,4 +310,30 @@ func (*Luck) Version() string {
 
 func (l *Luck) SetModels(models data.Models) {
 	l.models = models
+}
+
+// Helper to get a random ability. If it is not an any ability, need to check to
+// make sure that the ability is the same as the user's current class roll
+func (l *Luck) getRandomAbility(role string, rarity string, rec ...int) (*data.Ability, error) {
+	// lil saftey net to prevent infinite recursion (hopefully)
+	if len(rec) > 0 && rec[0] > 5 {
+		return nil, errors.New("too many attempts to get ability")
+	}
+	ab, err := l.models.Abilities.GetRandomByRarity(rarity)
+	if err != nil {
+		return nil, err
+	}
+	if !ab.AnyAbility {
+		associatedRole, err := l.models.Roles.GetByAbilityID(ab.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		// Need to re-roll since they got a non-any ability that isn't their role
+		if associatedRole.Name != role {
+			// Haha what's the worst that could happen with a recursive function :)
+			return l.getRandomAbility(role, rarity)
+		}
+	}
+	return ab, nil
 }
