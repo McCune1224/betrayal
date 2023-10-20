@@ -92,7 +92,17 @@ func main() {
 		models: dbModels,
 		logger: logger,
 	}
-	km, err := ken.New(bot)
+	km, err := ken.New(bot, ken.Options{
+		OnSystemError: func(ctx string, err error, args ...interface{}) {
+			log.Printf("{%s} - %s\n", ctx, err.Error())
+		},
+		OnCommandError: func(err error, ctx *ken.Ctx) {
+			log.Printf("%s - %s : %s\n", ctx.Command.Name(), ctx.GetEvent().User.Username, err.Error())
+		},
+		OnEventError: func(context string, err error) {
+			log.Printf("%s : %s\n", context, err.Error())
+		},
+	})
 	app.betrayalManager = km
 	if err != nil {
 		app.logger.Fatal(err)
