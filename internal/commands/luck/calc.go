@@ -1,4 +1,4 @@
-package luck
+package roll
 
 import (
 	"fmt"
@@ -27,10 +27,9 @@ func commonLuckChance(level float64) float64 {
 	scale := -0.050 * float64(level)
 	chance := commonLuck + scale
 
-	//round to 4th decimal place
+	// round to 4th decimal place
 	chance = math.Round(chance*10000) / 10000
 	return math.Max(chance, 0)
-
 }
 
 // helper to round down to 4th decimal place and return max of 0
@@ -52,7 +51,7 @@ func uncommonLuckChance(level float64) float64 {
 }
 
 func rareLuckChance(level float64) float64 {
-	//rare has random edge case at luck level 48 where it is constant at .49
+	// rare has random edge case at luck level 48 where it is constant at .49
 	if level == 48 {
 		return 0.49
 	}
@@ -98,7 +97,6 @@ func mythicalLuckChance(level float64) float64 {
 		return 1
 	}
 	return sanatized(mythicalLuck + scale)
-
 }
 
 // pick a random number between 0 and 1 and select the luck type based on the number
@@ -134,12 +132,10 @@ func RollLuck(level float64, roll float64) string {
 	}
 
 	return fmt.Sprintf("EDGE CASE AT ROLL %v", roll)
-
 }
 
 // display chances of each type at a given level
 func tableView(level float64, roll float64) string {
-
 	c := commonLuckChance(level)
 	uc := uncommonLuckChance(level)
 	rc := rareLuckChance(level)
@@ -148,7 +144,7 @@ func tableView(level float64, roll float64) string {
 	mc := mythicalLuckChance(level)
 
 	outcome := RollLuck(level, roll)
-	//print as human readable percentage
+	// print as human readable percentage
 	s := fmt.Sprintf(
 		"LEVEL - %v\n%.2f%% common\n%.2f%% uncommon\n%.2f%% rare\n%.2f%% epic\n%.2f%% legendary\n%.2f%% mythical\n\nroll: %v - %v",
 		level,

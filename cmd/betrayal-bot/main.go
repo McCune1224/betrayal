@@ -13,8 +13,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/mccune1224/betrayal/internal/commands"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
-	"github.com/mccune1224/betrayal/internal/commands/luck"
-	"github.com/mccune1224/betrayal/internal/commands/view"
+	roll "github.com/mccune1224/betrayal/internal/commands/luck"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/middlewares"
 	"github.com/zekrotja/ken"
@@ -34,10 +33,10 @@ type config struct {
 
 // Global app struct
 type app struct {
-	conifg          config
 	models          data.Models
 	logger          *log.Logger
 	betrayalManager *ken.Ken
+	conifg          config
 }
 
 // Wrapper for Ken.Command that needs DB access
@@ -63,7 +62,6 @@ func (a *app) RegisterBetrayalCommands(commands ...BetrayalCommand) int {
 }
 
 func main() {
-
 	var cfg config
 	cfg.discord.botToken = os.Getenv("DISCORD_BOT_TOKEN")
 	cfg.discord.clientID = os.Getenv("DISCORD_CLIENT_ID")
@@ -104,14 +102,14 @@ func main() {
 	app.betrayalManager.Unregister()
 
 	tally := app.RegisterBetrayalCommands(
-		new(luck.Luck),
+		new(roll.Roll),
 		new(inventory.Inventory),
-		new(commands.ActionFunnel),
-		new(view.View),
+		// new(commands.ActionFunnel),
+		// new(view.View),
 		new(commands.Buy),
-		new(commands.List),
-		new(commands.Insult),
-		// new(commands.Ping),
+	// new(commands.List),
+	// new(commands.Insult),
+	// new(commands.Ping),
 	)
 	err = app.betrayalManager.RegisterMiddlewares(new(middlewares.PermissionsMiddleware))
 	if err != nil {
@@ -139,5 +137,4 @@ func main() {
 	if err := app.betrayalManager.Session().Close(); err != nil {
 		app.logger.Fatal("error closing connection,", err)
 	}
-
 }

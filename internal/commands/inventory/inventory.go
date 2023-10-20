@@ -14,12 +14,18 @@ import (
 	"golang.org/x/text/language"
 )
 
+// errors that can occur
+var (
+	ErrNotAuthorized = errors.New("you are not an admin role")
+)
+
 // emoji constants
 // TODO: Maybe make these configurable?
 
 const (
 	defaultCoins      = 200
 	defaultItemsLimit = 4
+	defaultLuck       = 0
 )
 
 var optional = discordgo.ApplicationCommandOption{
@@ -38,9 +44,7 @@ func (*Inventory) Components() []*discordgo.MessageComponent {
 	return nil
 }
 
-var (
-	_ ken.SlashCommand = (*Inventory)(nil)
-)
+var _ ken.SlashCommand = (*Inventory)(nil)
 
 func (i *Inventory) Type() discordgo.ApplicationCommandType {
 	return discordgo.ChatApplicationCommand
@@ -207,6 +211,15 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "luck",
+					Description: "Add onto of the current luck level",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.IntCommandArg("amount", "amount of luck to add", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "note",
 					Description: "add a note",
 					Options: []*discordgo.ApplicationCommandOption{
@@ -295,6 +308,15 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "luck",
+					Description: "Amount of luck to remove",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.IntCommandArg("amount", "Amount of luck to remove", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "bonus",
 					Description: "remove coin bonus",
 					Options: []*discordgo.ApplicationCommandOption{
@@ -367,6 +389,15 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 						discord.UserCommandArg(false),
 					},
 				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "luck",
+					Description: "set luck level for player",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.IntCommandArg("level", "Set Luck level", true),
+						discord.UserCommandArg(false),
+					},
+				},
 			},
 		},
 	}
@@ -393,6 +424,7 @@ func (i *Inventory) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "effect", Run: i.addEffect},
 			ken.SubCommandHandler{Name: "coins", Run: i.addCoins},
 			ken.SubCommandHandler{Name: "bonus", Run: i.addCoinBonus},
+			ken.SubCommandHandler{Name: "luck", Run: i.addLuck},
 			ken.SubCommandHandler{Name: "note", Run: i.addNote},
 		}},
 		ken.SubCommandGroup{Name: "remove", SubHandler: []ken.CommandHandler{
@@ -405,6 +437,7 @@ func (i *Inventory) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "effect", Run: i.removeEffect},
 			ken.SubCommandHandler{Name: "coins", Run: i.removeCoins},
 			ken.SubCommandHandler{Name: "bonus", Run: i.removeCoinBonus},
+			ken.SubCommandHandler{Name: "luck", Run: i.removeLuck},
 			ken.SubCommandHandler{Name: "note", Run: i.removeNote},
 		}},
 		ken.SubCommandGroup{Name: "set", SubHandler: []ken.CommandHandler{
@@ -413,6 +446,7 @@ func (i *Inventory) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "coins", Run: i.setCoins},
 			ken.SubCommandHandler{Name: "bonus", Run: i.setCoinBonus},
 			ken.SubCommandHandler{Name: "limit", Run: i.setItemsLimit},
+			ken.SubCommandHandler{Name: "luck", Run: i.setLuckLevel},
 		}},
 	)
 }
@@ -442,7 +476,7 @@ func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
 	}
 
 	host := discord.IsAdminRole(ctx, discord.AdminRoles...)
-	embd := InventoryEmbedMessage(ctx.GetEvent(), inv, host)
+	embd := InventoryEmbedBuilder(inv, host)
 	err = ctx.RespondEmbed(embd)
 	if err != nil {
 		return err
@@ -451,7 +485,6 @@ func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
-
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		err = discord.ErrorMessage(
 			ctx,
@@ -529,6 +562,7 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 		Abilities:      abilityNames,
 		Perks:          perkNames,
 		Coins:          defaultCoins,
+		Luck:           defaultLuck,
 		ItemLimit:      defaultItemsLimit,
 	}
 
@@ -538,7 +572,7 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 		discord.ErrorMessage(ctx, "Alex is a bad programmer", "Failed to insert inventory")
 		return err
 	}
-	embd := InventoryEmbedMessage(ctx.GetEvent(), newInv, false)
+	embd := InventoryEmbedBuilder(newInv, false)
 	msg, err := ctx.GetSession().ChannelMessageEditEmbed(channelID, pinMsg.ID, embd)
 	if err != nil {
 		log.Println(err)
@@ -606,14 +640,11 @@ func (*Inventory) Version() string {
 	return "1.0.0"
 }
 
-// Will check if user has role "Host, "Co-Host", or "Bot Developer"
-// If so append notes to inventory view and make hidden
-func InventoryEmbedMessage(
-	event *discordgo.InteractionCreate,
+// Helper to build inventory embed message based off if user is host or not
+func InventoryEmbedBuilder(
 	inv *data.Inventory,
 	host bool,
 ) *discordgo.MessageEmbed {
-
 	roleField := &discordgo.MessageEmbedField{
 		Name:   "Role",
 		Value:  inv.RoleName,
@@ -621,52 +652,52 @@ func InventoryEmbedMessage(
 	}
 	alignmentEmoji := discord.EmojiAlignment
 	alignmentField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("Alignment %s", alignmentEmoji),
+		Name:   fmt.Sprintf("%s Alignment", alignmentEmoji),
 		Value:  inv.Alignment,
 		Inline: true,
 	}
 
-	//show coin bonus x100
+	// show coin bonus x100
 	cb := inv.CoinBonus * 100
 	coinStr := fmt.Sprintf("%d", inv.Coins) + " [" + fmt.Sprintf("%.2f", cb) + "%]"
 	coinField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("Coins %s", discord.EmojiCoins),
+		Name:   fmt.Sprintf("%s Coins", discord.EmojiCoins),
 		Value:  coinStr,
-		Inline: false,
+		Inline: true,
 	}
 	abilitiesField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("Abilities %s", discord.EmojiAbility),
+		Name:   fmt.Sprintf("%s Abilities", discord.EmojiAbility),
 		Value:  strings.Join(inv.Abilities, "\n"),
 		Inline: true,
 	}
 	perksField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("Perks %s", discord.EmojiPerk),
+		Name:   fmt.Sprintf("%s Perks", discord.EmojiPerk),
 		Value:  strings.Join(inv.Perks, "\n"),
 		Inline: true,
 	}
 	anyAbilitiesField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("Any Abilities %s", discord.EmojiAnyAbility),
+		Name:   fmt.Sprintf("%s Any Abilities", discord.EmojiAnyAbility),
 		Value:  strings.Join(inv.AnyAbilities, "\n"),
 		Inline: true,
 	}
 	itemsField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("Items (%d/%d) %s", len(inv.Items), inv.ItemLimit, discord.EmojiItem),
+		Name:   fmt.Sprintf("%s Items (%d/%d)", discord.EmojiItem, len(inv.Items), inv.ItemLimit),
 		Value:  strings.Join(inv.Items, "\n"),
-		Inline: false,
+		Inline: true,
 	}
 	statusesField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("Statuses %s", discord.EmojiStatus),
+		Name:   fmt.Sprintf("%s Statuses", discord.EmojiStatus),
 		Value:  strings.Join(inv.Statuses, "\n"),
 		Inline: true,
 	}
 
 	immunitiesField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("Immunities %s", discord.EmojiImmunity),
+		Name:   fmt.Sprintf("%s Immunities", discord.EmojiImmunity),
 		Value:  strings.Join(inv.Immunities, "\n"),
 		Inline: true,
 	}
 	effectsField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("Effects %s", discord.EmojiEffect),
+		Name:   fmt.Sprintf("%s Effects", discord.EmojiEffect),
 		Value:  strings.Join(inv.Effects, "\n"),
 		Inline: true,
 	}
@@ -678,16 +709,23 @@ func InventoryEmbedMessage(
 			alignmentField,
 			coinField,
 			abilitiesField,
-			perksField,
 			anyAbilitiesField,
+			perksField,
 			itemsField,
 			statusesField,
 			immunitiesField,
 			effectsField,
 		},
+		Color: discord.ColorThemeDiamond,
 	}
 
 	if host {
+
+		embd.Fields = append(embd.Fields, &discordgo.MessageEmbedField{
+			Name:   fmt.Sprintf("%s Luck", discord.EmojiLuck),
+			Value:  fmt.Sprintf("%d", inv.Luck),
+			Inline: true,
+		})
 
 		noteListString := ""
 		for i, note := range inv.Notes {
@@ -695,11 +733,13 @@ func InventoryEmbedMessage(
 		}
 
 		embd.Fields = append(embd.Fields, &discordgo.MessageEmbedField{
-			Name:   fmt.Sprintf("Notes %s", discord.EmojiNote),
+			Name:   fmt.Sprintf("%s Notes", discord.EmojiNote),
 			Value:  noteListString,
 			Inline: false,
 		})
-		embd.Color = 0x00ff00
+
+		embd.Color = discord.ColorThemeAmethyst
+
 	}
 
 	return embd
@@ -743,7 +783,7 @@ func (i *Inventory) inventoryAuthorized(ctx ken.SubCommandContext, inv *data.Inv
 }
 
 func (i *Inventory) listWhitelist(ctx ken.SubCommandContext) (err error) {
-	wishlists, err := i.models.Whitelists.GetAll()
+	wishlists, _ := i.models.Whitelists.GetAll()
 	if len(wishlists) == 0 {
 		err = discord.ErrorMessage(ctx, "No whitelisted channels", "Nothing here...")
 		return err
@@ -764,50 +804,6 @@ func (i *Inventory) listWhitelist(ctx ken.SubCommandContext) (err error) {
 	return err
 }
 
-// Set ephemeral to true to hide response, check if user is calling in confessional channel,
-// attempt to fetch inventory, if inventory is found check if user is authorized to view inventory
-// if not authorized send error message and return
-func (i *Inventory) ImLazyMiddleware(ctx ken.SubCommandContext) (inv *data.Inventory, err error) {
-	ctx.SetEphemeral(true)
-	userArg, ok := ctx.Options().GetByNameOptional("user")
-	channelID := ctx.GetEvent().ChannelID
-	if !ok {
-		inv, err = i.models.Inventories.GetByPinChannel(channelID)
-		if err != nil {
-			discord.ErrorMessage(
-				ctx,
-				"Cannot get inventory",
-				"It appears you're not using this in a confessional channel, please specify a user.",
-			)
-			return nil, err
-		}
-	}
-	if inv == nil {
-		inv, err = i.models.Inventories.GetByDiscordID(userArg.UserValue(ctx).ID)
-		if err != nil {
-			log.Println(err)
-			discord.ErrorMessage(
-				ctx,
-				fmt.Sprint("Cannot find Inventory for user: ", userArg.UserValue(ctx).Username),
-				fmt.Sprintf("Verify if %s has an inventory", userArg.UserValue(ctx).Username),
-			)
-			return nil, err
-		}
-	}
-	if !i.inventoryAuthorized(ctx, inv) {
-		discord.ErrorMessage(
-			ctx,
-			"Unauthorized",
-			"You are not authorized to use this command.",
-		)
-		return nil, errors.New("Unauthorized to use command")
-	}
-	if inv == nil {
-		return nil, errors.New("Somehow inventory is nil in middleware...")
-	}
-	return inv, nil
-}
-
 // Helper to handle getting the pinned message for inventory and updating it
 func (i *Inventory) updateInventoryMessage(
 	ctx ken.SubCommandContext,
@@ -817,7 +813,7 @@ func (i *Inventory) updateInventoryMessage(
 	_, err = sesh.ChannelMessageEditEmbed(
 		inventory.UserPinChannel,
 		inventory.UserPinMessage,
-		InventoryEmbedMessage(ctx.GetEvent(), inventory, false),
+		InventoryEmbedBuilder(inventory, false),
 	)
 	if err != nil {
 		log.Println(err)
@@ -835,7 +831,7 @@ func UpdateInventoryMessage(ctx ken.Context, i *data.Inventory) (err error) {
 	_, err = sesh.ChannelMessageEditEmbed(
 		i.UserPinChannel,
 		i.UserPinMessage,
-		InventoryEmbedMessage(ctx.GetEvent(), i, false),
+		InventoryEmbedBuilder(i, false),
 	)
 	if err != nil {
 		return err
@@ -882,7 +878,10 @@ func InventoryAuthorized(
 }
 
 // Helper to attempt to fetch given user's inventory from user command option
-func Fetch(ctx ken.SubCommandContext, m data.Models) (inv *data.Inventory, err error) {
+func Fetch(ctx ken.SubCommandContext, m data.Models, adminOnly bool) (inv *data.Inventory, err error) {
+	if adminOnly && !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return nil, ErrNotAuthorized
+	}
 	userArg, ok := ctx.Options().GetByNameOptional("user")
 	event := ctx.GetEvent()
 	channelID := event.ChannelID
@@ -906,10 +905,10 @@ func Fetch(ctx ken.SubCommandContext, m data.Models) (inv *data.Inventory, err e
 		return nil, err
 	}
 	if !InventoryAuthorized(ctx, inv, wl) {
-		return nil, errors.New("Unauthorized to use command")
+		return nil, ErrNotAuthorized
 	}
 	if inv == nil {
-		return nil, errors.New("Somehow inventory is nil in middleware...")
+		return nil, errors.New("somehow inventory is nil in middleware")
 	}
 	return inv, nil
 }

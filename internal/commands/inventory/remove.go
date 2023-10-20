@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -11,10 +12,12 @@ import (
 )
 
 func (i *Inventory) removeAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
@@ -55,10 +58,12 @@ func (i *Inventory) removeAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
@@ -100,10 +105,12 @@ func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removePerk(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 	perkArg := ctx.Options().GetByName("name").StringValue()
@@ -141,10 +148,12 @@ func (i *Inventory) removePerk(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeItem(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 
@@ -183,10 +192,12 @@ func (i *Inventory) removeItem(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeStatus(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 
@@ -225,10 +236,12 @@ func (i *Inventory) removeStatus(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeImmunity(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 
@@ -267,10 +280,12 @@ func (i *Inventory) removeImmunity(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeEffect(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 
@@ -309,18 +324,13 @@ func (i *Inventory) removeEffect(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeCoins(ctx ken.SubCommandContext) (err error) {
-	ctx.SetEphemeral(true)
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(
-			ctx,
-			"Failed to get inventory",
-			"Alex is a bad programmer, and this is his fault.",
-		)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
-	ctx.SetEphemeral(false)
 
 	coinsArg := ctx.Options().GetByName("amount").IntValue()
 
@@ -366,17 +376,13 @@ func (i *Inventory) removeCoins(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeCoinBonus(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(
-			ctx,
-			"Failed to get inventory",
-			"Alex is a bad programmer, and this is his fault.",
-		)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
-	ctx.SetEphemeral(false)
 
 	coinBonusArg := ctx.Options().GetByName("amount").StringValue()
 	old := inventory.CoinBonus
@@ -421,7 +427,9 @@ func (i *Inventory) removeCoinBonus(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeWhitelist(ctx ken.SubCommandContext) (err error) {
-	ctx.SetEphemeral(true)
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.NotAuthorizedError(ctx)
+	}
 	channelArg := ctx.Options().GetByName("channel").ChannelValue(ctx)
 
 	whitelists, _ := i.models.Whitelists.GetAll()
@@ -442,28 +450,52 @@ func (i *Inventory) removeWhitelist(ctx ken.SubCommandContext) (err error) {
 
 	err = discord.ErrorMessage(ctx, "Channel not found", "This channel is not whitelisted.")
 	return err
+}
 
+func (i *Inventory) removeLuck(ctx ken.SubCommandContext) (err error) {
+	inventory, err := Fetch(ctx, i.models, true)
+	if err != nil {
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
+	ctx.SetEphemeral(true)
+
+	luck := ctx.Options().GetByName("amount").IntValue()
+	inventory.Luck -= luck
+	if inventory.Luck < 0 {
+		inventory.Luck = 0
+	}
+	err = i.models.Inventories.UpdateLuck(inventory)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(
+			ctx,
+			"Failed to update luck",
+			"Alex is a bad programmer, and this is his fault.",
+		)
+	}
+
+	return discord.SuccessfulMessage(
+		ctx,
+		"Removed luck",
+		fmt.Sprintf("Removed %d luck\n %d => %d", luck, luck, inventory.Luck),
+	)
+
+	// If luck is below 0 after difference, set to 0
 }
 
 func (i *Inventory) removeNote(ctx ken.SubCommandContext) (err error) {
-	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		return discord.ErrorMessage(
-			ctx,
-			"Unauthorized",
-			"You are not authorized to use this command.",
-		)
+	inventory, err := Fetch(ctx, i.models, true)
+	if err != nil {
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 
-	inventory, err := i.ImLazyMiddleware(ctx)
-	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(
-			ctx,
-			"Failed to get inventory",
-			"Alex is a bad programmer, and this is his fault.",
-		)
-		return err
-	}
+	ctx.SetEphemeral(true)
 
 	noteArg := int(ctx.Options().GetByName("index").IntValue())
 	// Subtract 1 to account for 0 indexing

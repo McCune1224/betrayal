@@ -37,6 +37,7 @@ const (
 	EmojiNote       = Emoji("📝")
 	EmojiAnyAbility = Emoji("🔮")
 	EmojiLimit      = Emoji("📏")
+	EmojiLuck       = Emoji("🍀")
 )
 
 // Hex colors / color themes
@@ -81,6 +82,7 @@ const McKusaID = "206268866714796032"
 func MentionUser(userID string) string {
 	return "<@" + userID + ">"
 }
+
 func MentionChannel(channelID string) string {
 	return "<#" + channelID + ">"
 }
@@ -111,7 +113,6 @@ const DebugCmd = "z_"
 // Send Pre-Formatted Error Message after slash command
 func ErrorMessage(ctx ken.Context, title string, message string) (err error) {
 	// default to ephemeral, but sometimes we want to show the error to everyone
-
 	resp := &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -145,7 +146,6 @@ func SuccessfulMessage(ctx ken.Context,
 	resp := &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			//flag ephemeral to false to make message visible to everyone
 			Flags: 0,
 			Embeds: []*discordgo.MessageEmbed{
 				{
@@ -158,4 +158,67 @@ func SuccessfulMessage(ctx ken.Context,
 	}
 	err = ctx.Respond(resp)
 	return err
+}
+
+func SilentSuccessfulMessage(ctx ken.Context,
+	title string,
+	message string,
+) (err error) {
+	resp := &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: discordgo.MessageFlagsEphemeral,
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Title:       fmt.Sprintf("%s %s %s", EmojiSuccess, title, EmojiSuccess),
+					Description: message,
+					Color:       ColorThemeGreen,
+				},
+			},
+		},
+	}
+	err = ctx.Respond(resp)
+	return err
+}
+
+func WarningMessage(ctx ken.Context,
+	title string,
+	message string,
+) (err error) {
+	resp := &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: 0,
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Title:       fmt.Sprintf("%s %s %s", EmojiWarning, title, EmojiWarning),
+					Description: message,
+					Color:       ColorThemeYellow,
+				},
+			},
+		},
+	}
+
+	return ctx.Respond(resp)
+}
+
+func SilentWarningMessage(ctx ken.Context,
+	title string,
+	message string,
+) (err error) {
+	resp := &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags: discordgo.MessageFlagsEphemeral,
+			Embeds: []*discordgo.MessageEmbed{
+				{
+					Title:       fmt.Sprintf("%s %s %s", EmojiWarning, title, EmojiWarning),
+					Description: message,
+					Color:       ColorThemeYellow,
+				},
+			},
+		},
+	}
+
+	return ctx.Respond(resp)
 }

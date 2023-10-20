@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -12,9 +13,12 @@ import (
 )
 
 func (i *Inventory) addAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
@@ -71,11 +75,13 @@ func (i *Inventory) addAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
-	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
 	charges := int64(-42069)
 	chargesArg, ok := ctx.Options().GetByNameOptional("charges")
@@ -130,11 +136,14 @@ func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addPerk(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
-	if err != nil {
-		return err
-	}
 	ctx.SetEphemeral(false)
+	inventory, err := Fetch(ctx, i.models, true)
+	if err != nil {
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
 	perkNameArg := ctx.Options().GetByName("name").StringValue()
 	perk, err := i.models.Perks.GetByName(perkNameArg)
 	if err != nil {
@@ -177,11 +186,13 @@ func (i *Inventory) addPerk(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addItem(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
-	ctx.SetEphemeral(false)
 
 	itemNameArg := ctx.Options().GetByName("name").StringValue()
 	item, err := i.models.Items.GetByName(itemNameArg)
@@ -213,11 +224,14 @@ func (i *Inventory) addItem(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addStatus(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
-	if err != nil {
-		return err
-	}
 	ctx.SetEphemeral(false)
+	inventory, err := Fetch(ctx, i.models, true)
+	if err != nil {
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
 	statusNameArg := ctx.Options().GetByName("name").StringValue()
 	status, err := i.models.Statuses.GetByName(statusNameArg)
 	if err != nil {
@@ -252,12 +266,14 @@ func (i *Inventory) addStatus(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addImmunity(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
 	ctx.SetEphemeral(false)
+	inventory, err := Fetch(ctx, i.models, true)
+	if err != nil {
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
 	immunityNameArg := ctx.Options().GetByName("name").StringValue()
 
 	for _, v := range inventory.Immunities {
@@ -294,12 +310,14 @@ func (i *Inventory) addImmunity(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
 	ctx.SetEphemeral(false)
+	inventory, err := Fetch(ctx, i.models, true)
+	if err != nil {
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
 
 	effectNameArg := ctx.Options().GetByName("name").StringValue()
 
@@ -337,13 +355,14 @@ func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addCoins(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
 	ctx.SetEphemeral(false)
+	inventory, err := Fetch(ctx, i.models, true)
+	if err != nil {
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
 
 	coinsArg := ctx.Options().GetByName("amount").IntValue()
 
@@ -376,14 +395,9 @@ func (i *Inventory) addCoins(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addWhitelist(ctx ken.SubCommandContext) (err error) {
-	ctx.SetEphemeral(true)
+	ctx.SetEphemeral(false)
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		err = discord.ErrorMessage(
-			ctx,
-			"Unauthorized",
-			"You are not authorized to use this command.",
-		)
-		return err
+		discord.NotAuthorizedError(ctx)
 	}
 
 	channelArg := ctx.Options().GetByName("channel").ChannelValue(ctx)
@@ -431,13 +445,15 @@ func (i *Inventory) addWhitelist(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addCoinBonus(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	ctx.SetEphemeral(false)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 
-	ctx.SetEphemeral(false)
 	coinBonusArg := ctx.Options().GetByName("amount").StringValue()
 	fCoinBonusArg, err := strconv.ParseFloat(coinBonusArg, 32)
 	// round to 2 decimal for float values in case of 1.23456789
@@ -480,20 +496,48 @@ func (i *Inventory) addCoinBonus(ctx ken.SubCommandContext) (err error) {
 	return err
 }
 
-func (i *Inventory) addNote(ctx ken.SubCommandContext) (err error) {
-	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		err = discord.ErrorMessage(
-			ctx,
-			"Unauthorized",
-			"You are not authorized to use this command.",
-		)
-		return err
+func (i *Inventory) addLuck(ctx ken.SubCommandContext) (err error) {
+	ctx.SetEphemeral(true)
+	inventory, err := Fetch(ctx, i.models, true)
+	if err != nil {
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 
-	inventory, err := i.ImLazyMiddleware(ctx)
+	luckArg := ctx.Options().GetByName("amount").IntValue()
+	old := inventory.Luck
+	inventory.Luck += luckArg
+	err = i.models.Inventories.UpdateCoins(inventory)
 	if err != nil {
-		return err
+		log.Println(err)
+		return discord.ErrorMessage(ctx,
+			"Failed to add luck",
+			"Alex is a bad programmer, and this is his fault.")
 	}
+
+	err = i.updateInventoryMessage(ctx, inventory)
+	if err != nil {
+		log.Println(err)
+		return discord.SilentWarningMessage(ctx, "Failed to update inventory message", "Alex is a bad programmer, and this is his fault.")
+	}
+	return discord.SuccessfulMessage(
+		ctx,
+		"Added Luck",
+		fmt.Sprintf("%d => %d", old, inventory.Luck),
+	)
+}
+
+func (i *Inventory) addNote(ctx ken.SubCommandContext) (err error) {
+	inventory, err := Fetch(ctx, i.models, true)
+	if err != nil {
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
+	ctx.SetEphemeral(true)
 
 	noteArg := ctx.Options().GetByName("message").StringValue()
 	inventory.Notes = append(inventory.Notes, noteArg)

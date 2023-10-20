@@ -130,23 +130,29 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 			fmt.Sprintf("Unable to find Associated Role for Ability: %s", nameArg))
 	}
 
-	title := ability.Name
-	fStr := "%s [%d] - %s"
-	categories := strings.Join(ability.Categories, ", ")
+	strCharges := fmt.Sprintf("%d", ability.Charges)
 	if ability.Charges == -1 {
-		title = fmt.Sprintf(fStr, ability.Name, infinity, categories)
-	} else {
-		title = fmt.Sprintf(fStr, ability.Name, ability.Charges, categories)
+		strCharges = infinity
 	}
-
-	embed := &discordgo.MessageEmbed{
-		Title:       title,
+	abilityEmbed := &discordgo.MessageEmbed{
+		Title:       ability.Name,
 		Description: ability.Description,
 		Color:       determineColor(ability.Rarity),
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Default Charges",
+				Value:  strCharges,
+				Inline: true,
+			},
+			{
+				Name:   "Categories",
+				Value:  strings.Join(ability.Categories, ", "),
+				Inline: true,
+			},
+		},
 	}
 
-	b := ctx.FollowUpEmbed(embed)
-	var clearAll bool
+	b := ctx.FollowUpEmbed(abilityEmbed)
 
 	b.AddComponents(func(cb *ken.ComponentBuilder) {
 		cb.AddActionsRow(func(b ken.ComponentAssembler) {
@@ -164,16 +170,16 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 					)
 					return false
 				}
+				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(roleEmbed)
 				return true
-			}, !clearAll)
-		}, clearAll).
+			}, false)
+		}, false).
 			Condition(func(cctx ken.ComponentContext) bool {
-				return cctx.User().ID == ctx.User().ID
+				return true
 			})
 	})
 	fum := b.Send()
-
 	return fum.Error
 }
 
@@ -199,15 +205,13 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 
-	embed := &discordgo.MessageEmbed{
-		Title:  perk.Name,
-		Color:  discord.ColorThemeWhite,
-		Fields: []*discordgo.MessageEmbedField{{Value: perk.Description}},
+	perkEmbed := &discordgo.MessageEmbed{
+		Title:       perk.Name,
+		Description: perk.Description,
+		Color:       discord.ColorThemeWhite,
 	}
 
-	b := ctx.FollowUpEmbed(embed)
-	var clearAll bool
-
+	b := ctx.FollowUpEmbed(perkEmbed)
 	b.AddComponents(func(cb *ken.ComponentBuilder) {
 		cb.AddActionsRow(func(b ken.ComponentAssembler) {
 			b.Add(discordgo.Button{
@@ -224,12 +228,13 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 					)
 					return false
 				}
+				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(roleEmbed)
 				return true
-			}, !clearAll)
-		}, clearAll).
+			}, false)
+		}, false).
 			Condition(func(cctx ken.ComponentContext) bool {
-				return cctx.User().ID == ctx.User().ID
+				return true
 			})
 	})
 

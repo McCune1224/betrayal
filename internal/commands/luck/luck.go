@@ -1,10 +1,11 @@
-package luck
+package roll
 
 import (
 	"errors"
 	"fmt"
 	"log"
 	"math/rand"
+	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -14,24 +15,24 @@ import (
 	"github.com/zekrotja/ken"
 )
 
-type Luck struct {
+type Roll struct {
 	models data.Models
 }
 
-var _ ken.SlashCommand = (*Luck)(nil)
+var _ ken.SlashCommand = (*Roll)(nil)
 
 // Description implements ken.SlashCommand.
-func (*Luck) Description() string {
+func (*Roll) Description() string {
 	return "Determine luck for a given level"
 }
 
 // Name implements ken.SlashCommand.
-func (*Luck) Name() string {
+func (*Roll) Name() string {
 	return discord.DebugCmd + "roll"
 }
 
 // Options implements ken.SlashCommand.
-func (*Luck) Options() []*discordgo.ApplicationCommandOption {
+func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 	targetTypes := []string{"item", "ability"}
 
 	options := []*discordgo.ApplicationCommandOptionChoice{}
@@ -48,14 +49,29 @@ func (*Luck) Options() []*discordgo.ApplicationCommandOption {
 			Name:        "care_package",
 			Description: "Give a random item and ability",
 			Options: []*discordgo.ApplicationCommandOption{
-				discord.IntCommandArg("level", "level to roll for", true),
+				discord.UserCommandArg(false),
+			},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "item_rain",
+			Description: "Make it rain!!",
+			Options: []*discordgo.ApplicationCommandOption{
+				discord.UserCommandArg(false),
+			},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "power_drop",
+			Description: "give a random AA",
+			Options: []*discordgo.ApplicationCommandOption{
 				discord.UserCommandArg(false),
 			},
 		},
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "roll",
-			Description: "Manual roll for item or ability",
+			Description: "Manual roll for item or ability. DOES NOT ADD TO INVENTORY IMMEDIATELY",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
@@ -84,46 +100,46 @@ func (*Luck) Options() []*discordgo.ApplicationCommandOption {
 				discord.UserCommandArg(false),
 			},
 		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "table",
+			Description: "Table view of luck calculations",
+			Options: []*discordgo.ApplicationCommandOption{
+				discord.IntCommandArg("low", "low range for luck", false),
+				discord.IntCommandArg("high", "high range for luck", false),
+			},
+		},
 	}
 }
 
 // Run implements ken.SlashCommand.
-func (l *Luck) Run(ctx ken.Context) (err error) {
+func (r *Roll) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
-		ken.SubCommandHandler{Name: "roll", Run: l.luckRoll},
-		ken.SubCommandHandler{Name: "debug", Run: l.luckDebug},
-		ken.SubCommandHandler{Name: "care_package", Run: l.luckCarePackage},
+		ken.SubCommandHandler{Name: "roll", Run: r.luckRoll},
+		ken.SubCommandHandler{Name: "debug", Run: r.luckDebug},
+		ken.SubCommandHandler{Name: "care_package", Run: r.luckCarePackage},
+		ken.SubCommandHandler{Name: "table", Run: r.luckTable},
+		ken.SubCommandHandler{Name: "item_rain", Run: r.luckItemRain},
+		ken.SubCommandHandler{Name: "power_drop", Run: r.luckPowerDrop},
 	)
 }
 
-func (l *Luck) luckRoll(ctx ken.SubCommandContext) (err error) {
-	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		return discord.ErrorMessage(
-			ctx,
-			"You do not have permission to use this command",
-			fmt.Sprintf(
-				"You must have one of the following roles: %v",
-				strings.Join(discord.AdminRoles, ","),
-			),
-		)
+func (r *Roll) luckRoll(ctx ken.SubCommandContext) (err error) {
+	inv, err := inventory.Fetch(ctx, r.models, true)
+	if err != nil {
+		if errors.Is(err, inventory.ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
 	}
 	opts := ctx.Options()
-	level := opts.GetByName("level").IntValue()
 	target := opts.GetByName("target").StringValue()
+	level := opts.GetByName("level").IntValue()
 
 	rng := rand.Float64()
 	luckType := RollLuck(float64(level), rng)
 
-	inv, err := inventory.Fetch(ctx, l.models)
-	if err != nil {
-		return discord.ErrorMessage(ctx,
-			"Failed to find inventory",
-			"If you're not in confessional, ensure you are in whitelist channel",
-		)
-	}
-
 	if target == "item" {
-		item, err := l.models.Items.GetRandomByRarity(luckType)
+		item, err := r.models.Items.GetRandomByRarity(luckType)
 		if err != nil {
 			log.Println(err)
 			return discord.ErrorMessage(
@@ -142,7 +158,7 @@ func (l *Luck) luckRoll(ctx ken.SubCommandContext) (err error) {
 				),
 			)
 		}
-		l.models.Inventories.UpdateItems(inv)
+		r.models.Inventories.UpdateItems(inv)
 		err = inventory.UpdateInventoryMessage(ctx, inv)
 		if err != nil {
 			log.Println(err)
@@ -160,7 +176,7 @@ func (l *Luck) luckRoll(ctx ken.SubCommandContext) (err error) {
 	}
 
 	if target == "ability" {
-		ability, err := l.models.Abilities.GetRandomByRarity(luckType)
+		ability, err := r.models.Abilities.GetRandomByRarity(luckType)
 		if err != nil {
 			log.Println(err)
 			return discord.ErrorMessage(
@@ -170,7 +186,7 @@ func (l *Luck) luckRoll(ctx ken.SubCommandContext) (err error) {
 			)
 		}
 		inv.Abilities = append(inv.Abilities, ability.Name)
-		err = l.models.Inventories.UpdateAbilities(inv)
+		err = r.models.Inventories.UpdateAbilities(inv)
 		if err != nil {
 			log.Println(err)
 			return discord.ErrorMessage(
@@ -206,7 +222,7 @@ func (l *Luck) luckRoll(ctx ken.SubCommandContext) (err error) {
 	return discord.ErrorMessage(ctx, "Failed to get category", "Alex is a bad programmer")
 }
 
-func (l *Luck) luckDebug(ctx ken.SubCommandContext) (err error) {
+func (r *Roll) luckDebug(ctx ken.SubCommandContext) (err error) {
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.ErrorMessage(
 			ctx,
@@ -225,36 +241,101 @@ func (l *Luck) luckDebug(ctx ken.SubCommandContext) (err error) {
 	return ctx.RespondMessage(view)
 }
 
-func (l *Luck) luckCarePackage(ctx ken.SubCommandContext) (err error) {
-	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
+	inv, err := inventory.Fetch(ctx, r.models, true)
+	if err != nil {
 		return discord.ErrorMessage(
 			ctx,
-			"You do not have permission to use this command",
-			fmt.Sprintf(
-				"You must have one of the following roles: %v",
-				strings.Join(discord.AdminRoles, ","),
-			),
+			"Failed to get inventory",
+			"Are you in a whitelist or confessional channel?",
 		)
 	}
-	level := ctx.Options().GetByName("level").IntValue()
-	inv, err := inventory.Fetch(ctx, l.models)
+
+	rarityType := RollLuck(float64(inv.Luck), rand.Float64())
+	ability, err := r.getRandomAbility(inv.RoleName, rarityType)
 	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(ctx,
-			"Failed to find inventory",
-			"If you're not in confessional, ensure you are in whitelist channel",
+		return discord.ErrorMessage(
+			ctx,
+			"Failed to get ability",
+			"Alex is a bad programmer",
 		)
-
 	}
-	aRoll := RollLuck(float64(level), rand.Float64())
-	iRoll := RollLuck(float64(level), rand.Float64())
 
-	ability, err := l.getRandomAbility(inv.RoleName, aRoll)
+	if !ability.AnyAbility {
+		// If its not an any ability, instead find the ability in base abilities and update charges instead
+		for k, v := range inv.Abilities {
+			currInvName := strings.Split(v, " [")[0]
+			left := strings.Index(v, "[") + 1
+			right := strings.Index(v, "]")
+			charge, _ := strconv.Atoi(v[left:right])
+			if strings.EqualFold(currInvName, ability.Name) {
+				inv.Abilities[k] = fmt.Sprintf("%s [%d]", currInvName, charge)
+				err = r.models.Inventories.UpdateAbilities(inv)
+				if err != nil {
+					log.Println(err)
+					return discord.ErrorMessage(
+						ctx,
+						"Failed to update ability",
+						"Alex is a bad programmer, and this is his fault.",
+					)
+				}
+				err = inventory.UpdateInventoryMessage(ctx, inv)
+				if err != nil {
+					return err
+				}
+				return ctx.RespondMessage("Ability updated in inventory.")
+			}
+		}
+
+		return discord.ErrorMessage(ctx, "Failed to find Role Specific Ability...???", "Alex made a major fucky wucky here somehow")
+	}
+
+	inv.AnyAbilities = append(inv.AnyAbilities, ability.Name)
+	err = r.models.Inventories.UpdateAbilities(inv)
+	if err != nil {
+		return discord.ErrorMessage(
+			ctx,
+			"Failed to update inventory",
+			"Alex is a bad programmer")
+	}
+
+	err = inventory.UpdateInventoryMessage(ctx, inv)
+	if err != nil {
+		return discord.ErrorMessage(
+			ctx,
+			"Failed to update inventory message",
+			"Alex is a bad programmer")
+	}
+
+	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+		Title: fmt.Sprintf("%s Power Drop Incoming %s", discord.EmojiAbility, discord.EmojiAbility),
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Ability",
+				Value:  fmt.Sprintf("%s (%s) -  %s", ability.Name, rarityType, ability.Description),
+				Inline: true,
+			},
+		},
+	})
+}
+
+func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
+	inv, err := inventory.Fetch(ctx, r.models, true)
+	if err != nil {
+		if errors.Is(err, inventory.ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
+	aRoll := RollLuck(float64(inv.Luck), rand.Float64())
+	iRoll := RollLuck(float64(inv.Luck), rand.Float64())
+
+	ability, err := r.getRandomAbility(inv.RoleName, aRoll)
 	if err != nil {
 		return discord.ErrorMessage(ctx, "Error getting random ability", "Alex is a bad programmer")
 	}
 
-	item, err := l.models.Items.GetRandomByRarity(iRoll)
+	item, err := r.models.Items.GetRandomByRarity(iRoll)
 	if err != nil {
 		log.Println(err)
 		log.Println(err)
@@ -267,7 +348,7 @@ func (l *Luck) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 
 	inv.Abilities = append(inv.Abilities, ability.Name)
 	inv.Items = append(inv.Items, item.Name)
-	err = l.models.Inventories.UpdateItems(inv)
+	err = r.models.Inventories.UpdateItems(inv)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(
@@ -287,7 +368,7 @@ func (l *Luck) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 	return ctx.RespondEmbed(&discordgo.MessageEmbed{
-		Title: fmt.Sprintf("%s Care Packing Incoming %s", discord.EmojiItem, discord.EmojiItem),
+		Title: fmt.Sprintf("%s Care Package Incoming %s", discord.EmojiItem, discord.EmojiItem),
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Item",
@@ -303,36 +384,145 @@ func (l *Luck) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 	})
 }
 
+func (r *Roll) luckTable(ctx ken.SubCommandContext) (err error) {
+	// Setting to eph for now to avoid flooding channels with bulky messages
+	ctx.SetEphemeral(true)
+	low := 0
+	high := 100
+	lArg, lOk := ctx.Options().GetByNameOptional("low")
+	hArg, hOk := ctx.Options().GetByNameOptional("high")
+	if lOk {
+		low = int(lArg.IntValue())
+		if !hOk {
+			high = int(lArg.IntValue()) + 10
+		}
+	}
+
+	if hOk {
+		high = int(hArg.IntValue())
+	}
+
+	if low < 0 || high < 0 {
+		return discord.ErrorMessage(ctx, "Invalid Range", "Please provide a non-negative number")
+	}
+
+	tMsg := ""
+
+	for level := float64(low); level < float64(high); level++ {
+		currChances := []float64{
+			commonLuckChance(level) * 100,
+			uncommonLuckChance(level) * 100,
+			rareLuckChance(level) * 100,
+			epicLuckChance(level) * 100,
+			legendaryLuckChance(level) * 100,
+			mythicalLuckChance(level) * 100,
+		}
+
+		tMsg += fmt.Sprintf("%d - ,", int(level))
+		for i := range currChances {
+			tMsg += fmt.Sprintf("%.2f%%\t", currChances[i])
+		}
+		tMsg += "\n"
+	}
+
+	return ctx.RespondMessage(discord.Code(tMsg))
+}
+
+func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
+	inv, err := inventory.Fetch(ctx, r.models, true)
+	if err != nil {
+		if errors.Is(err, inventory.ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
+	numItems := rand.Intn(3) + 1
+	newItems := []*data.Item{}
+	for i := 0; i < numItems; i++ {
+		item, err := r.models.Items.GetRandomByRarity(RollLuck(float64(inv.Luck), rand.Float64()))
+		if err != nil {
+			discord.ErrorMessage(ctx, "Failed to get item", "Alex is a bad programmer")
+		}
+		newItems = append(newItems, item)
+	}
+
+	newItemsListing := []string{}
+	for _, item := range newItems {
+		newItemsListing = append(
+			newItemsListing,
+			fmt.Sprintf("%s (%s) - %s", discord.Bold(item.Name), item.Rarity, item.Description),
+		)
+	}
+
+	title := fmt.Sprintf("%s Item Rain Incoming %s", discord.EmojiItem, discord.EmojiItem)
+	desc := fmt.Sprintf(
+		"Rolled %d Items from Item Rain!\n %s",
+		len(newItems),
+		strings.Join(newItemsListing, "\n\n"),
+	)
+	if len(inv.Items)+len(newItems) > inv.ItemLimit {
+		desc += fmt.Sprintf(
+			"\n %s inventory overflow [%d/%d] %s",
+			discord.EmojiWarning,
+			len(inv.Items)+len(newItems),
+			inv.ItemLimit,
+			discord.EmojiWarning,
+		)
+	}
+	fields := []*discordgo.MessageEmbedField{}
+
+	for _, item := range newItems {
+		inv.Items = append(inv.Items, item.Name)
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   discord.Bold(item.Name),
+			Value:  item.Description,
+			Inline: true,
+		})
+	}
+	err = r.models.Inventories.UpdateItems(inv)
+	if err != nil {
+		return discord.ErrorMessage(ctx, "Failed to update inventory", "Alex is a bad programmer")
+	}
+	inventory.UpdateInventoryMessage(ctx, inv)
+
+	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+		Title:       title,
+		Description: desc,
+		Fields:      fields,
+	})
+}
+
 // Version implements ken.SlashCommand.
-func (*Luck) Version() string {
+func (*Roll) Version() string {
 	return "1.0.0"
 }
 
-func (l *Luck) SetModels(models data.Models) {
-	l.models = models
+func (r *Roll) SetModels(models data.Models) {
+	r.models = models
 }
 
 // Helper to get a random ability. If it is not an any ability, need to check to
 // make sure that the ability is the same as the user's current class roll
-func (l *Luck) getRandomAbility(role string, rarity string, rec ...int) (*data.Ability, error) {
+func (r *Roll) getRandomAbility(role string, rarity string, rec ...int) (*data.Ability, error) {
 	// lil saftey net to prevent infinite recursion (hopefully)
-	if len(rec) > 0 && rec[0] > 5 {
+
+	rec = append(rec, 1)
+	if len(rec) > 0 && rec[0] > 10 {
 		return nil, errors.New("too many attempts to get ability")
 	}
-	ab, err := l.models.Abilities.GetRandomByRarity(rarity)
+	ab, err := r.models.Abilities.GetRandomByRarity(rarity)
 	if err != nil {
 		return nil, err
 	}
 	if !ab.AnyAbility {
-		associatedRole, err := l.models.Roles.GetByAbilityID(ab.ID)
+		associatedRole, err := r.models.Roles.GetByAbilityID(ab.ID)
 		if err != nil {
 			return nil, err
 		}
-
 		// Need to re-roll since they got a non-any ability that isn't their role
 		if associatedRole.Name != role {
-			// Haha what's the worst that could happen with a recursive function :)
-			return l.getRandomAbility(role, rarity)
+			// FIXME: Every time a recursive call is made an angel loses its wings
+			return r.getRandomAbility(role, rarity, rec[0]+1)
 		}
 	}
 	return ab, nil

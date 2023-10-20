@@ -39,6 +39,7 @@ func (v *View) roleEmbed(role *data.Role) (*discordgo.MessageEmbed, error) {
 	for _, ability := range abilities {
 		title := ability.Name
 		fStr := "%s [%d] - %s"
+
 		categories := strings.Join(ability.Categories, ", ")
 		if ability.Charges == -1 {
 			title = fmt.Sprintf(fStr, ability.Name, infinity,categories)

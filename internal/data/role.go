@@ -179,7 +179,7 @@ func (rm *RoleModel) GetByPerkID(perkID int64) (*Role, error) {
 	var r Role
 	err := rm.DB.Get(
 		&r,
-		`SELECT (perks.*) FROM perks INNER JOIN roles_perks ON perks.id = roles_perks.perk_id WHERE roles_perks.perk_id = $1`,
+		`SELECT (roles.*) FROM roles INNER JOIN roles_perks ON roles.id = roles_perks.role_id WHERE roles_perks.perk_id = $1`,
 		perkID,
 	)
 	if err != nil {

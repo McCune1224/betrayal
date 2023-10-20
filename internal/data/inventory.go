@@ -6,24 +6,27 @@ import (
 )
 
 type Inventory struct {
-	ID             int64          `db:"id"`
-	DiscordID      string         `db:"discord_id"`
-	UserPinChannel string         `db:"user_pin_channel"`
-	UserPinMessage string         `db:"user_pin_message"`
-	RoleName       string         `db:"role_name"`
-	Alignment      string         `db:"alignment"`
-	Abilities      pq.StringArray `db:"abilities"`
-	AnyAbilities   pq.StringArray `db:"any_abilities"`
-	Statuses       pq.StringArray `db:"statuses"`
-	Immunities     pq.StringArray `db:"immunities"`
-	Effects        pq.StringArray `db:"effects"`
-	Items          pq.StringArray `db:"items"`
-	ItemLimit      int            `db:"item_limit"`
-	Perks          pq.StringArray `db:"perks"`
-	Coins          int64          `db:"coins"`
-	CoinBonus      float32        `db:"coin_bonus"`
-	Notes          pq.StringArray `db:"notes"`
-	CreatedAt      string         `db:"created_at"`
+	ID             int64  `db:"id"`
+	DiscordID      string `db:"discord_id"`
+	UserPinChannel string `db:"user_pin_channel"`
+	UserPinMessage string `db:"user_pin_message"`
+	RoleName       string `db:"role_name"`
+	Alignment      string `db:"alignment"`
+	// Ability [Charge]
+	Abilities pq.StringArray `db:"abilities"`
+	// Ability [Charge]
+	AnyAbilities pq.StringArray `db:"any_abilities"`
+	Statuses     pq.StringArray `db:"statuses"`
+	Immunities   pq.StringArray `db:"immunities"`
+	Effects      pq.StringArray `db:"effects"`
+	Items        pq.StringArray `db:"items"`
+	ItemLimit    int            `db:"item_limit"`
+	Perks        pq.StringArray `db:"perks"`
+	Coins        int64          `db:"coins"`
+	CoinBonus    float32        `db:"coin_bonus"`
+	Luck         int64          `db:"luck"`
+	Notes        pq.StringArray `db:"notes"`
+	CreatedAt    string         `db:"created_at"`
 }
 
 type InventoryModel struct {
@@ -88,6 +91,15 @@ func (m *InventoryModel) UpdateProperty(
 func (m *InventoryModel) UpdateCoins(inventory *Inventory) error {
 	query := `UPDATE inventories SET coins=$1 WHERE discord_id=$2`
 	_, err := m.DB.Exec(query, inventory.Coins, inventory.DiscordID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *InventoryModel) UpdateLuck(inventory *Inventory) error {
+	query := `UPDATE inventories SET luck=$1 WHERE discord_id=$2`
+	_, err := m.DB.Exec(query, inventory.Luck, inventory.DiscordID)
 	if err != nil {
 		return err
 	}
@@ -174,7 +186,6 @@ func (m *InventoryModel) Delete(discordID string) error {
 		return err
 	}
 	return nil
-
 }
 
 func (m *InventoryModel) UpdateItemLimit(inventory *Inventory) error {

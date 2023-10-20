@@ -1,25 +1,24 @@
 package inventory
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
 	"strings"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
 )
 
 func (i *Inventory) setAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(
-			ctx,
-			"Failed to get inventory",
-			"Alex is a bad programmer, and this is his fault.",
-		)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
@@ -51,15 +50,12 @@ func (i *Inventory) setAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(
-			ctx,
-			"Failed to get inventory",
-			"Alex is a bad programmer, and this is his fault.",
-		)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
@@ -91,15 +87,12 @@ func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setCoins(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(
-			ctx,
-			"Failed to get inventory",
-			"Alex is a bad programmer, and this is his fault.",
-		)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 	coinsArg := ctx.Options().GetByName("amount").IntValue()
@@ -125,15 +118,12 @@ func (i *Inventory) setCoins(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(
-			ctx,
-			"Failed to get inventory",
-			"Alex is a bad programmer, and this is his fault.",
-		)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 
@@ -147,7 +137,7 @@ func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
 			"Failed to parse coin bonus",
 			"Unable to parse coin bonus")
 	}
-    //FIXME: Remove round down 
+	// FIXME: Remove round down
 	inventory.CoinBonus = (float32(fCoinBonusArg) / 100)
 
 	err = i.models.Inventories.UpdateProperty(inventory, "coin_bonus", inventory.CoinBonus)
@@ -181,15 +171,12 @@ func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
-	inventory, err := i.ImLazyMiddleware(ctx)
+	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(
-			ctx,
-			"Failed to get inventory",
-			"Alex is a bad programmer, and this is his fault.",
-		)
-		return err
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 	itemsLimitArg := ctx.Options().GetByName("size").IntValue()
@@ -216,4 +203,43 @@ func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
 			inventory.ItemLimit,
 		),
 	)
+}
+
+func (i *Inventory) setLuckLevel(ctx ken.SubCommandContext) (err error) {
+	inventory, err := Fetch(ctx, i.models, true)
+	if err != nil {
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
+	ctx.SetEphemeral(true)
+	luckLevelArg := ctx.Options().GetByName("level").IntValue()
+	oldLuck := inventory.Luck
+	inventory.Luck = luckLevelArg
+
+	err = i.models.Inventories.UpdateLuck(inventory)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(
+			ctx,
+			"Failed to update luck level",
+			"Alex is a bad programmer, and this is his fault.",
+		)
+	}
+	err = i.updateInventoryMessage(ctx, inventory)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(
+			ctx,
+			"Failed to update inventory message",
+			"Alex is a bad programmer, and this is his fault.",
+		)
+	}
+
+	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+		Title:       "Luck level updated",
+		Description: fmt.Sprintf("Luck level from %d to %d", oldLuck, inventory.Luck),
+		Color:       discord.ColorThemeGreen,
+	})
 }
