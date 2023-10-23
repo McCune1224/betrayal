@@ -78,6 +78,11 @@ func (*List) Options() []*discordgo.ApplicationCommandOption {
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Description: "List of all events",
 		},
+		{
+			Name:        "statuses",
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Description: "List of all statuses",
+		},
 	}
 }
 
@@ -87,7 +92,28 @@ func (l *List) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "items", Run: l.listItems},
 		ken.SubCommandHandler{Name: "active_roles", Run: l.listActiveRoles},
 		ken.SubCommandHandler{Name: "events", Run: l.listEvents},
+		ken.SubCommandHandler{Name: "statuses", Run: l.listStatuses},
 	)
+}
+
+func (l *List) listStatuses(ctx ken.SubCommandContext) (err error) {
+	statuses, err := l.models.Statuses.GetAll()
+	if err != nil {
+		log.Println(err)
+		discord.AlexError(ctx)
+	}
+	fields := []*discordgo.MessageEmbedField{}
+	for _, s := range statuses {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:  s.Name,
+			Value: s.Description,
+		})
+	}
+	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+		Title:       "Statuses",
+		Description: "List of all statuses",
+		Fields:      fields,
+	})
 }
 
 func (l *List) listEvents(ctx ken.SubCommandContext) (err error) {

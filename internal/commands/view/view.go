@@ -68,6 +68,14 @@ func (*View) Options() []*discordgo.ApplicationCommandOption {
 				discord.StringCommandArg("name", "Name of the role", true),
 			},
 		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "status",
+			Description: "view a status",
+			Options: []*discordgo.ApplicationCommandOption{
+				discord.StringCommandArg("name", "Name of the role", true),
+			},
+		},
 	}
 }
 
@@ -79,6 +87,7 @@ func (v *View) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "ability", Run: v.viewAbility},
 		ken.SubCommandHandler{Name: "perk", Run: v.viewPerk},
 		ken.SubCommandHandler{Name: "item", Run: v.viewItem},
+		ken.SubCommandHandler{Name: "status", Run: v.viewStatus},
 	)
 	return err
 }
@@ -283,6 +292,19 @@ func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
 
 	err = ctx.RespondEmbed(embed)
 	return err
+}
+
+func (v *View) viewStatus(ctx ken.SubCommandContext) (err error) {
+	statusName := ctx.Options().GetByName("name").StringValue()
+	status, err := v.models.Statuses.GetByName(statusName)
+	if err != nil {
+		return err
+	}
+
+	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+		Title:       status.Name,
+		Description: status.Description,
+	})
 }
 
 // Version implements ken.SlashCommand.

@@ -50,6 +50,15 @@ func (sm *StatusModel) GetByName(name string) (*Status, error) {
 	return &status, nil
 }
 
+func (sm *StatusModel) GetAll() ([]Status, error) {
+	var statuses []Status
+	err := sm.DB.Select(&statuses, "SELECT * FROM statuses")
+	if err != nil {
+		return nil, err
+	}
+	return statuses, nil
+}
+
 func (sm *StatusModel) Update(status *Status) error {
 	query := `UPDATE statuses SET name = $1, description = $2 WHERE id = $3`
 	_, err := sm.DB.Exec(query, status.Name, status.Description, status.ID)
