@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"log"
 	"strings"
 
@@ -9,9 +8,25 @@ import (
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
-	"golang.org/x/exp/slices"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
+)
+
+// TODO: Slap these in the database once game is close to starting and roles are finalized
+var (
+	DummyGoodRoles    = []string{"Agent", "Analyst", "Biker", "Cerberus", "Detective", "Fisherman", "Gunman", "Hero", "Hydra", "Judge", "Major", "Mecha", "Medium", "Nurse", "Seraph", "Terminal", "Time Traveler", "Undercover", "Wizard", "Yeti"}
+	DummyNeutralRoles = []string{"Amalgamation", "Backstabber", "Banker", "Bomber", "Cheater", "Cyborg", "Empress", "Ghost", "Goliath", "Journalist", "Magician", "Masochist", "Mercenary", "Mimic", "Pathologist", "Salesman", "Siren", "Tinkerer", "Villager", "Wanderer"}
+	DummyEvilRoles    = []string{"Anarchist", "Arsonist", "Bartender", "Consort", "Director", "Doll", "Forsaken Angel", "Gatekeeper", "Hacker", "Highwayman", "Hunter", "Imp", "Jester", "Juggernaut", "Overlord", "Phantom", "Psychotherapist", "Slaughterer", "Threatener", "Witchdoctor"}
+	GameEvents        = []string{
+		"Care Package - Game Start - Each player starts off with a care package which contains 1 item and 1 Any Ability.",
+		"Daily Bonuses - Every Day - Gain 300 coins every day, other than the first.",
+		"Item Rain - Every Third Day - Everyone gains 1-3 random items (luck affects your odds).",
+		"Power Drop - Day After Item Rain - Everyone gains 1 random Any Ability.",
+		"Rock Paper Scissors Tournament (Day 5 event) - Everyone plays rock, paper, scissors. Winner gets a special prize.",
+		"Money Heaven - Day 7 and Day 13 Event - All of the coins you earn are doubled today.",
+		"Valentine's Day - Day 8 Event - Send a valentine and an anonymous message costing 50 coins to someone. You cannot receive valentines if you don't send one. Cannot send to yourself.",
+		"Duels - Day 11 & 14 Event - Choose to challenge someone to a duel. Life is at stake.",
+		"Ultimate Exchange - Five Player Event - Whoever is holding the Lucky Coin may convert it into 1500 coins.",
+		"Double Elimination - Random Event - There will be two Elimination Phases today.",
+	}
 )
 
 type List struct {
@@ -48,10 +63,20 @@ func (*List) Options() []*discordgo.ApplicationCommandOption {
 		{
 			Name:        "items",
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
-			Description: "Get a list of items",
+			Description: "List of all items",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.BoolCommandArg("all", "Get all items", false),
 			},
+		},
+		{
+			Name:        "active_roles",
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Description: "List of all active roles in game.",
+		},
+		{
+			Name:        "events",
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Description: "List of all events",
 		},
 	}
 }
@@ -59,164 +84,65 @@ func (*List) Options() []*discordgo.ApplicationCommandOption {
 // Run implements ken.SlashCommand.
 func (l *List) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
-		ken.SubCommandHandler{Name: "roles", Run: l.listRoles},
 		ken.SubCommandHandler{Name: "items", Run: l.listItems},
+		ken.SubCommandHandler{Name: "active_roles", Run: l.listActiveRoles},
+		ken.SubCommandHandler{Name: "events", Run: l.listEvents},
 	)
 }
 
-func (l *List) listRoles(ctx ken.SubCommandContext) (err error) {
-	findActive := false
-	activeArg, ok := ctx.Options().GetByNameOptional("active")
-	if ok {
-		findActive = activeArg.BoolValue()
-	}
-	var roles []*data.Role
-	if findActive {
-		inventories, err := l.models.Inventories.GetAll()
-		if err != nil {
-			log.Println(err)
-			return discord.ErrorMessage(
-				ctx,
-				"Error getting active roles",
-				"Alex is a bad programmer",
-			)
-		}
-		for _, inventory := range inventories {
-			role, err := l.models.Roles.GetByName(inventory.RoleName)
-			if err != nil {
-				log.Println(err)
-				return discord.ErrorMessage(
-					ctx,
-					"Error getting active roles",
-					"Alex is a bad programmer",
-				)
-			}
-			roles = append(roles, role)
-		}
-
-	} else {
-		var err error
-		roles, err = l.models.Roles.GetAll()
-		if err != nil {
-			log.Println(err)
-			return discord.ErrorMessage(
-				ctx,
-				"Error getting roles",
-				"Alex is a bad programmer",
-			)
-		}
-	}
-
-	if len(roles) == 0 {
-		return discord.ErrorMessage(ctx, "No roles found...somehow?", "Alex is a bad programmer")
-	}
-
-	//divide the role list into two columns
+func (l *List) listEvents(ctx ken.SubCommandContext) (err error) {
 	fields := []*discordgo.MessageEmbedField{}
-	var goodColumn []string
-	var evilColumn []string
-	var neutralColumn []string
-	caser := cases.Title(language.AmericanEnglish)
-	for _, role := range roles {
-		name := caser.String(role.Name)
-		switch role.Alignment {
-		case "GOOD":
-			goodColumn = append(goodColumn, name)
-			slices.Sort(goodColumn)
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   "GOOD",
-				Value:  strings.Join(goodColumn, "\n"),
-				Inline: true,
-			})
-		case "EVIL":
-			evilColumn = append(evilColumn, name)
-			slices.Sort(evilColumn)
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   "EVIL",
-				Value:  strings.Join(evilColumn, "\n"),
-				Inline: true,
-			})
-		case "NEUTRAL":
-			neutralColumn = append(neutralColumn, name)
-			slices.Sort(goodColumn)
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:   "NEUTRAL",
-				Value:  strings.Join(neutralColumn, "\n"),
-				Inline: true,
-			})
-		}
+	for _, e := range GameEvents {
+		split := strings.Split(e, " -")
+		name := split[0]
+		desc := strings.Join(split[1:], " -")
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:  name,
+			Value: desc,
+		})
 	}
-
-	title := ""
-	if findActive {
-		title = discord.Underline("Active Roles")
-	} else {
-		title = discord.Underline("All Roles")
-	}
-
-	embed := discordgo.MessageEmbed{
-		Title:  title,
-		Fields: fields,
-	}
-
-	return ctx.RespondEmbed(&embed)
+	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+		Title:       "Events",
+		Description: "All events in the game",
+		Fields:      fields,
+	})
 }
 
 func (l *List) listItems(ctx ken.SubCommandContext) (err error) {
-	items, err := l.models.Items.GetAll()
+	return discord.AlexError(ctx)
+}
+
+func (l *List) listActiveRoles(ctx ken.SubCommandContext) (err error) {
+	_, err = l.models.RoleLists.Get()
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(ctx, "Error getting items", "Alex is a bad programmer")
+		return discord.AlexError(ctx)
 	}
 
-	if len(items) == 0 {
-		return discord.ErrorMessage(ctx, "No items found...somehow?", "Alex is a bad programmer")
-	}
-
-	rarityMap := make(map[string][]string)
-	for _, item := range items {
-		cost := ""
-		if item.Cost == 0 {
-			cost = "[X]"
-		} else {
-			cost = fmt.Sprintf("[%d]", item.Cost)
-		}
-		rarityMap[item.Rarity] = append(rarityMap[item.Rarity], item.Name+" - "+cost)
-	}
-	embed := discordgo.MessageEmbed{
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:  "COMMON",
-				Value: strings.Join(rarityMap["COMMON"], "\n"),
-			},
-			{
-				Name:  "UNCOMMON",
-				Value: strings.Join(rarityMap["UNCOMMON"], "\n"),
-			},
-			{
-				Name:  "RARE",
-				Value: strings.Join(rarityMap["RARE"], "\n"),
-			},
-			{
-				Name:  "EPIC",
-				Value: strings.Join(rarityMap["EPIC"], "\n"),
-			},
-			{
-				Name:  "LEGENDARY",
-				Value: strings.Join(rarityMap["LEGENDARY"], "\n"),
-			},
-			{
-				Name:  "MYTHICAL",
-				Value: strings.Join(rarityMap["MYTHICAL"], "\n"),
-			},
-			{
-				Name:  "UNIQUE",
-				Value: strings.Join(rarityMap["UNIQUE"], "\n"),
-			},
+	fields := []*discordgo.MessageEmbedField{
+		{
+			Name:   "Good",
+			Value:  strings.Join(DummyGoodRoles, "\n"),
+			Inline: true,
+		},
+		{
+			Name:   "Neutral",
+			Value:  strings.Join(DummyNeutralRoles, "\n"),
+			Inline: true,
+		},
+		{
+			Name:   "Evil",
+			Value:  strings.Join(DummyEvilRoles, "\n"),
+			Inline: true,
 		},
 	}
-	embed.Title = discord.Underline("Items")
-	return ctx.RespondEmbed(&embed)
+	listEmbed := &discordgo.MessageEmbed{
+		Title:       "Active Game Roles",
+		Description: "All active roles for the current game",
+		Fields:      fields,
+	}
+
+	return ctx.RespondEmbed(listEmbed)
 }
 
 // Version implements ken.SlashCommand.

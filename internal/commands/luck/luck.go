@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -50,6 +49,7 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 			Description: "Give a random item and ability",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.UserCommandArg(false),
+				discord.IntCommandArg("luck", "optional override of luck level", false),
 			},
 		},
 		{
@@ -58,6 +58,7 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 			Description: "Make it rain!!",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.UserCommandArg(false),
+				discord.IntCommandArg("luck", "optional override of luck level", false),
 			},
 		},
 		{
@@ -66,6 +67,7 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 			Description: "give a random AA",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.UserCommandArg(false),
+				discord.IntCommandArg("luck", "optional override of luck level", false),
 			},
 		},
 		{
@@ -241,83 +243,87 @@ func (r *Roll) luckDebug(ctx ken.SubCommandContext) (err error) {
 	return ctx.RespondMessage(view)
 }
 
-func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
-	inv, err := inventory.Fetch(ctx, r.models, true)
-	if err != nil {
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to get inventory",
-			"Are you in a whitelist or confessional channel?",
-		)
-	}
-
-	rarityType := RollLuck(float64(inv.Luck), rand.Float64())
-	ability, err := r.getRandomAbility(inv.RoleName, rarityType)
-	if err != nil {
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to get ability",
-			"Alex is a bad programmer",
-		)
-	}
-
-	if !ability.AnyAbility {
-		// If its not an any ability, instead find the ability in base abilities and update charges instead
-		for k, v := range inv.Abilities {
-			currInvName := strings.Split(v, " [")[0]
-			left := strings.Index(v, "[") + 1
-			right := strings.Index(v, "]")
-			charge, _ := strconv.Atoi(v[left:right])
-			if strings.EqualFold(currInvName, ability.Name) {
-				inv.Abilities[k] = fmt.Sprintf("%s [%d]", currInvName, charge)
-				err = r.models.Inventories.UpdateAbilities(inv)
-				if err != nil {
-					log.Println(err)
-					return discord.ErrorMessage(
-						ctx,
-						"Failed to update ability",
-						"Alex is a bad programmer, and this is his fault.",
-					)
-				}
-				err = inventory.UpdateInventoryMessage(ctx, inv)
-				if err != nil {
-					return err
-				}
-				return ctx.RespondMessage("Ability updated in inventory.")
-			}
-		}
-
-		return discord.ErrorMessage(ctx, "Failed to find Role Specific Ability...???", "Alex made a major fucky wucky here somehow")
-	}
-
-	inv.AnyAbilities = append(inv.AnyAbilities, ability.Name)
-	err = r.models.Inventories.UpdateAbilities(inv)
-	if err != nil {
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update inventory",
-			"Alex is a bad programmer")
-	}
-
-	err = inventory.UpdateInventoryMessage(ctx, inv)
-	if err != nil {
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update inventory message",
-			"Alex is a bad programmer")
-	}
-
-	return ctx.RespondEmbed(&discordgo.MessageEmbed{
-		Title: fmt.Sprintf("%s Power Drop Incoming %s", discord.EmojiAbility, discord.EmojiAbility),
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "Ability",
-				Value:  fmt.Sprintf("%s (%s) -  %s", ability.Name, rarityType, ability.Description),
-				Inline: true,
-			},
-		},
-	})
-}
+// func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
+// 	inv, err := inventory.Fetch(ctx, r.models, true)
+// 	if err != nil {
+// 		return discord.ErrorMessage(
+// 			ctx,
+// 			"Failed to get inventory",
+// 			"Are you in a whitelist or confessional channel?",
+// 		)
+// 	}
+// 	luckLevel := inv.Luck
+// 	luckArg, ok := ctx.Options().GetByNameOptional("luck")
+// 	if ok {
+// 		luckLevel = luckArg.IntValue()
+// 	}
+// 	rarityType := RollLuck(float64(luckLevel), rand.Float64())
+// 	ability, err := r.getRandomAbility(inv.RoleName, rarityType)
+// 	if err != nil {
+// 		return discord.ErrorMessage(
+// 			ctx,
+// 			"Failed to get ability",
+// 			"Alex is a bad programmer",
+// 		)
+// 	}
+//
+// 	if !ability.AnyAbility {
+// 		// If its not an any ability, instead find the ability in base abilities and update charges instead
+// 		for k, v := range inv.Abilities {
+// 			currInvName := strings.Split(v, " [")[0]
+// 			left := strings.Index(v, "[") + 1
+// 			right := strings.Index(v, "]")
+// 			charge, _ := strconv.Atoi(v[left:right])
+// 			if strings.EqualFold(currInvName, ability.Name) {
+// 				inv.Abilities[k] = fmt.Sprintf("%s [%d]", currInvName, charge)
+// 				err = r.models.Inventories.UpdateAbilities(inv)
+// 				if err != nil {
+// 					log.Println(err)
+// 					return discord.ErrorMessage(
+// 						ctx,
+// 						"Failed to update ability",
+// 						"Alex is a bad programmer, and this is his fault.",
+// 					)
+// 				}
+// 				err = inventory.UpdateInventoryMessage(ctx, inv)
+// 				if err != nil {
+// 					return err
+// 				}
+// 				return ctx.RespondMessage("Ability updated in inventory.")
+// 			}
+// 		}
+//
+// 		return discord.ErrorMessage(ctx, "Failed to find Role Specific Ability...???", "Alex made a major fucky wucky here somehow")
+// 	}
+//
+// 	inv.AnyAbilities = append(inv.AnyAbilities, ability.Name)
+// 	err = r.models.Inventories.UpdateAbilities(inv)
+// 	if err != nil {
+// 		return discord.ErrorMessage(
+// 			ctx,
+// 			"Failed to update inventory",
+// 			"Alex is a bad programmer")
+// 	}
+//
+// 	err = inventory.UpdateInventoryMessage(ctx, inv)
+// 	if err != nil {
+// 		return discord.ErrorMessage(
+// 			ctx,
+// 			"Failed to update inventory message",
+// 			"Alex is a bad programmer")
+// 	}
+//
+// 	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+// 		Title: fmt.Sprintf("%s Power Drop Incoming %s", discord.EmojiAbility, discord.EmojiAbility),
+// 		Fields: []*discordgo.MessageEmbedField{
+// 			{
+// 				Name:   "Ability",
+// 				Value:  fmt.Sprintf("%s (%s) -  %s", ability.Name, rarityType, ability.Description),
+// 				Inline: true,
+// 			},
+// 		},
+// 	})
+// }
 
 func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 	inv, err := inventory.Fetch(ctx, r.models, true)
@@ -327,8 +333,14 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
-	aRoll := RollLuck(float64(inv.Luck), rand.Float64())
-	iRoll := RollLuck(float64(inv.Luck), rand.Float64())
+	luckLevel := inv.Luck
+	luckArg, ok := ctx.Options().GetByNameOptional("luck")
+	if ok {
+		luckLevel = luckArg.IntValue()
+	}
+
+	aRoll := RollLuck(float64(luckLevel), rand.Float64())
+	iRoll := RollLuck(float64(luckLevel), rand.Float64())
 
 	ability, err := r.getRandomAbility(inv.RoleName, aRoll)
 	if err != nil {
@@ -428,69 +440,74 @@ func (r *Roll) luckTable(ctx ken.SubCommandContext) (err error) {
 	return ctx.RespondMessage(discord.Code(tMsg))
 }
 
-func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
-	inv, err := inventory.Fetch(ctx, r.models, true)
-	if err != nil {
-		if errors.Is(err, inventory.ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
-		}
-		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
-	}
-	numItems := rand.Intn(3) + 1
-	newItems := []*data.Item{}
-	for i := 0; i < numItems; i++ {
-		item, err := r.models.Items.GetRandomByRarity(RollLuck(float64(inv.Luck), rand.Float64()))
-		if err != nil {
-			discord.ErrorMessage(ctx, "Failed to get item", "Alex is a bad programmer")
-		}
-		newItems = append(newItems, item)
-	}
-
-	newItemsListing := []string{}
-	for _, item := range newItems {
-		newItemsListing = append(
-			newItemsListing,
-			fmt.Sprintf("%s (%s) - %s", discord.Bold(item.Name), item.Rarity, item.Description),
-		)
-	}
-
-	title := fmt.Sprintf("%s Item Rain Incoming %s", discord.EmojiItem, discord.EmojiItem)
-	desc := fmt.Sprintf(
-		"Rolled %d Items from Item Rain!\n %s",
-		len(newItems),
-		strings.Join(newItemsListing, "\n\n"),
-	)
-	if len(inv.Items)+len(newItems) > inv.ItemLimit {
-		desc += fmt.Sprintf(
-			"\n %s inventory overflow [%d/%d] %s",
-			discord.EmojiWarning,
-			len(inv.Items)+len(newItems),
-			inv.ItemLimit,
-			discord.EmojiWarning,
-		)
-	}
-	fields := []*discordgo.MessageEmbedField{}
-
-	for _, item := range newItems {
-		inv.Items = append(inv.Items, item.Name)
-		fields = append(fields, &discordgo.MessageEmbedField{
-			Name:   discord.Bold(item.Name),
-			Value:  item.Description,
-			Inline: true,
-		})
-	}
-	err = r.models.Inventories.UpdateItems(inv)
-	if err != nil {
-		return discord.ErrorMessage(ctx, "Failed to update inventory", "Alex is a bad programmer")
-	}
-	inventory.UpdateInventoryMessage(ctx, inv)
-
-	return ctx.RespondEmbed(&discordgo.MessageEmbed{
-		Title:       title,
-		Description: desc,
-		Fields:      fields,
-	})
-}
+// func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
+// 	inv, err := inventory.Fetch(ctx, r.models, true)
+// 	if err != nil {
+// 		if errors.Is(err, inventory.ErrNotAuthorized) {
+// 			return discord.NotAuthorizedError(ctx)
+// 		}
+// 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+// 	}
+// 	luckLevel := inv.Luck
+// 	luckArg, ok := ctx.Options().GetByNameOptional("luck")
+// 	if ok {
+// 		luckLevel = luckArg.IntValue()
+// 	}
+// 	numItems := rand.Intn(3) + 1
+// 	newItems := []*data.Item{}
+// 	for i := 0; i < numItems; i++ {
+// 		item, err := r.models.Items.GetRandomByRarity(RollLuck(float64(luckLevel), rand.Float64()))
+// 		if err != nil {
+// 			discord.ErrorMessage(ctx, "Failed to get item", "Alex is a bad programmer")
+// 		}
+// 		newItems = append(newItems, item)
+// 	}
+//
+// 	newItemsListing := []string{}
+// 	for _, item := range newItems {
+// 		newItemsListing = append(
+// 			newItemsListing,
+// 			fmt.Sprintf("%s (%s) - %s", discord.Bold(item.Name), item.Rarity, item.Description),
+// 		)
+// 	}
+//
+// 	title := fmt.Sprintf("%s Item Rain Incoming %s", discord.EmojiItem, discord.EmojiItem)
+// 	desc := fmt.Sprintf(
+// 		"Rolled %d Items from Item Rain!\n %s",
+// 		len(newItems),
+// 		strings.Join(newItemsListing, "\n\n"),
+// 	)
+// 	if len(inv.Items)+len(newItems) > inv.ItemLimit {
+// 		desc += fmt.Sprintf(
+// 			"\n %s inventory overflow [%d/%d] %s",
+// 			discord.EmojiWarning,
+// 			len(inv.Items)+len(newItems),
+// 			inv.ItemLimit,
+// 			discord.EmojiWarning,
+// 		)
+// 	}
+// 	fields := []*discordgo.MessageEmbedField{}
+//
+// 	for _, item := range newItems {
+// 		inv.Items = append(inv.Items, item.Name)
+// 		fields = append(fields, &discordgo.MessageEmbedField{
+// 			Name:   discord.Bold(item.Name),
+// 			Value:  item.Description,
+// 			Inline: true,
+// 		})
+// 	}
+// 	err = r.models.Inventories.UpdateItems(inv)
+// 	if err != nil {
+// 		return discord.ErrorMessage(ctx, "Failed to update inventory", "Alex is a bad programmer")
+// 	}
+// 	inventory.UpdateInventoryMessage(ctx, inv)
+//
+// 	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+// 		Title:       title,
+// 		Description: desc,
+// 		Fields:      fields,
+// 	})
+// }
 
 // Version implements ken.SlashCommand.
 func (*Roll) Version() string {

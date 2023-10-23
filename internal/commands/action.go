@@ -117,7 +117,7 @@ func (af *ActionFunnel) location(ctx ken.SubCommandContext) (err error) {
 		"Funnel Channel Set",
 		fmt.Sprintf(
 			"Action requests will now be sent to %s in %s",
-			channelName.Name,
+			discord.MentionChannel(channelName.ID),
 			guildName.Name,
 		),
 	)
@@ -195,7 +195,7 @@ func (af *ActionFunnel) request(ctx ken.SubCommandContext) (err error) {
 			"There was an error getting the funnel channel. Let Alex know he's a bad programmer.")
 	}
 
-	//get the user's name in guild
+	// get the user's name in guild
 	guildMember, err := ctx.GetSession().
 		GuildMember(event.GuildID, event.Member.User.ID)
 	if err != nil {

@@ -15,8 +15,10 @@ import (
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
 	roll "github.com/mccune1224/betrayal/internal/commands/luck"
 	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/middlewares"
 	"github.com/zekrotja/ken"
+	"github.com/zekrotja/ken/state"
 )
 
 // config struct to hold env variables and any other config settings
@@ -78,8 +80,6 @@ func main() {
 		log.Fatal("error opening connection,", err)
 	}
 
-	logger := log.New(os.Stdout, "betrayal-bot ", log.Ldate|log.Ltime|log.Lshortfile)
-
 	db, err := sqlx.Connect("postgres", cfg.database.dsn)
 	if err != nil {
 		log.Fatal("error opening database,", err)
@@ -90,12 +90,27 @@ func main() {
 	app := &app{
 		conifg: cfg,
 		models: dbModels,
-		logger: logger,
 	}
-	km, err := ken.New(bot)
+	km, err := ken.New(bot, ken.Options{
+		State: state.NewInternal(),
+		EmbedColors: ken.EmbedColors{
+			Default: discord.ColorThemeOrange,
+			Error:   discord.ColorThemeRuby,
+		},
+		DisableCommandInfoCache: false,
+		OnSystemError: func(ctx string, err error, args ...interface{}) {
+			log.Printf("[STM] {%s} - %s\n", ctx, err.Error())
+		},
+		OnCommandError: func(err error, ctx *ken.Ctx) {
+			log.Printf("[CMD] %s - %s : %s\n", ctx.Command.Name(), ctx.GetEvent().Member.User.Username, err.Error())
+		},
+		OnEventError: func(context string, err error) {
+			log.Printf("[EVT] %s : %s\n", context, err.Error())
+		},
+	})
 	app.betrayalManager = km
 	if err != nil {
-		app.logger.Fatal(err)
+		log.Fatal(err)
 	}
 
 	// Call unregister twice to remove any lingering commands from previous runs
@@ -104,27 +119,30 @@ func main() {
 	tally := app.RegisterBetrayalCommands(
 		new(roll.Roll),
 		new(inventory.Inventory),
-		// new(commands.ActionFunnel),
+		new(commands.ActionFunnel),
 		// new(view.View),
 		new(commands.Buy),
-	// new(commands.List),
-	// new(commands.Insult),
-	// new(commands.Ping),
+		new(commands.List),
+		// new(commands.Insult),
+		// new(commands.Ping),
+		new(commands.Vote),
 	)
 	err = app.betrayalManager.RegisterMiddlewares(new(middlewares.PermissionsMiddleware))
 	if err != nil {
-		app.logger.Fatal(err)
+		log.Fatal(err)
 	}
 
 	defer app.betrayalManager.Unregister()
 
 	err = bot.Open()
 	if err != nil {
-		app.logger.Fatal("error opening connection,", err)
+		log.Fatal("error opening connection,", err)
 	}
 	defer bot.Close()
 
-	app.logger.Printf(
+	// bad grammar
+
+	log.Printf(
 		"%s is now running with %d commands. Press CTRL-C to exit.\n",
 		bot.State.User.Username,
 		tally,
@@ -135,6 +153,6 @@ func main() {
 	<-sc
 
 	if err := app.betrayalManager.Session().Close(); err != nil {
-		app.logger.Fatal("error closing connection,", err)
+		log.Fatal("error closing connection,", err)
 	}
 }

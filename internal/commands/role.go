@@ -122,7 +122,7 @@ func (rg *RoleGet) Run(ctx ken.Context) (err error) {
 	}
 
 	err = ctx.RespondEmbed(embed)
-	return nil
+	return err
 }
 
 // Version implements ken.SlashCommand.

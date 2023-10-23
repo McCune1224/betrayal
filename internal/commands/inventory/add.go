@@ -439,7 +439,7 @@ func (i *Inventory) addWhitelist(ctx ken.SubCommandContext) (err error) {
 	err = discord.SuccessfulMessage(
 		ctx,
 		"Added Channel",
-		fmt.Sprintf("Added %s to whitelist", channelArg.Name),
+		fmt.Sprintf("Added %s to whitelist", discord.MentionChannel(channelArg.ID)),
 	)
 	return err
 }

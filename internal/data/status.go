@@ -23,6 +23,9 @@ func (sm *StatusModel) Insert(s *Status) (int64, error) {
 	}
 	var lastInsert Status
 	err = sm.DB.Get(&lastInsert, "SELECT * FROM statuses ORDER BY id DESC LIMIT 1")
+	if err != nil {
+		return -1, err
+	}
 
 	return lastInsert.ID, nil
 }

@@ -28,6 +28,8 @@ type Models struct {
 	Whitelists     WhitelistModel
 	Actions        ActionModel
 	FunnelChannels FunnelChannelModel
+	Votes          VoteModel
+	RoleLists      RoleListModel
 }
 
 // NewModels creates a new instance of the Models struct and attaches the database connection to it.
@@ -44,6 +46,8 @@ func NewModels(db *sqlx.DB) Models {
 		Whitelists:     WhitelistModel{DB: db},
 		Actions:        ActionModel{DB: db},
 		FunnelChannels: FunnelChannelModel{DB: db},
+		Votes:          VoteModel{DB: db},
+		RoleLists:      RoleListModel{DB: db},
 	}
 	return ModelHandlers
 }
