@@ -14,6 +14,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/commands"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
 	roll "github.com/mccune1224/betrayal/internal/commands/luck"
+	"github.com/mccune1224/betrayal/internal/commands/view"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/middlewares"
@@ -120,11 +121,11 @@ func main() {
 		new(roll.Roll),
 		new(inventory.Inventory),
 		new(commands.ActionFunnel),
-		// new(view.View),
+		new(view.View),
 		new(commands.Buy),
 		new(commands.List),
-		// new(commands.Insult),
-		// new(commands.Ping),
+		new(commands.Insult),
+		new(commands.Ping),
 		new(commands.Vote),
 	)
 	err = app.betrayalManager.RegisterMiddlewares(new(middlewares.PermissionsMiddleware))

@@ -21,9 +21,7 @@ func (v *View) SetModels(models data.Models) {
 	v.models = models
 }
 
-var (
-	_ ken.SlashCommand = (*View)(nil)
-)
+var _ ken.SlashCommand = (*View)(nil)
 
 // Description implements ken.SlashCommand.
 func (*View) Description() string {
@@ -243,7 +241,6 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 }
 
 func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
-
 	data := ctx.Options().GetByName("name").StringValue()
 	item, err := v.models.Items.GetByName(data)
 	if err != nil {
