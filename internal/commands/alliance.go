@@ -1,74 +1,82 @@
 package commands
 
 import (
-	"fmt"
-
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
 )
 
-type SubsCommand struct {
+type Alliance struct {
 	models data.Models
 }
 
-func (c *SubsCommand) SetModels(models data.Models) {
-	c.models = models
+func (a *Alliance) SetModels(models data.Models) {
+	a.models = models
 }
 
-var (
-	_ ken.SlashCommand = (*SubsCommand)(nil)
-	_ ken.DmCapable    = (*SubsCommand)(nil)
-)
+var _ ken.SlashCommand = (*Alliance)(nil)
 
-func (c *SubsCommand) Name() string {
-	return discord.DebugCmd + "subsgroups"
+// Description implements ken.SlashCommand.
+func (*Alliance) Description() string {
+	return "Create and join alliances."
 }
 
-func (c *SubsCommand) Description() string {
-	return "An example command with sub command groups."
+// Name implements ken.SlashCommand.
+func (*Alliance) Name() string {
+	return discord.DebugCmd + "alliance"
 }
 
-func (c *SubsCommand) Version() string {
-	return "1.0.0"
-}
-
-func (c *SubsCommand) Type() discordgo.ApplicationCommandType {
-	return discordgo.ChatApplicationCommand
-}
-
-func (c *SubsCommand) Options() []*discordgo.ApplicationCommandOption {
+// Options implements ken.SlashCommand.
+func (*Alliance) Options() []*discordgo.ApplicationCommandOption {
 	return []*discordgo.ApplicationCommandOption{
 		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "request",
+			Description: "request to create an alliance.",
+			Options: []*discordgo.ApplicationCommandOption{
+				discord.StringCommandArg("name", "name of alliance", true),
+			},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "inbox",
+			Description: "List alliance invites.",
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "invite",
+			Description: "Invite player[s] to your alliance.",
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "accept",
+			Description: "Accept an alliance invite.",
+		},
+		{
 			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
-			Name:        "group",
-			Description: "Some sub command gorup",
+			Name:        "admin",
+			Description: "Manage alliance requests.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Name:        "one",
-					Description: "First sub command",
+					Name:        "pending",
+					Description: "list pending alliance requests.",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "approve",
+					Description: "Approve an alliance request.",
 					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionString,
-							Name:        "arg",
-							Description: "Argument",
-							Required:    true,
-						},
+						discord.StringCommandArg("name", "name of alliance", true),
 					},
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Name:        "two",
-					Description: "Second sub command",
+					Name:        "decline",
+					Description: "Decline an alliance request.",
 					Options: []*discordgo.ApplicationCommandOption{
-						{
-							Type:        discordgo.ApplicationCommandOptionInteger,
-							Name:        "arg",
-							Description: "Argument",
-							Required:    false,
-						},
+						discord.StringCommandArg("name", "name of alliance", true),
 					},
 				},
 			},
@@ -76,39 +84,52 @@ func (c *SubsCommand) Options() []*discordgo.ApplicationCommandOption {
 	}
 }
 
-func (c *SubsCommand) IsDmCapable() bool {
-	return true
-}
-
-func (c *SubsCommand) Run(ctx ken.Context) (err error) {
-	err = ctx.HandleSubCommands(
-		ken.SubCommandGroup{Name: "group", SubHandler: []ken.CommandHandler{
-			ken.SubCommandHandler{Name: "one", Run: c.one},
-			ken.SubCommandHandler{Name: "two", Run: c.two},
-		}},
+// Run implements ken.SlashCommand.
+func (a *Alliance) Run(ctx ken.Context) (err error) {
+	return ctx.HandleSubCommands(
+		ken.SubCommandHandler{Name: "request", Run: a.request},
+		ken.SubCommandHandler{Name: "inbox", Run: a.inbox},
+		ken.SubCommandHandler{Name: "invite", Run: a.invite},
+		ken.SubCommandHandler{Name: "accept", Run: a.accept},
+		ken.SubCommandGroup{
+			Name: "admin", SubHandler: []ken.CommandHandler{
+				ken.SubCommandHandler{Name: "pending", Run: a.adminPending},
+				ken.SubCommandHandler{Name: "approve", Run: a.adminApprove},
+				ken.SubCommandHandler{Name: "decline", Run: a.adminDecline},
+			},
+		},
 	)
-
-	return
 }
 
-func (c *SubsCommand) one(ctx ken.SubCommandContext) (err error) {
-	if err = ctx.Defer(); err != nil {
-		return
-	}
-	arg := ctx.Options().GetByName("arg").StringValue()
-	err = ctx.FollowUpEmbed(&discordgo.MessageEmbed{
-		Description: "one: " + arg,
-	}).Send().Error
-	return
+func (a *Alliance) request(ctx ken.SubCommandContext) (err error) {
+	return discord.AlexError(ctx)
 }
 
-func (c *SubsCommand) two(ctx ken.SubCommandContext) (err error) {
-	var arg int
-	if argV, ok := ctx.Options().GetByNameOptional("arg"); ok {
-		arg = int(argV.IntValue())
-	}
-	err = ctx.RespondEmbed(&discordgo.MessageEmbed{
-		Description: fmt.Sprintf("two: %d", arg),
-	})
-	return
+func (a *Alliance) inbox(ctx ken.SubCommandContext) (err error) {
+	return discord.AlexError(ctx)
+}
+
+func (a *Alliance) invite(ctx ken.SubCommandContext) (err error) {
+	return discord.AlexError(ctx)
+}
+
+func (a *Alliance) accept(ctx ken.SubCommandContext) (err error) {
+	return discord.AlexError(ctx)
+}
+
+func (a *Alliance) adminPending(ctx ken.SubCommandContext) (err error) {
+	return discord.AlexError(ctx)
+}
+
+func (a *Alliance) adminApprove(ctx ken.SubCommandContext) (err error) {
+	return discord.AlexError(ctx)
+}
+
+func (a *Alliance) adminDecline(ctx ken.SubCommandContext) (err error) {
+	return discord.AlexError(ctx)
+}
+
+// Version implements ken.SlashCommand.
+func (*Alliance) Version() string {
+	return "1.0.0"
 }
