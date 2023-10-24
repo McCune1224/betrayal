@@ -37,6 +37,8 @@ const (
 	EmojiNote       = Emoji("📝")
 	EmojiAnyAbility = Emoji("🔮")
 	EmojiLimit      = Emoji("📏")
+	EmojiDead       = Emoji("💀")
+	EmojiAlive      = Emoji("👼")
 	EmojiLuck       = Emoji("🍀")
 )
 
@@ -107,8 +109,12 @@ func Code(s string) string {
 	return "`" + s + "`"
 }
 
+func Indent(s string) string {
+	return "> " + s
+}
+
 // Temporary prefix for debugging commands.
-const DebugCmd = "z_"
+const DebugCmd = ""
 
 // Send Pre-Formatted Error Message after slash command
 func ErrorMessage(ctx ken.Context, title string, message string) (err error) {

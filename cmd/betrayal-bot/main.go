@@ -127,6 +127,8 @@ func main() {
 		new(commands.Insult),
 		new(commands.Ping),
 		new(commands.Vote),
+		new(commands.Kill),
+		new(commands.Revive),
 	)
 	err = app.betrayalManager.RegisterMiddlewares(new(middlewares.PermissionsMiddleware))
 	if err != nil {

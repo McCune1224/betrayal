@@ -34,7 +34,20 @@ func (*View) Name() string {
 }
 
 // Options implements ken.SlashCommand.
-func (*View) Options() []*discordgo.ApplicationCommandOption {
+func (v *View) Options() []*discordgo.ApplicationCommandOption {
+	statusChoices := []*discordgo.ApplicationCommandOptionChoice{}
+	statuses, err := v.models.Statuses.GetAll()
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	for _, status := range statuses {
+		statusChoices = append(statusChoices, &discordgo.ApplicationCommandOptionChoice{
+			Name:  status.Name,
+			Value: status.Name,
+		})
+	}
 	return []*discordgo.ApplicationCommandOption{
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -73,8 +86,19 @@ func (*View) Options() []*discordgo.ApplicationCommandOption {
 			Name:        "status",
 			Description: "view a status",
 			Options: []*discordgo.ApplicationCommandOption{
-				discord.StringCommandArg("name", "Name of the role", true),
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "name",
+					Description: "Name of the status",
+					Required:    true,
+					Choices:     statusChoices,
+				},
 			},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "duel",
+			Description: "View duel mini-game details",
 		},
 	}
 }
@@ -88,6 +112,7 @@ func (v *View) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "perk", Run: v.viewPerk},
 		ken.SubCommandHandler{Name: "item", Run: v.viewItem},
 		ken.SubCommandHandler{Name: "status", Run: v.viewStatus},
+		ken.SubCommandHandler{Name: "duel", Run: v.viewDuel},
 	)
 	return err
 }
@@ -166,7 +191,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 			b.Add(discordgo.Button{
 				CustomID: "ability-view",
 				Style:    discordgo.PrimaryButton,
-				Label:    fmt.Sprintf("%s", associatedRole.Name),
+				Label:    associatedRole.Name,
 			}, func(ctx ken.ComponentContext) bool {
 				roleEmbed, err := v.roleEmbed(associatedRole)
 				if err != nil {
@@ -224,7 +249,7 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 			b.Add(discordgo.Button{
 				CustomID: "perk-view",
 				Style:    discordgo.PrimaryButton,
-				Label:    fmt.Sprintf("%s", associatedRole.Name),
+				Label:    associatedRole.Name,
 			}, func(ctx ken.ComponentContext) bool {
 				roleEmbed, err := v.roleEmbed(associatedRole)
 				if err != nil {
@@ -304,6 +329,36 @@ func (v *View) viewStatus(ctx ken.SubCommandContext) (err error) {
 	return ctx.RespondEmbed(&discordgo.MessageEmbed{
 		Title:       status.Name,
 		Description: status.Description,
+	})
+}
+
+func (v *View) viewDuel(ctx ken.SubCommandContext) (err error) {
+	gameText := []string{
+		fmt.Sprintf("In %s players will present one out of nine number tiles and the player who presented the higher numbered tile wins.", discord.Bold("Black and White")),
+		fmt.Sprintf("The players will each receive 9 number tiles from 0 to 8. The 9 tiles are divided into black and white colors. %s", discord.Bold("Even numbers 0, 2, 4, 6 and 8 are black. Odd numbers 1, 3, 5 and 7 are white.\n")),
+		fmt.Sprintf("The starting player will first choose a number from 0 to 8 (selecting the number in their confessional), The host will announce publicly %s. The following player will then present their tile. Only hosts will see numbers used, and the player who put a higher number will win and gain one point. %s.", discord.Bold("what color was used"), discord.Bold("Used numbers will not be revealed even after the results are announced")),
+		"Example: Sophia begins the game and uses a 3. The host will announce: Sophia has used a white tile. Lindsey will place a black tile, a 0. Host will announce a black tile was used. Host will announce that Sophia has won. Both tiles/numbers are taken away and a new round begins, the winner goes first in presenting the tile for the next round. Lindsey can infer very little from her loss because any white tile can beat a black 0, but Sophia will know that she used either a 0 or a 2 based on her win.",
+		"The player with more points after 9th round will win, the loser will be eliminated.",
+	}
+
+	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+		Title:       "Game Duel - Black and White",
+		Color:       discord.ColorThemePearl,
+		Description: gameText[0],
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Value: gameText[1],
+			},
+			{
+				Value: gameText[2],
+			},
+			{
+				Value: gameText[3],
+			},
+			{
+				Value: gameText[4],
+			},
+		},
 	})
 }
 

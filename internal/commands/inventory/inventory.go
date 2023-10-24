@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
@@ -563,6 +564,7 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 		Perks:          perkNames,
 		Coins:          defaultCoins,
 		Luck:           defaultLuck,
+		IsAlive:        true,
 		ItemLimit:      defaultItemsLimit,
 	}
 
@@ -701,6 +703,17 @@ func InventoryEmbedBuilder(
 		Value:  strings.Join(inv.Effects, "\n"),
 		Inline: true,
 	}
+	isAlive := ""
+	if inv.IsAlive {
+		isAlive = fmt.Sprintf("%s Alive", discord.EmojiAlive)
+	} else {
+		isAlive = fmt.Sprintf("%s Dead", discord.EmojiDead)
+	}
+
+	deadField := &discordgo.MessageEmbedField{
+		Name:   isAlive,
+		Inline: true,
+	}
 
 	embd := &discordgo.MessageEmbed{
 		Title: fmt.Sprintf("Inventory %s", discord.EmojiInventory),
@@ -715,8 +728,16 @@ func InventoryEmbedBuilder(
 			statusesField,
 			immunitiesField,
 			effectsField,
+			deadField,
 		},
 		Color: discord.ColorThemeDiamond,
+	}
+
+	loc, _ := time.LoadLocation("America/New_York")
+	requestTime := time.Now().In(loc)
+	humanReqTime := requestTime.Format("Mon Jan _2 15:04:05")
+	embd.Footer = &discordgo.MessageEmbedFooter{
+		Text: fmt.Sprintf("Last updated: %s + EST", humanReqTime),
 	}
 
 	if host {

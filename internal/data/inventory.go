@@ -22,6 +22,7 @@ type Inventory struct {
 	Items        pq.StringArray `db:"items"`
 	ItemLimit    int            `db:"item_limit"`
 	Perks        pq.StringArray `db:"perks"`
+	IsAlive      bool           `db:"is_alive"`
 	Coins        int64          `db:"coins"`
 	CoinBonus    float32        `db:"coin_bonus"`
 	Luck         int64          `db:"luck"`
