@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -733,9 +733,7 @@ func InventoryEmbedBuilder(
 		Color: discord.ColorThemeDiamond,
 	}
 
-	loc, _ := time.LoadLocation("America/New_York")
-	requestTime := time.Now().In(loc)
-	humanReqTime := requestTime.Format("Mon Jan _2 15:04:05")
+	humanReqTime := util.GetEstTimeStamp()
 	embd.Footer = &discordgo.MessageEmbedFooter{
 		Text: fmt.Sprintf("Last updated: %s + EST", humanReqTime),
 	}
