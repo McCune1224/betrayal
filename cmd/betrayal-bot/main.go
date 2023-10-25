@@ -18,6 +18,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/middlewares"
+	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 	"github.com/zekrotja/ken/state"
 )
@@ -103,6 +104,7 @@ func main() {
 			log.Printf("[STM] {%s} - %s\n", ctx, err.Error())
 		},
 		OnCommandError: func(err error, ctx *ken.Ctx) {
+			// get the command name, options and args
 			log.Printf("[CMD] %s - %s : %s\n", ctx.Command.Name(), ctx.GetEvent().Member.User.Username, err.Error())
 		},
 		OnEventError: func(context string, err error) {
@@ -134,7 +136,19 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	// logger setup for slash commands and ken
+	loggerChID := "1108318770138714163"
+	// testLoggerID := "1140968068705701898"
+	app.betrayalManager.Session().AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		// create log of template [invoker] [command] [timestamp]
+		msg := i.Member.User.Username + " - " + i.ApplicationCommandData().Name + " - " + util.GetEstTimeStamp()
+		msg = discord.Code(msg)
+		// send msg to logger channel
+		_, err := s.ChannelMessageSend(loggerChID, msg)
+		if err != nil {
+			log.Fatal(err)
+		}
+	})
 	defer app.betrayalManager.Unregister()
 
 	err = bot.Open()
