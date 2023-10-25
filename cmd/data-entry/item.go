@@ -1,8 +1,6 @@
 package main
 
 import (
-	"encoding/csv"
-	"os"
 	"strconv"
 	"strings"
 
@@ -10,27 +8,8 @@ import (
 	"github.com/mccune1224/betrayal/internal/data"
 )
 
-func (app *application) ParseItemCsv(filepath string) error {
-	file, err := os.Open(filepath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	csvReader := csv.NewReader(file)
-	entries, err := csvReader.ReadAll()
-	if err != nil {
-		return err
-	}
-
-	app.csv = entries
-
-	return nil
-}
-
-func GetItems(csv [][]string) ([]data.Item, error) {
+func (*csvBuilder) BuildItemCSV(csv [][]string) ([]data.Item, error) {
 	var items []data.Item
-
 	for i, entry := range csv {
 
 		if i == 0 || i == 1 || (i == len(csv)-1) {

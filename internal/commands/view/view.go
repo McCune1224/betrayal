@@ -183,6 +183,22 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 			},
 		},
 	}
+	aa, _ := v.models.Abilities.GetAnyAbilityByName(ability.Name)
+	if aa != nil {
+		msg := ""
+		if aa.RoleSpecific != "" {
+			msg = fmt.Sprintf("Role Specific AA - %s", aa.RoleSpecific)
+		} else {
+			msg = fmt.Sprintf("%s AA", aa.Rarity)
+		}
+		abilityEmbed.Footer = &discordgo.MessageEmbedFooter{
+			Text: msg,
+		}
+	} else {
+		abilityEmbed.Footer = &discordgo.MessageEmbedFooter{
+			Text: fmt.Sprintf("%s only base ability, not an AA", associatedRole.Name),
+		}
+	}
 
 	b := ctx.FollowUpEmbed(abilityEmbed)
 
@@ -313,6 +329,14 @@ func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
 		Title:  item.Name,
 		Color:  determineColor(item.Rarity),
 		Fields: embededFields,
+	}
+	if strings.ToLower(item.Name) == "zingy" {
+		// attach zingy image to embed
+		embed.Image = &discordgo.MessageEmbedImage{
+			URL:    "https://cdn.discordapp.com/attachments/809878992590610708/809879063589658644/zingy.png",
+			Height: 100,
+			Width:  100,
+		}
 	}
 
 	err = ctx.RespondEmbed(embed)

@@ -186,5 +186,4 @@ func (rm *RoleModel) GetByPerkID(perkID int64) (*Role, error) {
 		return nil, err
 	}
 	return &r, nil
-
 }

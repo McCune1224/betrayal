@@ -194,7 +194,7 @@ func HitListBuilder(invs []data.Inventory, s *discordgo.Session) *discordgo.Mess
 		Value: fmt.Sprintf("%d", aliveCount),
 	})
 	message := discordgo.MessageEmbed{
-		Title:       fmt.Sprintf("%s HITLIST %s", discord.EmojiDead, discord.EmojiDead),
+		Title:       "Player List",
 		Description: "Current status of each player",
 		Fields:      fields,
 		Color:       discord.ColorThemeBlack,
