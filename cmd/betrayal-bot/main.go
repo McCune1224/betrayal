@@ -167,6 +167,9 @@ func main() {
 // FIXME: this is a mess
 // May god have mercy on my soul for the following function
 func logHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if i.Type != discordgo.InteractionApplicationCommand {
+		return
+	}
 	// loggerChID := "1108318770138714163"
 	testLoggerID := "1140968068705701898"
 	// check for subcommand and if so fetch the subcommand name from the options
