@@ -183,7 +183,7 @@ func HitListBuilder(invs []data.Inventory, s *discordgo.Session) *discordgo.Mess
 	}
 
 	foot := &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Last updated: %s + EST", humanReqTime),
+		Text: fmt.Sprintf("Last updated: %s", humanReqTime),
 	}
 
 	aliveCount := len(invs) - deadTally

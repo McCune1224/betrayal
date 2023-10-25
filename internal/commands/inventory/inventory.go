@@ -20,7 +20,6 @@ var (
 	ErrNotAuthorized = errors.New("you are not an admin role")
 )
 
-// emoji constants
 // TODO: Maybe make these configurable?
 
 const (
@@ -735,7 +734,7 @@ func InventoryEmbedBuilder(
 
 	humanReqTime := util.GetEstTimeStamp()
 	embd.Footer = &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Last updated: %s + EST", humanReqTime),
+		Text: fmt.Sprintf("Last updated: %s", humanReqTime),
 	}
 
 	if host {
