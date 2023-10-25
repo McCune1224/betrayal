@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
 
@@ -160,9 +160,7 @@ func (k *Kill) killLocation(ctx ken.SubCommandContext) (err error) {
 }
 
 func HitListBuilder(invs []data.Inventory, s *discordgo.Session) *discordgo.MessageEmbed {
-	loc, _ := time.LoadLocation("America/New_York")
-	requestTime := time.Now().In(loc)
-	humanReqTime := requestTime.Format("Mon Jan _2 15:04:05")
+	humanReqTime := util.GetEstTimeStamp()
 	fields := []*discordgo.MessageEmbedField{}
 	deadTally := 0
 	for _, inv := range invs {
