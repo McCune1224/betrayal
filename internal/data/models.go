@@ -31,6 +31,7 @@ type Models struct {
 	Votes          VoteModel
 	RoleLists      RoleListModel
 	Hitlists       HitlistModel
+	Alliances      AllianceModel
 }
 
 // NewModels creates a new instance of the Models struct and attaches the database connection to it.
@@ -50,6 +51,7 @@ func NewModels(db *sqlx.DB) Models {
 		Votes:          VoteModel{DB: db},
 		RoleLists:      RoleListModel{DB: db},
 		Hitlists:       HitlistModel{DB: db},
+		Alliances:      AllianceModel{DB: db},
 	}
 	return ModelHandlers
 }
