@@ -137,6 +137,7 @@ func main() {
 	// testLoggerID := "1140968068705701898"
 	//
 	//
+	//
 
 	app.betrayalManager.Session().AddHandler(logHandler)
 	defer app.betrayalManager.Unregister()
@@ -164,79 +165,62 @@ func main() {
 	}
 }
 
-// FIXME: this is a mess
-// May god have mercy on my soul for the following function
+// Handles logging of slash commands when invoked
 func logHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type != discordgo.InteractionApplicationCommand {
 		return
 	}
-	// loggerChID := "1108318770138714163"
-	testLoggerID := "1140968068705701898"
-	// check for subcommand and if so fetch the subcommand name from the options
+
+	testLoggerID := "1108318770138714163"
 	options := i.ApplicationCommandData().Options
+	msg := processOptions(s, options)
+
+	logOutput := fmt.Sprintf("%s - /%s %s - %s", i.Member.User.Username, i.ApplicationCommandData().Name, msg, util.GetEstTimeStamp())
+	_, err := s.ChannelMessageSend(testLoggerID, discord.Code(logOutput))
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func processOptions(s *discordgo.Session, options []*discordgo.ApplicationCommandInteractionDataOption) string {
+	var msg string
 	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+
 	for _, opt := range options {
 		optionMap[opt.Name] = opt
 	}
 
-	msg := ""
-
 	for _, opt := range options {
 		if o, ok := optionMap[opt.Name]; ok {
-			switch o.Type {
-			default:
-				continue
-			case discordgo.ApplicationCommandOptionString:
-				msg += fmt.Sprintf("%s: %s, ", o.Name, o.StringValue())
-			case discordgo.ApplicationCommandOptionInteger:
-				msg += fmt.Sprintf("%s: %d, ", o.Name, o.IntValue())
-			case discordgo.ApplicationCommandOptionBoolean:
-				msg += fmt.Sprintf("%s: %t, ", o.Name, o.BoolValue())
-			case discordgo.ApplicationCommandOptionUser:
-				msg += fmt.Sprintf("%s: %s, ", o.Name, o.UserValue(s).Username)
-			case discordgo.ApplicationCommandOptionChannel:
-				msg += fmt.Sprintf("%s: %s, ", o.Name, o.ChannelValue(s).Name)
-			case discordgo.ApplicationCommandOptionRole:
-				continue
-			case discordgo.ApplicationCommandOptionMentionable:
-				continue
-			case discordgo.ApplicationCommandOptionSubCommand:
-				// do the same thing as above but for subcommands
-				subOptions := o.Options
-				subOptionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(subOptions))
-				for _, subOpt := range subOptions {
-					subOptionMap[subOpt.Name] = subOpt
-				}
-				for _, subOpt := range subOptions {
-					if so, ok := subOptionMap[subOpt.Name]; ok {
-						switch so.Type {
-
-						case discordgo.ApplicationCommandOptionString:
-							msg += fmt.Sprintf("%s: %s, ", so.Name, so.StringValue())
-						case discordgo.ApplicationCommandOptionInteger:
-							msg += fmt.Sprintf("%s: %d, ", so.Name, so.IntValue())
-						case discordgo.ApplicationCommandOptionBoolean:
-							msg += fmt.Sprintf("%s: %t, ", so.Name, so.BoolValue())
-						case discordgo.ApplicationCommandOptionUser:
-							msg += fmt.Sprintf("%s: %s, ", so.Name, so.UserValue(s).Username)
-						case discordgo.ApplicationCommandOptionChannel:
-							msg += fmt.Sprintf("%s: %s, ", so.Name, so.ChannelValue(s).Name)
-						case discordgo.ApplicationCommandOptionRole:
-							continue
-						case discordgo.ApplicationCommandOptionMentionable:
-							continue
-						default:
-							continue
-						}
-					}
-				}
-			}
+			msg += formatOption(s, o)
 		}
 	}
-	// get invoker name
-	logOutput := fmt.Sprintf("%s - /%s '%s' - %s", i.Member.User.Username, i.ApplicationCommandData().Name, msg, util.GetEstTimeStamp())
-	_, err := s.ChannelMessageSend(testLoggerID, discord.Code(logOutput))
-	if err != nil {
-		log.Println(err)
+
+	return msg
+}
+
+func formatOption(s *discordgo.Session, o *discordgo.ApplicationCommandInteractionDataOption) string {
+	switch o.Type {
+	default:
+		return ""
+	case discordgo.ApplicationCommandOptionString:
+		return fmt.Sprintf("%s:%s, ", o.Name, o.StringValue())
+	case discordgo.ApplicationCommandOptionInteger:
+		return fmt.Sprintf("%s:%d, ", o.Name, o.IntValue())
+	case discordgo.ApplicationCommandOptionBoolean:
+		return fmt.Sprintf("%s:%t, ", o.Name, o.BoolValue())
+	case discordgo.ApplicationCommandOptionUser:
+		return fmt.Sprintf("%s:%s, ", o.Name, o.UserValue(s).Username)
+	case discordgo.ApplicationCommandOptionChannel:
+		return fmt.Sprintf("%s:%s, ", o.Name, o.ChannelValue(s).Name)
+	case discordgo.ApplicationCommandOptionRole:
+		return ""
+	case discordgo.ApplicationCommandOptionMentionable:
+		return ""
+	case discordgo.ApplicationCommandOptionSubCommand:
+		return processOptions(s, o.Options)
+	case discordgo.ApplicationCommandOptionSubCommandGroup:
+		// subcommandGroupName
+		return fmt.Sprintf("%s  %s", o.Name, processOptions(s, o.Options))
 	}
 }
