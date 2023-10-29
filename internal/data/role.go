@@ -40,7 +40,9 @@ func (rm *RoleModel) Get(id int64) (*Role, error) {
 
 func (rm *RoleModel) GetByName(name string) (*Role, error) {
 	var r Role
-	err := rm.DB.Get(&r, "SELECT * FROM roles WHERE name ILIKE $1", name)
+	// Make it find closest match if no exact match
+	query := `SELECT * FROM roles WHERE name ILIKE '%' || $1 || '%'`
+	err := rm.DB.Get(&r, query, name)
 	if err != nil {
 		return nil, err
 	}
@@ -175,6 +177,19 @@ func (rm *RoleModel) GetByAbilityID(abilityID int64) (*Role, error) {
 	return &r, nil
 }
 
+func (rm *RoleModel) GetAllByAbilityID(abilityID int64) ([]Role, error) {
+	var roles []Role
+	err := rm.DB.Select(
+		&roles,
+		`SELECT (roles.*) FROM roles INNER JOIN roles_abilities ON roles.id = roles_abilities.role_id WHERE roles_abilities.ability_id = $1`,
+		abilityID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return roles, nil
+}
+
 func (rm *RoleModel) GetByPerkID(perkID int64) (*Role, error) {
 	var r Role
 	err := rm.DB.Get(
@@ -186,4 +201,19 @@ func (rm *RoleModel) GetByPerkID(perkID int64) (*Role, error) {
 		return nil, err
 	}
 	return &r, nil
+}
+
+func (rm *RoleModel) GetAllByPerkID(p *Perk) ([]Role, error) {
+	var roles []Role
+	err := rm.DB.Select(
+		&roles,
+		// Select all roles that have the provided perk and search by perk name
+		`SELECT (roles.*) FROM roles INNER JOIN roles_perks ON roles.id = roles_perks.role_id INNER JOIN perks ON perks.id = roles_perks.perk_id WHERE perks.name ILIKE '%' || $1 || '%'`,
+		// `SELECT (roles.*) FROM roles INNER JOIN roles_perks ON roles.id = roles_perks.role_id INNER JOIN perks ON perks.id = roles_perks.perk_id WHERE perks.name = $1`,
+		p.Name,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return roles, nil
 }

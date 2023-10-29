@@ -12,9 +12,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
-	"github.com/mccune1224/betrayal/internal/commands"
-	"github.com/mccune1224/betrayal/internal/commands/inventory"
-	roll "github.com/mccune1224/betrayal/internal/commands/luck"
 	"github.com/mccune1224/betrayal/internal/commands/view"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -72,23 +69,24 @@ func main() {
 	cfg.discord.clientSecret = os.Getenv("DISCORD_CLIENT_SECRET")
 	cfg.database.dsn = os.Getenv("DATABASE_URL")
 
+	// Spin up Bot and give it admin permissions
 	bot, err := discordgo.New("Bot " + cfg.discord.botToken)
 	if err != nil {
 		log.Fatal("error creating Discord session,", err)
 	}
-
 	bot.Identify.Intents = discordgo.PermissionAdministrator
 	if err != nil {
 		log.Fatal("error opening connection,", err)
 	}
 
+	// Connect to DB
 	db, err := sqlx.Connect("postgres", cfg.database.dsn)
 	if err != nil {
 		log.Fatal("error opening database,", err)
 	}
-
 	dbModels := data.NewModels(db)
 
+	// Create central app struct and attach ken framework to it
 	app := &app{
 		conifg: cfg,
 		models: dbModels,
@@ -105,8 +103,10 @@ func main() {
 		},
 		OnCommandError: func(err error, ctx *ken.Ctx) {
 			// get the command name, options and args
+			// TODO: Make this show full argument details like logHandler?
 			log.Printf("[CMD] %s - %s : %s\n", ctx.Command.Name(), ctx.GetEvent().Member.User.Username, err.Error())
 		},
+		// Not really doing events but keeping this in just in case...
 		OnEventError: func(context string, err error) {
 			log.Printf("[EVT] %s : %s\n", context, err.Error())
 		},
@@ -120,24 +120,18 @@ func main() {
 	app.betrayalManager.Unregister()
 
 	tally := app.RegisterBetrayalCommands(
-		new(roll.Roll),
-		new(inventory.Inventory),
-		new(commands.ActionFunnel),
+		// new(roll.Roll),
+		// new(inventory.Inventory),
+		// new(commands.ActionFunnel),
 		new(view.View),
-		new(commands.Buy),
-		new(commands.List),
-		new(commands.Insult),
-		new(commands.Ping),
-		new(commands.Vote),
-		new(commands.Kill),
-		new(commands.Revive),
+		// new(commands.Buy),
+		// new(commands.List),
+		// new(commands.Insult),
+		// new(commands.Ping),
+		// new(commands.Vote),
+		// new(commands.Kill),
+		// new(commands.Revive),
 	)
-	// logger setup for slash commands and ken
-	// loggerChID := "1108318770138714163"
-	// testLoggerID := "1140968068705701898"
-	//
-	//
-	//
 
 	app.betrayalManager.Session().AddHandler(logHandler)
 	defer app.betrayalManager.Unregister()
@@ -165,7 +159,9 @@ func main() {
 	}
 }
 
-// Handles logging of slash commands when invoked
+// TODO: Make Log Channel configurable with a slash command maybe?
+
+// Handles logging all slash commands to a dedicated channel
 func logHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type != discordgo.InteractionApplicationCommand {
 		return
@@ -182,6 +178,7 @@ func logHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
+// Primary helper for logHandler to process options that a user inputted for a slash command to get invoked (including value arguments)
 func processOptions(s *discordgo.Session, options []*discordgo.ApplicationCommandInteractionDataOption) string {
 	var msg string
 	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
@@ -199,6 +196,8 @@ func processOptions(s *discordgo.Session, options []*discordgo.ApplicationComman
 	return msg
 }
 
+// Helper to handle parsing argument options to a string format (really should just be apart of processOptions but...Too Bad!)
+// Also this function is a mess, but it works even if I'm using recursion :)
 func formatOption(s *discordgo.Session, o *discordgo.ApplicationCommandInteractionDataOption) string {
 	switch o.Type {
 	default:
@@ -213,14 +212,15 @@ func formatOption(s *discordgo.Session, o *discordgo.ApplicationCommandInteracti
 		return fmt.Sprintf("%s:%s, ", o.Name, o.UserValue(s).Username)
 	case discordgo.ApplicationCommandOptionChannel:
 		return fmt.Sprintf("%s:%s, ", o.Name, o.ChannelValue(s).Name)
+	case discordgo.ApplicationCommandOptionSubCommand:
+		return processOptions(s, o.Options)
+	case discordgo.ApplicationCommandOptionSubCommandGroup:
+		return fmt.Sprintf("%s  %s", o.Name, processOptions(s, o.Options))
+
+		// I don't think there's ever going to be a case where I'm using these...
 	case discordgo.ApplicationCommandOptionRole:
 		return ""
 	case discordgo.ApplicationCommandOptionMentionable:
 		return ""
-	case discordgo.ApplicationCommandOptionSubCommand:
-		return processOptions(s, o.Options)
-	case discordgo.ApplicationCommandOptionSubCommandGroup:
-		// subcommandGroupName
-		return fmt.Sprintf("%s  %s", o.Name, processOptions(s, o.Options))
 	}
 }

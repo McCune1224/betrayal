@@ -73,7 +73,9 @@ func (am *AbilityModel) Get(id int64) (*Ability, error) {
 
 func (am *AbilityModel) GetByName(name string) (*Ability, error) {
 	var a Ability
-	err := am.DB.Get(&a, "SELECT * FROM Abilities WHERE name ILIKE $1", name)
+	// Fuzzy search for ability
+	query := `SELECT * FROM Abilities WHERE name ILIKE '%' || $1 || '%'`
+	err := am.DB.Get(&a, query, name)
 	if err != nil {
 		return nil, err
 	}

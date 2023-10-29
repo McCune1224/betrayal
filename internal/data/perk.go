@@ -38,7 +38,9 @@ func (pm *PerkModel) Get(id int64) (*Perk, error) {
 
 func (pm *PerkModel) GetByName(name string) (*Perk, error) {
 	var p Perk
-	err := pm.DB.Get(&p, "SELECT * FROM perks WHERE name ILIKE $1", name)
+	// Fuzzy search for perk
+	query := `SELECT * FROM perks WHERE name ILIKE '%' || $1 || '%'`
+	err := pm.DB.Get(&p, query, name)
 	if err != nil {
 		return nil, err
 	}

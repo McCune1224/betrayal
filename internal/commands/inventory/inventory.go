@@ -11,8 +11,6 @@ import (
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 // errors that can occur
@@ -21,7 +19,6 @@ var (
 )
 
 // TODO: Maybe make these configurable?
-
 const (
 	defaultCoins      = 200
 	defaultItemsLimit = 4
@@ -484,119 +481,6 @@ func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
 	return nil
 }
 
-func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
-	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		err = discord.ErrorMessage(
-			ctx,
-			"Unauthorized",
-			"You are not authorized to use this command.",
-		)
-		return err
-	}
-
-	playerArg := ctx.Options().GetByName("user").UserValue(ctx)
-	roleArg := ctx.Options().GetByName("role").StringValue()
-	channelID := ctx.GetEvent().ChannelID
-
-	caser := cases.Title(language.AmericanEnglish)
-	roleArg = caser.String(roleArg)
-	// Make sure role exists before creating inventory
-	role, err := i.models.Roles.GetByName(roleArg)
-	if err != nil {
-		discord.ErrorMessage(ctx, "Failed to get Role", err.Error())
-		return err
-	}
-
-	// Check if inventory already exists
-	existingInv, _ := i.models.Inventories.GetByDiscordID(playerArg.ID)
-	if existingInv != nil {
-		discord.ErrorMessage(
-			ctx,
-			"Inventory Already Exists",
-			fmt.Sprintf("Inventory already exists for %s", playerArg.Username),
-		)
-		return err
-	}
-
-	inventoryCreateMsg := discordgo.MessageEmbed{
-		Title:       "Creating Inventory...",
-		Description: fmt.Sprintf("Creating inventory for %s", playerArg.Username),
-	}
-	pinMsg, err := ctx.GetSession().ChannelMessageSendEmbed(channelID, &inventoryCreateMsg)
-	if err != nil {
-		discord.ErrorMessage(ctx, "Failed to send message", err.Error())
-		return err
-	}
-	roleAbilities, err := i.models.Roles.GetAbilities(role.ID)
-	if err != nil {
-		discord.ErrorMessage(ctx, "Failed to get Role Abilities", err.Error())
-		return err
-	}
-	rolePerks, err := i.models.Roles.GetPerks(role.ID)
-	if err != nil {
-		discord.ErrorMessage(ctx, "Failed to get Role Perks", err.Error())
-		return err
-	}
-	abilityNames := make([]string, len(roleAbilities))
-	for i, ability := range roleAbilities {
-		chargeNumber := ""
-		if ability.Charges == -1 {
-			chargeNumber = "∞"
-		} else {
-			chargeNumber = fmt.Sprintf("%d", ability.Charges)
-		}
-
-		abilityNames[i] = fmt.Sprintf("%s [%s]", ability.Name, chargeNumber)
-	}
-	perkNames := make([]string, len(rolePerks))
-	for i, perk := range rolePerks {
-		perkNames[i] = perk.Name
-	}
-
-	newInv := &data.Inventory{
-		DiscordID:      playerArg.ID,
-		UserPinChannel: channelID,
-		UserPinMessage: pinMsg.ChannelID,
-		Alignment:      role.Alignment,
-		RoleName:       roleArg,
-		Abilities:      abilityNames,
-		Perks:          perkNames,
-		Coins:          defaultCoins,
-		Luck:           defaultLuck,
-		IsAlive:        true,
-		ItemLimit:      defaultItemsLimit,
-	}
-
-	_, err = i.models.Inventories.Insert(newInv)
-	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(ctx, "Alex is a bad programmer", "Failed to insert inventory")
-		return err
-	}
-	embd := InventoryEmbedBuilder(newInv, false)
-	msg, err := ctx.GetSession().ChannelMessageEditEmbed(channelID, pinMsg.ID, embd)
-	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(ctx, "Alex is a bad programmer", "Failed to edit message")
-		return err
-	}
-	newInv.UserPinChannel = msg.ChannelID
-	newInv.UserPinMessage = msg.ID
-	err = i.models.Inventories.Update(newInv)
-	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(ctx, "Alex is a bad programmer", "Failed to set Pinned Message")
-		return err
-	}
-	err = ctx.GetSession().ChannelMessagePin(channelID, pinMsg.ID)
-	if err != nil {
-		discord.ErrorMessage(ctx, "Discord is at fault for once", err.Error())
-		return err
-	}
-
-	return err
-}
-
 func (i *Inventory) delete(ctx ken.SubCommandContext) (err error) {
 	authed := discord.IsAdminRole(ctx, discord.AdminRoles...)
 	if !authed {
@@ -609,24 +493,23 @@ func (i *Inventory) delete(ctx ken.SubCommandContext) (err error) {
 	}
 
 	userArg := ctx.Options().GetByName("user").UserValue(ctx)
-	ctx.SetEphemeral(true)
 	inv, err := i.models.Inventories.GetByDiscordID(userArg.ID)
 	if err != nil {
-		discord.ErrorMessage(ctx, "Failed to Find Inventory",
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to Find Inventory",
 			fmt.Sprintf("Failed to find inventory for %s", userArg.Username))
-		return err
 	}
 	sesh := ctx.GetSession()
 	err = sesh.ChannelMessageDelete(inv.UserPinChannel, inv.UserPinMessage)
 	if err != nil {
 		channel, _ := sesh.Channel(inv.UserPinChannel)
-		discord.ErrorMessage(ctx, "Failed to Delete Message",
+		return discord.ErrorMessage(ctx, "Failed to Delete Message",
 			fmt.Sprintf("Failed to delete message for %s, could not find message in channel %s",
 				userArg.Username, channel.Name))
 	}
 	err = i.models.Inventories.Delete(userArg.ID)
 	if err != nil {
-		discord.ErrorMessage(ctx, "Failed to Delete Inventory",
+		return discord.ErrorMessage(ctx, "Failed to Delete Inventory",
 			fmt.Sprintf("Failed to delete inventory for %s", userArg.Username))
 	}
 	return discord.SuccessfulMessage(
@@ -639,128 +522,6 @@ func (i *Inventory) delete(ctx ken.SubCommandContext) (err error) {
 // Version implements ken.SlashCommand.
 func (*Inventory) Version() string {
 	return "1.0.0"
-}
-
-// Helper to build inventory embed message based off if user is host or not
-func InventoryEmbedBuilder(
-	inv *data.Inventory,
-	host bool,
-) *discordgo.MessageEmbed {
-	roleField := &discordgo.MessageEmbedField{
-		Name:   "Role",
-		Value:  inv.RoleName,
-		Inline: true,
-	}
-	alignmentEmoji := discord.EmojiAlignment
-	alignmentField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("%s Alignment", alignmentEmoji),
-		Value:  inv.Alignment,
-		Inline: true,
-	}
-
-	// show coin bonus x100
-	cb := inv.CoinBonus * 100
-	coinStr := fmt.Sprintf("%d", inv.Coins) + " [" + fmt.Sprintf("%.2f", cb) + "%]"
-	coinField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("%s Coins", discord.EmojiCoins),
-		Value:  coinStr,
-		Inline: true,
-	}
-	abilitiesField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("%s Abilities", discord.EmojiAbility),
-		Value:  strings.Join(inv.Abilities, "\n"),
-		Inline: true,
-	}
-	perksField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("%s Perks", discord.EmojiPerk),
-		Value:  strings.Join(inv.Perks, "\n"),
-		Inline: true,
-	}
-	anyAbilitiesField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("%s Any Abilities", discord.EmojiAnyAbility),
-		Value:  strings.Join(inv.AnyAbilities, "\n"),
-		Inline: true,
-	}
-	itemsField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("%s Items (%d/%d)", discord.EmojiItem, len(inv.Items), inv.ItemLimit),
-		Value:  strings.Join(inv.Items, "\n"),
-		Inline: true,
-	}
-	statusesField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("%s Statuses", discord.EmojiStatus),
-		Value:  strings.Join(inv.Statuses, "\n"),
-		Inline: true,
-	}
-
-	immunitiesField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("%s Immunities", discord.EmojiImmunity),
-		Value:  strings.Join(inv.Immunities, "\n"),
-		Inline: true,
-	}
-	effectsField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("%s Effects", discord.EmojiEffect),
-		Value:  strings.Join(inv.Effects, "\n"),
-		Inline: true,
-	}
-	isAlive := ""
-	if inv.IsAlive {
-		isAlive = fmt.Sprintf("%s Alive", discord.EmojiAlive)
-	} else {
-		isAlive = fmt.Sprintf("%s Dead", discord.EmojiDead)
-	}
-
-	deadField := &discordgo.MessageEmbedField{
-		Name:   isAlive,
-		Inline: true,
-	}
-
-	embd := &discordgo.MessageEmbed{
-		Title: fmt.Sprintf("Inventory %s", discord.EmojiInventory),
-		Fields: []*discordgo.MessageEmbedField{
-			roleField,
-			alignmentField,
-			coinField,
-			abilitiesField,
-			anyAbilitiesField,
-			perksField,
-			itemsField,
-			statusesField,
-			immunitiesField,
-			effectsField,
-			deadField,
-		},
-		Color: discord.ColorThemeDiamond,
-	}
-
-	humanReqTime := util.GetEstTimeStamp()
-	embd.Footer = &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Last updated: %s", humanReqTime),
-	}
-
-	if host {
-
-		embd.Fields = append(embd.Fields, &discordgo.MessageEmbedField{
-			Name:   fmt.Sprintf("%s Luck", discord.EmojiLuck),
-			Value:  fmt.Sprintf("%d", inv.Luck),
-			Inline: true,
-		})
-
-		noteListString := ""
-		for i, note := range inv.Notes {
-			noteListString += fmt.Sprintf("%d. %s\n", i+1, note)
-		}
-
-		embd.Fields = append(embd.Fields, &discordgo.MessageEmbedField{
-			Name:   fmt.Sprintf("%s Notes", discord.EmojiNote),
-			Value:  noteListString,
-			Inline: false,
-		})
-
-		embd.Color = discord.ColorThemeAmethyst
-
-	}
-
-	return embd
 }
 
 // In order to use the inventory channel you must meet one of the following criteria:
@@ -929,4 +690,126 @@ func Fetch(ctx ken.SubCommandContext, m data.Models, adminOnly bool) (inv *data.
 		return nil, errors.New("somehow inventory is nil in middleware")
 	}
 	return inv, nil
+}
+
+// Helper to build inventory embed message based off if user is host or not
+func InventoryEmbedBuilder(
+	inv *data.Inventory,
+	host bool,
+) *discordgo.MessageEmbed {
+	roleField := &discordgo.MessageEmbedField{
+		Name:   "Role",
+		Value:  inv.RoleName,
+		Inline: true,
+	}
+	alignmentEmoji := discord.EmojiAlignment
+	alignmentField := &discordgo.MessageEmbedField{
+		Name:   fmt.Sprintf("%s Alignment", alignmentEmoji),
+		Value:  inv.Alignment,
+		Inline: true,
+	}
+
+	// show coin bonus x100
+	cb := inv.CoinBonus * 100
+	coinStr := fmt.Sprintf("%d", inv.Coins) + " [" + fmt.Sprintf("%.2f", cb) + "%]"
+	coinField := &discordgo.MessageEmbedField{
+		Name:   fmt.Sprintf("%s Coins", discord.EmojiCoins),
+		Value:  coinStr,
+		Inline: true,
+	}
+	abilitiesField := &discordgo.MessageEmbedField{
+		Name:   fmt.Sprintf("%s Abilities", discord.EmojiAbility),
+		Value:  strings.Join(inv.Abilities, "\n"),
+		Inline: true,
+	}
+	perksField := &discordgo.MessageEmbedField{
+		Name:   fmt.Sprintf("%s Perks", discord.EmojiPerk),
+		Value:  strings.Join(inv.Perks, "\n"),
+		Inline: true,
+	}
+	anyAbilitiesField := &discordgo.MessageEmbedField{
+		Name:   fmt.Sprintf("%s Any Abilities", discord.EmojiAnyAbility),
+		Value:  strings.Join(inv.AnyAbilities, "\n"),
+		Inline: true,
+	}
+	itemsField := &discordgo.MessageEmbedField{
+		Name:   fmt.Sprintf("%s Items (%d/%d)", discord.EmojiItem, len(inv.Items), inv.ItemLimit),
+		Value:  strings.Join(inv.Items, "\n"),
+		Inline: true,
+	}
+	statusesField := &discordgo.MessageEmbedField{
+		Name:   fmt.Sprintf("%s Statuses", discord.EmojiStatus),
+		Value:  strings.Join(inv.Statuses, "\n"),
+		Inline: true,
+	}
+
+	immunitiesField := &discordgo.MessageEmbedField{
+		Name:   fmt.Sprintf("%s Immunities", discord.EmojiImmunity),
+		Value:  strings.Join(inv.Immunities, "\n"),
+		Inline: true,
+	}
+	effectsField := &discordgo.MessageEmbedField{
+		Name:   fmt.Sprintf("%s Effects", discord.EmojiEffect),
+		Value:  strings.Join(inv.Effects, "\n"),
+		Inline: true,
+	}
+	isAlive := ""
+	if inv.IsAlive {
+		isAlive = fmt.Sprintf("%s Alive", discord.EmojiAlive)
+	} else {
+		isAlive = fmt.Sprintf("%s Dead", discord.EmojiDead)
+	}
+
+	deadField := &discordgo.MessageEmbedField{
+		Name:   isAlive,
+		Inline: true,
+	}
+
+	embd := &discordgo.MessageEmbed{
+		Title: fmt.Sprintf("Inventory %s", discord.EmojiInventory),
+		Fields: []*discordgo.MessageEmbedField{
+			roleField,
+			alignmentField,
+			coinField,
+			abilitiesField,
+			anyAbilitiesField,
+			perksField,
+			itemsField,
+			statusesField,
+			immunitiesField,
+			effectsField,
+			deadField,
+		},
+		Color: discord.ColorThemeDiamond,
+	}
+
+	humanReqTime := util.GetEstTimeStamp()
+	embd.Footer = &discordgo.MessageEmbedFooter{
+		Text: fmt.Sprintf("Last updated: %s", humanReqTime),
+	}
+
+	if host {
+
+		embd.Fields = append(embd.Fields, &discordgo.MessageEmbedField{
+			Name:   fmt.Sprintf("%s Luck", discord.EmojiLuck),
+			Value:  fmt.Sprintf("%d", inv.Luck),
+			Inline: true,
+		})
+
+		noteListString := ""
+		for i, note := range inv.Notes {
+			noteListString += fmt.Sprintf("%d. %s\n", i+1, note)
+		}
+
+		embd.Fields = append(embd.Fields, &discordgo.MessageEmbedField{
+			Name:   fmt.Sprintf("%s Notes", discord.EmojiNote),
+			Value:  noteListString,
+			Inline: false,
+		})
+
+		embd.Color = discord.ColorThemeAmethyst
+
+	}
+
+	return embd
 }

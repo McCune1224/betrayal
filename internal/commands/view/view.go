@@ -154,7 +154,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 
-	associatedRole, err := v.models.Roles.GetByAbilityID(ability.ID)
+	associatedRoles, err := v.models.Roles.GetAllByAbilityID(ability.ID)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(ctx,
@@ -196,7 +196,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 		}
 	} else {
 		abilityEmbed.Footer = &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("%s only base ability, not an AA", associatedRole.Name),
+			Text: "Only base ability, not an AA",
 		}
 	}
 
@@ -204,29 +204,31 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 
 	b.AddComponents(func(cb *ken.ComponentBuilder) {
 		cb.AddActionsRow(func(b ken.ComponentAssembler) {
-			b.Add(discordgo.Button{
-				CustomID: "ability-view",
-				Style:    discordgo.PrimaryButton,
-				Label:    associatedRole.Name,
-			}, func(ctx ken.ComponentContext) bool {
-				roleEmbed, err := v.roleEmbed(associatedRole)
-				if err != nil {
-					log.Println(err)
-					ctx.RespondError(
-						"Error Finding Role",
-						fmt.Sprintf("Unable to find Role: %s", associatedRole.Name),
-					)
-					return false
-				}
-				ctx.SetEphemeral(true)
-				ctx.RespondEmbed(roleEmbed)
-				return true
-			}, false)
-		}, false).
-			Condition(func(cctx ken.ComponentContext) bool {
-				return true
-			})
+			for _, associatedRole := range associatedRoles {
+				b.Add(discordgo.Button{
+					CustomID: fmt.Sprintf("%s-%s", associatedRole.Name, ability.Name),
+					Style:    discordgo.PrimaryButton,
+					Label:    associatedRole.Name,
+				}, func(ctx ken.ComponentContext) bool {
+					roleName := strings.Split(ctx.GetData().CustomID, "-")[0]
+					// We know for sure role exists here so ignore error
+					role, _ := v.models.Roles.GetByName(roleName)
+					roleEmbed, err := v.roleEmbed(role)
+					if err != nil {
+						log.Println(err)
+						ctx.RespondError("Failed to Get Full Role Details", "Was not able to pull abilities and perk details for view.")
+					}
+
+					ctx.SetEphemeral(true)
+					ctx.RespondEmbed(roleEmbed)
+					return true
+				}, false)
+			}
+		}, false).Condition(func(cctx ken.ComponentContext) bool {
+			return true
+		})
 	})
+
 	fum := b.Send()
 	return fum.Error
 }
@@ -244,7 +246,7 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 
-	associatedRole, err := v.models.Roles.GetByPerkID(perk.ID)
+	associatedRoles, err := v.models.Roles.GetAllByPerkID(perk)
 	if err != nil {
 		log.Println(err)
 		discord.ErrorMessage(ctx,
@@ -262,28 +264,29 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 	b := ctx.FollowUpEmbed(perkEmbed)
 	b.AddComponents(func(cb *ken.ComponentBuilder) {
 		cb.AddActionsRow(func(b ken.ComponentAssembler) {
-			b.Add(discordgo.Button{
-				CustomID: "perk-view",
-				Style:    discordgo.PrimaryButton,
-				Label:    associatedRole.Name,
-			}, func(ctx ken.ComponentContext) bool {
-				roleEmbed, err := v.roleEmbed(associatedRole)
-				if err != nil {
-					log.Println(err)
-					ctx.RespondError(
-						"Error Finding Role",
-						fmt.Sprintf("Unable to find Role: %s", associatedRole.Name),
-					)
-					return false
-				}
-				ctx.SetEphemeral(true)
-				ctx.RespondEmbed(roleEmbed)
-				return true
-			}, false)
-		}, false).
-			Condition(func(cctx ken.ComponentContext) bool {
-				return true
-			})
+			for _, associatedRole := range associatedRoles {
+				b.Add(discordgo.Button{
+					CustomID: fmt.Sprintf("%s-%s", associatedRole.Name, perk.Name),
+					Style:    discordgo.PrimaryButton,
+					Label:    associatedRole.Name,
+				}, func(ctx ken.ComponentContext) bool {
+					roleName := strings.Split(ctx.GetData().CustomID, "-")[0]
+					// We know for sure role exists here so ignore error
+					role, _ := v.models.Roles.GetByName(roleName)
+					roleEmbed, err := v.roleEmbed(role)
+					if err != nil {
+						log.Println(err)
+						ctx.RespondError("Failed to Get Full Role Details", "Was not able to pull abilities and perk details for view.")
+					}
+
+					ctx.SetEphemeral(true)
+					ctx.RespondEmbed(roleEmbed)
+					return true
+				}, false)
+			}
+		}, false).Condition(func(cctx ken.ComponentContext) bool {
+			return true
+		})
 	})
 
 	fum := b.Send()
