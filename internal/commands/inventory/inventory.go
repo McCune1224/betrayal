@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -812,4 +813,19 @@ func InventoryEmbedBuilder(
 	}
 
 	return embd
+}
+
+// Ability strings follow the format of 'Name [#]'
+func ParseAbilityString(raw string) (name string, charges int, err error) {
+	// Check if there's a charge amount
+	charges = 1
+	split := strings.Split(raw, " ")
+	if len(split) > 1 {
+		charges, err = strconv.Atoi(split[len(split)-1])
+		if err != nil {
+			return "", 0, err
+		}
+	}
+	name = strings.Join(split[:len(split)-1], " ")
+	return name, charges, nil
 }

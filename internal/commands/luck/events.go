@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -34,9 +33,11 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 	rollAmount := rand.Intn(3) + 1
 	newItems := []*data.Item{}
 	for i := 0; i < rollAmount; i++ {
-		item, err := r.models.Items.GetRandomByRarity(RollLuck(float64(luckLevel), rand.Float64()))
+		roll := RollLuck(float64(luckLevel), rand.Float64())
+		item, err := r.getRandomItem(roll)
 		if err != nil {
-			discord.ErrorMessage(ctx, "Failed to get item", "Alex is a bad programmer")
+			log.Println(err)
+			return discord.AlexError(ctx)
 		}
 		newItems = append(newItems, item)
 	}
@@ -168,9 +169,10 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 	if ok {
 		luckLevel = luckArg.IntValue()
 	}
-	rarityType := RollLuck(float64(luckLevel), rand.Float64())
-	ability, err := r.getRandomAbility(inv.RoleName, rarityType)
+	rarity := RollLuck(float64(luckLevel), rand.Float64())
+	aa, err := r.getRandomAnyAbility(inv.RoleName, rarity)
 	if err != nil {
+		log.Println(err)
 		return discord.ErrorMessage(
 			ctx,
 			"Failed to get ability",
@@ -178,50 +180,50 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 
-	if !ability.AnyAbility {
-		// If its not an any ability, instead find the ability in base abilities and update charges instead
-		for k, v := range inv.Abilities {
-			currInvName := strings.Split(v, " [")[0]
-			left := strings.Index(v, "[") + 1
-			right := strings.Index(v, "]")
-			charge, _ := strconv.Atoi(v[left:right])
-			if strings.EqualFold(currInvName, ability.Name) {
-				inv.Abilities[k] = fmt.Sprintf("%s [%d]", currInvName, charge)
-				err = r.models.Inventories.UpdateAbilities(inv)
+	if aa.RoleSpecific != "" {
+		for i, v := range inv.Abilities {
+			if strings.EqualFold(v, aa.RoleSpecific) {
+				name, charge, err := inventory.ParseAbilityString(v)
 				if err != nil {
-					log.Println(err)
 					return discord.ErrorMessage(
 						ctx,
-						"Failed to update ability",
-						"Alex is a bad programmer, and this is his fault.",
+						"Failed to parse ability string",
+						"Alex is a bad programmer",
 					)
 				}
-				err = inventory.UpdateInventoryMessage(ctx, inv)
-				if err != nil {
-					return err
-				}
-				return ctx.RespondMessage("Ability updated in inventory.")
+				inv.Abilities[i] = fmt.Sprintf("%s [%d]", name, charge+1)
+				break
 			}
 		}
-
-		return discord.ErrorMessage(ctx, "Failed to find Role Specific Ability...???", "Alex made a major fucky wucky here somehow")
-	}
-
-	inv.AnyAbilities = append(inv.AnyAbilities, ability.Name)
-	err = r.models.Inventories.UpdateAbilities(inv)
-	if err != nil {
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update inventory",
-			"Alex is a bad programmer")
-	}
-
-	err = inventory.UpdateInventoryMessage(ctx, inv)
-	if err != nil {
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update inventory message",
-			"Alex is a bad programmer")
+		err = r.models.Inventories.UpdateAbilities(inv)
+		if err != nil {
+			log.Println(err)
+			return discord.AlexError(ctx)
+		}
+		inventory.UpdateInventoryMessage(ctx, inv)
+	} else {
+		mark := false
+		// do same thing but for any ability
+		for i, v := range inv.AnyAbilities {
+			if strings.EqualFold(v, aa.Name) {
+				name, charge, err := inventory.ParseAbilityString(v)
+				if err != nil {
+					continue
+				}
+				inv.AnyAbilities[i] = fmt.Sprintf("%s [%d]", name, charge+1)
+				mark = true
+				break
+			}
+		}
+		if !mark {
+			// append a new ability instead
+			inv.AnyAbilities = append(inv.Abilities, fmt.Sprintf("%s [1]", aa.Name))
+		}
+		err = r.models.Inventories.UpdateAnyAbilities(inv)
+		if err != nil {
+			log.Println(err)
+			return discord.AlexError(ctx)
+		}
 	}
 
 	return ctx.RespondEmbed(&discordgo.MessageEmbed{
@@ -229,7 +231,79 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Ability",
-				Value:  fmt.Sprintf("%s (%s) -  %s", ability.Name, rarityType, ability.Description),
+				Value:  fmt.Sprintf("%s (%s) -  %s", aa.Name, rarity, aa.Description),
+				Inline: true,
+			},
+		},
+	})
+}
+
+// Get 1 Random Item and 1 Random AA
+func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
+	inv, err := inventory.Fetch(ctx, r.models, true)
+	if err != nil {
+		if errors.Is(err, inventory.ErrNotAuthorized) {
+			return discord.NotAuthorizedError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
+	luckLevel := inv.Luck
+	luckArg, ok := ctx.Options().GetByNameOptional("luck")
+	if ok {
+		luckLevel = luckArg.IntValue()
+	}
+
+	aRoll := RollLuck(float64(luckLevel), rand.Float64())
+	iRoll := RollLuck(float64(luckLevel), rand.Float64())
+
+	ability, err := r.getRandomAnyAbility(inv.RoleName, aRoll)
+	if err != nil {
+		return discord.ErrorMessage(ctx, "Error getting random ability", "Alex is a bad programmer")
+	}
+
+	item, err := r.models.Items.GetRandomByRarity(iRoll)
+	if err != nil {
+		log.Println(err)
+		log.Println(err)
+		return discord.ErrorMessage(
+			ctx,
+			"Failed to get Random Item",
+			"Alex is a bad programmer",
+		)
+	}
+
+	inv.Abilities = append(inv.Abilities, ability.Name)
+	inv.Items = append(inv.Items, item.Name)
+	err = r.models.Inventories.UpdateItems(inv)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(
+			ctx,
+			"Failed to update inventory",
+			"Alex is a bad programmer",
+		)
+	}
+
+	err = inventory.UpdateInventoryMessage(ctx, inv)
+	if err != nil {
+		log.Println(err)
+		discord.SuccessfulMessage(
+			ctx,
+			"Failed to update inventory message",
+			"Alex is a bad programmer",
+		)
+	}
+	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+		Title: fmt.Sprintf("%s Care Package Incoming %s", discord.EmojiItem, discord.EmojiItem),
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   "Item",
+				Value:  fmt.Sprintf("%s (%s) -  %s", item.Name, iRoll, item.Description),
+				Inline: true,
+			},
+			{
+				Name:   "Ability",
+				Value:  fmt.Sprintf("%s (%s) -  %s", ability.Name, aRoll, ability.Description),
 				Inline: true,
 			},
 		},

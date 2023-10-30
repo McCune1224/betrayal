@@ -13,7 +13,7 @@ import (
 )
 
 func (i *Inventory) setAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	inv, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAuthorizedError(ctx)
@@ -24,11 +24,11 @@ func (i *Inventory) setAbility(ctx ken.SubCommandContext) (err error) {
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
 	chargesArg := ctx.Options().GetByName("charges").IntValue()
 
-	for k, v := range inventory.Abilities {
+	for k, v := range inv.Abilities {
 		abilityName := strings.Split(v, " [")[0]
 		if strings.EqualFold(abilityName, abilityNameArg) {
-			inventory.Abilities[k] = fmt.Sprintf("%s [%d]", abilityName, chargesArg)
-			err = i.models.Inventories.UpdateAbilities(inventory)
+			inv.Abilities[k] = fmt.Sprintf("%s [%d]", abilityName, chargesArg)
+			err = i.models.Inventories.UpdateAbilities(inv)
 			if err != nil {
 				log.Println(err)
 				return discord.ErrorMessage(
@@ -37,20 +37,20 @@ func (i *Inventory) setAbility(ctx ken.SubCommandContext) (err error) {
 					"Alex is a bad programmer, and this is his fault.",
 				)
 			}
-			err = i.updateInventoryMessage(ctx, inventory)
+			err = UpdateInventoryMessage(ctx, inv)
 			if err != nil {
+				log.Println(err)
 				return err
 			}
-			return ctx.RespondMessage("Ability updated in inventory.")
+			return discord.SuccessfulMessage(ctx, "Ability updated", fmt.Sprintf("Set %s to %d charges", abilityName, chargesArg))
 		}
 	}
 
-	ctx.RespondMessage(fmt.Sprintf("Ability %s not found in inventory.", abilityNameArg))
-	return err
+	return discord.ErrorMessage(ctx, "Unable to Set Ability Charge", fmt.Sprintf("Ability %s not found in inventory.", abilityNameArg))
 }
 
 func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	inv, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAuthorizedError(ctx)
@@ -61,11 +61,11 @@ func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
 	chargesArg := ctx.Options().GetByName("charges").IntValue()
 
-	for k, v := range inventory.AnyAbilities {
+	for k, v := range inv.AnyAbilities {
 		abilityName := strings.Split(v, " [")[0]
 		if strings.EqualFold(abilityName, abilityNameArg) {
-			inventory.AnyAbilities[k] = fmt.Sprintf("%s [%d]", abilityName, chargesArg)
-			err = i.models.Inventories.UpdateAnyAbilities(inventory)
+			inv.AnyAbilities[k] = fmt.Sprintf("%s [%d]", abilityName, chargesArg)
+			err = i.models.Inventories.UpdateAnyAbilities(inv)
 			if err != nil {
 				log.Println(err)
 				return discord.ErrorMessage(
@@ -74,20 +74,20 @@ func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
 					"Alex is a bad programmer, and this is his fault.",
 				)
 			}
-			err = i.updateInventoryMessage(ctx, inventory)
+			err = UpdateInventoryMessage(ctx, inv)
 			if err != nil {
+				log.Println(err)
 				return err
 			}
-			return ctx.RespondMessage("Ability updated in inventory.")
+			return discord.SuccessfulMessage(ctx, "Ability updated", fmt.Sprintf("Set %s to %d charges", abilityName, chargesArg))
 		}
 	}
 
-	ctx.RespondMessage(fmt.Sprintf("Ability %s not found in inventory.", abilityNameArg))
-	return err
+	return discord.ErrorMessage(ctx, "Unable to Set Ability Charge", fmt.Sprintf("Ability %s not found in inventory.", abilityNameArg))
 }
 
 func (i *Inventory) setCoins(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	inv, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAuthorizedError(ctx)
@@ -96,8 +96,8 @@ func (i *Inventory) setCoins(ctx ken.SubCommandContext) (err error) {
 	}
 	ctx.SetEphemeral(false)
 	coinsArg := ctx.Options().GetByName("amount").IntValue()
-	inventory.Coins = coinsArg
-	err = i.models.Inventories.UpdateCoins(inventory)
+	inv.Coins = coinsArg
+	err = i.models.Inventories.UpdateCoins(inv)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(
@@ -106,19 +106,20 @@ func (i *Inventory) setCoins(ctx ken.SubCommandContext) (err error) {
 			"Alex is a bad programmer, and this is his fault.",
 		)
 	}
-	err = i.updateInventoryMessage(ctx, inventory)
+	err = UpdateInventoryMessage(ctx, inv)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	return discord.SuccessfulMessage(
 		ctx,
 		"Coins updated",
-		fmt.Sprintf("Set coins from %d to %d", coinsArg, inventory.Coins),
+		fmt.Sprintf("Set coins from %d to %d", coinsArg, inv.Coins),
 	)
 }
 
 func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	inv, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAuthorizedError(ctx)
@@ -128,7 +129,7 @@ func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
 	ctx.SetEphemeral(false)
 
 	coinBonusArg := ctx.Options().GetByName("amount").StringValue()
-	old := inventory.CoinBonus
+	old := inv.CoinBonus
 	fCoinBonusArg, err := strconv.ParseFloat(coinBonusArg, 32)
 	if err != nil {
 		log.Println(err)
@@ -138,9 +139,9 @@ func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
 			"Unable to parse coin bonus")
 	}
 	// FIXME: Remove round down
-	inventory.CoinBonus = (float32(fCoinBonusArg) / 100)
+	inv.CoinBonus = (float32(fCoinBonusArg) / 100)
 
-	err = i.models.Inventories.UpdateProperty(inventory, "coin_bonus", inventory.CoinBonus)
+	err = i.models.Inventories.UpdateProperty(inv, "coin_bonus", inv.CoinBonus)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(
@@ -150,7 +151,7 @@ func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 
-	err = i.updateInventoryMessage(ctx, inventory)
+	err = UpdateInventoryMessage(ctx, inv)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(
@@ -171,7 +172,7 @@ func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	inv, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAuthorizedError(ctx)
@@ -180,8 +181,8 @@ func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
 	}
 	ctx.SetEphemeral(false)
 	itemsLimitArg := ctx.Options().GetByName("size").IntValue()
-	inventory.ItemLimit = int(itemsLimitArg)
-	err = i.models.Inventories.UpdateProperty(inventory, "item_limit", itemsLimitArg)
+	inv.ItemLimit = int(itemsLimitArg)
+	err = i.models.Inventories.UpdateProperty(inv, "item_limit", itemsLimitArg)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(
@@ -190,8 +191,9 @@ func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
 			"Alex is a bad programmer, and this is his fault.",
 		)
 	}
-	err = i.updateInventoryMessage(ctx, inventory)
+	err = UpdateInventoryMessage(ctx, inv)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -200,13 +202,13 @@ func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
 		"Items limit updated",
 		fmt.Sprintf(
 			"Items limit set to %d",
-			inventory.ItemLimit,
+			inv.ItemLimit,
 		),
 	)
 }
 
 func (i *Inventory) setLuckLevel(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	inv, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAuthorizedError(ctx)
@@ -215,10 +217,10 @@ func (i *Inventory) setLuckLevel(ctx ken.SubCommandContext) (err error) {
 	}
 	ctx.SetEphemeral(true)
 	luckLevelArg := ctx.Options().GetByName("level").IntValue()
-	oldLuck := inventory.Luck
-	inventory.Luck = luckLevelArg
+	oldLuck := inv.Luck
+	inv.Luck = luckLevelArg
 
-	err = i.models.Inventories.UpdateLuck(inventory)
+	err = i.models.Inventories.UpdateLuck(inv)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(
@@ -227,7 +229,7 @@ func (i *Inventory) setLuckLevel(ctx ken.SubCommandContext) (err error) {
 			"Alex is a bad programmer, and this is his fault.",
 		)
 	}
-	err = i.updateInventoryMessage(ctx, inventory)
+	err = UpdateInventoryMessage(ctx, inv)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(
@@ -239,7 +241,7 @@ func (i *Inventory) setLuckLevel(ctx ken.SubCommandContext) (err error) {
 
 	return ctx.RespondEmbed(&discordgo.MessageEmbed{
 		Title:       "Luck level updated",
-		Description: fmt.Sprintf("Luck level from %d to %d", oldLuck, inventory.Luck),
+		Description: fmt.Sprintf("Luck level from %d to %d", oldLuck, inv.Luck),
 		Color:       discord.ColorThemeGreen,
 	})
 }

@@ -68,12 +68,12 @@ func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
 	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
 
-	for k, v := range inventory.Abilities {
+	for k, v := range inventory.AnyAbilities {
 		abilityName := strings.Split(v, " [")[0]
 		if strings.EqualFold(abilityName, abilityNameArg) {
-			inventory.Abilities = append(
-				inventory.Abilities[:k],
-				inventory.Abilities[k+1:]...)
+			inventory.AnyAbilities = append(
+				inventory.AnyAbilities[:k],
+				inventory.AnyAbilities[k+1:]...)
 			err = i.models.Inventories.UpdateAnyAbilities(inventory)
 			if err != nil {
 				log.Println(err)

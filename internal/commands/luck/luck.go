@@ -325,77 +325,6 @@ func (r *Roll) luckDebug(ctx ken.SubCommandContext) (err error) {
 // 	})
 // }
 
-func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
-	inv, err := inventory.Fetch(ctx, r.models, true)
-	if err != nil {
-		if errors.Is(err, inventory.ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
-		}
-		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
-	}
-	luckLevel := inv.Luck
-	luckArg, ok := ctx.Options().GetByNameOptional("luck")
-	if ok {
-		luckLevel = luckArg.IntValue()
-	}
-
-	aRoll := RollLuck(float64(luckLevel), rand.Float64())
-	iRoll := RollLuck(float64(luckLevel), rand.Float64())
-
-	ability, err := r.getRandomAbility(inv.RoleName, aRoll)
-	if err != nil {
-		return discord.ErrorMessage(ctx, "Error getting random ability", "Alex is a bad programmer")
-	}
-
-	item, err := r.models.Items.GetRandomByRarity(iRoll)
-	if err != nil {
-		log.Println(err)
-		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to get Random Item",
-			"Alex is a bad programmer",
-		)
-	}
-
-	inv.Abilities = append(inv.Abilities, ability.Name)
-	inv.Items = append(inv.Items, item.Name)
-	err = r.models.Inventories.UpdateItems(inv)
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update inventory",
-			"Alex is a bad programmer",
-		)
-	}
-
-	err = inventory.UpdateInventoryMessage(ctx, inv)
-	if err != nil {
-		log.Println(err)
-		discord.SuccessfulMessage(
-			ctx,
-			"Failed to update inventory message",
-			"Alex is a bad programmer",
-		)
-	}
-	return ctx.RespondEmbed(&discordgo.MessageEmbed{
-		Title: fmt.Sprintf("%s Care Package Incoming %s", discord.EmojiItem, discord.EmojiItem),
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "Item",
-				Value:  fmt.Sprintf("%s (%s) -  %s", item.Name, iRoll, item.Description),
-				Inline: true,
-			},
-			{
-				Name:   "Ability",
-				Value:  fmt.Sprintf("%s (%s) -  %s", ability.Name, aRoll, ability.Description),
-				Inline: true,
-			},
-		},
-	})
-}
-
 func (r *Roll) luckTable(ctx ken.SubCommandContext) (err error) {
 	// Setting to eph for now to avoid flooding channels with bulky messages
 	ctx.SetEphemeral(true)
@@ -520,27 +449,36 @@ func (r *Roll) SetModels(models data.Models) {
 
 // Helper to get a random ability. If it is not an any ability, need to check to
 // make sure that the ability is the same as the user's current class roll
-func (r *Roll) getRandomAbility(role string, rarity string, rec ...int) (*data.Ability, error) {
+func (r *Roll) getRandomAnyAbility(role string, rarity string, rec ...int) (*data.AnyAbility, error) {
 	// lil saftey net to prevent infinite recursion (hopefully)
-
 	rec = append(rec, 1)
 	if len(rec) > 0 && rec[0] > 10 {
 		return nil, errors.New("too many attempts to get ability")
 	}
-	ab, err := r.models.Abilities.GetRandomByRarity(rarity)
+	ab, err := r.models.Abilities.GetRandomAnyAbilityByRarity(rarity)
 	if err != nil {
 		return nil, err
 	}
-	if !ab.AnyAbility {
-		associatedRole, err := r.models.Roles.GetByAbilityID(ab.ID)
-		if err != nil {
-			return nil, err
-		}
-		// Need to re-roll since they got a non-any ability that isn't their role
-		if associatedRole.Name != role {
+
+	if ab.RoleSpecific != "" {
+		if strings.EqualFold(ab.RoleSpecific, role) {
 			// FIXME: Every time a recursive call is made an angel loses its wings
-			return r.getRandomAbility(role, rarity, rec[0]+1)
+			return r.getRandomAnyAbility(role, rarity, rec[0]+1)
 		}
 	}
 	return ab, nil
+}
+
+// Will roll for random item excluding uniques
+func (r *Roll) getRandomItem(rarity string) (*data.Item, error) {
+	item, err := r.models.Items.GetRandomByRarity(rarity)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	if item.Rarity == "Unique" {
+		return r.getRandomItem(rarity)
+	}
+
+	return item, nil
 }

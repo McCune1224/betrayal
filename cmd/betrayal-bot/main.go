@@ -12,6 +12,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
+	"github.com/mccune1224/betrayal/internal/commands/inventory"
+	roll "github.com/mccune1224/betrayal/internal/commands/luck"
 	"github.com/mccune1224/betrayal/internal/commands/view"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -120,8 +122,8 @@ func main() {
 	app.betrayalManager.Unregister()
 
 	tally := app.RegisterBetrayalCommands(
-		// new(roll.Roll),
-		// new(inventory.Inventory),
+		new(roll.Roll),
+		new(inventory.Inventory),
 		// new(commands.ActionFunnel),
 		new(view.View),
 		// new(commands.Buy),
