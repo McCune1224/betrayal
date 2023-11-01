@@ -40,6 +40,7 @@ const (
 	EmojiDead       = Emoji("💀")
 	EmojiAlive      = Emoji("👼")
 	EmojiLuck       = Emoji("🍀")
+	EmojiRoll       = Emoji("🎲")
 )
 
 // Hex colors / color themes

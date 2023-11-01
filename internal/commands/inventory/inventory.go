@@ -21,7 +21,7 @@ var (
 
 // TODO: Maybe make these configurable?
 const (
-	defaultCoins      = 200
+	defaultCoins      = 0
 	defaultItemsLimit = 4
 	defaultLuck       = 0
 )
@@ -126,7 +126,7 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "ability",
-					Description: "add a base ability",
+					Description: "add a base ability (will increase charge if already in inventory)",
 					Options: []*discordgo.ApplicationCommandOption{
 						discord.StringCommandArg("name", "Name of the ability", true),
 						discord.IntCommandArg("charges", "Number of charges", false),
@@ -136,10 +136,10 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "aa",
-					Description: "add an any ability",
+					Description: "add an any ability (will increase charge by 1 if already in inventory)",
 					Options: []*discordgo.ApplicationCommandOption{
 						discord.StringCommandArg("name", "Name of the ability", true),
-						discord.IntCommandArg("charges", "Number of charges", false),
+						// discord.IntCommandArg("charges", "Number of charges", false),
 						discord.UserCommandArg(false),
 					},
 				},
@@ -342,7 +342,7 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "ability",
-					Description: "set a base ability",
+					Description: "set charges for an ability already in inventory",
 					Options: []*discordgo.ApplicationCommandOption{
 						discord.StringCommandArg("name", "Name of the ability", true),
 						discord.IntCommandArg("charges", "Number of charges", true),
@@ -352,7 +352,7 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "aa",
-					Description: "set an any ability",
+					Description: "set charges for an any ability already in inventory",
 					Options: []*discordgo.ApplicationCommandOption{
 						discord.StringCommandArg("name", "Name of the ability", true),
 						discord.IntCommandArg("charges", "Number of charges", true),
@@ -828,4 +828,28 @@ func ParseAbilityString(raw string) (name string, charges int, err error) {
 	}
 	name = strings.Join(split[:len(split)-1], " ")
 	return name, charges, nil
+}
+
+// Will attempt to upate the given any ability in the inventory and if not present will add it
+func UpsertAA(inv *data.Inventory, aa *data.AnyAbility) {
+	for i, a := range inv.AnyAbilities {
+		invName, invCharge, _ := ParseAbilityString(a)
+		if invName == aa.Name {
+			inv.AnyAbilities[i] = fmt.Sprintf("%s [%d]", invName, invCharge+1)
+			return
+		}
+	}
+	inv.AnyAbilities = append(inv.AnyAbilities, fmt.Sprintf("%s [%d]", aa.Name, 1))
+}
+
+// Will attempt to upate the given ability in the inventory and if not present will add it
+func UpsertAbility(inv *data.Inventory, aa *data.Ability) {
+	for i, a := range inv.Abilities {
+		invName, invCharge, _ := ParseAbilityString(a)
+		if invName == aa.Name {
+			inv.Abilities[i] = fmt.Sprintf("%s [%d]", invName, invCharge+1)
+			return
+		}
+	}
+	inv.Abilities = append(inv.Abilities, fmt.Sprintf("%s [%d]", aa.Name, 1))
 }

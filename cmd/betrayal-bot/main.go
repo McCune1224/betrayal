@@ -125,15 +125,15 @@ func main() {
 	tally := app.RegisterBetrayalCommands(
 		new(roll.Roll),
 		new(inventory.Inventory),
-		new(commands.ActionFunnel),
+		// new(commands.ActionFunnel),
 		new(view.View),
 		new(commands.Buy),
 		new(commands.List),
-		new(commands.Insult),
-		new(commands.Ping),
-		new(commands.Vote),
-		new(commands.Kill),
-		new(commands.Revive),
+		// new(commands.Insult),
+		// new(commands.Ping),
+		// new(commands.Vote),
+		// new(commands.Kill),
+		// new(commands.Revive),
 	)
 
 	app.betrayalManager.Session().AddHandler(logHandler)

@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
@@ -111,6 +112,11 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 				discord.IntCommandArg("high", "high range for luck", false),
 			},
 		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "wheel",
+			Description: "Spin the wheel for a game event",
+		},
 	}
 }
 
@@ -123,6 +129,7 @@ func (r *Roll) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "table", Run: r.luckTable},
 		ken.SubCommandHandler{Name: "item_rain", Run: r.luckItemRain},
 		ken.SubCommandHandler{Name: "power_drop", Run: r.luckPowerDrop},
+		ken.SubCommandHandler{Name: "wheel", Run: r.wheel},
 	)
 }
 
@@ -481,4 +488,58 @@ func (r *Roll) getRandomItem(rarity string) (*data.Item, error) {
 	}
 
 	return item, nil
+}
+
+func (r *Roll) wheel(ctx ken.SubCommandContext) (err error) {
+	// Def need to defer as this will 100% take longer than 3 seconds to respond
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	s := ctx.GetSession()
+	e := ctx.GetEvent()
+	events := []string{
+		"Care Package",
+		"Daily Bonuses",
+		"Item Rain",
+		"Power Drop",
+		"Rock Paper Scissors Tournament",
+		"Money Heaven",
+		"Valentine's Day",
+		"Duels",
+		"Ultimate Exchange",
+		"Double Elimination",
+	}
+	// Send Placeholder message
+	base := fmt.Sprintf("%s Spinning the wheel...", discord.EmojiRoll)
+	tempMsg, err := s.ChannelMessageSend(e.ChannelID, base)
+	if err != nil {
+		log.Println(err)
+	}
+
+	// precalculate rolls to reduce delay
+	rolls := []int{}
+	for i := 0; i < 7; i++ {
+		rolls = append(rolls, rand.Intn(len(events)))
+	}
+
+	for i := 0; i < 7; i++ {
+		time.Sleep(450 * time.Millisecond)
+		// increase delay by 100 each iteration
+		event := events[rolls[i]]
+		_, err = s.ChannelMessageEdit(e.ChannelID, tempMsg.ID, fmt.Sprintf("%s %s", base, event))
+		if err != nil {
+			log.Println(err)
+			return discord.AlexError(ctx)
+		}
+	}
+	final := events[rand.Intn(len(events))]
+	// delet tempMsg
+	err = s.ChannelMessageDelete(e.ChannelID, tempMsg.ID)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx)
+	}
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("%s Event Rolled!", final), "(use /list events to see all events)")
 }

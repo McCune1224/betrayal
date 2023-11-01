@@ -20,7 +20,7 @@ var (
 		"Daily Bonuses - Every Day - Gain 300 coins every day, other than the first.",
 		"Item Rain - Every Third Day - Everyone gains 1-3 random items (luck affects your odds).",
 		"Power Drop - Day After Item Rain - Everyone gains 1 random Any Ability.",
-		"Rock Paper Scissors Tournament (Day 5 event) - Everyone plays rock, paper, scissors. Winner gets a special prize.",
+		"Rock Paper Scissors Tournament - Day 5 Event - Everyone plays rock, paper, scissors. Winner gets a special prize.",
 		"Money Heaven - Day 7 and Day 13 Event - All of the coins you earn are doubled today.",
 		"Valentine's Day - Day 8 Event - Send a valentine and an anonymous message costing 50 coins to someone. You cannot receive valentines if you don't send one. Cannot send to yourself.",
 		"Duels - Day 11 & 14 Event - Choose to challenge someone to a duel. Life is at stake.",

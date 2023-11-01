@@ -83,7 +83,7 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 		UserPinChannel: channelID,
 		UserPinMessage: pinMsg.ChannelID,
 		Alignment:      role.Alignment,
-		RoleName:       roleArg,
+		RoleName:       role.Name,
 		Abilities:      abilityNames,
 		Perks:          perkNames,
 		Coins:          defaultCoins,

@@ -119,6 +119,10 @@ func (v *View) Run(ctx ken.Context) (err error) {
 
 func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
 	nameArg := ctx.Options().GetByName("name").StringValue()
+	// haha funny easter egg
+	if strings.ToLower(nameArg) == "ferrari" {
+		return ctx.RespondEmbed(generateFerrariRole())
+	}
 	role, err := v.models.Roles.GetByName(nameArg)
 	if err != nil {
 		ctx.RespondError(
@@ -333,12 +337,16 @@ func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
 		Color:  determineColor(item.Rarity),
 		Fields: embededFields,
 	}
-	if strings.ToLower(item.Name) == "zingy" {
+	if item.Name == "Zingy" {
 		// attach zingy image to embed
-		embed.Image = &discordgo.MessageEmbedImage{
-			URL:    "https://cdn.discordapp.com/attachments/809878992590610708/809879063589658644/zingy.png",
-			Height: 100,
-			Width:  100,
+		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{
+			URL: "https://www.fairy-tales-inc.com/images/thumbs/0058033_bashful-zingy-bunny-medium-by-jellycat_550.jpeg",
+		}
+	}
+
+	if item.Rarity == "Unique" {
+		embed.Footer = &discordgo.MessageEmbedFooter{
+			Text: fmt.Sprintf("%s this item is not purchasable nor obtainable from random event (like item rain) %s", discord.EmojiWarning, discord.EmojiWarning),
 		}
 	}
 

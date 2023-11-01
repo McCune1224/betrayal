@@ -22,20 +22,10 @@ func (i *Inventory) addAbility(ctx ken.SubCommandContext) (err error) {
 	}
 	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
-	charges := int64(-42069)
 	chargesArg, ok := ctx.Options().GetByNameOptional("charges")
+	charge := -42069
 	if ok {
-		charges = chargesArg.IntValue()
-	}
-	for _, ability := range inventory.Abilities {
-		abilityName := strings.Split(ability, " [")[0]
-		if abilityName == abilityNameArg {
-			return discord.ErrorMessage(
-				ctx,
-				fmt.Sprintf("Ability %s already exists in inventory", abilityNameArg),
-				"Did you mean to update the ability?",
-			)
-		}
+		charge = int(chargesArg.IntValue())
 	}
 
 	ability, err := i.models.Abilities.GetByName(abilityNameArg)
@@ -46,11 +36,11 @@ func (i *Inventory) addAbility(ctx ken.SubCommandContext) (err error) {
 			"Verify if the ability exists.",
 		)
 	}
-	if charges == -42069 {
-		charges = int64(ability.Charges)
+
+	if charge == -42069 {
+		ability.Charges = charge
 	}
-	abilityString := fmt.Sprintf("%s [%d]", ability.Name, charges)
-	inventory.Abilities = append(inventory.Abilities, abilityString)
+	UpsertAbility(inventory, ability)
 	err = i.models.Inventories.Update(inventory)
 	if err != nil {
 		log.Println(err)
@@ -83,23 +73,8 @@ func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
-	charges := int64(-42069)
-	chargesArg, ok := ctx.Options().GetByNameOptional("charges")
-	if ok {
-		charges = chargesArg.IntValue()
-	}
-	for _, ability := range inventory.AnyAbilities {
-		abilityName := strings.Split(ability, " [")[0]
-		if abilityName == abilityNameArg {
-			return discord.ErrorMessage(
-				ctx,
-				fmt.Sprintf("Ability %s already exists in inventory", abilityNameArg),
-				"Did you mean to update the ability?",
-			)
-		}
-	}
 
-	ability, err := i.models.Abilities.GetByName(abilityNameArg)
+	ability, err := i.models.Abilities.GetAnyAbilityByName(abilityNameArg)
 	if err != nil {
 		return discord.ErrorMessage(
 			ctx,
@@ -107,11 +82,7 @@ func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
 			"Verify if the ability exists.",
 		)
 	}
-	if charges == -42069 {
-		charges = int64(ability.Charges)
-	}
-	abilityString := fmt.Sprintf("%s [%d]", ability.Name, charges)
-	inventory.AnyAbilities = append(inventory.AnyAbilities, abilityString)
+	UpsertAA(inventory, ability)
 	err = i.models.Inventories.Update(inventory)
 	if err != nil {
 		log.Println(err)
