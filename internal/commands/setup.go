@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 
 	"github.com/bwmarrin/discordgo"
@@ -40,6 +41,7 @@ func (*Setup) Options() []*discordgo.ApplicationCommandOption {
 func (s *Setup) Run(ctx ken.Context) (err error) {
 	// This will prob take more than 3 seconds to run
 	if err = ctx.Defer(); err != nil {
+		log.Println(err)
 		return err
 	}
 	// generate role pool
@@ -48,6 +50,7 @@ func (s *Setup) Run(ctx ken.Context) (err error) {
 	decepts := getDeceptionist(ctx.GetSession(), ctx.GetEvent().GuildID)
 	rolePool, err := generateRoleSelectPool(s.models)
 	if err != nil {
+		log.Println(err)
 		return discord.AlexError(ctx)
 	}
 	msg := rolePreviewEmbed(rolePool, len(decepts))
@@ -98,7 +101,7 @@ func generateRoleSelectPool(m data.Models) ([]*data.Role, error) {
 		}
 		roles = append(roles, r)
 	}
-	return roles, err
+	return roles, nil
 }
 
 // TODO: Find a better home to locate this function... really don't want a 5000 line file called "utils.go"...
