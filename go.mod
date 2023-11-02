@@ -29,6 +29,7 @@ require (
 	github.com/zekrotja/dgrs v0.5.7 // indirect
 	github.com/zekrotja/safepool v1.1.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
+	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/net v0.12.0 // indirect
 )
 
