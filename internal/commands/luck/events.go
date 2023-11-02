@@ -236,7 +236,7 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 	aRoll := RollLuck(float64(luckLevel), rand.Float64())
 	iRoll := RollLuck(float64(luckLevel), rand.Float64())
 
-	ability, err := r.getRandomAnyAbility(inv.RoleName, aRoll)
+	aa, err := r.getRandomAnyAbility(inv.RoleName, aRoll)
 	if err != nil {
 		return discord.ErrorMessage(ctx, "Error getting random ability", "Alex is a bad programmer")
 	}
@@ -252,8 +252,8 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 
-	if ability.RoleSpecific == inv.RoleName {
-		ab, err := r.models.Abilities.GetByName(ability.RoleSpecific)
+	if aa.RoleSpecific == inv.RoleName {
+		ab, err := r.models.Abilities.GetByName(aa.RoleSpecific)
 		if err != nil {
 			log.Println(err)
 			return discord.AlexError(ctx)
@@ -266,7 +266,7 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 		}
 
 	} else {
-		inventory.UpsertAA(inv, ability)
+		inventory.UpsertAA(inv, aa)
 		err = r.models.Inventories.UpdateAnyAbilities(inv)
 		if err != nil {
 			log.Println(err)
@@ -298,13 +298,13 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 		Title: fmt.Sprintf("%s Care Package Incoming %s", discord.EmojiItem, discord.EmojiItem),
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name:   "Item",
-				Value:  fmt.Sprintf("%s (%s) -  %s", item.Name, iRoll, item.Description),
+				Name:   fmt.Sprintf("Item: %s (%s)", item.Name, item.Rarity),
+				Value:  item.Description,
 				Inline: true,
 			},
 			{
-				Name:   "Ability",
-				Value:  fmt.Sprintf("%s (%s) -  %s", ability.Name, aRoll, ability.Description),
+				Name:   fmt.Sprintf("Any Ability: %s (%s)", aa.Name, aa.Rarity),
+				Value:  aa.Description,
 				Inline: true,
 			},
 		},
