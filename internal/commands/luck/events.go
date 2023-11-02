@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
@@ -180,45 +179,20 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 
-	if aa.RoleSpecific != "" {
-		for i, v := range inv.Abilities {
-			if strings.EqualFold(v, aa.RoleSpecific) {
-				name, charge, err := inventory.ParseAbilityString(v)
-				if err != nil {
-					return discord.ErrorMessage(
-						ctx,
-						"Failed to parse ability string",
-						"Alex is a bad programmer",
-					)
-				}
-				inv.Abilities[i] = fmt.Sprintf("%s [%d]", name, charge+1)
-				break
-			}
+	if aa.RoleSpecific == inv.RoleName {
+		ab, err := r.models.Abilities.GetByName(aa.RoleSpecific)
+		if err != nil {
+			log.Println(err)
+			return discord.AlexError(ctx)
 		}
+		inventory.UpsertAbility(inv, ab)
 		err = r.models.Inventories.UpdateAbilities(inv)
 		if err != nil {
 			log.Println(err)
 			return discord.AlexError(ctx)
 		}
-		inventory.UpdateInventoryMessage(ctx, inv)
 	} else {
-		mark := false
-		// do same thing but for any ability
-		for i, v := range inv.AnyAbilities {
-			if strings.EqualFold(v, aa.Name) {
-				name, charge, err := inventory.ParseAbilityString(v)
-				if err != nil {
-					continue
-				}
-				inv.AnyAbilities[i] = fmt.Sprintf("%s [%d]", name, charge+1)
-				mark = true
-				break
-			}
-		}
-		if !mark {
-			// append a new ability instead
-			inv.AnyAbilities = append(inv.Abilities, fmt.Sprintf("%s [1]", aa.Name))
-		}
+		inventory.UpsertAA(inv, aa)
 		err = r.models.Inventories.UpdateAnyAbilities(inv)
 		if err != nil {
 			log.Println(err)
@@ -226,12 +200,18 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 		}
 	}
 
+	err = inventory.UpdateInventoryMessage(ctx, inv)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx)
+	}
+
 	return ctx.RespondEmbed(&discordgo.MessageEmbed{
-		Title: fmt.Sprintf("%s Power Drop Incoming %s", discord.EmojiAbility, discord.EmojiAbility),
+		Title: fmt.Sprintf("%s Power Drop Incoming %s", discord.EmojiItem, discord.EmojiItem),
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name:   "Ability",
-				Value:  fmt.Sprintf("%s (%s) -  %s", aa.Name, rarity, aa.Description),
+				Name:   fmt.Sprintf("%s (%s)", aa.Name, aa.Rarity),
+				Value:  aa.Description,
 				Inline: true,
 			},
 		},
@@ -272,7 +252,28 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 
-	inv.Abilities = append(inv.Abilities, ability.Name)
+	if ability.RoleSpecific == inv.RoleName {
+		ab, err := r.models.Abilities.GetByName(ability.RoleSpecific)
+		if err != nil {
+			log.Println(err)
+			return discord.AlexError(ctx)
+		}
+		inventory.UpsertAbility(inv, ab)
+		err = r.models.Inventories.UpdateAbilities(inv)
+		if err != nil {
+			log.Println(err)
+			return discord.AlexError(ctx)
+		}
+
+	} else {
+		inventory.UpsertAA(inv, ability)
+		err = r.models.Inventories.UpdateAnyAbilities(inv)
+		if err != nil {
+			log.Println(err)
+			return discord.AlexError(ctx)
+		}
+	}
+
 	inv.Items = append(inv.Items, item.Name)
 	err = r.models.Inventories.UpdateItems(inv)
 	if err != nil {

@@ -468,7 +468,7 @@ func (r *Roll) getRandomAnyAbility(role string, rarity string, rec ...int) (*dat
 	}
 
 	if ab.RoleSpecific != "" {
-		if strings.EqualFold(ab.RoleSpecific, role) {
+		if !strings.EqualFold(ab.RoleSpecific, role) {
 			// FIXME: Every time a recursive call is made an angel loses its wings
 			return r.getRandomAnyAbility(role, rarity, rec[0]+1)
 		}

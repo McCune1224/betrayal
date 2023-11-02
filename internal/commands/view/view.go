@@ -344,6 +344,11 @@ func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
 		}
 	}
 
+	if item.Cost == 0 {
+		embed.Footer = &discordgo.MessageEmbedFooter{
+			Text: fmt.Sprintf("%s this item is not purchasable %s", discord.EmojiWarning, discord.EmojiWarning),
+		}
+	}
 	if item.Rarity == "Unique" {
 		embed.Footer = &discordgo.MessageEmbedFooter{
 			Text: fmt.Sprintf("%s this item is not purchasable nor obtainable from random event (like item rain) %s", discord.EmojiWarning, discord.EmojiWarning),
