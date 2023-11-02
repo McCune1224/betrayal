@@ -15,7 +15,7 @@ type Setup struct {
 	models data.Models
 }
 
-func (s *Setup) GetModels(models data.Models) {
+func (s *Setup) SetModels(models data.Models) {
 	s.models = models
 }
 
