@@ -92,21 +92,24 @@ func generateRoleSelectPool(m data.Models) ([]*data.Role, error) {
 	if err != nil {
 		return nil, err
 	}
-	var roles []*data.Role
 	roleList := activeRolesQueue.Roles
-	for i := range roleList {
-		r, err := m.Roles.GetByName(roleList[i])
-		if err != nil {
-			return nil, err
-		}
-		roles = append(roles, r)
+	// FIXME: Remove value of "Empress" from roleList for right now till I can update DB
+	empressIndex := slices.Index(roleList, "Empress")
+	if empressIndex != -1 {
+		roleList = append(roleList[:empressIndex], roleList[empressIndex+1:]...)
 	}
+	roles, err := m.Roles.GetBulkByName(roleList)
+	if err != nil {
+		return nil, err
+	}
+
 	return roles, nil
 }
 
-// TODO: Find a better home to locate this function... really don't want a 5000 line file called "utils.go"...
+// TODO: Find me a better home :(
 func randomSliceElement[T any](s []T) T {
-	return s[rand.Intn(len(s))]
+	n := rand.Int() % len(s)
+	return s[n]
 }
 
 func rolePreviewEmbed(roles []*data.Role, decepCount int) *discordgo.MessageEmbed {
@@ -133,14 +136,13 @@ func rolePreviewEmbed(roles []*data.Role, decepCount int) *discordgo.MessageEmbe
 	deceptFields := []*discordgo.MessageEmbedField{}
 	for i := range deceptionistsChoices {
 		deceptFields = append(deceptFields, &discordgo.MessageEmbedField{
-			Name:   "Deceptionist " + fmt.Sprintf("%d", i+1),
+			Name:   fmt.Sprintf("Deceptionist %d Choices:", i+1),
 			Value:  deceptionistsChoices[i][0].Name + "\n" + deceptionistsChoices[i][1].Name + "\n" + deceptionistsChoices[i][2].Name,
 			Inline: true,
 		})
 	}
 	deceptFields = append(deceptFields, &discordgo.MessageEmbedField{
-		Name:   "Remaining Roles",
-		Value:  "Remaining roles will be randomly assigned to players",
+		Name:   "---- Remaining Roles ----",
 		Inline: false,
 	})
 	remainderRoleFields := []*discordgo.MessageEmbedField{}
@@ -148,14 +150,13 @@ func rolePreviewEmbed(roles []*data.Role, decepCount int) *discordgo.MessageEmbe
 		if !slices.Contains(takenRoles, roles[i]) {
 			remainderRoleFields = append(remainderRoleFields, &discordgo.MessageEmbedField{
 				Name:   roles[i].Name,
-				Value:  roles[i].Description,
 				Inline: true,
 			})
 		}
 	}
 	msg := &discordgo.MessageEmbed{
-		Title:  "Role Preview",
-		Color:  0x00ff00,
+		Title:  "Role Assignment Preview",
+		Color:  discord.ColorThemeWhite,
 		Fields: append(deceptFields, remainderRoleFields...),
 	}
 	return msg
@@ -167,7 +168,7 @@ func groupRoles(r []*data.Role) (goodRoles []*data.Role, badRoles []*data.Role, 
 		switch r[i].Alignment {
 		case "GOOD":
 			goodRoles = append(goodRoles, r[i])
-		case "BAD":
+		case "EVIL":
 			badRoles = append(badRoles, r[i])
 		case "NEUTRAL":
 			neutralRoles = append(neutralRoles, r[i])

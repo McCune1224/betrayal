@@ -146,8 +146,6 @@ func main() {
 	}
 	defer bot.Close()
 
-	// bad grammar
-
 	log.Printf(
 		"%s is now running with %d commands. Press CTRL-C to exit.\n",
 		bot.State.User.Username,

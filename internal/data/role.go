@@ -2,6 +2,7 @@ package data
 
 import (
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 // How roles are stored in the database.
@@ -47,6 +48,16 @@ func (rm *RoleModel) GetByName(name string) (*Role, error) {
 		return nil, err
 	}
 	return &r, nil
+}
+
+func (rm *RoleModel) GetBulkByName(names pq.StringArray) ([]*Role, error) {
+	var roles []*Role
+	query := `SELECT * FROM roles WHERE name = ANY($1)`
+	err := rm.DB.Select(&roles, query, names)
+	if err != nil {
+		return nil, err
+	}
+	return roles, nil
 }
 
 func (rm *RoleModel) GetAllByID(ids []int64) ([]*Role, error) {
