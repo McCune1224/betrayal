@@ -9,7 +9,6 @@ import (
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
-	"golang.org/x/exp/slices"
 )
 
 type Setup struct {
@@ -34,7 +33,9 @@ func (*Setup) Name() string {
 
 // Options implements ken.SlashCommand.
 func (*Setup) Options() []*discordgo.ApplicationCommandOption {
-	return nil
+	return []*discordgo.ApplicationCommandOption{
+		discord.IntCommandArg("playercount", "number of players for the game", true),
+	}
 }
 
 // Run implements ken.SlashCommand.
@@ -53,8 +54,10 @@ func (s *Setup) Run(ctx ken.Context) (err error) {
 		log.Println(err)
 		return discord.AlexError(ctx)
 	}
-	msg := rolePreviewEmbed(rolePool, len(decepts))
-
+	playerCount := int(ctx.Options().GetByName("playercount").IntValue())
+	decepCount := len(decepts)
+	rp := generateRolePools(rolePool, playerCount, decepCount)
+	msg := roleSetupEmbed(rp)
 	return ctx.RespondEmbed(msg)
 }
 
@@ -93,11 +96,6 @@ func generateRoleSelectPool(m data.Models) ([]*data.Role, error) {
 		return nil, err
 	}
 	roleList := activeRolesQueue.Roles
-	// FIXME: Remove value of "Empress" from roleList for right now till I can update DB
-	empressIndex := slices.Index(roleList, "Empress")
-	if empressIndex != -1 {
-		roleList = append(roleList[:empressIndex], roleList[empressIndex+1:]...)
-	}
 	roles, err := m.Roles.GetBulkByName(roleList)
 	if err != nil {
 		return nil, err
@@ -106,60 +104,74 @@ func generateRoleSelectPool(m data.Models) ([]*data.Role, error) {
 	return roles, nil
 }
 
-// TODO: Find me a better home :(
-func randomSliceElement[T any](s []T) T {
-	n := rand.Int() % len(s)
-	return s[n]
+type rolePool struct {
+	// Reserved roles for deceptionists to choose from
+	deceptionOptions [][]*data.Role
+	// Raw role pool for random selection
+	randomPool []*data.Role
 }
 
-func rolePreviewEmbed(roles []*data.Role, decepCount int) *discordgo.MessageEmbed {
+func generateRolePools(roles []*data.Role, playerCount, decepCount int) *rolePool {
 	goodRoles, badRoles, neutralRoles := groupRoles(roles)
-	takenRoles := []*data.Role{}
-	deceptionistsChoices := [][]*data.Role{}
+	rp := &rolePool{}
+	gPerm := rand.Perm(len(goodRoles))
+	bPerm := rand.Perm(len(badRoles))
+	nPerm := rand.Perm(len(neutralRoles))
 	for i := 0; i < decepCount; i++ {
-		// Keep selecting random roles until we find one that isn't already reserved
-		g := randomSliceElement(goodRoles)
-		b := randomSliceElement(badRoles)
-		n := randomSliceElement(neutralRoles)
-		for slices.Contains(takenRoles, g) {
-			g = randomSliceElement(goodRoles)
-		}
-		for slices.Contains(takenRoles, b) {
-			b = randomSliceElement(badRoles)
-		}
-		for slices.Contains(takenRoles, n) {
-			n = randomSliceElement(neutralRoles)
-		}
-		deceptionistsChoices = append(deceptionistsChoices, []*data.Role{g, b, n})
-		takenRoles = append(takenRoles, g, b, n)
+		rp.deceptionOptions = append(rp.deceptionOptions, []*data.Role{goodRoles[gPerm[i]], neutralRoles[nPerm[i]], badRoles[bPerm[i]]})
 	}
-	deceptFields := []*discordgo.MessageEmbedField{}
-	for i := range deceptionistsChoices {
-		deceptFields = append(deceptFields, &discordgo.MessageEmbedField{
-			Name:   fmt.Sprintf("Deceptionist %d Choices:", i+1),
-			Value:  deceptionistsChoices[i][0].Name + "\n" + deceptionistsChoices[i][1].Name + "\n" + deceptionistsChoices[i][2].Name,
+	rPerm := rand.Perm(len(roles))
+	for i := 0; i < playerCount; i++ {
+		rp.randomPool = append(rp.randomPool, roles[rPerm[i]])
+	}
+	return rp
+}
+
+func roleSetupEmbed(rp *rolePool) *discordgo.MessageEmbed {
+	embed := &discordgo.MessageEmbed{
+		Title:       fmt.Sprintf("Role Setup (%d)", len(rp.randomPool)),
+		Description: fmt.Sprintf("(%s = Deceptionist Reserved)", discord.EmojiWarning),
+	}
+	for i := range rp.deceptionOptions {
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+			Name:   fmt.Sprintf("Deceptionist %d", i+1),
+			Value:  fmt.Sprintf("%s\n%s\n%s", rp.deceptionOptions[i][0].Name, rp.deceptionOptions[i][1].Name, rp.deceptionOptions[i][2].Name),
 			Inline: true,
 		})
 	}
-	deceptFields = append(deceptFields, &discordgo.MessageEmbedField{
-		Name:   "---- Remaining Roles ----",
-		Inline: false,
+	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+		Name: "----- Random Roll Pool -----",
 	})
-	remainderRoleFields := []*discordgo.MessageEmbedField{}
-	for i := range roles {
-		if !slices.Contains(takenRoles, roles[i]) {
-			remainderRoleFields = append(remainderRoleFields, &discordgo.MessageEmbedField{
-				Name:   roles[i].Name,
-				Inline: true,
-			})
+	// Making a left and right column for the random pool so its not a super long list
+	leftRolesField := &discordgo.MessageEmbedField{
+		Inline: true,
+	}
+	rightRolesField := &discordgo.MessageEmbedField{
+		Inline: true,
+	}
+	for i := range rp.randomPool {
+		currSide := &discordgo.MessageEmbedField{}
+		if i%2 == 0 {
+			currSide = leftRolesField
+		} else {
+			currSide = rightRolesField
+		}
+		// Check if role is already within Decetionist options
+		marked := false
+		for j := range rp.deceptionOptions {
+			if rp.randomPool[i].Name == rp.deceptionOptions[j][0].Name || rp.randomPool[i].Name == rp.deceptionOptions[j][1].Name || rp.randomPool[i].Name == rp.deceptionOptions[j][2].Name {
+				// Add but add a warning
+				currSide.Value += fmt.Sprintf("%s %s\n", discord.EmojiWarning, rp.randomPool[i].Name)
+				marked = true
+				break
+			}
+		}
+		if !marked {
+			currSide.Value += fmt.Sprintf("%s\n", rp.randomPool[i].Name)
 		}
 	}
-	msg := &discordgo.MessageEmbed{
-		Title:  "Role Assignment Preview",
-		Color:  discord.ColorThemeWhite,
-		Fields: append(deceptFields, remainderRoleFields...),
-	}
-	return msg
+	embed.Fields = append(embed.Fields, leftRolesField, rightRolesField)
+	return embed
 }
 
 // Will group list of roles into sub list of roles based off alignment
@@ -176,4 +188,10 @@ func groupRoles(r []*data.Role) (goodRoles []*data.Role, badRoles []*data.Role, 
 	}
 	// WARNING: Hahahahaha why the hell does Go have naked returns this is so goofy
 	return
+}
+
+// TODO: Find me a better home :(
+func randomSliceElement[T any](s []T) T {
+	n := rand.Int() % len(s)
+	return s[n]
 }

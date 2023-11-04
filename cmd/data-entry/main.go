@@ -67,12 +67,12 @@ func main() {
 	}
 	defer file.Close()
 
-	// CreateRolls(file, app)
+	CreateRolls(file, app, "EVIL")
 	// CreateItems(file, app)
 	// CreateAnyAbilities(file, app)
 }
 
-func CreateRolls(file *os.File, app *application) {
+func CreateRolls(file *os.File, app *application, alignment string) {
 	csvReader := csv.NewReader(file)
 	records, err := csvReader.ReadAll()
 	if err != nil {
@@ -86,7 +86,6 @@ func CreateRolls(file *os.File, app *application) {
 	}
 	log.Println(len(csvRoles))
 
-	alignment := "EVIL"
 	for i, csvRole := range csvRoles {
 		if i == 0 {
 			continue
