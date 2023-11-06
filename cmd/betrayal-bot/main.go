@@ -123,8 +123,8 @@ func main() {
 	app.betrayalManager.Unregister()
 
 	tally := app.RegisterBetrayalCommands(
-		new(roll.Roll),
 		new(inventory.Inventory),
+		new(roll.Roll),
 		new(commands.ActionFunnel),
 		new(view.View),
 		new(commands.Buy),

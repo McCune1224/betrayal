@@ -207,7 +207,7 @@ func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
 	)
 }
 
-func (i *Inventory) setLuckLevel(ctx ken.SubCommandContext) (err error) {
+func (i *Inventory) setLuck(ctx ken.SubCommandContext) (err error) {
 	inv, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
