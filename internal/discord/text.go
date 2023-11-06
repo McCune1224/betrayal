@@ -41,6 +41,7 @@ const (
 	EmojiAlive      = Emoji("👼")
 	EmojiLuck       = Emoji("🍀")
 	EmojiRoll       = Emoji("🎲")
+	EmojiMail       = Emoji("📬")
 )
 
 // Hex colors / color themes

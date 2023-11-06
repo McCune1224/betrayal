@@ -165,20 +165,37 @@ func (a *Alliance) request(ctx ken.SubCommandContext) (err error) {
 }
 
 func (a *Alliance) invite(ctx ken.SubCommandContext) (err error) {
-	return discord.AlexError(ctx)
+	// This will more than likely take more than 3 seconds to complete.
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	target := ctx.Options().GetByName("user").UserValue(ctx)
+	s := ctx.GetSession()
+	e := ctx.GetEvent()
+	alliance, err := a.models.Alliances.GetRequestByOwnerID(e.Member.User.ID)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Unable to find alliance", "Are you sure you're the owner of an alliance?")
+	}
+	targetInv, err := a.models.Inventories.GetByDiscordID(target.ID)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx)
+	}
+	inviteMsg := &discordgo.MessageEmbed{
+		Title:       fmt.Sprintf("%s You have been invited to join %s %s", discord.EmojiMail, alliance.Name, discord.EmojiMail),
+		Description: fmt.Sprintf("To accept, type `/alliance accept %s`", alliance.Name),
+	}
+	_, err = s.ChannelMessageSendEmbed(targetInv.UserPinChannel, inviteMsg)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx)
+	}
+	return discord.SuccessfulMessage(ctx, "Invite Sent", fmt.Sprintf("Invite sent to %s", target.Username))
 }
 
 func (a *Alliance) accept(ctx ken.SubCommandContext) (err error) {
-	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		return discord.AlexError(ctx)
-	}
-	name := ctx.Options().GetByName("name")
-	log.Println(name)
-
-	return ctx.RespondMessage("TODO?")
-}
-
-func (a *Alliance) adminPending(ctx ken.SubCommandContext) (err error) {
 	return discord.AlexError(ctx)
 }
 

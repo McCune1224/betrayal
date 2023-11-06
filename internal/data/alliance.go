@@ -9,6 +9,7 @@ type Alliance struct {
 	ID        int            `db:"id"`
 	Name      string         `db:"name"`
 	OwnerID   string         `db:"owner_id"`
+	ChannelID string         `db:"channel_id"`
 	MemberIDs pq.StringArray `db:"member_ids"`
 }
 
@@ -52,6 +53,16 @@ func (am *AllianceModel) GetRequestByOwnerID(name string) (*AllianceRequest, err
 	return &req, nil
 }
 
+func (am *AllianceModel) GetAllRequests() ([]AllianceRequest, error) {
+	var reqs []AllianceRequest
+	query := `SELECT * FROM alliance_requests`
+	err := am.DB.Select(&reqs, query)
+	if err != nil {
+		return nil, err
+	}
+	return reqs, nil
+}
+
 func (am *AllianceModel) DeleteRequest(req *AllianceRequest) error {
 	query := `DELETE FROM alliance_requests WHERE id=$1`
 	_, err := am.DB.Exec(query, req.ID)
@@ -68,16 +79,6 @@ func (am *AllianceModel) DeleteRequestByName(name string) error {
 		return err
 	}
 	return nil
-}
-
-func (am *AllianceModel) GetAllRequests() ([]AllianceRequest, error) {
-	var reqs []AllianceRequest
-	query := `SELECT * FROM alliance_requests`
-	err := am.DB.Select(&reqs, query)
-	if err != nil {
-		return nil, err
-	}
-	return reqs, nil
 }
 
 func (am *AllianceModel) GetAlliances() ([]Alliance, error) {
@@ -113,4 +114,13 @@ func (am *AllianceModel) GetByMemberID(discordID string) (*Alliance, error) {
 		return nil, err
 	}
 	return &alliance, nil
+}
+
+func (am *AllianceModel) Insert(alliance *Alliance) error {
+	query := `INSERT INTO alliances ` + PSQLGeneratedInsert(alliance)
+	_, err := am.DB.NamedExec(query, &alliance)
+	if err != nil {
+		return err
+	}
+	return nil
 }
