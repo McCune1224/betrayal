@@ -6,10 +6,10 @@ import (
 )
 
 type Alliance struct {
-	ID      int            `db:"id"`
-	Name    string         `db:"name"`
-	OwnerID string         `db:"owner_id"`
-	Members pq.StringArray `db:"members"`
+	ID        int            `db:"id"`
+	Name      string         `db:"name"`
+	OwnerID   string         `db:"owner_id"`
+	MemberIDs pq.StringArray `db:"member_ids"`
 }
 
 type AllianceRequest struct {
@@ -33,7 +33,8 @@ func (am *AllianceModel) InsertRequest(req *AllianceRequest) error {
 
 func (am *AllianceModel) GetRequestByName(name string) (*AllianceRequest, error) {
 	var req AllianceRequest
-	query := `SELECT * FROM alliance_requests WHERE name=$1`
+	// Case insensitive search (ILIKE)
+	query := `SELECT * FROM alliance_requests WHERE name ILIKE $1`
 	err := am.DB.Get(&req, query, name)
 	if err != nil {
 		return nil, err
@@ -41,7 +42,17 @@ func (am *AllianceModel) GetRequestByName(name string) (*AllianceRequest, error)
 	return &req, nil
 }
 
-func (am *AbilityModel) DeleteRequest(req *AllianceRequest) error {
+func (am *AllianceModel) GetRequestByOwnerID(name string) (*AllianceRequest, error) {
+	var req AllianceRequest
+	query := `SELECT * FROM alliance_requests WHERE requester_id=$1`
+	err := am.DB.Get(&req, query, name)
+	if err != nil {
+		return nil, err
+	}
+	return &req, nil
+}
+
+func (am *AllianceModel) DeleteRequest(req *AllianceRequest) error {
 	query := `DELETE FROM alliance_requests WHERE id=$1`
 	_, err := am.DB.Exec(query, req.ID)
 	if err != nil {
@@ -50,7 +61,16 @@ func (am *AbilityModel) DeleteRequest(req *AllianceRequest) error {
 	return nil
 }
 
-func (am *AbilityModel) GetAllRequests() ([]AllianceRequest, error) {
+func (am *AllianceModel) DeleteRequestByName(name string) error {
+	query := `DELETE FROM alliance_requests WHERE name ILIKE $1`
+	_, err := am.DB.Exec(query, name)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (am *AllianceModel) GetAllRequests() ([]AllianceRequest, error) {
 	var reqs []AllianceRequest
 	query := `SELECT * FROM alliance_requests`
 	err := am.DB.Select(&reqs, query)
@@ -58,4 +78,39 @@ func (am *AbilityModel) GetAllRequests() ([]AllianceRequest, error) {
 		return nil, err
 	}
 	return reqs, nil
+}
+
+func (am *AllianceModel) GetAlliances() ([]Alliance, error) {
+	var alliances []Alliance
+	query := `SELECT * FROM alliances`
+	err := am.DB.Select(&alliances, query)
+	if err != nil {
+		return nil, err
+	}
+	return alliances, nil
+}
+
+func (am *AllianceModel) GetByName(name string) (*Alliance, error) {
+	var alliance Alliance
+	query := `SELECT * FROM alliances WHERE name ILIKE $1`
+	err := am.DB.Get(&alliance, query, name)
+	if err != nil {
+		return nil, err
+	}
+	return &alliance, nil
+}
+
+func (am *AllianceModel) GetByMemberID(discordID string) (*Alliance, error) {
+	var alliance Alliance
+	// need to check if any entry has the member id in the member_ids array
+	// the member_ids is stored in the psql db as a []varchar
+	// so we need to use the @> operator to check if the member id is in the array
+
+	foo := pq.StringArray{discordID}
+	query := `SELECT * FROM alliances WHERE member_ids @> $1`
+	err := am.DB.Get(&alliance, query, foo)
+	if err != nil {
+		return nil, err
+	}
+	return &alliance, nil
 }

@@ -214,7 +214,6 @@ func (af *ActionFunnel) request(ctx ken.SubCommandContext) (err error) {
 	// maybe will do something else with this but code block gives nice formatting
 	// similar to that of what a logger would be...
 	actionLog = discord.Code(actionLog)
-
 	_, err = ctx.GetSession().ChannelMessageSend(funnelChannel.ChannelID, actionLog)
 	if err != nil {
 		log.Println(err)

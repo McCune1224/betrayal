@@ -135,6 +135,7 @@ func main() {
 		new(commands.Kill),
 		new(commands.Revive),
 		new(commands.Setup),
+		new(commands.Alliance),
 	)
 
 	app.betrayalManager.Session().AddHandler(logHandler)
