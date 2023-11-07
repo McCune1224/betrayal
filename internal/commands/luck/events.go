@@ -115,7 +115,7 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 				if len(currInv.Items) > currInv.ItemLimit {
 					newFooterMessage += fmt.Sprintf("\n %s inventory overflow [%d/%d] %s",
 						discord.EmojiWarning,
-						len(currInv.Items)-1,
+						len(currInv.Items),
 						currInv.ItemLimit,
 						discord.EmojiWarning,
 					)
@@ -132,7 +132,7 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 					log.Println(err)
 					return true
 				}
-				discord.SuccessfulMessage(sctx, "Processed Item Rain", fmt.Sprintf("Sent to %s", discord.MentionChannel(currInv.UserPinChannel)))
+				discord.SuccessfulMessage(sctx, "Item Rain Sent", fmt.Sprintf("Sent to %s", discord.MentionChannel(currInv.UserPinChannel)))
 				return true
 			}, true)
 			b.Add(discordgo.Button{
