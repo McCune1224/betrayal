@@ -50,16 +50,20 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 	pinMsg, err := ctx.GetSession().ChannelMessageSendEmbed(channelID, &inventoryCreateMsg)
 	if err != nil {
 		discord.ErrorMessage(ctx, "Failed to send message", err.Error())
+		// delete message
+		ctx.GetSession().ChannelMessageDelete(channelID, pinMsg.ID)
 		return err
 	}
 	roleAbilities, err := i.models.Roles.GetAbilities(role.ID)
 	if err != nil {
 		discord.ErrorMessage(ctx, "Failed to get Role Abilities", err.Error())
+		ctx.GetSession().ChannelMessageDelete(channelID, pinMsg.ID)
 		return err
 	}
 	rolePerks, err := i.models.Roles.GetPerks(role.ID)
 	if err != nil {
 		discord.ErrorMessage(ctx, "Failed to get Role Perks", err.Error())
+		ctx.GetSession().ChannelMessageDelete(channelID, pinMsg.ID)
 		return err
 	}
 	abilityNames := make([]string, len(roleAbilities))
@@ -105,6 +109,7 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 	if err != nil {
 		log.Println(err)
 		discord.ErrorMessage(ctx, "Alex is a bad programmer", "Failed to edit message")
+		ctx.GetSession().ChannelMessageDelete(channelID, pinMsg.ID)
 		return err
 	}
 	defaultInv.UserPinChannel = msg.ChannelID
@@ -113,6 +118,7 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 	if err != nil {
 		log.Println(err)
 		discord.ErrorMessage(ctx, "Alex is a bad programmer", "Failed to set Pinned Message")
+		ctx.GetSession().ChannelMessageDelete(channelID, pinMsg.ID)
 		return err
 	}
 	err = ctx.GetSession().ChannelMessagePin(channelID, pinMsg.ID)
