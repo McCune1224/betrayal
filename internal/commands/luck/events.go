@@ -57,10 +57,10 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 		})
 	}
 	footerMessage := ""
-	if len(inv.Items)+len(newItems) > inv.ItemLimit {
+	if len(inv.Items) > inv.ItemLimit {
 		footerMessage += fmt.Sprintf("\n %s inventory overflow [%d/%d] %s",
 			discord.EmojiWarning,
-			len(inv.Items)+len(newItems),
+			len(inv.Items),
 			inv.ItemLimit,
 			discord.EmojiWarning,
 		)
@@ -174,7 +174,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.ErrorMessage(
 			ctx,
-			"Failed to get ability",
+			"Failed to get random any ability",
 			"Alex is a bad programmer",
 		)
 	}
@@ -206,7 +206,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx)
 	}
 
-	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+	_, err = ctx.GetSession().ChannelMessageSendEmbed(inv.UserPinChannel, &discordgo.MessageEmbed{
 		Title: fmt.Sprintf("%s Power Drop Incoming %s", discord.EmojiItem, discord.EmojiItem),
 		Fields: []*discordgo.MessageEmbedField{
 			{
@@ -216,6 +216,11 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 			},
 		},
 	})
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to send message", "Could not find user confessional")
+	}
+	return discord.SuccessfulMessage(ctx, "Power Drop Sent", fmt.Sprintf("Sent to %s", discord.MentionChannel(inv.UserPinChannel)))
 }
 
 // Get 1 Random Item and 1 Random AA
@@ -294,7 +299,9 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 			"Alex is a bad programmer",
 		)
 	}
-	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+
+	// send to user pin channel
+	_, err = ctx.GetSession().ChannelMessageSendEmbed(inv.UserPinChannel, &discordgo.MessageEmbed{
 		Title: fmt.Sprintf("%s Care Package Incoming %s", discord.EmojiItem, discord.EmojiItem),
 		Fields: []*discordgo.MessageEmbedField{
 			{
@@ -309,4 +316,10 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 			},
 		},
 	})
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to send message", "Could not find user confessional")
+	}
+
+	return discord.SuccessfulMessage(ctx, "Care Package Sent", fmt.Sprintf("Sent to %s", discord.MentionChannel(inv.UserPinChannel)))
 }
