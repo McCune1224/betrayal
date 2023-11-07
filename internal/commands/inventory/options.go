@@ -448,8 +448,8 @@ func (i *Inventory) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "set", Run: i.setLuck},
 		}},
 		ken.SubCommandGroup{Name: "note", SubHandler: []ken.CommandHandler{
-			ken.SubCommandHandler{Name: "add", Run: i.addLuck},
-			ken.SubCommandHandler{Name: "remove", Run: i.removeLuck},
+			ken.SubCommandHandler{Name: "add", Run: i.addNote},
+			ken.SubCommandHandler{Name: "remove", Run: i.removeNote},
 		}},
 	)
 }
