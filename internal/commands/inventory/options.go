@@ -425,7 +425,7 @@ func (i *Inventory) Options() []*discordgo.ApplicationCommandOption {
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Name:        "note",
+					Name:        "remove",
 					Description: "remove a note by index number",
 					Options: []*discordgo.ApplicationCommandOption{
 						discord.IntCommandArg("index", "Index # to remove", true),
