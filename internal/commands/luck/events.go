@@ -404,26 +404,6 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 			})
 	})
 
-	// send to user pin channel
-	_, err = ctx.GetSession().ChannelMessageSendEmbed(inv.UserPinChannel, &discordgo.MessageEmbed{
-		Title: fmt.Sprintf("%s Care Package Incoming %s", discord.EmojiItem, discord.EmojiItem),
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   fmt.Sprintf("Item: %s (%s)", item.Name, item.Rarity),
-				Value:  item.Description,
-				Inline: true,
-			},
-			{
-				Name:   fmt.Sprintf("Any Ability: %s (%s)", aa.Name, aa.Rarity),
-				Value:  aa.Description,
-				Inline: true,
-			},
-		},
-	})
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(ctx, "Failed to send message", "Could not find user confessional")
-	}
-
-	return discord.SuccessfulMessage(ctx, "Care Package Sent", fmt.Sprintf("Sent to %s", discord.MentionChannel(inv.UserPinChannel)))
+	fum := b.Send()
+	return fum.Error
 }
