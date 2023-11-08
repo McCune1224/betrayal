@@ -88,11 +88,13 @@ func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
 
 	host := discord.IsAdminRole(ctx, discord.AdminRoles...)
 	embd := InventoryEmbedBuilder(inv, host)
-	err = ctx.RespondEmbed(embd)
-	if err != nil {
-		return err
+
+	// Edge case where if user is in their own confessional, make it public (helpful for admins)
+	e := ctx.GetEvent()
+	if e.ChannelID == inv.UserPinChannel && e.Member.User.ID == inv.DiscordID {
+		ctx.SetEphemeral(false)
 	}
-	return nil
+	return ctx.RespondEmbed(embd)
 }
 
 func (i *Inventory) delete(ctx ken.SubCommandContext) (err error) {

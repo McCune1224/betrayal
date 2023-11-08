@@ -67,9 +67,10 @@ func main() {
 	}
 	defer file.Close()
 
-	CreateRolls(file, app, "EVIL")
-	// CreateItems(file, app)
+	// CreateRolls(file, app, "EVIL")
 	// CreateAnyAbilities(file, app)
+	// CreateItems(file, app)
+	CreateStatuses(file, app)
 }
 
 func CreateRolls(file *os.File, app *application, alignment string) {
@@ -138,25 +139,25 @@ func CreateRolls(file *os.File, app *application, alignment string) {
 	}
 }
 
-func CreateItems(file *os.File, app *application) {
-	csvReader := csv.NewReader(file)
-	records, err := csvReader.ReadAll()
-	if err != nil {
-		log.Fatal(err)
-	}
-	var b csvBuilder
-	items, err := b.BuildItemCSV(records)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, item := range items {
-		_, err := app.models.Items.Insert(&item)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-}
+// func CreateItems(file *os.File, app *application) {
+// 	csvReader := csv.NewReader(file)
+// 	records, err := csvReader.ReadAll()
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	var b csvBuilder
+// 	items, err := b.BuildItemCSV(records)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+//
+// 	for _, item := range items {
+// 		_, err := app.models.Items.Insert(&item)
+// 		if err != nil {
+// 			log.Fatal(err)
+// 		}
+// 	}
+// }
 
 func CreateAnyAbilities(file *os.File, app *application) {
 	csvReader := csv.NewReader(file)
@@ -172,6 +173,51 @@ func CreateAnyAbilities(file *os.File, app *application) {
 
 	for _, aa := range anyAbilities {
 		err := app.models.Abilities.InsertAnyAbility(&aa)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+func CreateItems(file *os.File, app *application) {
+	csvReader := csv.NewReader(file)
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var b csvBuilder
+	items, err := b.BuildItemCSV(records)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tx := app.models.Items.DB.MustBegin()
+	for _, item := range items {
+		_, err := app.models.Items.Insert(&item)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// commit transaction here
+}
+
+func CreateStatuses(file *os.File, app *application) {
+	csvReader := csv.NewReader(file)
+	record, err := csvReader.ReadAll()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var b csvBuilder
+	statuses, err := b.BuildStatusCSV(record)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, status := range statuses {
+		_, err := app.models.Statuses.Insert(&status)
 		if err != nil {
 			log.Fatal(err)
 		}

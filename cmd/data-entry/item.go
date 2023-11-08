@@ -12,7 +12,7 @@ func (*csvBuilder) BuildItemCSV(csv [][]string) ([]data.Item, error) {
 	var items []data.Item
 	for i, entry := range csv {
 
-		if i == 0 || i == 1 || (i == len(csv)-1) {
+		if i == 0 || i == 1 {
 			continue
 		}
 
