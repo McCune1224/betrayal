@@ -250,7 +250,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 					return true
 				}
 
-				discord.SuccessfulMessage(sctx, "Item Rain Sent", fmt.Sprintf("Sent to %s", discord.MentionChannel(currInv.UserPinChannel)))
+				discord.SuccessfulMessage(sctx, "Power Drop Sent", fmt.Sprintf("Sent to %s", discord.MentionChannel(currInv.UserPinChannel)))
 				return true
 			}, true)
 			b.Add(discordgo.Button{

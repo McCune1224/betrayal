@@ -245,3 +245,29 @@ func (i *Inventory) setLuck(ctx ken.SubCommandContext) (err error) {
 		Color:       discord.ColorThemeGreen,
 	})
 }
+
+func (i *Inventory) setAllignment(ctx ken.SubCommandContext) (err error) {
+	allignmentChoices := []string{"GOOD", "NEUTRAL", "EVIL"}
+	allignmentArg := ctx.Options().GetByName("role").StringValue()
+	// fuzzy search user input to match available alignments
+	for _, v := range allignmentChoices {
+		if strings.EqualFold(v, allignmentArg) {
+			allignmentArg = v
+			break
+		}
+	}
+	inv, err := Fetch(ctx, i.models, true)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
+
+	inv.Alignment = allignmentArg
+	err = i.models.Inventories.UpdateProperty(inv, "alignment", allignmentArg)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx)
+	}
+	UpdateInventoryMessage(ctx, inv)
+	return discord.SuccessfulMessage(ctx, "Alignment updated", fmt.Sprintf("Set alignment to %s", allignmentArg))
+}

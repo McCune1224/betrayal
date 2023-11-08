@@ -1,12 +1,41 @@
 package inventory
 
 import (
+	"log"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
 )
 
-func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
+func (i *Inventory) Options() []*discordgo.ApplicationCommandOption {
+	statusChoices := []*discordgo.ApplicationCommandOptionChoice{}
+	statuses, err := i.models.Statuses.GetAll()
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	for _, status := range statuses {
+		statusChoices = append(statusChoices, &discordgo.ApplicationCommandOptionChoice{
+			Name:  status.Name,
+			Value: status.Name,
+		})
+	}
+
+	alignmentChoices := []*discordgo.ApplicationCommandOptionChoice{
+		{
+			Name:  "Good",
+			Value: "GOOD",
+		}, {
+			Name:  "Evil",
+			Value: "EVIL",
+		}, {
+			Name:  "Neutral",
+			Value: "NEUTRAL",
+		},
+	}
+
 	return []*discordgo.ApplicationCommandOption{
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -196,6 +225,7 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 						discord.StringCommandArg("name", "add a status", true),
 						discord.UserCommandArg(false),
 					},
+					Choices: statusChoices,
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -365,6 +395,22 @@ func (*Inventory) Options() []*discordgo.ApplicationCommandOption {
 		},
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+			Name:        "alignment",
+			Description: "set the alignment of a player",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "set",
+					Description: "set the alignment of a player",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("name", "alignment type", true),
+					},
+					Choices: alignmentChoices,
+				},
+			},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
 			Name:        "note",
 			Description: "add or remove a note",
 			Options: []*discordgo.ApplicationCommandOption{
@@ -450,6 +496,9 @@ func (i *Inventory) Run(ctx ken.Context) (err error) {
 		ken.SubCommandGroup{Name: "note", SubHandler: []ken.CommandHandler{
 			ken.SubCommandHandler{Name: "add", Run: i.addNote},
 			ken.SubCommandHandler{Name: "remove", Run: i.removeNote},
+		}},
+		ken.SubCommandGroup{Name: "allignment", SubHandler: []ken.CommandHandler{
+			ken.SubCommandHandler{Name: "set", Run: i.setAllignment},
 		}},
 	)
 }
