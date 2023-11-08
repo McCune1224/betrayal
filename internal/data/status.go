@@ -42,7 +42,9 @@ func (sm *StatusModel) Get(id int64) (*Status, error) {
 func (sm *StatusModel) GetByName(name string) (*Status, error) {
 	var status Status
 
-	err := sm.DB.Get(&status, "SELECT * FROM statuses WHERE name ILIKE $1", name)
+	// Fuzzy search for status name example "lukcy" will match "lucky"
+	query := `SELECT * FROM statuses WHERE name ILIKE '%' || $1 || '%'`
+	err := sm.DB.Get(&status, query, name)
 	if err != nil {
 		return nil, err
 	}

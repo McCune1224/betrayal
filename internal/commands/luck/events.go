@@ -179,34 +179,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 
-	if aa.RoleSpecific == inv.RoleName {
-		ab, err := r.models.Abilities.GetByName(aa.RoleSpecific)
-		if err != nil {
-			log.Println(err)
-			return discord.AlexError(ctx)
-		}
-		inventory.UpsertAbility(inv, ab)
-		err = r.models.Inventories.UpdateAbilities(inv)
-		if err != nil {
-			log.Println(err)
-			return discord.AlexError(ctx)
-		}
-	} else {
-		inventory.UpsertAA(inv, aa)
-		err = r.models.Inventories.UpdateAnyAbilities(inv)
-		if err != nil {
-			log.Println(err)
-			return discord.AlexError(ctx)
-		}
-	}
-
-	err = inventory.UpdateInventoryMessage(ctx, inv)
-	if err != nil {
-		log.Println(err)
-		return discord.AlexError(ctx)
-	}
-
-	_, err = ctx.GetSession().ChannelMessageSendEmbed(inv.UserPinChannel, &discordgo.MessageEmbed{
+	embedPowerDrop := &discordgo.MessageEmbed{
 		Title: fmt.Sprintf("%s Power Drop Incoming %s", discord.EmojiItem, discord.EmojiItem),
 		Fields: []*discordgo.MessageEmbedField{
 			{
@@ -215,12 +188,82 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 				Inline: true,
 			},
 		},
-	})
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(ctx, "Failed to send message", "Could not find user confessional")
 	}
-	return discord.SuccessfulMessage(ctx, "Power Drop Sent", fmt.Sprintf("Sent to %s", discord.MentionChannel(inv.UserPinChannel)))
+	b := ctx.FollowUpEmbed(embedPowerDrop)
+
+	// WARNING:
+	// ctx gets redeclared in button component, so need to save it here
+	// Im sure this closure will come back to haunt me...Too Bad!
+	sctx := ctx
+	b.AddComponents(func(cb *ken.ComponentBuilder) {
+		cb.AddActionsRow(func(b ken.ComponentAssembler) {
+			b.Add(discordgo.Button{
+				Style:    discordgo.SuccessButton,
+				CustomID: "confirm-power-drop",
+				Label:    "Confirm",
+			}, func(ctx ken.ComponentContext) bool {
+				// rare occurance where inbetween this accepting if the inventory is updated the item list is not updated
+				// so re-process the current item list and add the new items
+				currInv, err := inventory.Fetch(sctx, r.models, true)
+				if err != nil {
+					log.Println(err)
+					return true
+				}
+				if aa.RoleSpecific == currInv.RoleName {
+					ab, err := r.models.Abilities.GetByName(aa.RoleSpecific)
+					if err != nil {
+						log.Println(err)
+						return true
+					}
+					inventory.UpsertAbility(currInv, ab)
+					err = r.models.Inventories.UpdateAbilities(currInv)
+					if err != nil {
+						log.Println(err)
+						discord.AlexError(sctx)
+						return true
+					}
+				} else {
+					inventory.UpsertAA(currInv, aa)
+					err = r.models.Inventories.UpdateAnyAbilities(currInv)
+					if err != nil {
+						log.Println(err)
+						discord.AlexError(sctx)
+						return true
+					}
+				}
+				inventory.UpdateInventoryMessage(sctx, currInv)
+				_, err = ctx.GetSession().ChannelMessageSendEmbed(currInv.UserPinChannel, embedPowerDrop)
+				if err != nil {
+					log.Println(err)
+					discord.AlexError(sctx)
+					return true
+				}
+				_, err = ctx.GetSession().ChannelMessageSendEmbed(inv.UserPinChannel, embedPowerDrop)
+				if err != nil {
+					log.Println(err)
+					discord.ErrorMessage(sctx, "Failed to send message", "Could not find user confessional")
+					return true
+				}
+
+				discord.SuccessfulMessage(sctx, "Item Rain Sent", fmt.Sprintf("Sent to %s", discord.MentionChannel(currInv.UserPinChannel)))
+				return true
+			}, true)
+			b.Add(discordgo.Button{
+				Style:    discordgo.DangerButton,
+				CustomID: "decline-power-drop",
+				Label:    "Decline",
+			},
+				func(ctx ken.ComponentContext) bool {
+					discord.SuccessfulMessage(sctx, fmt.Sprintf("Declined Power Drop for %s", discord.MentionChannel(inv.UserPinChannel)), fmt.Sprintf("declined by %s", ctx.User().Username))
+					return true
+				}, true)
+		}, true).
+			Condition(func(cctx ken.ComponentContext) bool {
+				return true
+			})
+	})
+	fum := b.Send()
+	return fum.Error
 }
 
 // Get 1 Random Item and 1 Random AA
@@ -257,39 +300,6 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 
-	if aa.RoleSpecific == inv.RoleName {
-		ab, err := r.models.Abilities.GetByName(aa.RoleSpecific)
-		if err != nil {
-			log.Println(err)
-			return discord.AlexError(ctx)
-		}
-		inventory.UpsertAbility(inv, ab)
-		err = r.models.Inventories.UpdateAbilities(inv)
-		if err != nil {
-			log.Println(err)
-			return discord.AlexError(ctx)
-		}
-
-	} else {
-		inventory.UpsertAA(inv, aa)
-		err = r.models.Inventories.UpdateAnyAbilities(inv)
-		if err != nil {
-			log.Println(err)
-			return discord.AlexError(ctx)
-		}
-	}
-
-	inv.Items = append(inv.Items, item.Name)
-	err = r.models.Inventories.UpdateItems(inv)
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update inventory",
-			"Alex is a bad programmer",
-		)
-	}
-
 	err = inventory.UpdateInventoryMessage(ctx, inv)
 	if err != nil {
 		log.Println(err)
@@ -299,6 +309,100 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 			"Alex is a bad programmer",
 		)
 	}
+
+	embedCarePackage := &discordgo.MessageEmbed{
+		Title: fmt.Sprintf("%s Care Package Incoming %s", discord.EmojiItem, discord.EmojiItem),
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:   fmt.Sprintf("Item: %s (%s)", item.Name, item.Rarity),
+				Value:  item.Description,
+				Inline: true,
+			},
+			{
+				Name:   fmt.Sprintf("Any Ability: %s (%s)", aa.Name, aa.Rarity),
+				Value:  aa.Description,
+				Inline: true,
+			},
+		},
+	}
+	b := ctx.FollowUpEmbed(embedCarePackage)
+
+	// WARNING:
+	// ctx gets redeclared in button component, so need to save it here
+	// Im sure this closure will come back to haunt me...Too Bad!
+	sctx := ctx
+	b.AddComponents(func(cb *ken.ComponentBuilder) {
+		cb.AddActionsRow(func(b ken.ComponentAssembler) {
+			b.Add(discordgo.Button{
+				Style:    discordgo.SuccessButton,
+				CustomID: "confirm-care-package",
+				Label:    "Confirm",
+			}, func(ctx ken.ComponentContext) bool {
+				// rare occurance where inbetween this accepting if the inventory is updated the item list is not updated
+				// so re-process the current item list and add the new items
+				currInv, err := inventory.Fetch(sctx, r.models, true)
+				if err != nil {
+					log.Println(err)
+					return true
+				}
+				if aa.RoleSpecific == currInv.RoleName {
+					ab, err := r.models.Abilities.GetByName(aa.RoleSpecific)
+					if err != nil {
+						log.Println(err)
+						discord.AlexError(sctx)
+						return true
+					}
+					inventory.UpsertAbility(currInv, ab)
+					err = r.models.Inventories.UpdateAbilities(currInv)
+					if err != nil {
+						log.Println(err)
+						discord.AlexError(sctx)
+						return true
+					}
+
+				} else {
+					inventory.UpsertAA(currInv, aa)
+					err = r.models.Inventories.UpdateAnyAbilities(currInv)
+					if err != nil {
+						log.Println(err)
+						discord.AlexError(sctx)
+						return true
+					}
+				}
+
+				currInv.Items = append(currInv.Items, item.Name)
+				err = r.models.Inventories.UpdateItems(currInv)
+				if err != nil {
+					log.Println(err)
+					discord.AlexError(sctx)
+					return true
+				}
+
+				inventory.UpdateInventoryMessage(sctx, currInv)
+				_, err = ctx.GetSession().ChannelMessageSendEmbed(inv.UserPinChannel, embedCarePackage)
+				if err != nil {
+					log.Println(err)
+					discord.ErrorMessage(sctx, "Failed to send message", "Could not find user confessional")
+					return true
+				}
+
+				discord.SuccessfulMessage(sctx, "Care Package sent", fmt.Sprintf("Sent to %s", discord.MentionChannel(currInv.UserPinChannel)))
+				return true
+			}, true)
+			b.Add(discordgo.Button{
+				Style:    discordgo.DangerButton,
+				CustomID: "decline-care-package",
+				Label:    "Decline",
+			},
+				func(ctx ken.ComponentContext) bool {
+					discord.SuccessfulMessage(sctx, fmt.Sprintf("Declined Power Drop for %s", discord.MentionChannel(inv.UserPinChannel)), fmt.Sprintf("declined by %s", ctx.User().Username))
+					return true
+				}, true)
+		}, true).
+			Condition(func(cctx ken.ComponentContext) bool {
+				return true
+			})
+	})
 
 	// send to user pin channel
 	_, err = ctx.GetSession().ChannelMessageSendEmbed(inv.UserPinChannel, &discordgo.MessageEmbed{
