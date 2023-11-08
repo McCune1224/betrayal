@@ -132,7 +132,8 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 					log.Println(err)
 					return true
 				}
-				discord.SuccessfulMessage(sctx, "Item Rain Sent", fmt.Sprintf("Sent to %s", discord.MentionChannel(currInv.UserPinChannel)))
+				discord.SuccessfulMessage(sctx, fmt.Sprintf("Item Rain Sent to %s", discord.MentionChannel(currInv.UserPinChannel)),
+					fmt.Sprintf("Approved by %s", ctx.User().Username))
 				return true
 			}, true)
 			b.Add(discordgo.Button{
@@ -141,7 +142,8 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 				Label:    "Decline",
 			},
 				func(ctx ken.ComponentContext) bool {
-					discord.SuccessfulMessage(sctx, fmt.Sprintf("Declined Item Rain for %s", discord.MentionChannel(inv.UserPinChannel)), fmt.Sprintf("declined by %s", ctx.User().Username))
+					discord.SuccessfulMessage(sctx, fmt.Sprintf("Declined Item Rain for %s", discord.MentionChannel(inv.UserPinChannel)),
+						fmt.Sprintf("Declined by %s", ctx.User().Username))
 					return true
 				}, true)
 		}, true).
@@ -250,7 +252,8 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 					return true
 				}
 
-				discord.SuccessfulMessage(sctx, "Power Drop Sent", fmt.Sprintf("Sent to %s", discord.MentionChannel(currInv.UserPinChannel)))
+				discord.SuccessfulMessage(sctx, fmt.Sprintf("Power Drop Sent to %s", discord.MentionChannel(currInv.UserPinChannel)),
+					fmt.Sprintf("Approved by %s", ctx.User().Username))
 				return true
 			}, true)
 			b.Add(discordgo.Button{
@@ -259,7 +262,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 				Label:    "Decline",
 			},
 				func(ctx ken.ComponentContext) bool {
-					discord.SuccessfulMessage(sctx, fmt.Sprintf("Declined Power Drop for %s", discord.MentionChannel(inv.UserPinChannel)), fmt.Sprintf("declined by %s", ctx.User().Username))
+					discord.SuccessfulMessage(sctx, fmt.Sprintf("Declined Power Drop for %s", discord.MentionChannel(inv.UserPinChannel)), fmt.Sprintf("Declined by %s", ctx.User().Username))
 					return true
 				}, true)
 		}, true).
@@ -396,7 +399,8 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 					return true
 				}
 
-				discord.SuccessfulMessage(sctx, "Care Package sent", fmt.Sprintf("Sent to %s", discord.MentionChannel(currInv.UserPinChannel)))
+				discord.SuccessfulMessage(sctx, fmt.Sprintf("Care Package Sent to %s", discord.MentionChannel(currInv.UserPinChannel)),
+					fmt.Sprintf("Approved by %s", ctx.User().Username))
 				return true
 			}, true)
 			b.Add(discordgo.Button{
@@ -405,7 +409,7 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 				Label:    "Decline",
 			},
 				func(ctx ken.ComponentContext) bool {
-					discord.SuccessfulMessage(sctx, fmt.Sprintf("Declined Power Drop for %s", discord.MentionChannel(inv.UserPinChannel)), fmt.Sprintf("declined by %s", ctx.User().Username))
+					discord.SuccessfulMessage(sctx, fmt.Sprintf("Declined Power Drop for %s", discord.MentionChannel(inv.UserPinChannel)), fmt.Sprintf("Declined by %s", ctx.User().Username))
 					return true
 				}, true)
 		}, true).
