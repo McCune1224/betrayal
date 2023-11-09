@@ -163,7 +163,9 @@ func roleInventoryBuilder(initInv *data.Inventory) *data.Inventory {
 		// Due to perk Winter Coat
 		inv.Immunities = pq.StringArray{"Frozen"}
 
-	// Neutral Roles
+		// Neutral Roles
+	case "cyborg":
+		inv.Immunities = pq.StringArray{"Paralyzed", "Frozen", "Burned", "Despaired", "Blackmailed", "Drunk"}
 	case "entertainer":
 		// Due to perk Top-Hat Tip
 		inv.Immunities = pq.StringArray{"Unlucky"}

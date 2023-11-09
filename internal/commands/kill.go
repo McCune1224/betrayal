@@ -171,7 +171,7 @@ func (k *Kill) killLocation(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		discord.AlexError(ctx)
 	}
-	return err
+	return discord.SuccessfulMessage(ctx, "Hitlist Location Set", fmt.Sprintf("Hitlist location set to %s", channel.Mention()))
 }
 
 func HitListBuilder(invs []data.Inventory, s *discordgo.Session) *discordgo.MessageEmbed {
