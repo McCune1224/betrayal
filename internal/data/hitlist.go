@@ -12,7 +12,8 @@ type HitlistModel struct {
 	DB *sqlx.DB
 }
 
-func (hl *HitlistModel) Insert(h *Hitlist) (int64, error) {
+// Inserts hitlist entry and removes any existing hitlist entry
+func (hl *HitlistModel) Upsert(h *Hitlist) (int64, error) {
 	hl.DB.Exec("DELETE FROM hitlist")
 
 	query := `INSERT INTO hitlist (pin_channel, pin_message) VALUES ($1, $2) RETURNING id`

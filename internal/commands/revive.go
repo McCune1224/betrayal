@@ -54,6 +54,10 @@ func (r *Revive) Run(ctx ken.Context) (err error) {
 }
 
 func (r *Revive) normRevive(ctx ken.SubCommandContext) (err error) {
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	// type cast ctx to subcommand context
 	inv, err := inventory.Fetch(ctx, r.models, true)
 	if err != nil {

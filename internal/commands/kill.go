@@ -64,8 +64,9 @@ func (k *Kill) Run(ctx ken.Context) (err error) {
 
 // Run implements ken.SlashCommand.
 func (k *Kill) killNorm(ctx ken.SubCommandContext) (err error) {
-	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		return discord.NotAuthorizedError(ctx)
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
 	}
 	// type cast ctx to subcommand context
 	inv, err := inventory.Fetch(ctx, k.models, true)
@@ -81,6 +82,7 @@ func (k *Kill) killNorm(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx)
 	}
 
+	inv.IsAlive = false
 	err = inventory.UpdateInventoryMessage(ctx, inv)
 	if err != nil {
 		log.Println(err)
@@ -123,8 +125,9 @@ func (k *Kill) killLocation(ctx ken.SubCommandContext) (err error) {
 
 	channel := ctx.Options().GetByName("channel").ChannelValue(ctx)
 	hitlistCreateMsg := discordgo.MessageEmbed{
-		Title: "THE HITLIST IS ON THE WAY",
+		Title: "Building Player Status Board",
 	}
+
 	pinMsg, err := ctx.GetSession().ChannelMessageSendEmbed(channel.ID, &hitlistCreateMsg)
 	if err != nil {
 		log.Println(err)
@@ -137,17 +140,28 @@ func (k *Kill) killLocation(ctx ken.SubCommandContext) (err error) {
 	}
 
 	embd := HitListBuilder(invs, ctx.GetSession())
+
 	msg, err := ctx.GetSession().ChannelMessageEditEmbed(channel.ID, pinMsg.ID, embd)
 	if err != nil {
 		log.Print(err)
 		discord.AlexError(ctx)
 	}
 
+	currHitlist, _ := k.models.Hitlists.Get()
+	if currHitlist != nil {
+		// Incase there is already a hitlist, delete the currently pinned message
+		err = ctx.GetSession().ChannelMessageDelete(currHitlist.PinChannel, currHitlist.PinMessage)
+		if err != nil {
+			log.Println(err)
+			return discord.ErrorMessage(ctx, "Failed to delete old hitlist", "Please delete the old hitlist manually and try again")
+		}
+	}
+
 	hitlist := data.Hitlist{
 		PinChannel: channel.ID,
 		PinMessage: msg.ID,
 	}
-	_, err = k.models.Hitlists.Insert(&hitlist)
+	_, err = k.models.Hitlists.Upsert(&hitlist)
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx)
