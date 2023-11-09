@@ -439,7 +439,7 @@ func (i *Inventory) addCoinBonus(ctx ken.SubCommandContext) (err error) {
 	}
 
 	inventory.CoinBonus += (float32(fCoinBonusArg) / 100)
-	err = i.models.Inventories.Update(inventory)
+	err = i.models.Inventories.UpdateProperty(inventory, "coin_bonus", inventory.CoinBonus)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(

@@ -131,7 +131,8 @@ func RollLuck(level float64, roll float64) string {
 		return "mythical"
 	}
 
-	return fmt.Sprintf("EDGE CASE AT ROLL %v", roll)
+	// Anything above like 397 is just mythical so just return that
+	return "mythical"
 }
 
 // display chances of each type at a given level

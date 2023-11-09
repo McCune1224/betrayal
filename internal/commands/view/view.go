@@ -151,7 +151,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 	nameArg := ctx.Options().GetByName("name").StringValue()
 	ability, err := v.models.Abilities.GetByName(nameArg)
 	if err != nil {
-		discord.SuccessfulMessage(ctx,
+		discord.ErrorMessage(ctx,
 			"Error Finding Ability",
 			fmt.Sprintf("Unable to find Ability: %s", nameArg),
 		)
