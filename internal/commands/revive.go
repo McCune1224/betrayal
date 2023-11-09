@@ -100,7 +100,7 @@ func (r *Revive) normRevive(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx)
 	}
 
-	return discord.SuccessfulMessage(ctx, "Revived", fmt.Sprintf("%s no longer gotted", user.Username))
+	return discord.SuccessfulMessage(ctx, "Revived", fmt.Sprintf("%s is marked alive", user.Username))
 }
 
 // Version implements ken.SlashCommand.

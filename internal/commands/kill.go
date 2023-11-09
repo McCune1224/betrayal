@@ -47,7 +47,7 @@ func (*Kill) Options() []*discordgo.ApplicationCommandOption {
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "location",
-			Description: "set kill list location",
+			Description: "set kill player list location",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.ChannelCommandArg(true),
 			},
@@ -100,6 +100,7 @@ func (k *Kill) killNorm(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.AlexError(ctx)
 	}
+
 	hitlist, err := k.models.Hitlists.Get()
 	if err != nil {
 		log.Println(err)
@@ -112,7 +113,7 @@ func (k *Kill) killNorm(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx)
 	}
 
-	return discord.SuccessfulMessage(ctx, "Dedded", fmt.Sprintf("%s got gotted", user.Username))
+	return discord.SuccessfulMessage(ctx, "Player Killed", fmt.Sprintf("%s is marked dead", user.Username))
 }
 
 func (k *Kill) killLocation(ctx ken.SubCommandContext) (err error) {
