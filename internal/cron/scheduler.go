@@ -19,7 +19,8 @@ type BetrayalScheduler struct {
 
 func NewScheduler() *BetrayalScheduler {
 	return &BetrayalScheduler{
-		s: gocron.NewScheduler(time.UTC),
+		s:    gocron.NewScheduler(time.UTC),
+		jobs: make(map[string]*gocron.Job),
 	}
 }
 
