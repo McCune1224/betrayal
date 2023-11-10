@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-co-op/gocron"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -16,7 +17,8 @@ import (
 )
 
 type Roll struct {
-	models data.Models
+	models    data.Models
+	scheduler *gocron.Scheduler
 }
 
 var _ ken.SlashCommand = (*Roll)(nil)
@@ -301,8 +303,9 @@ func (*Roll) Version() string {
 	return "1.0.0"
 }
 
-func (r *Roll) SetModels(models data.Models) {
-	r.models = models
+func (r *Roll) Initialize(m data.Models, s *gocron.Scheduler) {
+	r.models = m
+	r.scheduler = s
 }
 
 // Helper to get a random ability. If it is not an any ability, need to check to

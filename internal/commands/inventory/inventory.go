@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-co-op/gocron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/util"
@@ -34,7 +35,8 @@ var optional = discordgo.ApplicationCommandOption{
 }
 
 type Inventory struct {
-	models data.Models
+	models    data.Models
+	scheduler *gocron.Scheduler
 }
 
 // Components implements main.BetrayalCommand.
@@ -48,8 +50,9 @@ func (i *Inventory) Type() discordgo.ApplicationCommandType {
 	return discordgo.ChatApplicationCommand
 }
 
-func (i *Inventory) SetModels(models data.Models) {
-	i.models = models
+func (i *Inventory) Initialize(m data.Models, s *gocron.Scheduler) {
+	i.models = m
+	i.scheduler = s
 }
 
 // Description implements ken.SlashCommand.
@@ -87,12 +90,16 @@ func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
 	}
 
 	host := discord.IsAdminRole(ctx, discord.AdminRoles...)
-	embd := InventoryEmbedBuilder(inv, host)
+	// embd := InventoryEmbedBuilder(inv, host)
+	embd := &discordgo.MessageEmbed{}
 
 	// Edge case where if user is in their own confessional, make it public (helpful for admins)
 	e := ctx.GetEvent()
-	if e.ChannelID == inv.UserPinChannel && e.Member.User.ID == inv.DiscordID {
+	if e.ChannelID == inv.UserPinChannel {
 		ctx.SetEphemeral(false)
+		embd = InventoryEmbedBuilder(inv, false)
+	} else {
+		embd = InventoryEmbedBuilder(inv, host)
 	}
 	return ctx.RespondEmbed(embd)
 }

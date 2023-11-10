@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-co-op/gocron"
 	cmdInv "github.com/mccune1224/betrayal/internal/commands/inventory"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -13,11 +14,13 @@ import (
 )
 
 type Buy struct {
-	models data.Models
+	models    data.Models
+	scheduler *gocron.Scheduler
 }
 
-func (b *Buy) SetModels(models data.Models) {
+func (b *Buy) Initialize(models data.Models, scheduler *gocron.Scheduler) {
 	b.models = models
+	b.scheduler = scheduler
 }
 
 var _ ken.SlashCommand = (*Buy)(nil)

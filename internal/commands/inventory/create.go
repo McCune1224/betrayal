@@ -38,7 +38,7 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 	// Make sure role exists before creating inventory
 	role, err := i.models.Roles.GetByName(roleArg)
 	if err != nil {
-		discord.ErrorMessage(ctx, "Failed to get Role", err.Error())
+		discord.ErrorMessage(ctx, "Failed to get Role", fmt.Sprintf("Cannot find role %s", roleArg))
 		return err
 	}
 

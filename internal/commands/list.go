@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-co-op/gocron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
@@ -30,11 +31,13 @@ var (
 )
 
 type List struct {
-	models data.Models
+	models    data.Models
+	scheduler *gocron.Scheduler
 }
 
-func (l *List) SetModels(models data.Models) {
+func (l *List) Initialize(models data.Models, scheduler *gocron.Scheduler) {
 	l.models = models
+	l.scheduler = scheduler
 }
 
 var _ ken.SlashCommand = (*List)(nil)

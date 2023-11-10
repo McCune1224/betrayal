@@ -30,7 +30,6 @@ func (im *InsultModel) GetRandom() (*Insult, error) {
 }
 
 func (im *InsultModel) Insert(i *Insult) error {
-
 	query := "INSERT INTO insults " + PSQLGeneratedInsert(i)
 
 	_, err := im.DB.NamedExec(query, &i)
@@ -51,6 +50,5 @@ func (im *InsultModel) DeleteInsult(i *Insult) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }

@@ -5,13 +5,21 @@ import (
 	"log"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-co-op/gocron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
 )
 
 type Vote struct {
-	models data.Models
+	models    data.Models
+	scheduler *gocron.Scheduler
+}
+
+// Initialize implements main.BetrayalCommand.
+func (v *Vote) Initialize(models data.Models, scheduler *gocron.Scheduler) {
+	v.models = models
+	v.scheduler = scheduler
 }
 
 var _ ken.SlashCommand = (*Vote)(nil)
@@ -115,8 +123,4 @@ func (v *Vote) location(ctx ken.SubCommandContext) (err error) {
 // Version implements ken.SlashCommand.
 func (*Vote) Version() string {
 	return "1.0.0"
-}
-
-func (v *Vote) SetModels(models data.Models) {
-	v.models = models
 }

@@ -6,17 +6,20 @@ import (
 	"math/rand"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-co-op/gocron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
 )
 
 type Setup struct {
-	models data.Models
+	models    data.Models
+	scheduler *gocron.Scheduler
 }
 
-func (s *Setup) SetModels(models data.Models) {
+func (s *Setup) Initialize(models data.Models, scheduler *gocron.Scheduler) {
 	s.models = models
+	s.scheduler = scheduler
 }
 
 var _ ken.SlashCommand = (*Setup)(nil)

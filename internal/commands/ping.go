@@ -5,18 +5,20 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-co-op/gocron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
 )
 
 type Ping struct {
-	models data.Models
+	models    data.Models
+	scheduler *gocron.Scheduler
 }
 
-
-func (p *Ping) SetModels(models data.Models) {
+func (p *Ping) Initialize(models data.Models, scheduler *gocron.Scheduler) {
 	p.models = models
+	p.scheduler = scheduler
 }
 
 var _ ken.SlashCommand = (*Ping)(nil)

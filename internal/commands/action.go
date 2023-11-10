@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-co-op/gocron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/util"
@@ -12,13 +13,15 @@ import (
 )
 
 type ActionFunnel struct {
-	models data.Models
+	models    data.Models
+	scheduler *gocron.Scheduler
 }
 
 var _ ken.SlashCommand = (*ActionFunnel)(nil)
 
-func (a *ActionFunnel) SetModels(models data.Models) {
+func (a *ActionFunnel) Initialize(models data.Models, scheduler *gocron.Scheduler) {
 	a.models = models
+	a.scheduler = scheduler
 }
 
 // Description implements ken.SlashCommand.
