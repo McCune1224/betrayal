@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/go-co-op/gocron"
+	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
@@ -14,13 +14,13 @@ import (
 
 type Test struct {
 	models    data.Models
-	scheduler *gocron.Scheduler
+	scheduler *cron.BetrayalScheduler
 }
 
 var _ ken.SlashCommand = (*Test)(nil)
 
 // Initialize implements BetrayalCommand.
-func (t *Test) Initialize(m data.Models, s *gocron.Scheduler) {
+func (t *Test) Initialize(m data.Models, s *cron.BetrayalScheduler) {
 	t.models = m
 	t.scheduler = s
 }
@@ -74,7 +74,7 @@ func (t *Test) testTimer(ctx ken.SubCommandContext) (err error) {
 	// Do care? No
 	// Anon functions are fun
 	job := func() { sendMessageTask(ctx.GetSession(), ctx.GetEvent(), taskArg) }
-	_, err = t.scheduler.Every(timeDur).WaitForSchedule().LimitRunsTo(1).Do(job)
+	err = t.scheduler.UpsertJob(time.Now().String(), timeDur, job)
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx)

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/go-co-op/gocron"
+	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
@@ -13,10 +13,10 @@ import (
 
 type Ping struct {
 	models    data.Models
-	scheduler *gocron.Scheduler
+	scheduler *cron.BetrayalScheduler
 }
 
-func (p *Ping) Initialize(models data.Models, scheduler *gocron.Scheduler) {
+func (p *Ping) Initialize(models data.Models, scheduler *cron.BetrayalScheduler) {
 	p.models = models
 	p.scheduler = scheduler
 }

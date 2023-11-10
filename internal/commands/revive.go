@@ -6,8 +6,8 @@ import (
 	"log"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/go-co-op/gocron"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
+	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
@@ -15,10 +15,10 @@ import (
 
 type Revive struct {
 	models    data.Models
-	scheduler *gocron.Scheduler
+	scheduler *cron.BetrayalScheduler
 }
 
-func (r *Revive) Initialize(models data.Models, scheduler *gocron.Scheduler) {
+func (r *Revive) Initialize(models data.Models, scheduler *cron.BetrayalScheduler) {
 	r.models = models
 	r.scheduler = scheduler
 }

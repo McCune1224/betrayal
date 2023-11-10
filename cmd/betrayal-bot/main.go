@@ -6,10 +6,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/go-co-op/gocron"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv/autoload"
@@ -18,6 +16,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
 	roll "github.com/mccune1224/betrayal/internal/commands/luck"
 	"github.com/mccune1224/betrayal/internal/commands/view"
+	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/util"
@@ -41,7 +40,7 @@ type config struct {
 type app struct {
 	models          data.Models
 	logger          *log.Logger
-	scheduler       *gocron.Scheduler
+	scheduler       cron.BetrayalScheduler
 	betrayalManager *ken.Ken
 	conifg          config
 }
@@ -50,14 +49,14 @@ type app struct {
 // (AKA basically every command)
 type BetrayalCommand interface {
 	ken.Command
-	Initialize(data.Models, *gocron.Scheduler)
+	Initialize(data.Models, *cron.BetrayalScheduler)
 }
 
 // Wrapper for ken.RegisterBetrayalCommands for inserting DB access
 func (a *app) RegisterBetrayalCommands(commands ...BetrayalCommand) int {
 	tally := 0
 	for _, command := range commands {
-		command.Initialize(a.models, a.scheduler)
+		command.Initialize(a.models, &a.scheduler)
 		err := a.betrayalManager.RegisterCommands(command)
 		if err != nil {
 			a.logger.Fatal(err)
@@ -92,13 +91,13 @@ func main() {
 	}
 	dbModels := data.NewModels(db)
 
-	scheduler := gocron.NewScheduler(time.UTC)
+	botScheduler := cron.NewScheduler()
 
 	// Create central app struct and attach ken framework to it
 	app := &app{
 		conifg:    cfg,
 		models:    dbModels,
-		scheduler: scheduler,
+		scheduler: *botScheduler,
 	}
 	km, err := ken.New(bot, ken.Options{
 		State: state.NewInternal(),
@@ -161,7 +160,7 @@ func main() {
 	)
 
 	// start the scheduler
-	app.scheduler.StartAsync()
+	app.scheduler.Start()
 	log.Printf("Scheduler started at %s EST\n", util.GetEstTimeStamp())
 
 	sc := make(chan os.Signal, 1)

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/go-co-op/gocron"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
+	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
@@ -18,7 +18,7 @@ import (
 
 type Roll struct {
 	models    data.Models
-	scheduler *gocron.Scheduler
+	scheduler *cron.BetrayalScheduler
 }
 
 var _ ken.SlashCommand = (*Roll)(nil)
@@ -303,7 +303,7 @@ func (*Roll) Version() string {
 	return "1.0.0"
 }
 
-func (r *Roll) Initialize(m data.Models, s *gocron.Scheduler) {
+func (r *Roll) Initialize(m data.Models, s *cron.BetrayalScheduler) {
 	r.models = m
 	r.scheduler = s
 }

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/go-co-op/gocron"
+	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/util"
@@ -36,7 +36,7 @@ var optional = discordgo.ApplicationCommandOption{
 
 type Inventory struct {
 	models    data.Models
-	scheduler *gocron.Scheduler
+	scheduler *cron.BetrayalScheduler
 }
 
 // Components implements main.BetrayalCommand.
@@ -50,7 +50,7 @@ func (i *Inventory) Type() discordgo.ApplicationCommandType {
 	return discordgo.ChatApplicationCommand
 }
 
-func (i *Inventory) Initialize(m data.Models, s *gocron.Scheduler) {
+func (i *Inventory) Initialize(m data.Models, s *cron.BetrayalScheduler) {
 	i.models = m
 	i.scheduler = s
 }

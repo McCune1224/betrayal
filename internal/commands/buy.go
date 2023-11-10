@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/go-co-op/gocron"
 	cmdInv "github.com/mccune1224/betrayal/internal/commands/inventory"
+	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
@@ -15,10 +15,10 @@ import (
 
 type Buy struct {
 	models    data.Models
-	scheduler *gocron.Scheduler
+	scheduler *cron.BetrayalScheduler
 }
 
-func (b *Buy) Initialize(models data.Models, scheduler *gocron.Scheduler) {
+func (b *Buy) Initialize(models data.Models, scheduler *cron.BetrayalScheduler) {
 	b.models = models
 	b.scheduler = scheduler
 }

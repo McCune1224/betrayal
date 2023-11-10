@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/go-co-op/gocron"
+	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
@@ -13,11 +13,11 @@ import (
 
 type Vote struct {
 	models    data.Models
-	scheduler *gocron.Scheduler
+	scheduler *cron.BetrayalScheduler
 }
 
 // Initialize implements main.BetrayalCommand.
-func (v *Vote) Initialize(models data.Models, scheduler *gocron.Scheduler) {
+func (v *Vote) Initialize(models data.Models, scheduler *cron.BetrayalScheduler) {
 	v.models = models
 	v.scheduler = scheduler
 }
