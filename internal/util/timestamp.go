@@ -1,6 +1,8 @@
 package util
 
-import "time"
+import (
+	"time"
+)
 
 // Helper to get current time in EST
 func GetEstTimeStamp() string {

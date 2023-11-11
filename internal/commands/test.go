@@ -9,6 +9,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
 
@@ -47,6 +48,53 @@ func (*Test) Options() []*discordgo.ApplicationCommandOption {
 				discord.StringCommandArg("task", "Task to do", true),
 			},
 		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+			Name:        "ac",
+			Description: "test autocorrect",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "status",
+					Description: "status fzf and levenstein distance",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("status", "status to autocorrect", true),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "role",
+					Description: "role fzf and levenstein distance",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("role", "role to autocorrect", true),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "ability",
+					Description: "ability fzf and levenstein distance",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("ability", "ability to autocorrect", true),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "aa",
+					Description: "ability fzf and levenstein distance",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("aa", "aa to autocorrect", true),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "perk",
+					Description: "perk fzf and levenstein distance",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("perk", "status to autocorrect", true),
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -54,6 +102,12 @@ func (*Test) Options() []*discordgo.ApplicationCommandOption {
 func (t *Test) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "timer", Run: t.testTimer},
+		ken.SubCommandGroup{Name: "ac", SubHandler: []ken.CommandHandler{
+			ken.SubCommandHandler{Name: "role", Run: t.testAcRole},
+			ken.SubCommandHandler{Name: "status", Run: t.testAcStatus},
+			ken.SubCommandHandler{Name: "ability", Run: t.testAcAbility},
+			ken.SubCommandHandler{Name: "aa", Run: t.testAcAA},
+		}},
 	)
 }
 
@@ -90,4 +144,124 @@ func sendMessageTask(s *discordgo.Session, e *discordgo.InteractionCreate, arg s
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+// Helper struct to handle ac tests
+type acResult struct {
+	Arg   string
+	Best  string
+	Time  time.Duration
+	Count int
+}
+
+func (t *Test) testAcStatus(ctx ken.SubCommandContext) (err error) {
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	statusArg := ctx.Options().GetByName("status").StringValue()
+	statuses, err := t.models.Statuses.GetAll()
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to get statuses", "DB error idk lol")
+	}
+
+	names := make([]string, len(statuses))
+	for i := range statuses {
+		names[i] = statuses[i].Name
+	}
+
+	// fuzzy matching
+	start := time.Now()
+	best := util.FuzzyFind(statusArg, names)
+	stop := time.Now()
+
+	total := stop.Sub(start)
+	totalTime := total.Nanoseconds()
+	msg := fmt.Sprintf("%s => %s Searched %d  %dns", statusArg, best, len(names), totalTime)
+	return ctx.RespondMessage(discord.Code(msg))
+}
+
+func (t *Test) testAcRole(ctx ken.SubCommandContext) (err error) {
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	roleArg := ctx.Options().GetByName("role").StringValue()
+	roles, err := t.models.Roles.GetAll()
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to get statuses", "DB error idk lol")
+	}
+
+	names := make([]string, len(roles))
+	for i := range roles {
+		names[i] = roles[i].Name
+	}
+
+	// fuzzy matching
+	start := time.Now()
+	best := util.FuzzyFind(roleArg, names)
+	stop := time.Now()
+
+	total := stop.Sub(start)
+	totalTime := total.Nanoseconds()
+	msg := fmt.Sprintf("%s => %s Searched %d  %dns", roleArg, best, len(names), totalTime)
+	return ctx.RespondMessage(discord.Code(msg))
+}
+
+func (t *Test) testAcAbility(ctx ken.SubCommandContext) (err error) {
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	abilityArg := ctx.Options().GetByName("ability").StringValue()
+	abilities, err := t.models.Abilities.GetAll()
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to get statuses", "DB error idk lol")
+	}
+
+	names := make([]string, len(abilities))
+	for i := range abilities {
+		names[i] = abilities[i].Name
+	}
+
+	// fuzzy matching
+	start := time.Now()
+	best := util.FuzzyFind(abilityArg, names)
+	stop := time.Now()
+
+	total := stop.Sub(start)
+	totalTime := total.Nanoseconds()
+	msg := fmt.Sprintf("%s => %s Searched %d  %dms", abilityArg, best, len(names), totalTime)
+	return ctx.RespondMessage(discord.Code(msg))
+}
+
+func (t *Test) testAcAA(ctx ken.SubCommandContext) (err error) {
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	aaArg := ctx.Options().GetByName("aa").StringValue()
+	aas, err := t.models.Abilities.GetAllAnyAbilities()
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to get statuses", "DB error idk lol")
+	}
+
+	names := make([]string, len(aas))
+	for i := range aas {
+		names[i] = aas[i].Name
+	}
+
+	// fuzzy matching
+	start := time.Now()
+	best := util.FuzzyFind(aaArg, names)
+	stop := time.Now()
+
+	total := stop.Sub(start)
+	totalTime := total.Nanoseconds()
+	msg := fmt.Sprintf("%s => %s Searched %d  %dns", aaArg, best, len(names), totalTime)
+	return ctx.RespondMessage(discord.Code(msg))
 }
