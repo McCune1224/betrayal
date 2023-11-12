@@ -71,7 +71,7 @@ func (b *Buy) Run(ctx ken.Context) (err error) {
 	}
 
 	itemName := ctx.Options().GetByName("item").StringValue()
-	item, err := b.models.Items.GetByName(itemName)
+	item, err := b.models.Items.GetByFuzzy(itemName)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(

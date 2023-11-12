@@ -36,7 +36,7 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 	caser := cases.Title(language.AmericanEnglish)
 	roleArg = caser.String(roleArg)
 	// Make sure role exists before creating inventory
-	role, err := i.models.Roles.GetByName(roleArg)
+	role, err := i.models.Roles.GetByFuzzy(roleArg)
 	if err != nil {
 		discord.ErrorMessage(ctx, "Failed to get Role", fmt.Sprintf("Cannot find role %s", roleArg))
 		return err

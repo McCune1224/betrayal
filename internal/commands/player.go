@@ -72,7 +72,7 @@ func (p *Player) add(ctx ken.SubCommandContext) (err error) {
 	name := args.GetByName("name").UserValue(ctx)
 	roleArg := args.GetByName("role").StringValue()
 
-	role, err := p.models.Roles.GetByName(roleArg)
+	role, err := p.models.Roles.GetByFuzzy(roleArg)
 	if err != nil {
 		discord.ErrorMessage(ctx, "Unable to find Role", "No known role of name "+roleArg)
 		return err

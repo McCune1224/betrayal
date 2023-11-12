@@ -217,7 +217,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 					return true
 				}
 				if aa.RoleSpecific == currInv.RoleName {
-					ab, err := r.models.Abilities.GetByName(aa.RoleSpecific)
+					ab, err := r.models.Abilities.GetByFuzzy(aa.RoleSpecific)
 					if err != nil {
 						log.Println(err)
 						return true
@@ -359,7 +359,7 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 					return true
 				}
 				if aa.RoleSpecific == currInv.RoleName {
-					ab, err := r.models.Abilities.GetByName(aa.RoleSpecific)
+					ab, err := r.models.Abilities.GetByFuzzy(aa.RoleSpecific)
 					if err != nil {
 						log.Println(err)
 						discord.AlexError(sctx)

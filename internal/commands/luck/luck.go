@@ -195,7 +195,7 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 		}
 		if inv != nil {
 			if ability.RoleSpecific == inv.RoleName {
-				ab, err := r.models.Abilities.GetByName(ability.RoleSpecific)
+				ab, err := r.models.Abilities.GetByFuzzy(ability.RoleSpecific)
 				if err != nil {
 					log.Println(err)
 					return discord.AlexError(ctx)

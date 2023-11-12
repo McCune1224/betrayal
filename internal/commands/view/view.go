@@ -126,7 +126,7 @@ func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
 	if strings.ToLower(nameArg) == "ferrari" {
 		return ctx.RespondEmbed(generateFerrariRole())
 	}
-	role, err := v.models.Roles.GetByName(nameArg)
+	role, err := v.models.Roles.GetByFuzzy(nameArg)
 	if err != nil {
 		ctx.RespondError(
 			fmt.Sprintf("Unable to find Role: %s", nameArg),
@@ -152,7 +152,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	nameArg := ctx.Options().GetByName("name").StringValue()
-	ability, err := v.models.Abilities.GetByName(nameArg)
+	ability, err := v.models.Abilities.GetByFuzzy(nameArg)
 	if err != nil {
 		discord.ErrorMessage(ctx,
 			"Error Finding Ability",
@@ -190,7 +190,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 			},
 		},
 	}
-	aa, _ := v.models.Abilities.GetAnyAbilityByName(ability.Name)
+	aa, _ := v.models.Abilities.GetAnyAbilitybyFuzzy(ability.Name)
 	if aa != nil {
 		msg := ""
 		if aa.RoleSpecific != "" {
@@ -219,7 +219,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 				}, func(ctx ken.ComponentContext) bool {
 					roleName := strings.Split(ctx.GetData().CustomID, "-")[0]
 					// We know for sure role exists here so ignore error
-					role, _ := v.models.Roles.GetByName(roleName)
+					role, _ := v.models.Roles.GetByFuzzy(roleName)
 					roleEmbed, err := v.roleEmbed(role)
 					if err != nil {
 						log.Println(err)
@@ -279,7 +279,7 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 				}, func(ctx ken.ComponentContext) bool {
 					roleName := strings.Split(ctx.GetData().CustomID, "-")[0]
 					// We know for sure role exists here so ignore error
-					role, _ := v.models.Roles.GetByName(roleName)
+					role, _ := v.models.Roles.GetByFuzzy(roleName)
 					roleEmbed, err := v.roleEmbed(role)
 					if err != nil {
 						log.Println(err)
@@ -302,7 +302,7 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 
 func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
 	data := ctx.Options().GetByName("name").StringValue()
-	item, err := v.models.Items.GetByName(data)
+	item, err := v.models.Items.GetByFuzzy(data)
 	if err != nil {
 		discord.ErrorMessage(ctx,
 			"Unable to find Item",

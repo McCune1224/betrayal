@@ -93,6 +93,14 @@ func (*Test) Options() []*discordgo.ApplicationCommandOption {
 						discord.StringCommandArg("perk", "status to autocorrect", true),
 					},
 				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "item",
+					Description: "item fzf and levenstein distance",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("item", "item to autocorrect", true),
+					},
+				},
 			},
 		},
 	}
@@ -107,6 +115,7 @@ func (t *Test) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "status", Run: t.testAcStatus},
 			ken.SubCommandHandler{Name: "ability", Run: t.testAcAbility},
 			ken.SubCommandHandler{Name: "aa", Run: t.testAcAA},
+			ken.SubCommandHandler{Name: "item", Run: t.testAcItem},
 		}},
 	)
 }
@@ -160,25 +169,18 @@ func (t *Test) testAcStatus(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	statusArg := ctx.Options().GetByName("status").StringValue()
-	statuses, err := t.models.Statuses.GetAll()
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(ctx, "Failed to get statuses", "DB error idk lol")
-	}
-
-	names := make([]string, len(statuses))
-	for i := range statuses {
-		names[i] = statuses[i].Name
-	}
-
 	// fuzzy matching
 	start := time.Now()
-	best := util.FuzzyFind(statusArg, names)
+	best, err := t.models.Statuses.GetFuzzy(statusArg)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to get statuses", err.Error())
+	}
 	stop := time.Now()
 
 	total := stop.Sub(start)
 	totalTime := total.Nanoseconds()
-	msg := fmt.Sprintf("%s => %s Searched %d  %dns", statusArg, best, len(names), totalTime)
+	msg := fmt.Sprintf("%s => %s %dns", statusArg, best.Name, totalTime)
 	return ctx.RespondMessage(discord.Code(msg))
 }
 
@@ -201,7 +203,7 @@ func (t *Test) testAcRole(ctx ken.SubCommandContext) (err error) {
 
 	// fuzzy matching
 	start := time.Now()
-	best := util.FuzzyFind(roleArg, names)
+	best, _ := util.FuzzyFind(roleArg, names)
 	stop := time.Now()
 
 	total := stop.Sub(start)
@@ -216,25 +218,18 @@ func (t *Test) testAcAbility(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	abilityArg := ctx.Options().GetByName("ability").StringValue()
-	abilities, err := t.models.Abilities.GetAll()
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(ctx, "Failed to get statuses", "DB error idk lol")
-	}
-
-	names := make([]string, len(abilities))
-	for i := range abilities {
-		names[i] = abilities[i].Name
-	}
-
 	// fuzzy matching
 	start := time.Now()
-	best := util.FuzzyFind(abilityArg, names)
+	best, err := t.models.Abilities.GetByFuzzy(abilityArg)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to get statuses", err.Error())
+	}
 	stop := time.Now()
 
 	total := stop.Sub(start)
 	totalTime := total.Nanoseconds()
-	msg := fmt.Sprintf("%s => %s Searched %d  %dms", abilityArg, best, len(names), totalTime)
+	msg := fmt.Sprintf("%s => %s %dns", abilityArg, best.Name, totalTime)
 	return ctx.RespondMessage(discord.Code(msg))
 }
 
@@ -257,11 +252,39 @@ func (t *Test) testAcAA(ctx ken.SubCommandContext) (err error) {
 
 	// fuzzy matching
 	start := time.Now()
-	best := util.FuzzyFind(aaArg, names)
+	best, _ := util.FuzzyFind(aaArg, names)
 	stop := time.Now()
 
 	total := stop.Sub(start)
 	totalTime := total.Nanoseconds()
 	msg := fmt.Sprintf("%s => %s Searched %d  %dns", aaArg, best, len(names), totalTime)
+	return ctx.RespondMessage(discord.Code(msg))
+}
+
+func (t *Test) testAcItem(ctx ken.SubCommandContext) (err error) {
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	itemArg := ctx.Options().GetByName("item").StringValue()
+	items, err := t.models.Items.GetAll()
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to get statuses", "DB error idk lol")
+	}
+
+	names := make([]string, len(items))
+	for i := range items {
+		names[i] = items[i].Name
+	}
+
+	// fuzzy matching
+	start := time.Now()
+	best, _ := util.FuzzyFind(itemArg, names)
+	stop := time.Now()
+
+	total := stop.Sub(start)
+	totalTime := total.Nanoseconds()
+	msg := fmt.Sprintf("%s => %s Searched %d  %dns", itemArg, best, len(names), totalTime)
 	return ctx.RespondMessage(discord.Code(msg))
 }

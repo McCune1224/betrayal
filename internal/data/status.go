@@ -1,7 +1,10 @@
 package data
 
 import (
+	"errors"
+
 	"github.com/jmoiron/sqlx"
+	"github.com/mccune1224/betrayal/internal/util"
 )
 
 type Status struct {
@@ -49,6 +52,32 @@ func (sm *StatusModel) GetByName(name string) (*Status, error) {
 		return nil, err
 	}
 
+	return &status, nil
+}
+
+// Will attempt to fuzzy find a string, requires a string of at least 3 characters
+// to allow for a more accurate match to be found.
+// Generally lsower
+func (sm *StatusModel) GetFuzzy(name string) (*Status, error) {
+	var status Status
+	var statusChoices []Status
+	var stringChoices []string
+	if len(name) < 3 {
+		return nil, errors.New("argument must be at least 3 characters")
+	}
+	err := sm.DB.Select(&statusChoices, "SELECT * FROM statuses")
+	if err != nil {
+		return nil, err
+	}
+	for i := range statusChoices {
+		stringChoices = append(stringChoices, statusChoices[i].Name)
+	}
+	best, _ := util.FuzzyFind(name, stringChoices)
+	for i := range statusChoices {
+		if statusChoices[i].Name == best {
+			status = statusChoices[i]
+		}
+	}
 	return &status, nil
 }
 

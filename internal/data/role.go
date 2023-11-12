@@ -1,8 +1,11 @@
 package data
 
 import (
+	"errors"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+	"github.com/mccune1224/betrayal/internal/util"
 )
 
 // How roles are stored in the database.
@@ -39,13 +42,40 @@ func (rm *RoleModel) Get(id int64) (*Role, error) {
 	return &r, nil
 }
 
-func (rm *RoleModel) GetByName(name string) (*Role, error) {
+// func (rm *RoleModel) GetByName(name string) (*Role, error) {
+// 	var r Role
+// 	// Make it find closest match if no exact match
+// 	query := `SELECT * FROM roles WHERE name ILIKE '%' || $1 || '%'`
+// 	err := rm.DB.Get(&r, query, name)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return &r, nil
+// }
+
+func (rm *RoleModel) GetByFuzzy(name string) (*Role, error) {
 	var r Role
-	// Make it find closest match if no exact match
-	query := `SELECT * FROM roles WHERE name ILIKE '%' || $1 || '%'`
-	err := rm.DB.Get(&r, query, name)
+	rm.DB.Get(&r, "SELECT * from roles WHERE name ILIKE $1", name)
+	if r.Name == name {
+		return &r, nil
+	}
+	var rChocies []Role
+	if len(name) < 2 {
+		return nil, errors.New("Name must be at least 2 characters")
+	}
+	err := rm.DB.Select(&rChocies, "SELECT * FROM roles")
 	if err != nil {
 		return nil, err
+	}
+	strChoices := make([]string, len(rChocies))
+	for i, role := range rChocies {
+		strChoices[i] = role.Name
+	}
+	best, _ := util.FuzzyFind(name, strChoices)
+	for _, role := range rChocies {
+		if role.Name == best {
+			r = role
+		}
 	}
 	return &r, nil
 }

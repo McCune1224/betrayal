@@ -28,7 +28,7 @@ func (i *Inventory) addAbility(ctx ken.SubCommandContext) (err error) {
 		charge = int(chargesArg.IntValue())
 	}
 
-	ability, err := i.models.Abilities.GetByName(abilityNameArg)
+	ability, err := i.models.Abilities.GetByFuzzy(abilityNameArg)
 	if err != nil {
 		return discord.ErrorMessage(
 			ctx,
@@ -74,7 +74,7 @@ func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
 	}
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
 
-	ability, err := i.models.Abilities.GetAnyAbilityByName(abilityNameArg)
+	ability, err := i.models.Abilities.GetAnyAbilitybyFuzzy(abilityNameArg)
 	if err != nil {
 		return discord.ErrorMessage(
 			ctx,
@@ -166,7 +166,7 @@ func (i *Inventory) addItem(ctx ken.SubCommandContext) (err error) {
 	}
 
 	itemNameArg := ctx.Options().GetByName("name").StringValue()
-	item, err := i.models.Items.GetByName(itemNameArg)
+	item, err := i.models.Items.GetByFuzzy(itemNameArg)
 	if err != nil {
 		return discord.ErrorMessage(
 			ctx,

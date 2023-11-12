@@ -1,8 +1,11 @@
 package data
 
 import (
+	"errors"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+	"github.com/mccune1224/betrayal/internal/util"
 )
 
 type Item struct {
@@ -52,6 +55,33 @@ func (im *ItemModel) GetByName(name string) (*Item, error) {
 		return nil, err
 	}
 
+	return &item, nil
+}
+
+func (im *ItemModel) GetByFuzzy(name string) (*Item, error) {
+	var item Item
+	im.DB.Get(&item, "SELECT * FROM items WHERE name ILIKE $1", name)
+	if item.Name != "" {
+		return &item, nil
+	}
+	var itemChoices []Item
+	if len(name) < 2 {
+		return nil, errors.New("serach term must be at least 2 characters")
+	}
+	err := im.DB.Select(&itemChoices, "SELECT * FROM items")
+	if err != nil {
+		return nil, err
+	}
+	strChoices := make([]string, len(itemChoices))
+	for i, item := range itemChoices {
+		strChoices[i] = item.Name
+	}
+	best, _ := util.FuzzyFind(name, strChoices)
+	for _, i := range itemChoices {
+		if i.Name == best {
+			item = i
+		}
+	}
 	return &item, nil
 }
 

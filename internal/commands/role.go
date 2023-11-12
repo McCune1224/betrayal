@@ -42,7 +42,7 @@ func (*RoleGet) Options() []*discordgo.ApplicationCommandOption {
 func (rg *RoleGet) Run(ctx ken.Context) (err error) {
 	ctx.SetEphemeral(true)
 	data := ctx.Options().GetByName("name").StringValue()
-	role, err := rg.models.Roles.GetByName(data)
+	role, err := rg.models.Roles.GetByFuzzy(data)
 	if err != nil {
 		discord.ErrorMessage(ctx, "Unable to find Role", "No known role of name "+data)
 		return err
