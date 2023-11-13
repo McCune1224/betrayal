@@ -199,9 +199,9 @@ func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
 
 	return discord.SuccessfulMessage(
 		ctx,
-		"Items limit updated",
+		"Items Limit updated",
 		fmt.Sprintf(
-			"Items limit set to %d",
+			"Items Limit set to %d",
 			inv.ItemLimit,
 		),
 	)
