@@ -73,6 +73,11 @@ func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
+	chargesArg, ok := ctx.Options().GetByNameOptional("charges")
+	chargeAmount := 1
+	if ok {
+		chargeAmount = int(chargesArg.IntValue())
+	}
 
 	ability, err := i.models.Abilities.GetAnyAbilitybyFuzzy(abilityNameArg)
 	if err != nil {
@@ -82,7 +87,7 @@ func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
 			"Verify if the ability exists.",
 		)
 	}
-	UpsertAA(inventory, ability)
+	UpsertAA(inventory, ability, chargeAmount)
 	err = i.models.Inventories.Update(inventory)
 	if err != nil {
 		log.Println(err)
@@ -458,13 +463,40 @@ func (i *Inventory) addCoinBonus(ctx ken.SubCommandContext) (err error) {
 		"Added Coin Bonus",
 		fmt.Sprintf(
 			// roudned to 2 decimal for float values
-			"Set to %s%%\n %s%% => %s%%",
-			strconv.FormatFloat(float64(inventory.CoinBonus*100), 'f', 2, 32),
+			"Added %s%%\n %s%% => %s%%",
+			strconv.FormatFloat(float64(fCoinBonusArg), 'f', 2, 32),
 			strconv.FormatFloat(float64(old*100), 'f', 2, 32),
 			strconv.FormatFloat(float64(inventory.CoinBonus*100), 'f', 2, 32),
 		),
 	)
 	return err
+}
+
+func (i *Inventory) addItemLimit(ctx ken.SubCommandContext) (err error) {
+	inv, err := Fetch(ctx, i.models, true)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
+	ctx.SetEphemeral(false)
+	itemLimitArg := ctx.Options().GetByName("amount").IntValue()
+	inv.ItemLimit += int(itemLimitArg)
+	err = i.models.Inventories.UpdateProperty(inv, "item_limit", inv.ItemLimit)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(
+			ctx,
+			"Failed to update items limit",
+			"Alex is a bad programmer, and this is his fault.",
+		)
+	}
+	err = i.updateInventoryMessage(ctx, inv)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return discord.SuccessfulMessage(ctx, "Item Limit Updated", fmt.Sprintf("Item limit set to %d", inv.ItemLimit))
+
 }
 
 func (i *Inventory) addLuck(ctx ken.SubCommandContext) (err error) {

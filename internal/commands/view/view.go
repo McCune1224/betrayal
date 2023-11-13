@@ -169,20 +169,11 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 			fmt.Sprintf("Unable to find Associated Role for Ability: %s", nameArg))
 	}
 
-	strCharges := fmt.Sprintf("%d", ability.Charges)
-	if ability.Charges == -1 {
-		strCharges = infinity
-	}
 	abilityEmbed := &discordgo.MessageEmbed{
 		Title:       ability.Name,
 		Description: ability.Description,
 		Color:       determineColor(ability.Rarity),
 		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "Default Charges",
-				Value:  strCharges,
-				Inline: true,
-			},
 			{
 				Name:   "Categories",
 				Value:  strings.Join(ability.Categories, ", "),

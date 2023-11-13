@@ -411,6 +411,40 @@ func (i *Inventory) Options() []*discordgo.ApplicationCommandOption {
 		},
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+			Name:        "limit",
+			Description: "change inventory item limit",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "add",
+					Description: "add to inventory limit",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.IntCommandArg("amount", "increase the limit by specified amount", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "remove",
+					Description: "remove from inventory limit",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.IntCommandArg("amount", "decrease the limit by specified amount", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "set",
+					Description: "set inventory limit",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.IntCommandArg("size", "How many items the inventory should carry", true),
+						discord.UserCommandArg(false),
+					},
+				},
+			},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
 			Name:        "note",
 			Description: "add or remove a note",
 			Options: []*discordgo.ApplicationCommandOption{
@@ -492,6 +526,11 @@ func (i *Inventory) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "add", Run: i.addLuck},
 			ken.SubCommandHandler{Name: "remove", Run: i.removeLuck},
 			ken.SubCommandHandler{Name: "set", Run: i.setLuck},
+		}},
+		ken.SubCommandGroup{Name: "limit", SubHandler: []ken.CommandHandler{
+			ken.SubCommandHandler{Name: "add", Run: i.addItemLimit},
+			ken.SubCommandHandler{Name: "remove", Run: i.removeItemLimit},
+			ken.SubCommandHandler{Name: "set", Run: i.setItemsLimit},
 		}},
 		ken.SubCommandGroup{Name: "note", SubHandler: []ken.CommandHandler{
 			ken.SubCommandHandler{Name: "add", Run: i.addNote},

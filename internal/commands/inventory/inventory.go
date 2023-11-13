@@ -453,15 +453,20 @@ func ParseAbilityString(raw string) (name string, charges int, err error) {
 }
 
 // Will attempt to upate the given any ability in the inventory and if not present will add it
-func UpsertAA(inv *data.Inventory, aa *data.AnyAbility) {
+func UpsertAA(inv *data.Inventory, aa *data.AnyAbility, charges ...int) {
+	defaultCharge := 1
+	if len(charges) > 0 {
+		defaultCharge = charges[0]
+	}
+
 	for i, a := range inv.AnyAbilities {
 		invName, invCharge, _ := ParseAbilityString(a)
 		if invName == aa.Name {
-			inv.AnyAbilities[i] = fmt.Sprintf("%s [%d]", invName, invCharge+1)
+			inv.AnyAbilities[i] = fmt.Sprintf("%s [%d]", invName, invCharge+defaultCharge)
 			return
 		}
 	}
-	inv.AnyAbilities = append(inv.AnyAbilities, fmt.Sprintf("%s [%d]", aa.Name, 1))
+	inv.AnyAbilities = append(inv.AnyAbilities, fmt.Sprintf("%s [%d]", aa.Name, defaultCharge))
 }
 
 // Will attempt to upate the given ability in the inventory and if not present will add it

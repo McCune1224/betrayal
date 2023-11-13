@@ -486,6 +486,36 @@ func (i *Inventory) removeLuck(ctx ken.SubCommandContext) (err error) {
 	// If luck is below 0 after difference, set to 0
 }
 
+func (i *Inventory) removeItemLimit(ctx ken.SubCommandContext) (err error) {
+	inv, err := Fetch(ctx, i.models, true)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
+	ctx.SetEphemeral(false)
+	itemLimitArg := ctx.Options().GetByName("amount").IntValue()
+	inv.ItemLimit -= int(itemLimitArg)
+	if inv.ItemLimit < 0 {
+		inv.ItemLimit = 0
+	}
+	err = i.models.Inventories.UpdateProperty(inv, "item_limit", inv.ItemLimit)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(
+			ctx,
+			"Failed to update items limit",
+			"Alex is a bad programmer, and this is his fault.",
+		)
+	}
+	err = i.updateInventoryMessage(ctx, inv)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return discord.SuccessfulMessage(ctx, "Item Limit Updated", fmt.Sprintf("Item limit set to %d", inv.ItemLimit))
+
+}
+
 func (i *Inventory) removeNote(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
