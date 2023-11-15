@@ -97,10 +97,10 @@ func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
 	e := ctx.GetEvent()
 	if e.ChannelID == inv.UserPinChannel {
 		if host {
-			hideArg, ok := ctx.Options().GetByNameOptional("hidden")
-			hide := false
+			showArg, ok := ctx.Options().GetByNameOptional("show")
+			hide := true
 			if ok {
-				hide = hideArg.BoolValue()
+				hide = !showArg.BoolValue()
 			}
 
 			if hide {
