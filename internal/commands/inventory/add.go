@@ -23,7 +23,7 @@ func (i *Inventory) addAbility(ctx ken.SubCommandContext) (err error) {
 	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
 	chargesArg, ok := ctx.Options().GetByNameOptional("charges")
-	charge := -42069
+	charge := 1
 	if ok {
 		charge = int(chargesArg.IntValue())
 	}
@@ -36,11 +36,7 @@ func (i *Inventory) addAbility(ctx ken.SubCommandContext) (err error) {
 			"Verify if the ability exists.",
 		)
 	}
-
-	if charge == -42069 {
-		ability.Charges = charge
-	}
-	UpsertAbility(inventory, ability)
+	UpsertAbility(inventory, ability, charge)
 	err = i.models.Inventories.Update(inventory)
 	if err != nil {
 		log.Println(err)
@@ -496,7 +492,6 @@ func (i *Inventory) addItemLimit(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	return discord.SuccessfulMessage(ctx, "Item Limit Updated", fmt.Sprintf("Item limit set to %d", inv.ItemLimit))
-
 }
 
 func (i *Inventory) addLuck(ctx ken.SubCommandContext) (err error) {
