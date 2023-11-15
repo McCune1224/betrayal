@@ -30,7 +30,7 @@ const (
 var optional = discordgo.ApplicationCommandOption{
 	Type:        discordgo.ApplicationCommandOptionBoolean,
 	Name:        "hidden",
-	Description: "Make view hidden or public (default hidden)",
+	Description: "hide inventory message (admin only)",
 	Required:    false,
 }
 
@@ -96,6 +96,24 @@ func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
 	// Edge case where if user is in their own confessional, make it public (helpful for admins)
 	e := ctx.GetEvent()
 	if e.ChannelID == inv.UserPinChannel {
+		if host {
+			hideArg, ok := ctx.Options().GetByNameOptional("hidden")
+			hide := false
+			if ok {
+				hide = hideArg.BoolValue()
+			}
+
+			if hide {
+				ctx.SetEphemeral(true)
+				embd = InventoryEmbedBuilder(inv, true)
+				return ctx.RespondEmbed(embd)
+			} else {
+				ctx.SetEphemeral(false)
+				embd = InventoryEmbedBuilder(inv, false)
+				return ctx.RespondEmbed(embd)
+			}
+		}
+
 		ctx.SetEphemeral(false)
 		embd = InventoryEmbedBuilder(inv, false)
 	} else {

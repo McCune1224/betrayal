@@ -43,6 +43,7 @@ func (i *Inventory) Options() []*discordgo.ApplicationCommandOption {
 			Description: "get player's inventory",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.UserCommandArg(true),
+				discord.BoolCommandArg("hidden", "hide inventory message", false),
 			},
 		},
 		{
