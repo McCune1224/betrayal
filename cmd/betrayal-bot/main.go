@@ -12,7 +12,10 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
+	"github.com/mccune1224/betrayal/internal/commands"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
+	roll "github.com/mccune1224/betrayal/internal/commands/luck"
+	"github.com/mccune1224/betrayal/internal/commands/view"
 	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -125,20 +128,20 @@ func main() {
 	app.betrayalManager.Unregister()
 
 	tally := app.RegisterBetrayalCommands(
-		// new(commands.Test),
+		new(commands.Test),
 		new(inventory.Inventory),
-		// new(roll.Roll),
-		// new(commands.ActionFunnel),
-		// new(view.View),
-		// new(commands.Buy),
-		// new(commands.List),
-		// new(commands.Insult),
-		// new(commands.Ping),
-		// new(commands.Vote),
-		// new(commands.Kill),
-		// new(commands.Revive),
-		// new(commands.Setup),
-		// new(commands.Alliance),
+		new(roll.Roll),
+		new(commands.ActionFunnel),
+		new(view.View),
+		new(commands.Buy),
+		new(commands.List),
+		new(commands.Insult),
+		new(commands.Ping),
+		new(commands.Vote),
+		new(commands.Kill),
+		new(commands.Revive),
+		new(commands.Setup),
+		new(commands.Alliance),
 	)
 
 	app.betrayalManager.Session().AddHandler(logHandler)
