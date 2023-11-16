@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-co-op/gocron"
+	"github.com/mccune1224/betrayal/internal/data"
 )
 
 // BetrayalScheduler is a wrapper around gocron.Scheduler
@@ -12,15 +13,17 @@ import (
 // for the Betrayal Discord bot.
 type BetrayalScheduler struct {
 	// internal gocron scheduler
-	s *gocron.Scheduler
+	dbJobs data.InventoryCronJobModel
+	s      *gocron.Scheduler
 	// internal map of jobIDs to jobs for easy access and modification
 	jobs map[string]*gocron.Job
 }
 
-func NewScheduler() *BetrayalScheduler {
+func NewScheduler(dbJobs data.InventoryCronJobModel) *BetrayalScheduler {
 	return &BetrayalScheduler{
-		s:    gocron.NewScheduler(time.UTC),
-		jobs: make(map[string]*gocron.Job),
+		s:      gocron.NewScheduler(time.UTC),
+		dbJobs: dbJobs,
+		jobs:   make(map[string]*gocron.Job),
 	}
 }
 

@@ -275,6 +275,7 @@ func (i *Inventory) Options() []*discordgo.ApplicationCommandOption {
 					Description: "add an effect",
 					Options: []*discordgo.ApplicationCommandOption{
 						discord.StringCommandArg("name", "add an effect", true),
+						discord.StringCommandArg("duration", "how long should duration last (12h, 1d...)", false),
 						discord.UserCommandArg(false),
 					},
 				},

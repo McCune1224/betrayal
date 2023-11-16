@@ -513,7 +513,6 @@ func (i *Inventory) removeItemLimit(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	return discord.SuccessfulMessage(ctx, "Item Limit Updated", fmt.Sprintf("Item limit set to %d", inv.ItemLimit))
-
 }
 
 func (i *Inventory) removeNote(ctx ken.SubCommandContext) (err error) {

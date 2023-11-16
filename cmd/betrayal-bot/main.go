@@ -91,7 +91,7 @@ func main() {
 	}
 	dbModels := data.NewModels(db)
 
-	botScheduler := cron.NewScheduler()
+	botScheduler := cron.NewScheduler(dbModels.InventoryCronJobs)
 
 	// Create central app struct and attach ken framework to it
 	app := &app{
@@ -160,6 +160,8 @@ func main() {
 	)
 
 	// start the scheduler
+
+	app.scheduler.QueueScheduleJobs()
 	app.scheduler.Start()
 	log.Printf("Scheduler started at %s EST\n", util.GetEstTimeStamp())
 

@@ -6,7 +6,9 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/zekrotja/ken"
@@ -290,8 +292,15 @@ func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
-
+	dur := time.Duration(0)
 	effectNameArg := ctx.Options().GetByName("name").StringValue()
+	durationArg, ok := ctx.Options().GetByNameOptional("duration")
+	if ok {
+		dur, err = time.ParseDuration(durationArg.StringValue())
+		if err != nil {
+			return discord.ErrorMessage(ctx, "Failed to parse duration", err.Error())
+		}
+	}
 
 	for _, v := range inventory.Effects {
 		if strings.EqualFold(v, effectNameArg) {
@@ -316,6 +325,35 @@ func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
 	err = i.updateInventoryMessage(ctx, inventory)
 	if err != nil {
 		log.Println(err)
+	}
+
+	if dur > 0 {
+		err = i.scheduler.ScheduleEffect(effectNameArg, inventory, dur, func() {
+			msg := discordgo.MessageEmbed{
+				Title:       "Effect Expired",
+				Description: fmt.Sprintf("Effect %s has expired", effectNameArg),
+				Fields: []*discordgo.MessageEmbedField{
+					{
+						Name:  "Target Inventory",
+						Value: fmt.Sprintf("<@%s>", inventory.DiscordID),
+					},
+					{
+						Name:  "Target Channel",
+						Value: fmt.Sprintf("<#%s>", inventory.UserPinChannel),
+					},
+				},
+				Color:     0x00ff00,
+				Timestamp: time.Now().Format(time.RFC3339),
+			}
+			_, err := ctx.GetSession().ChannelMessageSendEmbed(ctx.GetEvent().ChannelID, &msg)
+			if err != nil {
+				log.Println(err)
+			}
+		})
+		if err != nil {
+			log.Println(err)
+			return discord.ErrorMessage(ctx, "Failed to schedule effect", err.Error())
+		}
 	}
 
 	err = discord.SuccessfulMessage(
