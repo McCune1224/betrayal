@@ -37,7 +37,7 @@ func (i *Inventory) setAbility(ctx ken.SubCommandContext) (err error) {
 					"Alex is a bad programmer, and this is his fault.",
 				)
 			}
-			err = UpdateInventoryMessage(ctx, inv)
+			err = UpdateInventoryMessage(ctx.GetSession(), inv)
 			if err != nil {
 				log.Println(err)
 				return err
@@ -74,7 +74,7 @@ func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
 					"Alex is a bad programmer, and this is his fault.",
 				)
 			}
-			err = UpdateInventoryMessage(ctx, inv)
+			err = UpdateInventoryMessage(ctx.GetSession(), inv)
 			if err != nil {
 				log.Println(err)
 				return err
@@ -106,7 +106,7 @@ func (i *Inventory) setCoins(ctx ken.SubCommandContext) (err error) {
 			"Alex is a bad programmer, and this is his fault.",
 		)
 	}
-	err = UpdateInventoryMessage(ctx, inv)
+	err = UpdateInventoryMessage(ctx.GetSession(), inv)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -151,7 +151,7 @@ func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 
-	err = UpdateInventoryMessage(ctx, inv)
+	err = UpdateInventoryMessage(ctx.GetSession(), inv)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(
@@ -191,7 +191,7 @@ func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
 			"Alex is a bad programmer, and this is his fault.",
 		)
 	}
-	err = UpdateInventoryMessage(ctx, inv)
+	err = UpdateInventoryMessage(ctx.GetSession(), inv)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -229,7 +229,7 @@ func (i *Inventory) setLuck(ctx ken.SubCommandContext) (err error) {
 			"Alex is a bad programmer, and this is his fault.",
 		)
 	}
-	err = UpdateInventoryMessage(ctx, inv)
+	err = UpdateInventoryMessage(ctx.GetSession(), inv)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(
@@ -268,6 +268,6 @@ func (i *Inventory) setAllignment(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.AlexError(ctx)
 	}
-	UpdateInventoryMessage(ctx, inv)
+	UpdateInventoryMessage(ctx.GetSession(), inv)
 	return discord.SuccessfulMessage(ctx, "Alignment updated", fmt.Sprintf("Set alignment to %s", allignmentArg))
 }

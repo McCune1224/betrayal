@@ -124,7 +124,7 @@ func (b *Buy) Run(ctx ken.Context) (err error) {
 		return discord.ErrorMessage(ctx, "Failed to update coins", "Alex is a bad programmer.")
 	}
 
-	err = cmdInv.UpdateInventoryMessage(ctx, inventory)
+	err = cmdInv.UpdateInventoryMessage(ctx.GetSession(), inventory)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(

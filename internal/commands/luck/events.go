@@ -125,7 +125,7 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 						rollAmount,
 						discord.EmojiSuccess)
 				}
-				inventory.UpdateInventoryMessage(sctx, currInv)
+				inventory.UpdateInventoryMessage(sctx.GetSession(), currInv)
 				embdRain.Footer = &discordgo.MessageEmbedFooter{Text: newFooterMessage}
 				_, err = ctx.GetSession().ChannelMessageSendEmbed(currInv.UserPinChannel, embdRain)
 				if err != nil {
@@ -238,7 +238,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 						return true
 					}
 				}
-				inventory.UpdateInventoryMessage(sctx, currInv)
+				inventory.UpdateInventoryMessage(sctx.GetSession(), currInv)
 				_, err = ctx.GetSession().ChannelMessageSendEmbed(currInv.UserPinChannel, embedPowerDrop)
 				if err != nil {
 					log.Println(err)
@@ -313,7 +313,7 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 
-	err = inventory.UpdateInventoryMessage(ctx, inv)
+	err = inventory.UpdateInventoryMessage(ctx.GetSession(), inv)
 	if err != nil {
 		log.Println(err)
 		discord.SuccessfulMessage(
@@ -391,7 +391,7 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 					return true
 				}
 
-				inventory.UpdateInventoryMessage(sctx, currInv)
+				inventory.UpdateInventoryMessage(sctx.GetSession(), currInv)
 				_, err = ctx.GetSession().ChannelMessageSendEmbed(inv.UserPinChannel, embedCarePackage)
 				if err != nil {
 					log.Println(err)

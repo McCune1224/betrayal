@@ -2,6 +2,7 @@ package cron
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/go-co-op/gocron"
@@ -13,13 +14,13 @@ import (
 // for the Betrayal Discord bot.
 type BetrayalScheduler struct {
 	// internal gocron scheduler
-	dbJobs data.InventoryCronJobModel
+	dbJobs data.Models
 	s      *gocron.Scheduler
 	// internal map of jobIDs to jobs for easy access and modification
 	jobs map[string]*gocron.Job
 }
 
-func NewScheduler(dbJobs data.InventoryCronJobModel) *BetrayalScheduler {
+func NewScheduler(dbJobs data.Models) *BetrayalScheduler {
 	return &BetrayalScheduler{
 		s:      gocron.NewScheduler(time.UTC),
 		dbJobs: dbJobs,
@@ -103,6 +104,10 @@ func (bs *BetrayalScheduler) cleanup() {
 		if job.NextRun().Before(now) || job.FinishedRunCount() > 0 {
 			// job is in the past, so remove it
 			bs.s.Remove(job)
+			err := bs.dbJobs.InventoryCronJobs.DeleteByJobID(jobID)
+			if err != nil {
+				log.Println(err)
+			}
 			delete(bs.jobs, jobID)
 		}
 	}

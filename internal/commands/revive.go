@@ -77,7 +77,7 @@ func (r *Revive) normRevive(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx)
 	}
 
-	err = inventory.UpdateInventoryMessage(ctx, inv)
+	err = inventory.UpdateInventoryMessage(ctx.GetSession(), inv)
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx)

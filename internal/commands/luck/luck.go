@@ -168,7 +168,7 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 				log.Println(err)
 				return discord.AlexError(ctx)
 			}
-			err = inventory.UpdateInventoryMessage(ctx, inv)
+			err = inventory.UpdateInventoryMessage(ctx.GetSession(), inv)
 			if err != nil {
 				log.Println(err)
 				return discord.AlexError(ctx)
@@ -215,7 +215,7 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 					return discord.AlexError(ctx)
 				}
 			}
-			err = inventory.UpdateInventoryMessage(ctx, inv)
+			err = inventory.UpdateInventoryMessage(ctx.GetSession(), inv)
 			if err != nil {
 				log.Println(err)
 				return discord.AlexError(ctx)

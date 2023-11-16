@@ -246,8 +246,7 @@ func (i *Inventory) updateInventoryMessage(
 	return nil
 }
 
-func UpdateInventoryMessage(ctx ken.Context, i *data.Inventory) (err error) {
-	sesh := ctx.GetSession()
+func UpdateInventoryMessage(sesh *discordgo.Session, i *data.Inventory) (err error) {
 	_, err = sesh.ChannelMessageEditEmbed(
 		i.UserPinChannel,
 		i.UserPinMessage,

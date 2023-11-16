@@ -86,7 +86,7 @@ func (k *Kill) killNorm(ctx ken.SubCommandContext) (err error) {
 	}
 
 	inv.IsAlive = false
-	err = inventory.UpdateInventoryMessage(ctx, inv)
+	err = inventory.UpdateInventoryMessage(ctx.GetSession(), inv)
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx)
