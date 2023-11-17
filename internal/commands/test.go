@@ -6,22 +6,22 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/scheduler"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
 
 type Test struct {
 	models    data.Models
-	scheduler *cron.BetrayalScheduler
+	scheduler *scheduler.BetrayalScheduler
 }
 
 var _ ken.SlashCommand = (*Test)(nil)
 
 // Initialize implements BetrayalCommand.
-func (t *Test) Initialize(m data.Models, s *cron.BetrayalScheduler) {
+func (t *Test) Initialize(m data.Models, s *scheduler.BetrayalScheduler) {
 	t.models = m
 	t.scheduler = s
 }

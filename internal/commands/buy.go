@@ -7,18 +7,18 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	cmdInv "github.com/mccune1224/betrayal/internal/commands/inventory"
-	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/scheduler"
 	"github.com/zekrotja/ken"
 )
 
 type Buy struct {
 	models    data.Models
-	scheduler *cron.BetrayalScheduler
+	scheduler *scheduler.BetrayalScheduler
 }
 
-func (b *Buy) Initialize(models data.Models, scheduler *cron.BetrayalScheduler) {
+func (b *Buy) Initialize(models data.Models, scheduler *scheduler.BetrayalScheduler) {
 	b.models = models
 	b.scheduler = scheduler
 }

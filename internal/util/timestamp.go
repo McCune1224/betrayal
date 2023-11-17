@@ -13,3 +13,12 @@ func GetEstTimeStamp() string {
 	// without the est at the end
 	return est.Format("Jan 2 15:04:05")
 }
+
+func GetEstTimeStampFromDuration(d time.Duration) string {
+	// get current time in est
+	est := time.Now().UTC().Add(-4 * time.Hour)
+	est = est.Add(d)
+	// format similar to Oct 24 11:00:00
+	// without the est at the end
+	return est.Format("Jan 2 15:04:05")
+}

@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/scheduler"
 	"github.com/zekrotja/ken"
 )
 
@@ -16,10 +16,10 @@ const infinity = "∞"
 
 type View struct {
 	models    data.Models
-	scheduler *cron.BetrayalScheduler
+	scheduler *scheduler.BetrayalScheduler
 }
 
-func (v *View) Initialize(models data.Models, scheduler *cron.BetrayalScheduler) {
+func (v *View) Initialize(models data.Models, scheduler *scheduler.BetrayalScheduler) {
 	v.models = models
 	v.scheduler = scheduler
 }

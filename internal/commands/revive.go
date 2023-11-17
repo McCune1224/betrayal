@@ -7,18 +7,18 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
-	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/scheduler"
 	"github.com/zekrotja/ken"
 )
 
 type Revive struct {
 	models    data.Models
-	scheduler *cron.BetrayalScheduler
+	scheduler *scheduler.BetrayalScheduler
 }
 
-func (r *Revive) Initialize(models data.Models, scheduler *cron.BetrayalScheduler) {
+func (r *Revive) Initialize(models data.Models, scheduler *scheduler.BetrayalScheduler) {
 	r.models = models
 	r.scheduler = scheduler
 }

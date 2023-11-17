@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/scheduler"
 	"github.com/zekrotja/ken"
 )
 
@@ -32,10 +32,10 @@ var (
 
 type List struct {
 	models    data.Models
-	scheduler *cron.BetrayalScheduler
+	scheduler *scheduler.BetrayalScheduler
 }
 
-func (l *List) Initialize(models data.Models, scheduler *cron.BetrayalScheduler) {
+func (l *List) Initialize(models data.Models, scheduler *scheduler.BetrayalScheduler) {
 	l.models = models
 	l.scheduler = scheduler
 }

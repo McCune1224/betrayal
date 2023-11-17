@@ -1,4 +1,4 @@
-package cron
+package scheduler
 
 import (
 	"fmt"
@@ -61,10 +61,14 @@ func (bs *BetrayalScheduler) UpsertJob(jID string, dur time.Duration, jf interfa
 }
 
 func (bs *BetrayalScheduler) DeleteJob(jobID string) error {
-	bs.cleanup()
+	err := bs.dbJobs.InventoryCronJobs.DeleteByJobID(jobID)
+	if err != nil {
+		return err
+	}
 	if job, ok := bs.jobs[jobID]; ok {
 		bs.s.Remove(job)
 		delete(bs.jobs, jobID)
+
 	}
 	return nil
 }
@@ -101,14 +105,9 @@ func (bs *BetrayalScheduler) Clear() {
 func (bs *BetrayalScheduler) cleanup() {
 	now := time.Now()
 	for jobID, job := range bs.jobs {
-		if job.NextRun().Before(now) || job.FinishedRunCount() > 0 {
-			// job is in the past, so remove it
-			bs.s.Remove(job)
-			err := bs.dbJobs.InventoryCronJobs.DeleteByJobID(jobID)
-			if err != nil {
-				log.Println(err)
-			}
-			delete(bs.jobs, jobID)
+		log.Printf("CLEANUP for %s %t", jobID, job.NextRun().Before(now))
+		if job.NextRun().Before(now) {
+			bs.DeleteJob(jobID)
 		}
 	}
 }

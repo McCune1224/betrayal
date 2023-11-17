@@ -7,16 +7,16 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
-	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/scheduler"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
 
 type Kill struct {
 	models    data.Models
-	scheduler *cron.BetrayalScheduler
+	scheduler *scheduler.BetrayalScheduler
 }
 
 // Description implements ken.SlashCommand.
@@ -26,7 +26,7 @@ func (*Kill) Description() string {
 
 var _ ken.SlashCommand = (*Kill)(nil)
 
-func (k *Kill) Initialize(models data.Models, scheduler *cron.BetrayalScheduler) {
+func (k *Kill) Initialize(models data.Models, scheduler *scheduler.BetrayalScheduler) {
 	k.models = models
 	k.scheduler = scheduler
 }

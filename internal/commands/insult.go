@@ -6,19 +6,19 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/mccune1224/betrayal/internal/cron"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/scheduler"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
 
 type Insult struct {
 	models    data.Models
-	scheduler *cron.BetrayalScheduler
+	scheduler *scheduler.BetrayalScheduler
 }
 
-func (i *Insult) Initialize(models data.Models, scheduler *cron.BetrayalScheduler) {
+func (i *Insult) Initialize(models data.Models, scheduler *scheduler.BetrayalScheduler) {
 	i.models = models
 	i.scheduler = scheduler
 }
