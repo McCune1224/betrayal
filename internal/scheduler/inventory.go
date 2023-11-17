@@ -35,13 +35,11 @@ func (bs *BetrayalScheduler) ScheduleEffect(effect string, inv *data.Inventory, 
 }
 
 func (bs *BetrayalScheduler) QueueScheduleJobs(session *discordgo.Session) error {
-	bs.cleanup()
 	jobs, err := bs.dbJobs.InventoryCronJobs.GetByCategory("effect")
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	log.Printf("Found %d jobs to queue", len(jobs))
 	for _, job := range jobs {
 		inventory, err := bs.dbJobs.Inventories.GetByPinChannel(job.InventoryID)
 		if err != nil {
@@ -49,7 +47,6 @@ func (bs *BetrayalScheduler) QueueScheduleJobs(session *discordgo.Session) error
 			continue
 		}
 		jobID := job.GenerateJobID()
-		log.Println(time.Now().Unix() > job.InvokeTime)
 		if time.Now().Unix() > job.InvokeTime {
 			log.Println("DELETING JOB ID", jobID)
 			err := bs.DeleteJob(jobID)
@@ -102,7 +99,7 @@ func (bs *BetrayalScheduler) QueueScheduleJobs(session *discordgo.Session) error
 						},
 					},
 					Color:     0x00ff00,
-					Timestamp: time.Now().Format(time.RFC3339),
+					Timestamp: util.GetEstTimeStamp() + " EST",
 				}
 				_, err := session.ChannelMessageSendEmbed(job.InventoryID, &msg)
 				if err != nil {

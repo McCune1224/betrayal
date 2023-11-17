@@ -49,6 +49,14 @@ func (*Test) Options() []*discordgo.ApplicationCommandOption {
 			},
 		},
 		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "queue",
+			Description: "see queue for a user",
+			Options: []*discordgo.ApplicationCommandOption{
+				discord.UserCommandArg(true),
+			},
+		},
+		{
 			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
 			Name:        "ac",
 			Description: "test autocorrect",
@@ -110,6 +118,7 @@ func (*Test) Options() []*discordgo.ApplicationCommandOption {
 func (t *Test) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "timer", Run: t.testTimer},
+		ken.SubCommandHandler{Name: "queue", Run: t.testQueue},
 		ken.SubCommandGroup{Name: "ac", SubHandler: []ken.CommandHandler{
 			ken.SubCommandHandler{Name: "role", Run: t.testAcRole},
 			ken.SubCommandHandler{Name: "status", Run: t.testAcStatus},
@@ -287,4 +296,38 @@ func (t *Test) testAcItem(ctx ken.SubCommandContext) (err error) {
 	totalTime := total.Nanoseconds()
 	msg := fmt.Sprintf("%s => %s Searched %d  %dns", itemArg, best, len(names), totalTime)
 	return ctx.RespondMessage(discord.Code(msg))
+}
+
+func (t *Test) testQueue(ctx ken.SubCommandContext) (err error) {
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.ErrorMessage(ctx, "You are not an admin", "You must be an admin to use this command")
+	}
+	userArg := ctx.Options().GetByName("user").UserValue(ctx)
+
+	userInv, err := t.models.Inventories.GetByDiscordID(userArg.ID)
+	if err != nil {
+		return discord.ErrorMessage(ctx, "Unable to find inventory", "Unable to find inventory for user")
+	}
+	userJobs, err := t.models.InventoryCronJobs.GetByInventoryID(userInv.DiscordID)
+	if userJobs != nil {
+		return ctx.RespondMessage("User has no jobs")
+	}
+
+	fields := []*discordgo.MessageEmbedField{}
+	for _, job := range userJobs {
+		// convert job.InvokeTime to time
+		invokes := time.Unix(job.InvokeTime, 0)
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   job.JobID,
+			Value:  fmt.Sprintf("Scheduled for %s", invokes.String()),
+			Inline: true,
+		})
+	}
+	msg := discordgo.MessageEmbed{
+		Title:       "Jobs for " + userArg.Username,
+		Description: fmt.Sprintf("total jobs: %d", len(userJobs)),
+		Fields:      fields,
+	}
+
+	return ctx.RespondEmbed(&msg)
 }
