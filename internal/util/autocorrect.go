@@ -2,7 +2,7 @@ package util
 
 import "github.com/lithammer/fuzzysearch/fuzzy"
 
-func LevensteinDistance(s1, s2 string) int {
+func LevenshteinDistance(s1, s2 string) int {
 	// degenerate cases
 	if s1 == s2 {
 		return 0
@@ -62,7 +62,7 @@ func FuzzyFind(arg string, choices []string) (bestString string, lowesetDistance
 	f := fuzzy.RankFindFold(arg, choices)
 	if len(f) == 0 {
 		for i := range choices {
-			lv := LevensteinDistance(arg, choices[i])
+			lv := LevenshteinDistance(arg, choices[i])
 			if lv < lowestDistance {
 				lowestDistance = lv
 				bestString = choices[i]

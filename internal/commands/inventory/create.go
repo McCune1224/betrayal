@@ -3,12 +3,11 @@ package inventory
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/lib/pq"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/services/inventory"
 	"github.com/zekrotja/ken"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -41,7 +40,6 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 		discord.ErrorMessage(ctx, "Failed to get Role", fmt.Sprintf("Cannot find role %s", roleArg))
 		return err
 	}
-
 	inventoryCreateMsg := discordgo.MessageEmbed{
 		Title:       "Creating Inventory...",
 		Description: fmt.Sprintf("Creating inventory for %s", playerArg.Username),
@@ -96,19 +94,18 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 		ItemLimit:      defaultItemsLimit,
 	}
 
-	defaultInv = roleInventoryBuilder(defaultInv)
-
-	_, err = i.models.Inventories.Insert(defaultInv)
+	handler := inventory.InitInventoryHandler(i.models)
+	err = handler.CreateInventory(defaultInv)
 	if err != nil {
 		log.Println(err)
-		discord.ErrorMessage(ctx, "Alex is a bad programmer", "Failed to insert inventory")
+		discord.ErrorMessage(ctx, "Failed to create inventory", "Unable to create inventory in database")
 		return err
 	}
 	embd := InventoryEmbedBuilder(defaultInv, false)
 	msg, err := ctx.GetSession().ChannelMessageEditEmbed(channelID, pinMsg.ID, embd)
 	if err != nil {
 		log.Println(err)
-		discord.ErrorMessage(ctx, "Alex is a bad programmer", "Failed to edit message")
+		discord.ErrorMessage(ctx, "Failed to edit message", fmt.Sprintf("Could not send to channel %s", discord.MentionChannel(channelID)))
 		ctx.GetSession().ChannelMessageDelete(channelID, pinMsg.ID)
 		return err
 	}
@@ -117,91 +114,15 @@ func (i *Inventory) create(ctx ken.SubCommandContext) (err error) {
 	err = i.models.Inventories.Update(defaultInv)
 	if err != nil {
 		log.Println(err)
-		discord.ErrorMessage(ctx, "Alex is a bad programmer", "Failed to set Pinned Message")
+		discord.ErrorMessage(ctx, "Failed to update inventory", fmt.Sprintf("Unable to update inventory for %s", playerArg.Username))
 		ctx.GetSession().ChannelMessageDelete(channelID, pinMsg.ID)
 		return err
 	}
 	err = ctx.GetSession().ChannelMessagePin(channelID, pinMsg.ID)
 	if err != nil {
-		discord.ErrorMessage(ctx, "Failed to Pin Inventoory Message", err.Error())
+		log.Println(err)
+		discord.ErrorMessage(ctx, "Failed to pin inventory message", fmt.Sprintf("Unable to pin inventory message for %s", playerArg.Username))
 		return err
 	}
 	return discord.SuccessfulMessage(ctx, "Inventory Created", fmt.Sprintf("Created inventory for %s", playerArg.Username))
-}
-
-// Handle edge cases for special roles with non-default setups (immunities, item limit...)
-func roleInventoryBuilder(initInv *data.Inventory) *data.Inventory {
-	inv := initInv
-
-	// FIXME: Lord please forgive for the unholy amount of switch statements I am about to unleash
-	// Will need to make some sort of Website or UI to allow for custom roles to be created instead of me hardcoding them
-	roleName := strings.ToLower(inv.RoleName)
-	switch roleName {
-	// --- GOOD ROLES ---
-	case "cerberus":
-		// Due to perk Hades' Hound
-		inv.Immunities = pq.StringArray{"Frozen", "Burned"}
-	case "detective":
-		// Due to perk Clever
-		inv.Immunities = pq.StringArray{"Blackmailed", "Disabled", "Despaired"}
-	case "fisherman":
-		// Due to perk Barrels
-		inv.ItemLimit = 8
-	case "hero":
-		// Due to perk Compos Mentis
-		inv.Immunities = pq.StringArray{"Madness"}
-	case "nurse":
-		// Due to perk Powerful Immunity
-		inv.Immunities = pq.StringArray{"Death Cursed", "Frozen", "Paralyzed", "Burned", "Empowered", "Drunk", "Restrained", "Disabled", "Blackmailed", "Despaired", "Madness", "Unlucky"}
-	case "terminal":
-		// Due to perk Heartbeats
-		inv.Immunities = pq.StringArray{"Death Cursed", "Frozen", "Paralyzed", "Burned", "Empowered", "Drunk", "Restrained", "Disabled", "Blackmailed", "Despaired", "Madness", "Unlucky"}
-	case "wizard":
-		// due to perk Magic Barrier
-		inv.Immunities = pq.StringArray{"Frozen", "Paralyzed", "Burned", "Cursed"}
-	case "yeti":
-		// Due to perk Winter Coat
-		inv.Immunities = pq.StringArray{"Frozen"}
-
-		// Neutral Roles
-	case "cyborg":
-		inv.Immunities = pq.StringArray{"Paralyzed", "Frozen", "Burned", "Despaired", "Blackmailed", "Drunk"}
-	case "entertainer":
-		// Due to perk Top-Hat Tip
-		inv.Immunities = pq.StringArray{"Unlucky"}
-		inv.Statuses = pq.StringArray{"Lucky"}
-	case "magician":
-		// Due to perk Top-Hat Tip
-		inv.Statuses = pq.StringArray{"Lucky"}
-		inv.Immunities = pq.StringArray{"Unlucky"}
-	case "masochist":
-		// Due to perk One Track Mind
-		inv.Immunities = pq.StringArray{"Lucky"}
-	case "succubus":
-		// Due to perk Dominatrix
-		inv.Immunities = pq.StringArray{"Blackmail"}
-	//
-	// Evil Roles
-	case "arsonist":
-		// Due to perk Ashes to Ashes / Flamed
-		inv.Immunities = pq.StringArray{"Burned"}
-	case "cultist":
-		inv.Immunities = pq.StringArray{"Curse"}
-	case "director":
-		inv.Immunities = pq.StringArray{"Despaired", "Blackmailed", "Drunk"}
-	case "gatekeeper":
-		inv.Immunities = pq.StringArray{"Restrained", "Paralyzed", "Frozen"}
-	case "hacker":
-		inv.Immunities = pq.StringArray{"Disabled", "Blackmailed"}
-	case "highwayman":
-		inv.Immunities = pq.StringArray{"Madness"}
-	case "imp":
-		inv.Immunities = pq.StringArray{"Despaired", "Paralyzed"}
-	case "threatener":
-		inv.ItemLimit = 6
-	default: // Do nothing
-		return inv
-	}
-
-	return inv
 }

@@ -23,19 +23,6 @@ func (i *Inventory) Options() []*discordgo.ApplicationCommandOption {
 		})
 	}
 
-	alignmentChoices := []*discordgo.ApplicationCommandOptionChoice{
-		{
-			Name:  "Good",
-			Value: "GOOD",
-		}, {
-			Name:  "Evil",
-			Value: "EVIL",
-		}, {
-			Name:  "Neutral",
-			Value: "NEUTRAL",
-		},
-	}
-
 	return []*discordgo.ApplicationCommandOption{
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -407,7 +394,6 @@ func (i *Inventory) Options() []*discordgo.ApplicationCommandOption {
 					Options: []*discordgo.ApplicationCommandOption{
 						discord.StringCommandArg("name", "alignment type", true),
 					},
-					Choices: alignmentChoices,
 				},
 			},
 		},
@@ -538,8 +524,8 @@ func (i *Inventory) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "add", Run: i.addNote},
 			ken.SubCommandHandler{Name: "remove", Run: i.removeNote},
 		}},
-		ken.SubCommandGroup{Name: "allignment", SubHandler: []ken.CommandHandler{
-			ken.SubCommandHandler{Name: "set", Run: i.setAllignment},
+		ken.SubCommandGroup{Name: "alignment", SubHandler: []ken.CommandHandler{
+			ken.SubCommandHandler{Name: "set", Run: i.setAlignment},
 		}},
 	)
 }
