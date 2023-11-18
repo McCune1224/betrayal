@@ -516,42 +516,26 @@ func (i *Inventory) removeItemLimit(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeNote(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	inv, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAuthorizedError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
-
 	ctx.SetEphemeral(true)
+	// Subtract 1 to account for 0 indexing (user input is 1 indexed)
+	noteArg := int(ctx.Options().GetByName("index").IntValue()) - 1
 
-	noteArg := int(ctx.Options().GetByName("index").IntValue())
-	// Subtract 1 to account for 0 indexing
-	noteArg -= 1
-
-	if noteArg < 0 || noteArg > len(inventory.Notes)-1 {
-		return discord.ErrorMessage(ctx,
-			"Invalid index",
-			fmt.Sprintf("Index must be between 1 and %d", len(inventory.Notes)))
+	if noteArg < 0 || noteArg > len(inv.Notes)-1 {
+		return discord.ErrorMessage(ctx, "Invalid note index", "Please specify a valid note index.")
 	}
-
-	removedNote := inventory.Notes[noteArg]
-	inventory.Notes = append(inventory.Notes[:noteArg], inventory.Notes[noteArg+1:]...)
-	err = i.models.Inventories.UpdateNotes(inventory)
+	removedNote := inv.Notes[noteArg]
+	inv.Notes = append(inv.Notes[:noteArg], inv.Notes[noteArg+1:]...)
+	err = i.models.Inventories.UpdateNotes(inv)
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to remove note",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return discord.ErrorMessage(ctx, "Failed to remove note", "Alex is a bad programmer, and this is his fault.")
 	}
-
-	err = discord.SuccessfulMessage(
-		ctx,
-		"Note removed",
-		fmt.Sprintf("Removed note:\n %s", removedNote))
-
-	return err
+	return discord.SuccessfulMessage(ctx, "Note removed", fmt.Sprintf("Removed note:\n %s", removedNote))
 }

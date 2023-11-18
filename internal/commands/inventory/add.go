@@ -11,6 +11,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/services/inventory"
 	"github.com/zekrotja/ken"
 )
 
@@ -593,7 +594,7 @@ func (i *Inventory) addLuck(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addNote(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	inv, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAuthorizedError(ctx)
@@ -603,28 +604,16 @@ func (i *Inventory) addNote(ctx ken.SubCommandContext) (err error) {
 	ctx.SetEphemeral(true)
 
 	noteArg := ctx.Options().GetByName("message").StringValue()
-	inventory.Notes = append(inventory.Notes, noteArg)
-	err = i.models.Inventories.Update(inventory)
+	handler := inventory.InitInventoryHandler(i.models, inv)
+	err = handler.AddNote(noteArg)
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to add note",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return discord.ErrorMessage(ctx, "Failed to add note", "Alex is a bad programmer, and this is his fault.")
 	}
-	err = i.updateInventoryMessage(ctx, inventory)
+	err = i.updateInventoryMessage(ctx, inv)
 	if err != nil {
 		log.Println(err)
 	}
 
-	err = discord.SuccessfulMessage(
-		ctx,
-		"Added Note",
-		fmt.Sprintf(
-			"Added note %s",
-			noteArg,
-		),
-	)
-	return err
+	return discord.SuccessfulMessage(ctx, "Added Note", fmt.Sprintf("Added note %s", noteArg))
 }
