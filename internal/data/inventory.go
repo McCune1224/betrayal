@@ -98,6 +98,15 @@ func (m *InventoryModel) UpdateCoins(inventory *Inventory) error {
 	return nil
 }
 
+func (m *InventoryModel) UpdateCoinBonus(inventory *Inventory) error {
+	query := `UPDATE inventories set coin_bonus=$1 WHERE discord_id=$2`
+	_, err := m.DB.Exec(query, inventory.CoinBonus, inventory.DiscordID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (m *InventoryModel) UpdateLuck(inventory *Inventory) error {
 	query := `UPDATE inventories SET luck=$1 WHERE discord_id=$2`
 	_, err := m.DB.Exec(query, inventory.Luck, inventory.DiscordID)

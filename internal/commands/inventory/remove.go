@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -325,7 +324,7 @@ func (i *Inventory) removeEffect(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeCoins(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -334,50 +333,28 @@ func (i *Inventory) removeCoins(ctx ken.SubCommandContext) (err error) {
 	}
 
 	coinsArg := ctx.Options().GetByName("amount").IntValue()
-
-	previousCoins := inventory.Coins
-	inventory.Coins -= coinsArg
-
-	if inventory.Coins < 0 {
-		return discord.ErrorMessage(ctx,
-			"Insufficient Funds",
-			fmt.Sprintf(
-				"You don't have enough coins to remove %d coins.\n %d - %d = %d",
-				coinsArg,
-				previousCoins,
-				coinsArg,
-				inventory.Coins,
-			))
+	previousCoins := handler.GetInventory().Coins
+	err = handler.RemoveCoins(coinsArg)
+	if err != nil {
+		if errors.Is(err, inventory.ErrInsufficientCoins) {
+			return discord.ErrorMessage(ctx, "Will put inventory in negative balance",
+				fmt.Sprintf("Cannot remove %d coins from %d (balance will be %d)", coinsArg, previousCoins, previousCoins-coinsArg))
+		}
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to remove coins")
 	}
 
-	err = i.models.Inventories.UpdateCoins(inventory)
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update coins",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return discord.AlexError(ctx, "Failed to update inventory")
 	}
 
-	err = i.updateInventoryMessage(ctx, inventory)
-	if err != nil {
-		log.Println(err)
-	}
-
-	err = discord.SuccessfulMessage(ctx,
-		"Coins removed",
-		fmt.Sprintf(
-			"Removed %d coins\n %d => %d",
-			coinsArg,
-			previousCoins,
-			inventory.Coins,
-		))
-	return err
+	return discord.SuccessfulMessage(ctx, "Coins removed", fmt.Sprintf("Removed %d coins\n %d => %d", coinsArg, previousCoins, handler.GetInventory().Coins))
 }
 
 func (i *Inventory) removeCoinBonus(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -386,45 +363,21 @@ func (i *Inventory) removeCoinBonus(ctx ken.SubCommandContext) (err error) {
 	}
 
 	coinBonusArg := ctx.Options().GetByName("amount").StringValue()
-	old := inventory.CoinBonus
-	fCoinBonusArg, err := strconv.ParseFloat(coinBonusArg, 32)
+	old := handler.GetInventory().CoinBonus
+
+	err = handler.RemoveCoinBonus(coinBonusArg)
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to parse coin bonus",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return discord.AlexError(ctx, "Failed to remove coin bonus")
 	}
-
-	// 2.5 -> 0.025
-
-	inventory.CoinBonus -= (float32(fCoinBonusArg) / 100)
-
-	err = i.models.Inventories.UpdateProperty(inventory, "coin_bonus", inventory.CoinBonus)
+	err = i.updateInventoryMessage(ctx, handler.GetInventory())
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update coin bonus",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return discord.AlexError(ctx, "failed to update inventory message")
 	}
 
-	err = i.updateInventoryMessage(ctx, inventory)
-	if err != nil {
-		log.Println(err)
-	}
-
-	err = discord.SuccessfulMessage(ctx,
-		"Coin bonus removed",
-		fmt.Sprintf(
-			"Removed %s%% coin bonus\n %s%% => %s%%",
-			strconv.FormatFloat(float64(fCoinBonusArg), 'f', 2, 32),
-			strconv.FormatFloat(float64(old*100), 'f', 2, 32),
-			strconv.FormatFloat(float64(inventory.CoinBonus*100), 'f', 2, 32),
-		))
-	return err
+	return discord.SuccessfulMessage(ctx, "Removed Coin Bonus",
+		fmt.Sprintf("%.2f => %.2f", float32(int(old*100))/100, float32(int(handler.GetInventory().CoinBonus*100))/100))
 }
 
 func (i *Inventory) removeWhitelist(ctx ken.SubCommandContext) (err error) {
@@ -443,9 +396,7 @@ func (i *Inventory) removeWhitelist(ctx ken.SubCommandContext) (err error) {
 		if v.ChannelID == channelArg.ID {
 			i.models.Whitelists.Delete(v)
 		}
-		return discord.SuccessfulMessage(ctx,
-			"Channel removed from whitelist.",
-			fmt.Sprintf("Removed %s from whitelist.", channelArg.Name))
+		return discord.SuccessfulMessage(ctx, "Channel removed from whitelist.", fmt.Sprintf("Removed %s from whitelist.", channelArg.Name))
 	}
 
 	return discord.ErrorMessage(ctx, "Channel not found", "This channel is not whitelisted.")

@@ -388,9 +388,7 @@ func InventoryEmbedBuilder(
 		Inline: true,
 	}
 
-	// show coin bonus x100
-	cb := inv.CoinBonus * 100
-	coinStr := fmt.Sprintf("%d", inv.Coins) + " [" + fmt.Sprintf("%.2f", cb) + "%]"
+	coinStr := fmt.Sprintf("%d", inv.Coins) + " [" + fmt.Sprintf("%.2f", inv.CoinBonus) + "%]"
 	coinField := &discordgo.MessageEmbedField{
 		Name:   fmt.Sprintf("%s Coins", discord.EmojiCoins),
 		Value:  coinStr,

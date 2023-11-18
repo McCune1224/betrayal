@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/services/inventory"
 	"github.com/zekrotja/ken"
 )
 
@@ -393,7 +393,7 @@ func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inventory) addCoins(ctx ken.SubCommandContext) (err error) {
 	ctx.SetEphemeral(false)
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -402,33 +402,19 @@ func (i *Inventory) addCoins(ctx ken.SubCommandContext) (err error) {
 	}
 
 	coinsArg := ctx.Options().GetByName("amount").IntValue()
-
-	inventory.Coins = inventory.Coins + coinsArg
-	err = i.models.Inventories.UpdateCoins(inventory)
+	err = handler.AddCoins(coinsArg)
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to add coins",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return discord.AlexError(ctx, "Failed to add coins")
 	}
-
-	err = i.updateInventoryMessage(ctx, inventory)
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
 	if err != nil {
 		log.Println(err)
+		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
 
-	return discord.SuccessfulMessage(
-		ctx,
-		"Added Coins",
-		fmt.Sprintf(
-			"Added %d coins\n %d => %d",
-			coinsArg,
-			inventory.Coins-coinsArg,
-			inventory.Coins,
-		),
-	)
+	newCoins := handler.GetInventory().Coins
+	return discord.SuccessfulMessage(ctx, "Added Coins", fmt.Sprintf("Added %d coins\n %d => %d", coinsArg, newCoins-coinsArg, newCoins))
 }
 
 func (i *Inventory) addWhitelist(ctx ken.SubCommandContext) (err error) {
@@ -482,8 +468,7 @@ func (i *Inventory) addWhitelist(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addCoinBonus(ctx ken.SubCommandContext) (err error) {
-	ctx.SetEphemeral(false)
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -491,46 +476,25 @@ func (i *Inventory) addCoinBonus(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 
+	ctx.SetEphemeral(false)
 	coinBonusArg := ctx.Options().GetByName("amount").StringValue()
-	fCoinBonusArg, err := strconv.ParseFloat(coinBonusArg, 32)
-	// round to 2 decimal for float values in case of 1.23456789
-	old := inventory.CoinBonus
+	old := handler.GetInventory().CoinBonus
+	err = handler.AddCoinBonus(coinBonusArg)
+	if err != nil {
+		if errors.Is(err, inventory.ErrInvalidDecimalString) {
+			return discord.ErrorMessage(ctx, "Invalid decimal string", err.Error())
+		}
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to add coin bonus")
+	}
+	err = i.updateInventoryMessage(ctx, handler.GetInventory())
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to add coin bonus",
-			"Unable to parse coin bonus",
-		)
+		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
 
-	inventory.CoinBonus += (float32(fCoinBonusArg) / 100)
-	err = i.models.Inventories.UpdateProperty(inventory, "coin_bonus", inventory.CoinBonus)
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to add coin bonus",
-			"Alex is a bad programmer, and this is his fault.",
-		)
-	}
-	err = i.updateInventoryMessage(ctx, inventory)
-	if err != nil {
-		log.Println(err)
-	}
-
-	err = discord.SuccessfulMessage(
-		ctx,
-		"Added Coin Bonus",
-		fmt.Sprintf(
-			// roudned to 2 decimal for float values
-			"Added %s%%\n %s%% => %s%%",
-			strconv.FormatFloat(float64(fCoinBonusArg), 'f', 2, 32),
-			strconv.FormatFloat(float64(old*100), 'f', 2, 32),
-			strconv.FormatFloat(float64(inventory.CoinBonus*100), 'f', 2, 32),
-		),
-	)
-	return err
+	return discord.SuccessfulMessage(ctx, "Added Coin Bonus",
+		fmt.Sprintf("%.2f => %.2f", float32(int(old*100))/100, float32(int(handler.GetInventory().CoinBonus*100))/100))
 }
 
 func (i *Inventory) addItemLimit(ctx ken.SubCommandContext) (err error) {
