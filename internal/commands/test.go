@@ -149,7 +149,7 @@ func (t *Test) testTimer(ctx ken.SubCommandContext) (err error) {
 	err = t.scheduler.UpsertJob(time.Now().String(), timeDur, job)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "failed to schedule timer")
 	}
 	return discord.SuccessfulMessage(ctx, "Timer Scheduled", fmt.Sprintf("Timer scheduled for %s", timeDur.String()))
 }

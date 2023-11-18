@@ -55,7 +55,7 @@ func (s *Setup) Run(ctx ken.Context) (err error) {
 	rolePool, err := generateRoleSelectPool(s.models)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "failed to generate role pool")
 	}
 	playerCount := int(ctx.Options().GetByName("playercount").IntValue())
 	decepCount := len(decepts)

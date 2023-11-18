@@ -113,18 +113,17 @@ func (a *Alliance) request(ctx ken.SubCommandContext) (err error) {
 	currReqs, err := a.models.Alliances.GetRequestByOwnerID(requester.ID)
 	if err != nil && err != sql.ErrNoRows {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.ErrorMessage(ctx, "Unable to find alliance", "Are you sure you're the owner of an alliance?")
 	}
 	if currReqs != nil {
-		return discord.ErrorMessage(ctx, "Already Within Alliance",
-			fmt.Sprintf("You already have a pending alliance creation request (%s).", currReqs.Name))
+		return discord.ErrorMessage(ctx, "Already Within Alliance", fmt.Sprintf("You already have a pending alliance creation request (%s).", currReqs.Name))
 	}
 
 	// Check to make sure they're not already a member of an alliance.
 	currAlliances, err := a.models.Alliances.GetByMemberID(requester.ID)
 	if err != nil && err != sql.ErrNoRows {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.ErrorMessage(ctx, "Unable to find alliance", "Unable to verify membership")
 	}
 	if currAlliances != nil {
 		return discord.ErrorMessage(ctx, "Already Within Alliance",
@@ -134,11 +133,10 @@ func (a *Alliance) request(ctx ken.SubCommandContext) (err error) {
 	currAlliances, err = a.models.Alliances.GetByName(aName)
 	if err != nil && err != sql.ErrNoRows {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.ErrorMessage(ctx, "Unable to find alliance", "Unable to verify alliance name")
 	}
 	if currAlliances != nil {
-		return discord.ErrorMessage(ctx, "Alliance Name Taken",
-			fmt.Sprintf("The alliance name (%s) is already taken.", aName))
+		return discord.ErrorMessage(ctx, "Alliance Name Taken", fmt.Sprintf("The alliance name (%s) is already taken.", aName))
 	}
 
 	// Create the request.
@@ -149,19 +147,19 @@ func (a *Alliance) request(ctx ken.SubCommandContext) (err error) {
 	err = a.models.Alliances.InsertRequest(req)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to create Alliance request")
 	}
 	// Send the request to the action channel
 	actionChannel, err := a.models.FunnelChannels.Get(e.GuildID)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to get action channel")
 	}
 	reqMsg := fmt.Sprintf("%s - alliance create request: %s - %s", requester.Username, aName, util.GetEstTimeStamp())
 	_, err = s.ChannelMessageSend(actionChannel.ChannelID, reqMsg)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to send request to action channel")
 	}
 
 	return discord.SuccessfulMessage(ctx, "Alliance Requested", fmt.Sprintf("Your alliance request (%s) has been sent for review.", aName))
@@ -184,7 +182,7 @@ func (a *Alliance) invite(ctx ken.SubCommandContext) (err error) {
 	targetInv, err := a.models.Inventories.GetByDiscordID(target.ID)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Unable to get target inventory")
 	}
 	inviteMsg := &discordgo.MessageEmbed{
 		Title:       fmt.Sprintf("%s You have been invited to join %s %s", discord.EmojiMail, alliance.Name, discord.EmojiMail),
@@ -193,21 +191,21 @@ func (a *Alliance) invite(ctx ken.SubCommandContext) (err error) {
 	_, err = s.ChannelMessageSendEmbed(targetInv.UserPinChannel, inviteMsg)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Unable to send invite")
 	}
 	return discord.SuccessfulMessage(ctx, "Invite Sent", fmt.Sprintf("Invite sent to %s", target.Username))
 }
 
 func (a *Alliance) accept(ctx ken.SubCommandContext) (err error) {
-	return discord.AlexError(ctx)
+	return discord.AlexError(ctx, "Not Implemented")
 }
 
 func (a *Alliance) adminApprove(ctx ken.SubCommandContext) (err error) {
-	return discord.AlexError(ctx)
+	return discord.AlexError(ctx, "Not Implemented")
 }
 
 func (a *Alliance) adminDecline(ctx ken.SubCommandContext) (err error) {
-	return discord.AlexError(ctx)
+	return discord.AlexError(ctx, "Not Implemented")
 }
 
 // Version implements ken.SlashCommand.

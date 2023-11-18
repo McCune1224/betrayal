@@ -65,7 +65,7 @@ func (r *Revive) normRevive(ctx ken.SubCommandContext) (err error) {
 	inv, err := inventory.Fetch(ctx, r.models, true)
 	if err != nil {
 		if errors.Is(err, inventory.ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -74,13 +74,13 @@ func (r *Revive) normRevive(ctx ken.SubCommandContext) (err error) {
 	err = r.models.Inventories.UpdateProperty(inv, "is_alive", true)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to update death status")
 	}
 
 	err = inventory.UpdateInventoryMessage(ctx.GetSession(), inv)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
 
 	userId := inv.DiscordID
@@ -88,23 +88,23 @@ func (r *Revive) normRevive(ctx ken.SubCommandContext) (err error) {
 	user, err := ctx.GetSession().User(userId)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to get user")
 	}
 	invs, err := r.models.Inventories.GetAll()
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to get inventories")
 	}
 	hitlist, err := r.models.Hitlists.Get()
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to get kill list")
 	}
 
 	err = UpdateHitlistMesage(ctx, invs, hitlist)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to update kill list message")
 	}
 
 	return discord.SuccessfulMessage(ctx, "Revived", fmt.Sprintf("%s is marked alive", user.Username))

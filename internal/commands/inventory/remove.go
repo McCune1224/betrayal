@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/services/inventory"
 	"github.com/zekrotja/ken"
 )
 
@@ -15,7 +16,7 @@ func (i *Inventory) removeAbility(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -61,7 +62,7 @@ func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -108,7 +109,7 @@ func (i *Inventory) removePerk(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -151,7 +152,7 @@ func (i *Inventory) removeItem(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -195,7 +196,7 @@ func (i *Inventory) removeStatus(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -239,7 +240,7 @@ func (i *Inventory) removeImmunity(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -283,7 +284,7 @@ func (i *Inventory) removeEffect(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -327,7 +328,7 @@ func (i *Inventory) removeCoins(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -379,7 +380,7 @@ func (i *Inventory) removeCoinBonus(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -428,7 +429,7 @@ func (i *Inventory) removeCoinBonus(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inventory) removeWhitelist(ctx ken.SubCommandContext) (err error) {
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		return discord.NotAuthorizedError(ctx)
+		return discord.NotAdminError(ctx)
 	}
 	channelArg := ctx.Options().GetByName("channel").ChannelValue(ctx)
 
@@ -442,48 +443,37 @@ func (i *Inventory) removeWhitelist(ctx ken.SubCommandContext) (err error) {
 		if v.ChannelID == channelArg.ID {
 			i.models.Whitelists.Delete(v)
 		}
-		err = discord.SuccessfulMessage(ctx,
+		return discord.SuccessfulMessage(ctx,
 			"Channel removed from whitelist.",
 			fmt.Sprintf("Removed %s from whitelist.", channelArg.Name))
-		return err
 	}
 
-	err = discord.ErrorMessage(ctx, "Channel not found", "This channel is not whitelisted.")
-	return err
+	return discord.ErrorMessage(ctx, "Channel not found", "This channel is not whitelisted.")
 }
 
 func (i *Inventory) removeLuck(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(true)
 
 	luck := ctx.Options().GetByName("amount").IntValue()
-	inventory.Luck -= luck
-	if inventory.Luck < 0 {
-		inventory.Luck = 0
-	}
-	err = i.models.Inventories.UpdateLuck(inventory)
+
+	err = handler.RemoveLuck(luck)
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update luck",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return discord.AlexError(ctx, "Failed to remove luck")
 	}
-
-	return discord.SuccessfulMessage(
-		ctx,
-		"Removed luck",
-		fmt.Sprintf("Removed %d luck\n %d => %d", luck, luck, inventory.Luck),
-	)
-
-	// If luck is below 0 after difference, set to 0
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to update inventory message")
+	}
+	return discord.SuccessfulMessage(ctx, "Removed luck", fmt.Sprintf("Removed %d luck\n %d => %d", luck, luck, handler.GetInventory().Luck))
 }
 
 func (i *Inventory) removeItemLimit(ctx ken.SubCommandContext) (err error) {
@@ -494,18 +484,11 @@ func (i *Inventory) removeItemLimit(ctx ken.SubCommandContext) (err error) {
 	}
 	ctx.SetEphemeral(false)
 	itemLimitArg := ctx.Options().GetByName("amount").IntValue()
-	inv.ItemLimit -= int(itemLimitArg)
-	if inv.ItemLimit < 0 {
-		inv.ItemLimit = 0
-	}
-	err = i.models.Inventories.UpdateProperty(inv, "item_limit", inv.ItemLimit)
+	ih := inventory.InitInventoryHandler(i.models, inv)
+	err = ih.RemoveLimit(int(itemLimitArg))
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update items limit",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return discord.AlexError(ctx, "Failed to remove item limit")
 	}
 	err = i.updateInventoryMessage(ctx, inv)
 	if err != nil {
@@ -516,26 +499,31 @@ func (i *Inventory) removeItemLimit(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeNote(ctx ken.SubCommandContext) (err error) {
-	inv, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(true)
+	if len(handler.GetInventory().Notes) == 0 {
+		return discord.ErrorMessage(ctx, "No notes to remove", "Nothing to see here officer...")
+	}
 	// Subtract 1 to account for 0 indexing (user input is 1 indexed)
 	noteArg := int(ctx.Options().GetByName("index").IntValue()) - 1
-
-	if noteArg < 0 || noteArg > len(inv.Notes)-1 {
-		return discord.ErrorMessage(ctx, "Invalid note index", "Please specify a valid note index.")
+	if noteArg < 0 || noteArg > len(handler.GetInventory().Notes)-1 {
+		return discord.ErrorMessage(ctx, "Invalid note index",
+			fmt.Sprintf("Please enter a number between 1 and %d", len(handler.GetInventory().Notes)))
 	}
-	removedNote := inv.Notes[noteArg]
-	inv.Notes = append(inv.Notes[:noteArg], inv.Notes[noteArg+1:]...)
-	err = i.models.Inventories.UpdateNotes(inv)
+	err = handler.RemoveLimit(noteArg)
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(ctx, "Failed to remove note", "Alex is a bad programmer, and this is his fault.")
+		return discord.AlexError(ctx, "Failed to remove note")
 	}
-	return discord.SuccessfulMessage(ctx, "Note removed", fmt.Sprintf("Removed note:\n %s", removedNote))
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
+	if err != nil {
+		return discord.AlexError(ctx, "Failed to update inventory")
+	}
+	return discord.SuccessfulMessage(ctx, "Note removed", fmt.Sprintf("Removed note #%d", noteArg+1))
 }

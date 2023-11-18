@@ -9,24 +9,15 @@ import (
 
 func NotConfessionalError(ctx ken.Context, channelID string) (err error) {
 	return ErrorMessage(
-		ctx,
-		"Not Confessional",
-		"This command can only be used in your confessional channel <#"+channelID+">",
-	)
+		ctx, "Not Confessional", "This command can only be used in your confessional channel <#"+channelID+">")
 }
 
-func NotAuthorizedError(ctx ken.Context) (err error) {
+// Returns
+func NotAdminError(ctx ken.Context) (err error) {
 	return ErrorMessage(
-		ctx,
-		"Not Authorized For Command",
-		fmt.Sprintf("Need One Of The Following Roles: %s", strings.Join(AdminRoles, ", ")),
-	)
+		ctx, "Not Authorized For Command", fmt.Sprintf("Need One Of The Following Roles: %s", strings.Join(AdminRoles, ", ")))
 }
 
-func AlexError(ctx ken.Context) (err error) {
-	return ErrorMessage(
-		ctx,
-		"Unable to process command",
-		"Alex is a bad programmer. Please yell at him.",
-	)
+func AlexError(ctx ken.Context, title string) (err error) {
+	return ErrorMessage(ctx, title, "Alex has horribly failed at something here, please bug "+MentionUser(McKusaID))
 }

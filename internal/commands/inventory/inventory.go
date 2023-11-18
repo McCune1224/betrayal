@@ -11,6 +11,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/scheduler"
+	"github.com/mccune1224/betrayal/internal/services/inventory"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
@@ -330,6 +331,44 @@ func Fetch(ctx ken.SubCommandContext, m data.Models, adminOnly bool) (inv *data.
 		return nil, errors.New("somehow inventory is nil in middleware")
 	}
 	return inv, nil
+}
+
+// Middleware for inventory commands to fetch inventory and ensure user is authorized
+func FetchHandler(ctx ken.SubCommandContext, m data.Models, adminOnly bool) (handler *inventory.InventoryHandler, err error) {
+	inv := &data.Inventory{}
+	if adminOnly && !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return nil, ErrNotAuthorized
+	}
+	userArg, ok := ctx.Options().GetByNameOptional("user")
+	event := ctx.GetEvent()
+	channelID := event.ChannelID
+	if !ok {
+		inv, err = m.Inventories.GetByPinChannel(channelID)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+	}
+	if inv == nil {
+		inv, err = m.Inventories.GetByDiscordID(userArg.UserValue(ctx).ID)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+	}
+	wl, err := m.Whitelists.GetAll()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	if !InventoryAuthorized(ctx, inv, wl) {
+		return nil, ErrNotAuthorized
+	}
+	if inv == nil {
+		return nil, errors.New("somehow inventory is nil in middleware")
+	}
+	handler = inventory.InitInventoryHandler(m, inv)
+	return handler, nil
 }
 
 // Helper to build inventory embed message based off if user is host or not

@@ -20,7 +20,7 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 	inv, err := inventory.Fetch(ctx, r.models, true)
 	if err != nil {
 		if errors.Is(err, inventory.ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -36,7 +36,7 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 		item, err := r.getRandomItem(roll)
 		if err != nil {
 			log.Println(err)
-			return discord.AlexError(ctx)
+			return discord.AlexError(ctx, "Failed to get random item")
 		}
 		newItems = append(newItems, item)
 	}
@@ -226,7 +226,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 					err = r.models.Inventories.UpdateAbilities(currInv)
 					if err != nil {
 						log.Println(err)
-						discord.AlexError(sctx)
+						discord.AlexError(sctx, "Failed to update abilities")
 						return true
 					}
 				} else {
@@ -234,7 +234,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 					err = r.models.Inventories.UpdateAnyAbilities(currInv)
 					if err != nil {
 						log.Println(err)
-						discord.AlexError(sctx)
+						discord.AlexError(sctx, "Failed to update any abilities")
 						return true
 					}
 				}
@@ -242,7 +242,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 				_, err = ctx.GetSession().ChannelMessageSendEmbed(currInv.UserPinChannel, embedPowerDrop)
 				if err != nil {
 					log.Println(err)
-					discord.AlexError(sctx)
+					discord.AlexError(sctx, "Failed to send message")
 					return true
 				}
 				_, err = ctx.GetSession().ChannelMessageSendEmbed(inv.UserPinChannel, embedPowerDrop)
@@ -284,7 +284,7 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 	inv, err := inventory.Fetch(ctx, r.models, true)
 	if err != nil {
 		if errors.Is(err, inventory.ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -362,14 +362,14 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 					ab, err := r.models.Abilities.GetByFuzzy(aa.RoleSpecific)
 					if err != nil {
 						log.Println(err)
-						discord.AlexError(sctx)
+						discord.AlexError(sctx, "Failed to get ability")
 						return true
 					}
 					inventory.UpsertAbility(currInv, ab)
 					err = r.models.Inventories.UpdateAbilities(currInv)
 					if err != nil {
 						log.Println(err)
-						discord.AlexError(sctx)
+						discord.AlexError(sctx, "Failed to update abilities")
 						return true
 					}
 
@@ -378,7 +378,7 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 					err = r.models.Inventories.UpdateAnyAbilities(currInv)
 					if err != nil {
 						log.Println(err)
-						discord.AlexError(sctx)
+						discord.AlexError(sctx, "Failed to update any abilities")
 						return true
 					}
 				}
@@ -387,7 +387,7 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 				err = r.models.Inventories.UpdateItems(currInv)
 				if err != nil {
 					log.Println(err)
-					discord.AlexError(sctx)
+					discord.AlexError(sctx, "Failed to update items")
 					return true
 				}
 

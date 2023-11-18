@@ -7,9 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
-	"github.com/mccune1224/betrayal/internal/services/inventory"
 	"github.com/zekrotja/ken"
 )
 
@@ -17,7 +15,7 @@ func (i *Inventory) setAbility(ctx ken.SubCommandContext) (err error) {
 	inv, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -54,7 +52,7 @@ func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
 	inv, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -91,7 +89,7 @@ func (i *Inventory) setCoins(ctx ken.SubCommandContext) (err error) {
 	inv, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -123,7 +121,7 @@ func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
 	inv, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -173,97 +171,78 @@ func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
-	inv, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 	itemsLimitArg := ctx.Options().GetByName("size").IntValue()
-	inv.ItemLimit = int(itemsLimitArg)
-	err = i.models.Inventories.UpdateProperty(inv, "item_limit", itemsLimitArg)
+
+	err = handler.SetLimit(int(itemsLimitArg))
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update items limit",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return discord.AlexError(ctx, "Failed to set item limit")
 	}
-	err = UpdateInventoryMessage(ctx.GetSession(), inv)
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
 	if err != nil {
 		log.Println(err)
-		return err
+		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
 
 	return discord.SuccessfulMessage(
-		ctx,
-		"Items Limit updated",
-		fmt.Sprintf(
-			"Items Limit set to %d",
-			inv.ItemLimit,
-		),
+		ctx, "Items Limit updated", fmt.Sprintf("Items Limit set to %d", handler.GetInventory().ItemLimit),
 	)
 }
 
 func (i *Inventory) setLuck(ctx ken.SubCommandContext) (err error) {
-	inv, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(true)
-	luckLevelArg := ctx.Options().GetByName("level").IntValue()
-	oldLuck := inv.Luck
-	inv.Luck = luckLevelArg
+	luckLevelArg := ctx.Options().GetByName("amount").IntValue()
+	oldLuck := handler.GetInventory().Luck
 
-	err = i.models.Inventories.UpdateLuck(inv)
+	err = handler.SetLuck(luckLevelArg)
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update luck level",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return discord.AlexError(ctx, "Failed to set luck level")
 	}
-	err = UpdateInventoryMessage(ctx.GetSession(), inv)
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update inventory message",
-			"Alex is a bad programmer, and this is his fault.",
-		)
-	}
-
-	return ctx.RespondEmbed(&discordgo.MessageEmbed{
-		Title:       "Luck level updated",
-		Description: fmt.Sprintf("Luck level from %d to %d", oldLuck, inv.Luck),
-		Color:       discord.ColorThemeGreen,
-	})
-}
-
-func (i *Inventory) setAlignment(ctx ken.SubCommandContext) (err error) {
-	alignmentArg := ctx.Options().GetByName("name").StringValue()
-	inv, err := Fetch(ctx, i.models, true)
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
-	}
-	ih := inventory.InitInventoryHandler(i.models, inv)
-	err = ih.UpdateAlignment(alignmentArg)
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(ctx, "Unable to find alignment", "Please specify a valid alignment")
-	}
-	err = UpdateInventoryMessage(ctx.GetSession(), inv)
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(ctx, "Failed to update inventory message", "Alex is a bad programmer, and this is his fault.")
 	}
-	return discord.SuccessfulMessage(ctx, "Alignment updated", fmt.Sprintf("Set alignment to %s", inv.Alignment))
+
+	return discord.SuccessfulMessage(ctx, "Luck level updated", fmt.Sprintf("Luck level from %d to %d", oldLuck, handler.GetInventory().Luck))
+}
+
+func (i *Inventory) setAlignment(ctx ken.SubCommandContext) (err error) {
+	alignmentArg := ctx.Options().GetByName("name").StringValue()
+	handler, err := FetchHandler(ctx, i.models, true)
+	if err != nil {
+		if errors.Is(err, ErrNotAuthorized) {
+			return discord.NotAdminError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
+	ctx.SetEphemeral(false)
+	err = handler.SetAlignment(alignmentArg)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to set alignment")
+	}
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to update inventory message")
+	}
+
+	return discord.SuccessfulMessage(ctx, "Alignment Updated", fmt.Sprintf("Set alignment to %s", handler.GetInventory().Alignment))
 }

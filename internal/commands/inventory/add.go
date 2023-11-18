@@ -11,7 +11,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
-	"github.com/mccune1224/betrayal/internal/services/inventory"
 	"github.com/zekrotja/ken"
 )
 
@@ -19,7 +18,7 @@ func (i *Inventory) addAbility(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -67,7 +66,7 @@ func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -115,7 +114,7 @@ func (i *Inventory) addPerk(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -164,7 +163,7 @@ func (i *Inventory) addItem(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -203,7 +202,7 @@ func (i *Inventory) addStatus(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -245,7 +244,7 @@ func (i *Inventory) addImmunity(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -289,7 +288,7 @@ func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -397,7 +396,7 @@ func (i *Inventory) addCoins(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -435,7 +434,7 @@ func (i *Inventory) addCoins(ctx ken.SubCommandContext) (err error) {
 func (i *Inventory) addWhitelist(ctx ken.SubCommandContext) (err error) {
 	ctx.SetEphemeral(false)
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		discord.NotAuthorizedError(ctx)
+		discord.NotAdminError(ctx)
 	}
 
 	channelArg := ctx.Options().GetByName("channel").ChannelValue(ctx)
@@ -487,7 +486,7 @@ func (i *Inventory) addCoinBonus(ctx ken.SubCommandContext) (err error) {
 	inventory, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
@@ -535,82 +534,69 @@ func (i *Inventory) addCoinBonus(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addItemLimit(ctx ken.SubCommandContext) (err error) {
-	inv, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
 	itemLimitArg := ctx.Options().GetByName("amount").IntValue()
-	inv.ItemLimit += int(itemLimitArg)
-	err = i.models.Inventories.UpdateProperty(inv, "item_limit", inv.ItemLimit)
+
+	err = handler.AddLimit(int(itemLimitArg))
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to update items limit",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return discord.AlexError(ctx, "Failed to add item limit")
 	}
-	err = i.updateInventoryMessage(ctx, inv)
+	err = i.updateInventoryMessage(ctx, handler.GetInventory())
 	if err != nil {
 		log.Println(err)
-		return err
+		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
-	return discord.SuccessfulMessage(ctx, "Item Limit Updated", fmt.Sprintf("Item limit set to %d", inv.ItemLimit))
+	return discord.SuccessfulMessage(ctx, "Item Limit Updated", fmt.Sprintf("Item limit set to %d", handler.GetInventory().ItemLimit))
 }
 
 func (i *Inventory) addLuck(ctx ken.SubCommandContext) (err error) {
-	ctx.SetEphemeral(true)
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 
+	ctx.SetEphemeral(true)
 	luckArg := ctx.Options().GetByName("amount").IntValue()
-	old := inventory.Luck
-	inventory.Luck += luckArg
-	err = i.models.Inventories.UpdateCoins(inventory)
+	old := handler.GetInventory().Luck
+	err = handler.AddLuck(luckArg)
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(ctx,
-			"Failed to add luck",
-			"Alex is a bad programmer, and this is his fault.")
+		return discord.AlexError(ctx, "Failed to add luck")
 	}
-
-	err = i.updateInventoryMessage(ctx, inventory)
+	err = i.updateInventoryMessage(ctx, handler.GetInventory())
 	if err != nil {
 		log.Println(err)
-		return discord.SilentWarningMessage(ctx, "Failed to update inventory message", "Alex is a bad programmer, and this is his fault.")
+		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
-	return discord.SuccessfulMessage(
-		ctx,
-		"Added Luck",
-		fmt.Sprintf("%d => %d", old, inventory.Luck),
-	)
+	return discord.SuccessfulMessage(ctx, "Added Luck", fmt.Sprintf("%d => %d", old, handler.GetInventory().Luck))
 }
 
 func (i *Inventory) addNote(ctx ken.SubCommandContext) (err error) {
-	inv, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
+	noteArg := ctx.Options().GetByName("message").StringValue()
 	ctx.SetEphemeral(true)
 
-	noteArg := ctx.Options().GetByName("message").StringValue()
-	handler := inventory.InitInventoryHandler(i.models, inv)
 	err = handler.AddNote(noteArg)
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(ctx, "Failed to add note", "Alex is a bad programmer, and this is his fault.")
+		return discord.AlexError(ctx, "Failed to add note")
 	}
-	err = i.updateInventoryMessage(ctx, inv)
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
 	if err != nil {
 		log.Println(err)
 	}

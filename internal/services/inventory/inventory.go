@@ -25,6 +25,10 @@ func InitInventoryHandler(models data.Models, inv ...*data.Inventory) *Inventory
 	return ih
 }
 
+func (ih *InventoryHandler) GetInventory() *data.Inventory {
+	return ih.i
+}
+
 func (ih *InventoryHandler) CreateInventory(initInv *data.Inventory) error {
 	inv := initInv
 	// FIXME: Lord please forgive for the unholy amount of switch statements I am about to unleash

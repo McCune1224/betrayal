@@ -145,7 +145,7 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 		inv, err = inventory.Fetch(ctx, r.models, true)
 		if err != nil {
 			if errors.Is(err, inventory.ErrNotAuthorized) {
-				return discord.NotAuthorizedError(ctx)
+				return discord.NotAdminError(ctx)
 			}
 		}
 	}
@@ -159,19 +159,19 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 		if err != nil {
 			isAdding = true
 			log.Println(err)
-			return discord.AlexError(ctx)
+			return discord.AlexError(ctx, "Failed to get random item")
 		}
 		if inv != nil {
 			inv.Items = append(inv.Items, item.Name)
 			err = r.models.Inventories.UpdateItems(inv)
 			if err != nil {
 				log.Println(err)
-				return discord.AlexError(ctx)
+				return discord.AlexError(ctx, "Failed to update items")
 			}
 			err = inventory.UpdateInventoryMessage(ctx.GetSession(), inv)
 			if err != nil {
 				log.Println(err)
-				return discord.AlexError(ctx)
+				return discord.AlexError(ctx, "Failed to update inventory message")
 			}
 		}
 		foot := &discordgo.MessageEmbedFooter{}
@@ -191,20 +191,20 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 		if err != nil {
 			isAdding = true
 			log.Println(err)
-			return discord.AlexError(ctx)
+			return discord.AlexError(ctx, "Failed to get random ability")
 		}
 		if inv != nil {
 			if ability.RoleSpecific == inv.RoleName {
 				ab, err := r.models.Abilities.GetByFuzzy(ability.RoleSpecific)
 				if err != nil {
 					log.Println(err)
-					return discord.AlexError(ctx)
+					return discord.AlexError(ctx, "Failed to get ability")
 				}
 				inventory.UpsertAbility(inv, ab)
 				err = r.models.Inventories.UpdateAbilities(inv)
 				if err != nil {
 					log.Println(err)
-					return discord.AlexError(ctx)
+					return discord.AlexError(ctx, "Failed to update abilities")
 				}
 
 			} else {
@@ -212,13 +212,13 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 				err = r.models.Inventories.UpdateAnyAbilities(inv)
 				if err != nil {
 					log.Println(err)
-					return discord.AlexError(ctx)
+					return discord.AlexError(ctx, "Failed to update any abilities")
 				}
 			}
 			err = inventory.UpdateInventoryMessage(ctx.GetSession(), inv)
 			if err != nil {
 				log.Println(err)
-				return discord.AlexError(ctx)
+				return discord.AlexError(ctx, "Failed to update inventory message")
 			}
 		}
 		foot := &discordgo.MessageEmbedFooter{}
@@ -415,7 +415,7 @@ func (r *Roll) wheel(ctx ken.SubCommandContext) (err error) {
 		_, err = s.ChannelMessageEdit(e.ChannelID, tempMsg.ID, fmt.Sprintf("%s %s", base, event))
 		if err != nil {
 			log.Println(err)
-			return discord.AlexError(ctx)
+			return discord.AlexError(ctx, "Failed to edit message")
 		}
 	}
 	final := events[rand.Intn(len(events))]
@@ -423,7 +423,7 @@ func (r *Roll) wheel(ctx ken.SubCommandContext) (err error) {
 	err = s.ChannelMessageDelete(e.ChannelID, tempMsg.ID)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to delete message")
 	}
 	return discord.SuccessfulMessage(ctx, fmt.Sprintf("%s Event Rolled!", final), "(use /list events to see all events)")
 }

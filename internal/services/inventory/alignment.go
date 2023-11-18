@@ -4,7 +4,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/util"
 )
 
-func (ih *InventoryHandler) UpdateAlignment(alignment string) error {
+func (ih *InventoryHandler) SetAlignment(alignment string) error {
 	options := []string{"GOOD", "NEUTRAL", "EVIL"}
 
 	// max int value
@@ -17,9 +17,5 @@ func (ih *InventoryHandler) UpdateAlignment(alignment string) error {
 		}
 	}
 
-	err := ih.m.Inventories.UpdateProperty(ih.i, "alignment", alignment)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ih.m.Inventories.UpdateProperty(ih.i, "alignment", alignment)
 }

@@ -96,7 +96,7 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 	sesh := ctx.GetSession()
 	_, err = sesh.ChannelMessageSend(voteChannel.ChannelID, discord.Code(voteMsg))
 	if err != nil {
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to send vote message")
 	}
 
 	return discord.SuccessfulMessage(ctx, "Vote Sent for Processing.", fmt.Sprintf("Voted for %s", voteUser.Username))
@@ -104,7 +104,7 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 
 func (v *Vote) location(ctx ken.SubCommandContext) (err error) {
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		return discord.NotAuthorizedError(ctx)
+		return discord.NotAdminError(ctx)
 	}
 
 	targetChannel := ctx.Options().GetByName("channel").ChannelValue(ctx)
@@ -114,7 +114,7 @@ func (v *Vote) location(ctx ken.SubCommandContext) (err error) {
 	}
 	err = v.models.Votes.Insert(vote)
 	if err != nil {
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to set vote location")
 	}
 
 	return discord.SuccessfulMessage(ctx, "Successfully set vote location", fmt.Sprintf("Vote location set to %s", targetChannel.Mention()))

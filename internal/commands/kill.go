@@ -75,21 +75,21 @@ func (k *Kill) killNorm(ctx ken.SubCommandContext) (err error) {
 	inv, err := inventory.Fetch(ctx, k.models, true)
 	if err != nil {
 		if errors.Is(err, inventory.ErrNotAuthorized) {
-			return discord.NotAuthorizedError(ctx)
+			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	err = k.models.Inventories.UpdateProperty(inv, "is_alive", false)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to update death status")
 	}
 
 	inv.IsAlive = false
 	err = inventory.UpdateInventoryMessage(ctx.GetSession(), inv)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
 
 	userId := inv.DiscordID
@@ -97,25 +97,25 @@ func (k *Kill) killNorm(ctx ken.SubCommandContext) (err error) {
 	user, err := ctx.GetSession().User(userId)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to get user")
 	}
 
 	invs, err := k.models.Inventories.GetAll()
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to get inventories")
 	}
 
 	hitlist, err := k.models.Hitlists.Get()
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to get kill list")
 	}
 
 	err = UpdateHitlistMesage(ctx, invs, hitlist)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to update kill list")
 	}
 
 	return discord.SuccessfulMessage(ctx, "Player Killed", fmt.Sprintf("%s is marked dead", user.Username))
@@ -123,7 +123,7 @@ func (k *Kill) killNorm(ctx ken.SubCommandContext) (err error) {
 
 func (k *Kill) killLocation(ctx ken.SubCommandContext) (err error) {
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		return discord.NotAuthorizedError(ctx)
+		return discord.NotAdminError(ctx)
 	}
 
 	channel := ctx.Options().GetByName("channel").ChannelValue(ctx)
@@ -134,12 +134,12 @@ func (k *Kill) killLocation(ctx ken.SubCommandContext) (err error) {
 	pinMsg, err := ctx.GetSession().ChannelMessageSendEmbed(channel.ID, &hitlistCreateMsg)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to send message")
 	}
 	invs, err := k.models.Inventories.GetAll()
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to get inventories")
 	}
 
 	embd := HitListBuilder(invs, ctx.GetSession())
@@ -147,7 +147,7 @@ func (k *Kill) killLocation(ctx ken.SubCommandContext) (err error) {
 	msg, err := ctx.GetSession().ChannelMessageEditEmbed(channel.ID, pinMsg.ID, embd)
 	if err != nil {
 		log.Print(err)
-		discord.AlexError(ctx)
+		discord.AlexError(ctx, "Failed to edit message")
 	}
 
 	currHitlist, _ := k.models.Hitlists.Get()
@@ -167,12 +167,12 @@ func (k *Kill) killLocation(ctx ken.SubCommandContext) (err error) {
 	_, err = k.models.Hitlists.Upsert(&hitlist)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "Failed to update kill list")
 	}
 	err = ctx.GetSession().ChannelMessagePin(channel.ID, msg.ID)
 	if err != nil {
 		log.Println(err)
-		discord.AlexError(ctx)
+		discord.AlexError(ctx, "Failed to pin message")
 	}
 	return discord.SuccessfulMessage(ctx, "Hitlist Location Set", fmt.Sprintf("Hitlist location set to %s", channel.Mention()))
 }

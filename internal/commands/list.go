@@ -103,7 +103,7 @@ func (l *List) listStatuses(ctx ken.SubCommandContext) (err error) {
 	statuses, err := l.models.Statuses.GetAll()
 	if err != nil {
 		log.Println(err)
-		discord.AlexError(ctx)
+		discord.AlexError(ctx, "failed to get statuses")
 	}
 	fields := []*discordgo.MessageEmbedField{}
 	for _, s := range statuses {
@@ -138,14 +138,14 @@ func (l *List) listEvents(ctx ken.SubCommandContext) (err error) {
 }
 
 func (l *List) listItems(ctx ken.SubCommandContext) (err error) {
-	return discord.AlexError(ctx)
+	return discord.AlexError(ctx, "not implemented")
 }
 
 func (l *List) listActiveRoles(ctx ken.SubCommandContext) (err error) {
 	_, err = l.models.RoleLists.Get()
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx)
+		return discord.AlexError(ctx, "failed to get active roles")
 	}
 
 	fields := []*discordgo.MessageEmbedField{
