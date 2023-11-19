@@ -148,7 +148,7 @@ func (i *Inventory) removePerk(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeItem(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -156,39 +156,19 @@ func (i *Inventory) removeItem(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
-
 	itemArg := ctx.Options().GetByName("name").StringValue()
-
-	for k, v := range inventory.Items {
-		if strings.EqualFold(v, itemArg) {
-			inventory.Items = append(inventory.Items[:k], inventory.Items[k+1:]...)
-			err = i.models.Inventories.UpdateItems(inventory)
-			if err != nil {
-				log.Println(err)
-				return discord.ErrorMessage(
-					ctx,
-					"Failed to remove item",
-					"Alex is a bad programmer, and this is his fault.",
-				)
-			}
-			err = i.updateInventoryMessage(ctx, inventory)
-			if err != nil {
-				return err
-			}
-			return discord.SuccessfulMessage(
-				ctx,
-				"Item removed from inventory.",
-				fmt.Sprintf("Removed %s from inventory.", itemArg),
-			)
-		}
+	item, err := handler.RemoveItem(itemArg)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to remove item")
 	}
-
-	discord.ErrorMessage(
-		ctx,
-		"Failed to get Item",
-		fmt.Sprintf("Item %s not found in inventory.", itemArg),
-	)
-	return err
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to update inventory message")
+	}
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Removed item %s", item),
+		fmt.Sprintf("Removed item %s to %s", item, discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) removeStatus(ctx ken.SubCommandContext) (err error) {
@@ -236,7 +216,7 @@ func (i *Inventory) removeStatus(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeImmunity(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -246,41 +226,26 @@ func (i *Inventory) removeImmunity(ctx ken.SubCommandContext) (err error) {
 	ctx.SetEphemeral(false)
 
 	immunityArg := ctx.Options().GetByName("name").StringValue()
-
-	for k, v := range inventory.Immunities {
-		if strings.EqualFold(v, immunityArg) {
-			inventory.Immunities = append(inventory.Immunities[:k], inventory.Immunities[k+1:]...)
-			err = i.models.Inventories.UpdateImmunities(inventory)
-			if err != nil {
-				log.Println(err)
-				return discord.ErrorMessage(
-					ctx,
-					"Failed to remove immunity",
-					"Alex is a bad programmer, and this is his fault.",
-				)
-			}
-			err = i.updateInventoryMessage(ctx, inventory)
-			if err != nil {
-				return err
-			}
-			return discord.SuccessfulMessage(
-				ctx,
-				"Immunity removed from inventory.",
-				fmt.Sprintf("Removed %s from inventory.", immunityArg),
-			)
+	best, err := handler.RemoveImmunity(immunityArg)
+	if err != nil {
+		if errors.Is(err, inventory.ErrImmunityNotFound) {
+			discord.ErrorMessage(ctx, "Failed to find immunity", fmt.Sprintf("Immunity similar to %s not found in inventory.", immunityArg))
 		}
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to remove immunity")
 	}
 
-	discord.ErrorMessage(
-		ctx,
-		"Failed to get Immunity",
-		fmt.Sprintf("Immunity %s not found in inventory.", immunityArg),
-	)
-	return err
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to update inventory message")
+	}
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Removed Immunity %s", best),
+		fmt.Sprintf("Removed Immunity for %s", discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) removeEffect(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -288,39 +253,17 @@ func (i *Inventory) removeEffect(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(false)
-
 	effectArg := ctx.Options().GetByName("name").StringValue()
-
-	for k, v := range inventory.Effects {
-		if strings.EqualFold(v, effectArg) {
-			inventory.Effects = append(inventory.Effects[:k], inventory.Effects[k+1:]...)
-			err = i.models.Inventories.UpdateEffects(inventory)
-			if err != nil {
-				log.Println(err)
-				return discord.ErrorMessage(
-					ctx,
-					"Failed to remove effect",
-					"Alex is a bad programmer, and this is his fault.",
-				)
-			}
-			err = i.updateInventoryMessage(ctx, inventory)
-			if err != nil {
-				return err
-			}
-			return discord.SuccessfulMessage(
-				ctx,
-				"Effect removed from inventory.",
-				fmt.Sprintf("Removed %s from inventory.", effectArg),
-			)
+	best, err := handler.RemoveEffect(effectArg)
+	if err != nil {
+		if errors.Is(err, inventory.ErrEffectNotFound) {
+			return discord.ErrorMessage(ctx, "Failed to find effect", fmt.Sprintf("Effect similar to %s not found in inventory.", effectArg))
 		}
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to get effect", fmt.Sprintf("Effect %s not found in inventory.", effectArg))
 	}
-
-	discord.ErrorMessage(
-		ctx,
-		"Failed to get effect",
-		fmt.Sprintf("Effect %s not found in inventory.", effectArg),
-	)
-	return err
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Removed effect %s", best),
+		fmt.Sprintf("Removed effect for %s", discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) removeCoins(ctx ken.SubCommandContext) (err error) {
@@ -350,7 +293,9 @@ func (i *Inventory) removeCoins(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "Failed to update inventory")
 	}
 
-	return discord.SuccessfulMessage(ctx, "Coins removed", fmt.Sprintf("Removed %d coins\n %d => %d", coinsArg, previousCoins, handler.GetInventory().Coins))
+	return discord.SuccessfulMessage(ctx, "Coins removed",
+		fmt.Sprintf("Removed %d coins\n %d => %d for %s",
+			coinsArg, previousCoins, handler.GetInventory().Coins, discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) removeCoinBonus(ctx ken.SubCommandContext) (err error) {
@@ -377,7 +322,9 @@ func (i *Inventory) removeCoinBonus(ctx ken.SubCommandContext) (err error) {
 	}
 
 	return discord.SuccessfulMessage(ctx, "Removed Coin Bonus",
-		fmt.Sprintf("%.2f => %.2f", float32(int(old*100))/100, float32(int(handler.GetInventory().CoinBonus*100))/100))
+		fmt.Sprintf("%.2f => %.2f for %s",
+			float32(int(old*100))/100, float32(int(handler.GetInventory().CoinBonus*100))/100,
+			discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) removeWhitelist(ctx ken.SubCommandContext) (err error) {
@@ -424,7 +371,8 @@ func (i *Inventory) removeLuck(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
-	return discord.SuccessfulMessage(ctx, "Removed luck", fmt.Sprintf("Removed %d luck\n %d => %d", luck, luck, handler.GetInventory().Luck))
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Removed %d luck", luck), fmt.Sprintf("Removed %d luck\n %d => %d for %s",
+		luck, luck, handler.GetInventory().Luck, discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) removeItemLimit(ctx ken.SubCommandContext) (err error) {

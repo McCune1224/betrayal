@@ -105,8 +105,8 @@ func (i *Inventory) setCoins(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
-	return discord.SuccessfulMessage(ctx, "Coins updated",
-		fmt.Sprintf("Set coins from %d to %d", oldCoins, handler.GetInventory().Coins))
+	return discord.SuccessfulMessage(ctx, "Coins Set", fmt.Sprintf("Set coins from %d to %d for %s",
+		oldCoins, handler.GetInventory().Coins, handler.GetInventory().DiscordID))
 }
 
 func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
@@ -131,7 +131,9 @@ func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
 	return discord.SuccessfulMessage(ctx, "Set Coin Bonus",
-		fmt.Sprintf("%.2f => %.2f", float32(int(old*100))/100, float32(int(handler.GetInventory().CoinBonus*100))/100))
+		fmt.Sprintf("%.2f => %.2f for %s",
+			float32(int(old*100))/100, float32(int(handler.GetInventory().CoinBonus*100))/100,
+			handler.GetInventory().DiscordID))
 }
 
 func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
@@ -184,7 +186,8 @@ func (i *Inventory) setLuck(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Failed to update inventory message", "Alex is a bad programmer, and this is his fault.")
 	}
 
-	return discord.SuccessfulMessage(ctx, "Luck level updated", fmt.Sprintf("Luck level from %d to %d", oldLuck, handler.GetInventory().Luck))
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Luck set to %d", luckLevelArg),
+		fmt.Sprintf("Luck level from %d to %d for %s", oldLuck, handler.GetInventory().Luck, handler.GetInventory().DiscordID))
 }
 
 func (i *Inventory) setAlignment(ctx ken.SubCommandContext) (err error) {
@@ -208,5 +211,6 @@ func (i *Inventory) setAlignment(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
 
-	return discord.SuccessfulMessage(ctx, "Alignment Updated", fmt.Sprintf("Set alignment to %s", handler.GetInventory().Alignment))
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Alignment set to %s", handler.GetInventory().Alignment),
+		fmt.Sprintf("Upated alignment for %s", handler.GetInventory().DiscordID))
 }

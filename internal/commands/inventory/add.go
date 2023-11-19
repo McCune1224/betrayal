@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -161,7 +160,7 @@ func (i *Inventory) addPerk(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addItem(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -170,31 +169,18 @@ func (i *Inventory) addItem(ctx ken.SubCommandContext) (err error) {
 	}
 
 	itemNameArg := ctx.Options().GetByName("name").StringValue()
-	item, err := i.models.Items.GetByFuzzy(itemNameArg)
-	if err != nil {
-		return discord.ErrorMessage(
-			ctx,
-			fmt.Sprint("Cannot find Item: ", itemNameArg),
-			"Verify if the item exists.",
-		)
-	}
-
-	inventory.Items = append(inventory.Items, item.Name)
-	err = i.models.Inventories.UpdateItems(inventory)
+	item, err := handler.AddItem(itemNameArg)
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to add item",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return discord.AlexError(ctx, "Failed to add item")
 	}
-	err = i.updateInventoryMessage(ctx, inventory)
+	err = i.updateInventoryMessage(ctx, handler.GetInventory())
 	if err != nil {
 		log.Println(err)
 	}
 
-	err = discord.SuccessfulMessage(ctx, "Added Item", fmt.Sprintf("Item %s added", itemNameArg))
+	err = discord.SuccessfulMessage(ctx, fmt.Sprintf("Added Item %s", item),
+		fmt.Sprintf("Added item for %s", discord.MentionUser(handler.GetInventory().DiscordID)))
 	return err
 }
 
@@ -242,7 +228,7 @@ func (i *Inventory) addStatus(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inventory) addImmunity(ctx ken.SubCommandContext) (err error) {
 	ctx.SetEphemeral(false)
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -251,36 +237,20 @@ func (i *Inventory) addImmunity(ctx ken.SubCommandContext) (err error) {
 	}
 	immunityNameArg := ctx.Options().GetByName("name").StringValue()
 
-	for _, v := range inventory.Immunities {
-		if strings.EqualFold(v, immunityNameArg) {
-			return discord.ErrorMessage(
-				ctx,
-				fmt.Sprintf("Immunity %s already exists in inventory", immunityNameArg),
-				"Did you mean to remove the immunity?")
+	best, err := handler.AddImmunity(immunityNameArg)
+	if err != nil {
+		if errors.Is(err, inventory.ErrImmunityExists) {
+			return discord.ErrorMessage(ctx, "Immunity already exists", fmt.Sprintf("Error %s already in inventory", immunityNameArg))
 		}
+		return discord.ErrorMessage(ctx, "Immunity not found", fmt.Sprintf("%s not found", immunityNameArg))
 	}
-
-	inventory.Immunities = append(inventory.Immunities, immunityNameArg)
-	err = i.models.Inventories.UpdateImmunities(inventory)
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to add immunity",
-			"Alex is a bad programmer, and this is his fault.",
-		)
-	}
-
-	err = i.updateInventoryMessage(ctx, inventory)
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
 	if err != nil {
 		log.Println(err)
 	}
 
-	err = discord.SuccessfulMessage(
-		ctx,
-		"Added Immunity",
-		fmt.Sprintf("Immunity %s added", immunityNameArg),
-	)
+	err = discord.SuccessfulMessage(ctx, fmt.Sprintf("Immunity %s Removed", best),
+		fmt.Sprintf("Removed immunity for %s", discord.MentionUser(handler.GetInventory().DiscordID)))
 	return err
 }
 
@@ -303,16 +273,19 @@ func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
 		}
 	}
 
-	err = handler.AddEffect(effectNameArg)
+	best, err := handler.AddEffect(effectNameArg)
 	if err != nil {
 		if errors.Is(err, inventory.ErrAlreadyExists) {
 			return discord.ErrorMessage(ctx, "Effect already exists", fmt.Sprintf("Error %s already in inventory", effectNameArg))
 		}
+		log.Println(err)
+		return discord.AlexError(ctx, fmt.Sprintf("Failed to add effect %s", best))
 	}
 
 	err = i.updateInventoryMessage(ctx, handler.GetInventory())
 	if err != nil {
 		log.Println(err)
+		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
 
 	start := util.GetEstTimeStamp()
@@ -329,15 +302,19 @@ func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
 				return
 			}
 			handler := inventory.InitInventoryHandler(i.models, inv)
-			err = handler.RemoveEffect(effectNameArg)
+			best, err := handler.RemoveEffect(effectNameArg)
 			if err != nil {
+				if errors.Is(err, inventory.ErrEffectNotFound) {
+					s.ChannelMessageSend(ctx.GetEvent().ChannelID, fmt.Sprintf("Effect %s not found", effectNameArg))
+					return
+				}
 				log.Println(err)
 				s.ChannelMessageSend(ctx.GetEvent().ChannelID, fmt.Sprintf("Failed to remove timed effect %s", effectNameArg))
 				return
 			}
 			msg := discordgo.MessageEmbed{
 				Title:       "Effect Expired",
-				Description: fmt.Sprintf("Effect %s has expired", effectNameArg),
+				Description: fmt.Sprintf("Effect %s has expired", best),
 				Fields: []*discordgo.MessageEmbedField{
 					{
 						Value: fmt.Sprintf("Timer started at %s", start),
@@ -396,7 +373,8 @@ func (i *Inventory) addCoins(ctx ken.SubCommandContext) (err error) {
 	}
 
 	newCoins := handler.GetInventory().Coins
-	return discord.SuccessfulMessage(ctx, "Added Coins", fmt.Sprintf("Added %d coins\n %d => %d", coinsArg, newCoins-coinsArg, newCoins))
+	return discord.SuccessfulMessage(ctx, "Added Coins",
+		fmt.Sprintf("Added %d coins\n %d => %d for %s", coinsArg, newCoins-coinsArg, newCoins, discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) addWhitelist(ctx ken.SubCommandContext) (err error) {
@@ -476,7 +454,9 @@ func (i *Inventory) addCoinBonus(ctx ken.SubCommandContext) (err error) {
 	}
 
 	return discord.SuccessfulMessage(ctx, "Added Coin Bonus",
-		fmt.Sprintf("%.2f => %.2f", float32(int(old*100))/100, float32(int(handler.GetInventory().CoinBonus*100))/100))
+		fmt.Sprintf("%.2f => %.2f fot %s",
+			float32(int(old*100))/100, float32(int(handler.GetInventory().CoinBonus*100))/100,
+			discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) addItemLimit(ctx ken.SubCommandContext) (err error) {
@@ -523,7 +503,8 @@ func (i *Inventory) addLuck(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
-	return discord.SuccessfulMessage(ctx, "Added Luck", fmt.Sprintf("%d => %d", old, handler.GetInventory().Luck))
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Added %d Luck", luckArg),
+		fmt.Sprintf("%d => %d for ", old, handler.GetInventory().Luck))
 }
 
 func (i *Inventory) addNote(ctx ken.SubCommandContext) (err error) {
