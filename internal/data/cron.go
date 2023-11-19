@@ -2,25 +2,29 @@ package data
 
 import (
 	"fmt"
+	"log"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
 
 // Metadata is a struct that contains all the metadata for a cron job
 type InventoryCronJob struct {
-	ID                int    `db:"id"`
-	JobID             string `db:"job_id"`
-	InventoryID       string `db:"inventory_id"`
-	InventoryCategory string `db:"inventory_category"`
-	InventoryAction   string `db:"inventory_action"`
-	InventoryValue    string `db:"inventory_value"`
-	StartTime         int64  `db:"start_time"`
-	InvokeTime        int64  `db:"invoke_time"`
+	ID int `db:"id"`
+	// foreign key to Inventory ID
+	InventoryID int64  `db:"inventory_id"`
+	ChannelID   string `db:"channel_id"`
+	PlayerID    string `db:"player_id"`
+	Category    string `db:"category"`
+	ActionType  string `db:"action_type"`
+	Value       string `db:"value"`
+	StartTime   int64  `db:"start_time"`
+	InvokeTime  int64  `db:"invoke_time"`
 }
 
-// FIXME: THIS RIGHT IS IS NASTY BUT IDK WHAT ELSE TO DO RN
-func (icj *InventoryCronJob) GenerateJobID() string {
-	return fmt.Sprintf("%s-%s-%s-%s", icj.InventoryID, icj.InventoryCategory, icj.InventoryAction, icj.InventoryValue)
+// MakeJobID returns a unique job ID for the cron job based on the inventory ID, category, action type, and value
+func (icj *InventoryCronJob) MakeJobID() string {
+	return fmt.Sprintf("%s-%s-%s-%s", icj.PlayerID, icj.Category, icj.ActionType, icj.Value)
 }
 
 type InventoryCronJobModel struct {
@@ -30,6 +34,17 @@ type InventoryCronJobModel struct {
 func (icjm *InventoryCronJobModel) Insert(icj *InventoryCronJob) error {
 	query := `INSERT INTO inventory_cron_jobs ` + PSQLGeneratedInsert(icj) + ` RETURNING id`
 	_, err := icjm.DB.NamedExec(query, &icj)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (icjm *InventoryCronJobModel) GetByJobID(jobID string) error {
+	properties := strings.Split(jobID, "-")
+	query := `SELECT * FROM inventory_cron_jobs WHERE player_id=$1 AND category=$2 AND action_type=$3 AND value=$4`
+	var cronJob InventoryCronJob
+	err := icjm.DB.Get(&cronJob, query, properties[0], properties[1], properties[2], properties[3])
 	if err != nil {
 		return err
 	}
@@ -47,7 +62,7 @@ func (icjm *InventoryCronJobModel) GetByInventoryID(inventoryID string) ([]Inven
 }
 
 func (cjm *InventoryCronJobModel) GetByCategory(category string) ([]InventoryCronJob, error) {
-	query := `SELECT * FROM inventory_cron_jobs WHERE inventory_category=$1`
+	query := `SELECT * FROM inventory_cron_jobs WHERE category=$1`
 	cronJobs := []InventoryCronJob{}
 	err := cjm.DB.Select(&cronJobs, query, category)
 	if err != nil {
@@ -84,12 +99,14 @@ func (icjm *InventoryCronJobModel) DeleteByInventoryID(inventoryID string) error
 	return nil
 }
 
-func (icjm *InventoryCronJobModel) DeleteByJobID(jobID string) error {
-	query := `DELETE FROM inventory_cron_jobs WHERE job_id=$1`
-	_, err := icjm.DB.Exec(query, jobID)
+func (icjm *InventoryCronJobModel) DeletebyJobID(jobID string) error {
+	properties := strings.Split(jobID, "-")
+	query := `DELETE FROM inventory_cron_jobs WHERE player_id=$1 AND category=$2 AND action_type=$3 AND value=$4`
+	_, err := icjm.DB.Exec(query, properties[0], properties[1], properties[2], properties[3])
 	if err != nil {
 		return err
 	}
+	log.Println("Deleted JobID: ", jobID)
 	return nil
 }
 

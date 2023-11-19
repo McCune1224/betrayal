@@ -11,6 +11,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/services/inventory"
+	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
 
@@ -285,7 +286,7 @@ func (i *Inventory) addImmunity(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
 	ctx.SetEphemeral(false)
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -302,85 +303,66 @@ func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
 		}
 	}
 
-	for _, v := range inventory.Effects {
-		if strings.EqualFold(v, effectNameArg) {
-			return discord.ErrorMessage(
-				ctx,
-				fmt.Sprintf("Effect %s already exists in inventory", effectNameArg),
-				"Did you mean to remove the effect?")
+	err = handler.AddEffect(effectNameArg)
+	if err != nil {
+		if errors.Is(err, inventory.ErrAlreadyExists) {
+			return discord.ErrorMessage(ctx, "Effect already exists", fmt.Sprintf("Error %s already in inventory", effectNameArg))
 		}
 	}
 
-	inventory.Effects = append(inventory.Effects, effectNameArg)
-	err = i.models.Inventories.UpdateEffects(inventory)
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to add effect",
-			"Alex is a bad programmer, and this is his fault.",
-		)
-	}
-
-	err = i.updateInventoryMessage(ctx, inventory)
+	err = i.updateInventoryMessage(ctx, handler.GetInventory())
 	if err != nil {
 		log.Println(err)
 	}
 
+	start := util.GetEstTimeStamp()
+
+	// FIXME: This needs to somehow be moved to the scheduler package and just get arguments from here
+	// For now, I'm just going to copy the code here because I don't want to deal with import cycle issues
 	if dur > 0 {
-		s := ctx.GetSession()
-		err = i.scheduler.ScheduleEffect(effectNameArg, inventory, dur, func() {
-			for k, v := range inventory.Effects {
-				if strings.EqualFold(effectNameArg, v) {
-					inventory.Effects = append(inventory.Effects[:k], inventory.Effects[k+1:]...)
-					err = i.models.Inventories.UpdateEffects(inventory)
-					if err != nil {
-						log.Println(err)
-						msg := &discordgo.MessageEmbed{
-							Title:       "Failed to remove effect",
-							Description: fmt.Sprintf("Failed to remove effect %s from inventory", effectNameArg),
-							Fields: []*discordgo.MessageEmbedField{
-								{
-									Name:  "Error",
-									Value: err.Error(),
-								},
-							},
-						}
-						_, err := s.ChannelMessageSendEmbed(ctx.GetEvent().ChannelID, msg)
-						if err != nil {
-							log.Println(err)
-							return
-						}
-					}
-				}
+		err = i.scheduler.ScheduleEffect(effectNameArg, handler.GetInventory(), dur, func() {
+			s := ctx.GetSession()
+			inv, err := i.models.Inventories.GetByDiscordID(handler.GetInventory().DiscordID)
+			if err != nil {
+				log.Println(err)
+				s.ChannelMessageSend(ctx.GetEvent().ChannelID, "Failed to find inventory for effect expiration")
+				return
 			}
-
+			handler := inventory.InitInventoryHandler(i.models, inv)
+			err = handler.RemoveEffect(effectNameArg)
+			if err != nil {
+				log.Println(err)
+				s.ChannelMessageSend(ctx.GetEvent().ChannelID, fmt.Sprintf("Failed to remove timed effect %s", effectNameArg))
+				return
+			}
 			msg := discordgo.MessageEmbed{
 				Title:       "Effect Expired",
 				Description: fmt.Sprintf("Effect %s has expired", effectNameArg),
 				Fields: []*discordgo.MessageEmbedField{
 					{
-						Name:  "Target Inventory",
-						Value: fmt.Sprintf("<@%s>", inventory.DiscordID),
+						Value: fmt.Sprintf("Timer started at %s", start),
 					},
 					{
-						Name:  "Target Channel",
-						Value: fmt.Sprintf("<#%s>", inventory.UserPinChannel),
+						Value: fmt.Sprintf("Timer ended at %s", util.GetEstTimeStamp()),
 					},
 				},
-				Color:     0x00ff00,
+				Color:     discord.ColorThemeOrange,
 				Timestamp: time.Now().Format(time.RFC3339),
 			}
-			_, err := s.ChannelMessageSendEmbed(ctx.GetEvent().ChannelID, &msg)
+			_, err = s.ChannelMessageSendEmbed(ctx.GetEvent().ChannelID, &msg)
 			if err != nil {
 				log.Println(err)
+			}
+			err = UpdateInventoryMessage(s, handler.GetInventory())
+			if err != nil {
+				log.Println(err)
+				return
 			}
 		})
 		if err != nil {
 			log.Println(err)
 			return discord.ErrorMessage(ctx, "Failed to schedule effect", err.Error())
 		}
-		i.updateInventoryMessage(ctx, inventory)
 	}
 
 	err = discord.SuccessfulMessage(

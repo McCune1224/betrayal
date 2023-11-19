@@ -2,14 +2,11 @@ package commands
 
 import (
 	"fmt"
-	"log"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/scheduler"
-	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
 
@@ -51,14 +48,6 @@ func (*Insult) Options() []*discordgo.ApplicationCommandOption {
 			Name:        "get",
 			Description: "Get an insult",
 		},
-		{
-			Type:        discordgo.ApplicationCommandOptionSubCommand,
-			Name:        "delayed",
-			Description: "Get an insult after a delay...for a suprise :)",
-			Options: []*discordgo.ApplicationCommandOption{
-				discord.StringCommandArg("duration", "The duration to wait before sending the insult", true),
-			},
-		},
 	}
 }
 
@@ -67,7 +56,6 @@ func (i *Insult) Run(ctx ken.Context) (err error) {
 	err = ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "add", Run: i.add},
 		ken.SubCommandHandler{Name: "get", Run: i.get},
-		ken.SubCommandHandler{Name: "delayed", Run: i.getDelayed},
 	)
 	return err
 }
@@ -107,42 +95,4 @@ func (i *Insult) get(ctx ken.SubCommandContext) (err error) {
 // Version implements ken.SlashCommand.
 func (*Insult) Version() string {
 	return "1.0.0"
-}
-
-func (i *Insult) getDelayed(ctx ken.SubCommandContext) (err error) {
-	startTime := util.GetEstTimeStamp()
-	duration := ctx.Options().GetByName("duration").StringValue()
-	timeDuration, err := time.ParseDuration(duration)
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(ctx, "Failed to parse duration string", `A duration string is a possibly signed sequence of decimal numbers, each with optional fraction and a unit suffix, such as "300ms", "-1.5h" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".`)
-	}
-
-	job := func() {
-		invokeTime := util.GetEstTimeStamp()
-		randInsult, err := i.models.Insults.GetRandom()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		msg := &discordgo.MessageEmbed{
-			Title:       "Insult",
-			Description: fmt.Sprintf("Hey %s, %s", discord.MentionUser(discord.McKusaID), randInsult.Insult),
-			Color:       discord.ColorThemeOrange,
-			Footer: &discordgo.MessageEmbedFooter{
-				Text: fmt.Sprintf("Insult invoked by %s. Queued at %s, resolevd at %s", ctx.User().Username, startTime, invokeTime),
-			},
-		}
-		// we will see if this works with the ken.Context interface...(please work)
-		_, err = ctx.GetSession().ChannelMessageSendEmbed(ctx.GetEvent().ChannelID, msg)
-	}
-	// one time job
-	// random id
-	foo := time.Now().String()
-	err = i.scheduler.UpsertJob(foo, timeDuration, job)
-	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(ctx, "Failed to queue insult", "Alex is a bad programmer and didn't handle this error")
-	}
-	return discord.SuccessfulMessage(ctx, "Insult Scheduled", "Your insult has been scheduled... :)")
 }
