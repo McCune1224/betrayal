@@ -48,7 +48,7 @@ func (i *Inventory) setAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
-	inv, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -59,27 +59,7 @@ func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
 	chargesArg := ctx.Options().GetByName("charges").IntValue()
 
-	for k, v := range inv.AnyAbilities {
-		abilityName := strings.Split(v, " [")[0]
-		if strings.EqualFold(abilityName, abilityNameArg) {
-			inv.AnyAbilities[k] = fmt.Sprintf("%s [%d]", abilityName, chargesArg)
-			err = i.models.Inventories.UpdateAnyAbilities(inv)
-			if err != nil {
-				log.Println(err)
-				return discord.ErrorMessage(
-					ctx,
-					"Failed to update ability",
-					"Alex is a bad programmer, and this is his fault.",
-				)
-			}
-			err = UpdateInventoryMessage(ctx.GetSession(), inv)
-			if err != nil {
-				log.Println(err)
-				return err
-			}
-			return discord.SuccessfulMessage(ctx, "Ability updated", fmt.Sprintf("Set %s to %d charges", abilityName, chargesArg))
-		}
-	}
+	handler.SetAnyAbilityCharges(abilityNameArg, int(chargesArg))
 
 	return discord.ErrorMessage(ctx, "Unable to Set Ability Charge", fmt.Sprintf("Ability %s not found in inventory.", abilityNameArg))
 }

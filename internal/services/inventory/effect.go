@@ -6,14 +6,14 @@ import (
 )
 
 var (
-	ErrAlreadyExists  = errors.New("effect already exists")
-	ErrEffectNotFound = errors.New("effect not found")
+	ErrEffectAlreadyExists = errors.New("effect already exists")
+	ErrEffectNotFound      = errors.New("effect not found")
 )
 
 func (ih *InventoryHandler) AddEffect(effect string) (string, error) {
 	for _, v := range ih.i.Effects {
 		if strings.EqualFold(v, effect) {
-			return "", ErrAlreadyExists
+			return "", ErrEffectAlreadyExists
 		}
 	}
 	ih.i.Effects = append(ih.i.Effects, effect)

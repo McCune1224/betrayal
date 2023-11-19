@@ -33,12 +33,3 @@ func (ih *InventoryHandler) RemoveItem(item string) (string, error) {
 	}
 	return "", ErrItemNotFound
 }
-
-// func (ih *InventoryHandler) AddItemLimit(size int) (int error) {
-// }
-//
-// func (ih *InventoryHandler) RemoveItemLimit(size int) (int error) {
-// }
-//
-// func (ih *InventoryHandler) SetItemLimit(size int) (int error) {
-// }

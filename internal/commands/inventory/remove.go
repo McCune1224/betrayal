@@ -58,7 +58,7 @@ func (i *Inventory) removeAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -67,41 +67,22 @@ func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
 	}
 	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
-
-	for k, v := range inventory.AnyAbilities {
-		abilityName := strings.Split(v, " [")[0]
-		if strings.EqualFold(abilityName, abilityNameArg) {
-			inventory.AnyAbilities = append(
-				inventory.AnyAbilities[:k],
-				inventory.AnyAbilities[k+1:]...)
-			err = i.models.Inventories.UpdateAnyAbilities(inventory)
-			if err != nil {
-				log.Println(err)
-				return discord.ErrorMessage(
-					ctx,
-					"Failed to remove ability",
-					"Alex is a bad programmer, and this is his fault.",
-				)
-			}
-			err = i.updateInventoryMessage(ctx, inventory)
-			if err != nil {
-				return err
-			}
-			return discord.SuccessfulMessage(
-				ctx,
-				"Ability removed from inventory.",
-				fmt.Sprintf("Removed %s from inventory.", abilityNameArg),
-			)
+	removed, err := handler.RemoveAnyAbility(abilityNameArg)
+	if err != nil {
+		if errors.Is(err, inventory.ErrAnyAbilityNotFound) {
+			return discord.ErrorMessage(ctx, "Failed to Remove Ability", fmt.Sprintf("Ability %s not found in inventory.", abilityNameArg))
 		}
+		return discord.AlexError(ctx, "Failed to remove ability")
 	}
 
-	discord.ErrorMessage(
-		ctx,
-		"Failed to Remove Ability",
-		fmt.Sprintf("Ability %s not found in inventory.", abilityNameArg),
-	)
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to update inventory message")
+	}
 
-	return err
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Removed Any Ability %s", removed),
+		fmt.Sprintf("Removed Any Ability %s for %s", abilityNameArg, discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) removePerk(ctx ken.SubCommandContext) (err error) {

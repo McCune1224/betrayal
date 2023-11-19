@@ -63,7 +63,7 @@ func (i *Inventory) addAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -77,35 +77,18 @@ func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
 		chargeAmount = int(chargesArg.IntValue())
 	}
 
-	ability, err := i.models.Abilities.GetAnyAbilitybyFuzzy(abilityNameArg)
-	if err != nil {
-		return discord.ErrorMessage(
-			ctx,
-			fmt.Sprint("Cannot find Ability: ", abilityNameArg),
-			"Verify if the ability exists.",
-		)
-	}
-	UpsertAA(inventory, ability, chargeAmount)
-	err = i.models.Inventories.Update(inventory)
+	abStr, err := handler.AddAnyAbility(abilityNameArg, chargeAmount)
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to add ability",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return discord.AlexError(ctx, fmt.Sprintf("Failed to insert any ability %s", abilityNameArg))
 	}
-
-	err = i.updateInventoryMessage(ctx, inventory)
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
 	if err != nil {
 		return err
 	}
 
-	err = discord.SuccessfulMessage(
-		ctx,
-		"Any Ability Added",
-		fmt.Sprintf("Any Ability %s added", abilityNameArg),
-	)
+	err = discord.SuccessfulMessage(ctx, fmt.Sprintf("Added Any Ability %s with %d charges total", abStr.GetName(), chargeAmount),
+		fmt.Sprintf("Added for %s", discord.MentionUser(handler.GetInventory().DiscordID)))
 	return err
 }
 
@@ -275,7 +258,7 @@ func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
 
 	best, err := handler.AddEffect(effectNameArg)
 	if err != nil {
-		if errors.Is(err, inventory.ErrAlreadyExists) {
+		if errors.Is(err, inventory.ErrEffectAlreadyExists) {
 			return discord.ErrorMessage(ctx, "Effect already exists", fmt.Sprintf("Error %s already in inventory", effectNameArg))
 		}
 		log.Println(err)
