@@ -1,17 +1,26 @@
-# Use the official Golang image as the base image
+# Use an official Golang runtime as a parent image
 FROM golang:1.21
 
-# Set the working directory inside the container
+# Set the working directory to /app
 WORKDIR /app
 
-# Copy the Go application source code and .env file to the container
-COPY ./cmd/betrayal-bot /app
-COPY ./internal /app/internal
-COPY .env /app
+# Copy go mod and sum files
+COPY go.mod go.sum ./
+#
+# Download all dependencies
+RUN go mod download
 
-# Build the Go application
-RUN go build -o betrayal-bot .
+#Load Environment Variables from .env file 
+ARG ENV_FILE
+ENV ENV_FILE=${ENV_FILE}
+COPY $ENV_FILE .env
+
+# Copy the source code from the current directory and subdirectories to the working directory inside the container
+COPY . .
 
 
-# Command to run the application
-CMD ["./betrayal-bot"]
+# Build the application
+RUN go build -o ./bin/main /app/cmd/betrayal-bot/
+
+# Run the binary program produced by `go install`
+CMD ["./bin/main"]
