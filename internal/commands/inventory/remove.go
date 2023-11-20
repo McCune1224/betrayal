@@ -12,7 +12,7 @@ import (
 )
 
 func (i *Inventory) removeAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -21,40 +21,20 @@ func (i *Inventory) removeAbility(ctx ken.SubCommandContext) (err error) {
 	}
 	ctx.SetEphemeral(false)
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
-	for k, v := range inventory.Abilities {
-		abilityName := strings.Split(v, " [")[0]
-		if strings.EqualFold(abilityName, abilityNameArg) {
-			inventory.Abilities = append(
-				inventory.Abilities[:k],
-				inventory.Abilities[k+1:]...)
-			err = i.models.Inventories.UpdateAbilities(inventory)
-			if err != nil {
-				log.Println(err)
-				return discord.ErrorMessage(
-					ctx,
-					"Failed to remove base ability",
-					"Alex is a bad programmer, and this is his fault.",
-				)
-			}
-			err = i.updateInventoryMessage(ctx, inventory)
-			if err != nil {
-				return err
-			}
-			return discord.SuccessfulMessage(
-				ctx,
-				"Removed Base Ability",
-				fmt.Sprintf("Removed %s from inventory.", abilityNameArg),
-			)
-		}
+	removed, err := handler.RemoveAbility(abilityNameArg)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to remove ability")
 	}
 
-	discord.ErrorMessage(
-		ctx,
-		"Failed to Remove Ability",
-		fmt.Sprintf("Base ability %s not found in inventory.", abilityNameArg),
-	)
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to update inventory message")
+	}
 
-	return err
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Removed ability %s", removed), fmt.Sprintf("Removed ability %s for %s",
+		abilityNameArg, discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
@@ -86,7 +66,7 @@ func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removePerk(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -96,36 +76,22 @@ func (i *Inventory) removePerk(ctx ken.SubCommandContext) (err error) {
 	ctx.SetEphemeral(false)
 	perkArg := ctx.Options().GetByName("name").StringValue()
 
-	for k, v := range inventory.Perks {
-		if strings.EqualFold(v, perkArg) {
-			inventory.Perks = append(inventory.Perks[:k], inventory.Perks[k+1:]...)
-			err = i.models.Inventories.UpdatePerks(inventory)
-			if err != nil {
-				log.Println(err)
-				return discord.ErrorMessage(
-					ctx,
-					"Failed to remove perk",
-					"Alex is a bad programmer, and this is his fault.",
-				)
-			}
-			err = i.updateInventoryMessage(ctx, inventory)
-			if err != nil {
-				return err
-			}
-			return discord.SuccessfulMessage(
-				ctx,
-				"Perk removed from inventory",
-				fmt.Sprintf("Removed %s from inventory.", perkArg),
-			)
+	removed, err := handler.RemovePerk(perkArg)
+	if err != nil {
+		if errors.Is(err, inventory.ErrPerkNotFound) {
+			return discord.ErrorMessage(ctx, "Failed to Remove Perk", fmt.Sprintf("Perk %s not found in inventory.", perkArg))
 		}
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to remove perk")
+	}
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
 
-	discord.ErrorMessage(
-		ctx,
-		"Failed to remove Perk",
-		fmt.Sprintf("Perk %s not found in inventory.", perkArg),
-	)
-	return err
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Removed perk %s", removed),
+		fmt.Sprintf("Removed perk for %s", discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) removeItem(ctx ken.SubCommandContext) (err error) {

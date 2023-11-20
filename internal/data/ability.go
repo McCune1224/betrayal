@@ -102,7 +102,6 @@ func (am *AbilityModel) GetByFuzzy(name string) (*Ability, error) {
 			ab = a
 		}
 	}
-	// Fuzzy search for ability
 	return &ab, nil
 }
 

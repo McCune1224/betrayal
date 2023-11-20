@@ -15,7 +15,7 @@ import (
 )
 
 func (i *Inventory) addAbility(ctx ken.SubCommandContext) (err error) {
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
@@ -30,36 +30,18 @@ func (i *Inventory) addAbility(ctx ken.SubCommandContext) (err error) {
 		charge = int(chargesArg.IntValue())
 	}
 
-	ability, err := i.models.Abilities.GetByFuzzy(abilityNameArg)
-	if err != nil {
-		return discord.ErrorMessage(
-			ctx,
-			fmt.Sprint("Cannot find Ability: ", abilityNameArg),
-			"Verify if the ability exists.",
-		)
-	}
-	UpsertAbility(inventory, ability, charge)
-	err = i.models.Inventories.Update(inventory)
+	abStr, err := handler.AddAbility(abilityNameArg, charge)
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to add ability",
-			"Alex is a bad programmer, and this is his fault.",
-		)
+		return discord.AlexError(ctx, "Failed to add ability")
 	}
-
-	err = i.updateInventoryMessage(ctx, inventory)
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
 	if err != nil {
-		return err
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
 
-	err = discord.SuccessfulMessage(
-		ctx,
-		"Base Ability Added",
-		fmt.Sprintf("Base Ability %s added", abilityNameArg),
-	)
-	return err
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Added Ability %s", abStr.GetName()), fmt.Sprintf("Added for %s", discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
@@ -93,53 +75,32 @@ func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addPerk(ctx ken.SubCommandContext) (err error) {
-	ctx.SetEphemeral(false)
-	inventory, err := Fetch(ctx, i.models, true)
+	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
 			return discord.NotAdminError(ctx)
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
+	ctx.SetEphemeral(false)
 	perkNameArg := ctx.Options().GetByName("name").StringValue()
-	perk, err := i.models.Perks.GetByName(perkNameArg)
-	if err != nil {
-		return discord.ErrorMessage(
-			ctx,
-			fmt.Sprint("Cannot find Perk: ", perkNameArg),
-			"Verify if the perk exists.",
-		)
-	}
 
-	for _, p := range inventory.Perks {
-		if p == perk.Name {
-			return discord.ErrorMessage(
-				ctx,
-				fmt.Sprintf("Perk %s already exists in inventory", perkNameArg),
-				"Did you mean to update the perk?",
-			)
+	add, err := handler.AddPerk(perkNameArg)
+	if err != nil {
+		if errors.Is(err, inventory.ErrPerkAlreadyExists) {
+			return discord.ErrorMessage(ctx, "Perk already exists", fmt.Sprintf("Error %s already in inventory", perkNameArg))
 		}
+		return discord.ErrorMessage(ctx, "Perk not found", fmt.Sprintf("%s not found", perkNameArg))
 	}
 
-	inventory.Perks = append(inventory.Perks, perk.Name)
-	err = i.models.Inventories.UpdatePerks(inventory)
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
 	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(
-			ctx,
-			"Failed to add perk",
-			"Alex is a bad programmer, and this is his fault.",
-		)
-	}
-	err = i.updateInventoryMessage(ctx, inventory)
-	if err != nil {
-		log.Println(err)
+		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
 
-	err = discord.SuccessfulMessage(ctx,
-		"Perk Added",
-		fmt.Sprintf("Perk %s added", perkNameArg))
-	return err
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Added Perk %s", add),
+		fmt.Sprintf("Added for %s", discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) addItem(ctx ken.SubCommandContext) (err error) {

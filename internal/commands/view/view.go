@@ -236,7 +236,7 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	nameArg := ctx.Options().GetByName("name").StringValue()
-	perk, err := v.models.Perks.GetByName(nameArg)
+	perk, err := v.models.Perks.GetByFuzzy(nameArg)
 	if err != nil {
 		ctx.RespondError("Unable to find Perk",
 			fmt.Sprintf("Unable to find Perk: %s", nameArg),

@@ -1,7 +1,10 @@
 package data
 
 import (
+	"errors"
+
 	"github.com/jmoiron/sqlx"
+	"github.com/mccune1224/betrayal/internal/util"
 )
 
 type Perk struct {
@@ -43,6 +46,37 @@ func (pm *PerkModel) GetByName(name string) (*Perk, error) {
 	err := pm.DB.Get(&p, query, name)
 	if err != nil {
 		return nil, err
+	}
+	return &p, nil
+}
+
+func (pm *PerkModel) GetByFuzzy(name string) (*Perk, error) {
+	var p Perk
+	query := "SELECT * FROM perks WHERE name ILIKE $1"
+	pm.DB.Get(&p, query, name)
+	if p.Name != "" {
+		return &p, nil
+	}
+
+	var pChoices []Perk
+	if len(name) > 2 {
+		return nil, errors.New("search term must be at least 2 characters")
+	}
+
+	err := pm.DB.Select(&pChoices, "SELECT * FROM perks")
+	if err != nil {
+		return nil, err
+	}
+
+	strChoices := make([]string, len(pChoices))
+	for i, a := range pChoices {
+		strChoices[i] = a.Name
+	}
+	best, _ := util.FuzzyFind(name, strChoices)
+	for _, a := range pChoices {
+		if a.Name == best {
+			p = a
+		}
 	}
 	return &p, nil
 }
