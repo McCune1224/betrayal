@@ -110,7 +110,7 @@ func (a *Alliance) request(ctx ken.SubCommandContext) (err error) {
 	requester := e.Member.User
 
 	// Check to make sure they're not already the owner of an alliance.
-	currReqs, err := a.models.Alliances.GetRequestByOwnerID(requester.ID)
+	currReqs, err := a.models.Alliances.GetRequestByRequesterID(requester.ID)
 	if err != nil && err != sql.ErrNoRows {
 		log.Println(err)
 		return discord.ErrorMessage(ctx, "Unable to find alliance", "Are you sure you're the owner of an alliance?")
@@ -174,7 +174,7 @@ func (a *Alliance) invite(ctx ken.SubCommandContext) (err error) {
 	target := ctx.Options().GetByName("user").UserValue(ctx)
 	s := ctx.GetSession()
 	e := ctx.GetEvent()
-	alliance, err := a.models.Alliances.GetRequestByOwnerID(e.Member.User.ID)
+	alliance, err := a.models.Alliances.GetRequestByRequesterID(e.Member.User.ID)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(ctx, "Unable to find alliance", "Are you sure you're the owner of an alliance?")
