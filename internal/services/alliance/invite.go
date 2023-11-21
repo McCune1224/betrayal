@@ -3,76 +3,116 @@ package alliance
 import (
 	"errors"
 
-	"github.com/bwmarrin/discordgo"
-	"github.com/lib/pq"
 	"github.com/mccune1224/betrayal/internal/data"
 )
 
 var (
-	ErrAlreadyOwner    = errors.New("user is already owner of an alliance")
-	ErrAlreadyExists   = errors.New("alliance already exists")
-	ErrRequestNotFound = errors.New("alliance request not found")
+	ErrNotOwner             = errors.New("user is not owner of an alliance")
+	ErrAllianceNotFound     = errors.New("alliance not found")
+	ErrPlayerNotFound       = errors.New("player not found")
+	ErrAlreadyMember        = errors.New("player is already a member of an alliance")
+	ErrAlreadyInvited       = errors.New("player is already invited to an alliance")
+	ErrAllianecLimitReached = errors.New("alliance limit reached")
 )
 
-func (ah *AllianceHandler) CreateAllinaceRequest(allianceName string, requestorID string) error {
-	req := &data.AllianceRequest{
-		Name:        allianceName,
-		RequesterID: requestorID,
-	}
-	// Check to make sure name doesn't already exists
-	existingAllianceName, _ := ah.m.Alliances.GetByName(allianceName)
-	if existingAllianceName.Name != "" {
-		return ErrAlreadyExists
+func (ah *AllianceHandler) InvitePlayer(ownerID string, inviteeID string, allianceName string) error {
+	// Check to make sure player is owner of an alliance
+	existingAlliance, err := ah.m.Alliances.GetByOwnerID(ownerID)
+	if err != nil {
+		return err
 	}
 
-	// Check to make sure owner doesn't already have an alliance
-	existingOwnned, _ := ah.m.Alliances.GetByOwnerID(requestorID)
-	if existingOwnned.Name != "" {
-		return ErrAlreadyExists
+	if existingAlliance.Name == "" {
+		return ErrNotOwner
 	}
 
-	// Check to make sure owner isn't already in an alliance
-	existingMember, _ := ah.m.Alliances.GetByMemberID(requestorID)
+	// Check to make sure alliance exists
+	alliance, err := ah.m.Alliances.GetByName(allianceName)
+	if err != nil {
+		return err
+	}
+
+	if alliance.Name == "" {
+		return ErrAllianceNotFound
+	}
+
+	// Check to make sure player isn't already a member of an alliance
+	existingMember, err := ah.m.Alliances.GetByMemberID(inviteeID)
+	if err != nil {
+		return err
+	}
+
 	if existingMember.Name != "" {
-		return ErrAlreadyExists
+		return ErrAlreadyMember
 	}
 
-	// Create the request
-	err := ah.m.Alliances.InsertRequest(req)
+	// Check to make sure player isn't already invited to an alliance
+	existingInvite, err := ah.m.Alliances.GetInviteByInviteeIDAndInviterID(inviteeID, ownerID)
+	if err != nil {
+		return err
+	}
+
+	if existingInvite.AllianceName != "" {
+		return ErrAlreadyInvited
+	}
+
+	// Create the invite
+	invite := &data.AllianceInvite{
+		AllianceName: allianceName,
+		InviterID:    ownerID,
+		InviteeID:    inviteeID,
+	}
+
+	err = ah.m.Alliances.InsertInvite(invite)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ah *AllianceHandler) AcceptInvite(inviteeID, allianceName string, bypass ...bool) error {
+	bypassLimit := false
+	if len(bypass) > 0 {
+		bypassLimit = bypass[0]
+	}
+	// Check to make sure player isn't already a member of an alliance
+	existingMember, err := ah.m.Alliances.GetByMemberID(inviteeID)
+	if err != nil {
+		return err
+	}
+	if existingMember.Name != "" {
+		return ErrAlreadyMember
+	}
+	// Check to make sure invite exists
+	invite, err := ah.m.Alliances.GetInviteByInviteeIDAndAllianceName(inviteeID, allianceName)
+	if err != nil {
+		return err
+	}
+	if invite.AllianceName == "" {
+		return ErrPlayerNotFound
+	}
+	// Get Alliance
+	alliance, err := ah.m.Alliances.GetByName(allianceName)
+	if err != nil {
+		return err
+	}
+
+	// Check to make sure alliance has room (max 4 members (3 members + owner))
+	if len(alliance.MemberIDs) > 3 && !bypassLimit {
+		return ErrAllianecLimitReached
+	}
+
+	// Delete the invite
+	err = ah.m.Alliances.DeleteInvite(invite)
+	if err != nil {
+		return err
+	}
+	// Add the player to the alliance
+	alliance.MemberIDs = append(alliance.MemberIDs, inviteeID)
+	err = ah.m.Alliances.InsertMember(alliance)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func (ah *AllianceHandler) ApproveAllianceRequest(playerID string, s *discordgo.Session) (*data.Alliance, error) {
-	pendingRequest, err := ah.m.Alliances.GetRequestByRequesterID(playerID)
-	if err != nil {
-		return nil, err
-	}
-
-	// make the channel to put alliance in
-	channel, err := s.GuildChannelCreate(s.State.Application.GuildID, pendingRequest.Name, discordgo.ChannelTypeGuildText)
-	if err != nil {
-		return nil, err
-	}
-
-	newAlliance := &data.Alliance{
-		Name:      pendingRequest.Name,
-		OwnerID:   pendingRequest.RequesterID,
-		ChannelID: channel.ID,
-		MemberIDs: pq.StringArray{},
-	}
-	err = ah.m.Alliances.Insert(newAlliance)
-	if err != nil {
-		return nil, err
-	}
-
-	// Delete the request
-	err = ah.m.Alliances.DeleteRequest(pendingRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	return newAlliance, nil
 }

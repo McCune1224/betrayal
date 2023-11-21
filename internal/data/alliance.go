@@ -19,6 +19,13 @@ type AllianceRequest struct {
 	Name        string `db:"name"`
 }
 
+type AllianceInvite struct {
+	ID           int    `db:"int"`
+	InviterID    string `db:"inviter_id"`
+	InviteeID    string `db:"invitee_id"`
+	AllianceName string `db:"alliance_name"`
+}
+
 type AllianceModel struct {
 	DB *sqlx.DB
 }
@@ -126,6 +133,31 @@ func (am *AllianceModel) Insert(alliance *Alliance) error {
 	return nil
 }
 
+// Delete any associated invites and requests with the alliance
+func (am *AllianceModel) DeleteAlliance(alliance *Alliance) error {
+	tx := am.DB.MustBegin()
+	// Delete all invites
+	inviteQuery := `DELETE FROM alliance_invites WHERE alliance_name=$1`
+	_, err := tx.Exec(inviteQuery, alliance.Name)
+	if err != nil {
+		return err
+	}
+	requestQuery := `DELETE FROM alliance_requests WHERE name=$1`
+	_, err = tx.Exec(requestQuery, alliance.Name)
+	if err != nil {
+		return err
+	}
+
+	// Delete the alliance
+	allianceQuery := `DELETE FROM alliances WHERE name=$1`
+	_, err = tx.Exec(allianceQuery, alliance.Name)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func (am *AllianceModel) InsertMember(alliance *Alliance) error {
 	query := `UPDATE alliances SET member_ids=$1  WHERE id=$2`
 	_, err := am.DB.Exec(query, alliance.MemberIDs, alliance.ID)
@@ -133,4 +165,71 @@ func (am *AllianceModel) InsertMember(alliance *Alliance) error {
 		return err
 	}
 	return nil
+}
+
+func (am *AllianceModel) InsertInvite(invite *AllianceInvite) error {
+	query := `INSERT INTO alliance_invites ` + PSQLGeneratedInsert(invite)
+	_, err := am.DB.NamedExec(query, &invite)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (am *AllianceModel) GetInviteByInviteeIDAndInviterID(inviteeID, inviterID string) (*AllianceInvite, error) {
+	var invite AllianceInvite
+	query := `SELECT * FROM alliance_invites WHERE invitee_id=$1 AND inviter_id=$2`
+	err := am.DB.Get(&invite, query, inviteeID, inviterID)
+	if err != nil {
+		return nil, err
+	}
+	return &invite, nil
+}
+
+func (am *AllianceModel) GetInviteByInviteeIDAndAllianceName(inviteeID, allianceName string) (*AllianceInvite, error) {
+	var invite AllianceInvite
+	query := `SELECT * FROM alliance_invites WHERE invitee_id=$1 AND alliance_name=$2`
+	err := am.DB.Get(&invite, query, inviteeID, allianceName)
+	if err != nil {
+		return nil, err
+	}
+	return &invite, nil
+}
+
+func (am *AllianceModel) GetInvitesByAllianceName(allianceName string) ([]AllianceInvite, error) {
+	var invites []AllianceInvite
+	query := `SELECT * FROM alliance_invites WHERE alliance_name=$1`
+	err := am.DB.Select(&invites, query, allianceName)
+	if err != nil {
+		return nil, err
+	}
+	return invites, nil
+}
+
+func (am *AllianceModel) DeleteInvite(invite *AllianceInvite) error {
+	query := `DELETE FROM alliance_invites WHERE id=$1`
+	_, err := am.DB.Exec(query, invite.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (am AllianceModel) DeleteInviteByInviteeIDAndInviterID(inviteeID, inviterID string) error {
+	query := `DELETE FROM alliance_invites WHERE invitee_id=$1 AND inviter_id=$2`
+	_, err := am.DB.Exec(query, inviteeID, inviterID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (am *AllianceModel) GetAllInvites() ([]AllianceInvite, error) {
+	var invites []AllianceInvite
+	query := `SELECT * FROM alliance_invites`
+	err := am.DB.Select(&invites, query)
+	if err != nil {
+		return nil, err
+	}
+	return invites, nil
 }
