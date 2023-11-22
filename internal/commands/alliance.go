@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
@@ -9,7 +9,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/scheduler"
-	"github.com/mccune1224/betrayal/internal/util"
+	"github.com/mccune1224/betrayal/internal/services/alliance"
 	"github.com/zekrotja/ken"
 )
 
@@ -105,64 +105,36 @@ func (a *Alliance) Run(ctx ken.Context) (err error) {
 
 func (a *Alliance) request(ctx ken.SubCommandContext) (err error) {
 	aName := ctx.Options().GetByName("name").StringValue()
+
 	s := ctx.GetSession()
 	e := ctx.GetEvent()
 	requester := e.Member.User
 
-	// Check to make sure they're not already the owner of an alliance.
-	currReqs, err := a.models.Alliances.GetRequestByRequesterID(requester.ID)
-	if err != nil && err != sql.ErrNoRows {
+	handler := alliance.InitAllianceHandler(a.models)
+
+	err = handler.CreateAllinaceRequest(aName, requester.ID)
+	if err != nil {
+		if errors.Is(err, alliance.ErrAlreadyExists) {
+			return discord.ErrorMessage(ctx, "Alliance Already Exists", fmt.Sprintf("An alliance with the name %s already exists.", aName))
+		}
 		log.Println(err)
-		return discord.ErrorMessage(ctx, "Unable to find alliance", "Are you sure you're the owner of an alliance?")
-	}
-	if currReqs != nil {
-		return discord.ErrorMessage(ctx, "Already Within Alliance", fmt.Sprintf("You already have a pending alliance creation request (%s).", currReqs.Name))
+		return discord.AlexError(ctx, "Unable to create alliance request")
 	}
 
-	// Check to make sure they're not already a member of an alliance.
-	currAlliances, err := a.models.Alliances.GetByMemberID(requester.ID)
-	if err != nil && err != sql.ErrNoRows {
+	sentReq, err := a.models.Alliances.GetRequestByName(aName)
+	if err != nil {
 		log.Println(err)
-		return discord.ErrorMessage(ctx, "Unable to find alliance", "Unable to verify membership")
-	}
-	if currAlliances != nil {
-		return discord.ErrorMessage(ctx, "Already Within Alliance",
-			fmt.Sprintf("You are already a member of an alliance (%s).", currAlliances.Name))
-	}
-	// Check to make sure the alliance name is not already taken.
-	currAlliances, err = a.models.Alliances.GetByName(aName)
-	if err != nil && err != sql.ErrNoRows {
-		log.Println(err)
-		return discord.ErrorMessage(ctx, "Unable to find alliance", "Unable to verify alliance name")
-	}
-	if currAlliances != nil {
-		return discord.ErrorMessage(ctx, "Alliance Name Taken", fmt.Sprintf("The alliance name (%s) is already taken.", aName))
+		return discord.AlexError(ctx, "Oopsie Woopsie\t"+err.Error())
 	}
 
-	// Create the request.
-	req := &data.AllianceRequest{
-		RequesterID: requester.ID,
-		Name:        aName,
-	}
-	err = a.models.Alliances.InsertRequest(req)
-	if err != nil {
-		log.Println(err)
-		return discord.AlexError(ctx, "Failed to create Alliance request")
-	}
-	// Send the request to the action channel
-	actionChannel, err := a.models.FunnelChannels.Get(e.GuildID)
-	if err != nil {
-		log.Println(err)
-		return discord.AlexError(ctx, "Failed to get action channel")
-	}
-	reqMsg := fmt.Sprintf("%s - alliance create request: %s - %s", requester.Username, aName, util.GetEstTimeStamp())
-	_, err = s.ChannelMessageSend(actionChannel.ChannelID, reqMsg)
-	if err != nil {
-		log.Println(err)
-		return discord.AlexError(ctx, "Failed to send request to action channel")
-	}
+	reqMsg := fmt.Sprintf("MAKE THIS LOOK NICE OR SOMETHING IUNNO \n%v", sentReq)
 
-	return discord.SuccessfulMessage(ctx, "Alliance Requested", fmt.Sprintf("Your alliance request (%s) has been sent for review.", aName))
+	_, err = s.ChannelMessageSend(e.ChannelID, discord.Code(reqMsg))
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to send request message")
+	}
+	return discord.SuccessfulMessage(ctx, "Alliance Successfully Requested.", fmt.Sprintf("Your alliance request (%s) has been sent for review.", aName))
 }
 
 func (a *Alliance) invite(ctx ken.SubCommandContext) (err error) {
@@ -201,7 +173,22 @@ func (a *Alliance) accept(ctx ken.SubCommandContext) (err error) {
 }
 
 func (a *Alliance) adminApprove(ctx ken.SubCommandContext) (err error) {
-	return discord.AlexError(ctx, "Not Implemented")
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.NotAdminError(ctx)
+	}
+
+	allianceName := ctx.Options().GetByName("name").StringValue()
+	handler := alliance.InitAllianceHandler(a.models)
+	newAlliance, err := handler.ApproveCreateRequest(allianceName, ctx.GetSession(), ctx.GetEvent())
+	if err != nil {
+		if errors.Is(err, alliance.ErrAlreadyExists) {
+			return discord.ErrorMessage(ctx, "Alliance Already Exists", fmt.Sprintf("An alliance with the name %s already exists.", allianceName))
+		}
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to complete alliance request")
+	}
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Successfully created alliance %s", newAlliance.Name),
+		fmt.Sprintf("Alliance %s has been created. Check it out in %s", newAlliance.Name, discord.MentionChannel(newAlliance.ChannelID)))
 }
 
 func (a *Alliance) adminDecline(ctx ken.SubCommandContext) (err error) {

@@ -81,7 +81,10 @@ const (
 )
 
 // ID of bot owner
-const McKusaID = "206268866714796032"
+const (
+	McKusaID       = "206268866714796032"
+	BetraylGuildID = "1096058997477490861"
+)
 
 func MentionUser(userID string) string {
 	return "<@" + userID + ">"
