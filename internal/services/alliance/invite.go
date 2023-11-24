@@ -1,18 +1,7 @@
 package alliance
 
 import (
-	"errors"
-
 	"github.com/mccune1224/betrayal/internal/data"
-)
-
-var (
-	ErrNotOwner             = errors.New("user is not owner of an alliance")
-	ErrAllianceNotFound     = errors.New("alliance not found")
-	ErrPlayerNotFound       = errors.New("player not found")
-	ErrAlreadyMember        = errors.New("player is already a member of an alliance")
-	ErrAlreadyInvited       = errors.New("player is already invited to an alliance")
-	ErrAllianecLimitReached = errors.New("alliance limit reached")
 )
 
 func (ah *AllianceHandler) InvitePlayer(ownerID string, inviteeID string, allianceName string) error {
@@ -23,7 +12,7 @@ func (ah *AllianceHandler) InvitePlayer(ownerID string, inviteeID string, allian
 	}
 
 	if existingAlliance.Name == "" {
-		return ErrNotOwner
+		return ErrAllianceNotFound
 	}
 
 	// Check to make sure alliance exists
@@ -43,7 +32,7 @@ func (ah *AllianceHandler) InvitePlayer(ownerID string, inviteeID string, allian
 	}
 
 	if existingMember.Name != "" {
-		return ErrAlreadyMember
+		return ErrMemberAlreadyExists
 	}
 
 	// Check to make sure player isn't already invited to an alliance
@@ -53,7 +42,7 @@ func (ah *AllianceHandler) InvitePlayer(ownerID string, inviteeID string, allian
 	}
 
 	if existingInvite.AllianceName != "" {
-		return ErrAlreadyInvited
+		return ErrInviteAlreadyExists
 	}
 
 	// Create the invite
@@ -82,7 +71,7 @@ func (ah *AllianceHandler) AcceptInvite(inviteeID, allianceName string, bypass .
 		return err
 	}
 	if existingMember.Name != "" {
-		return ErrAlreadyMember
+		return ErrMemberAlreadyExists
 	}
 	// Check to make sure invite exists
 	invite, err := ah.m.Alliances.GetInviteByInviteeIDAndAllianceName(inviteeID, allianceName)
@@ -90,7 +79,7 @@ func (ah *AllianceHandler) AcceptInvite(inviteeID, allianceName string, bypass .
 		return err
 	}
 	if invite.AllianceName == "" {
-		return ErrPlayerNotFound
+		return ErrMemberAlreadyExists
 	}
 	// Get Alliance
 	alliance, err := ah.m.Alliances.GetByName(allianceName)
@@ -100,7 +89,7 @@ func (ah *AllianceHandler) AcceptInvite(inviteeID, allianceName string, bypass .
 
 	// Check to make sure alliance has room (max 4 members (3 members + owner))
 	if len(alliance.MemberIDs) > 3 && !bypassLimit {
-		return ErrAllianecLimitReached
+		return ErrAllianceMemberLimitExceeded
 	}
 
 	// Delete the invite

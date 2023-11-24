@@ -12,12 +12,6 @@ import (
 	"github.com/mccune1224/betrayal/internal/discord"
 )
 
-var (
-	ErrAlreadyOwner    = errors.New("user is already owner of an alliance")
-	ErrAlreadyExists   = errors.New("alliance already exists")
-	ErrRequestNotFound = errors.New("alliance request not found")
-)
-
 func (ah *AllianceHandler) CreateAllinaceRequest(allianceName string, requestorID string) error {
 	req := &data.AllianceRequest{
 		Name:        allianceName,
@@ -31,7 +25,7 @@ func (ah *AllianceHandler) CreateAllinaceRequest(allianceName string, requestorI
 		return err
 	}
 	if existingRequest != nil {
-		return ErrAlreadyExists
+		return ErrCreateRequestAlreadyExists
 	}
 
 	// Check to make sure name doesn't already exists
@@ -41,7 +35,7 @@ func (ah *AllianceHandler) CreateAllinaceRequest(allianceName string, requestorI
 		return err
 	}
 	if existingAlliance != nil {
-		return ErrAlreadyExists
+		return ErrAllianceAlreadyExists
 	}
 
 	// Check to make sure owner doesn't already have an alliance
@@ -52,7 +46,7 @@ func (ah *AllianceHandler) CreateAllinaceRequest(allianceName string, requestorI
 	}
 
 	if existingOwnned != nil {
-		return ErrAlreadyOwner
+		return ErrAlreadyAllianceOwner
 	}
 
 	// Check to make sure owner isn't already in an alliance
@@ -64,7 +58,7 @@ func (ah *AllianceHandler) CreateAllinaceRequest(allianceName string, requestorI
 	}
 
 	if existingMember != nil {
-		return ErrAlreadyExists
+		return ErrMemberAlreadyExists
 	}
 
 	// Create the request
@@ -82,13 +76,12 @@ func (ah *AllianceHandler) ApproveCreateRequest(requestName string, s *discordgo
 	}
 	log.Println("PENDING REQUEST: ", pendingRequest)
 
-	// make the channel to put alliance in
+	// make the channel to put alliance in (should always be hidden channel initially with only the requester and admin(s))
 	channelName := strings.ReplaceAll(pendingRequest.Name, " ", "-")
-	channel, err := discord.AddChannelWithinCategory(s, e, "alliances", channelName)
+	channel, err := discord.CreateChannelWithinCategory(s, e, "alliances", channelName, true)
 	if err != nil {
 		return nil, err
 	}
-	log.Println("CHANNEL: ", channel)
 
 	newAlliance := &data.Alliance{
 		Name:      pendingRequest.Name,
@@ -102,13 +95,14 @@ func (ah *AllianceHandler) ApproveCreateRequest(requestName string, s *discordgo
 		s.ChannelDelete(channel.ID)
 		return nil, err
 	}
-	log.Println("ALLIANCE INSERTED: ", newAlliance)
 
 	// Delete the request
 	err = ah.m.Alliances.DeleteRequest(pendingRequest)
 	if err != nil {
 		return nil, err
 	}
+
+	discord.AddMemberToChannel(s, e, channel.ID, pendingRequest.RequesterID)
 
 	return newAlliance, nil
 }

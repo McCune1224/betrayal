@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -63,6 +64,14 @@ func (*Alliance) Options() []*discordgo.ApplicationCommandOption {
 			},
 		},
 		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "delete",
+			Description: "Delete an alliance. (owner & admin only)",
+			Options: []*discordgo.ApplicationCommandOption{
+				discord.StringCommandArg("name", "The name of the alliance.", true),
+			},
+		},
+		{
 			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
 			Name:        "admin",
 			Description: "Admin commands for alliances.",
@@ -94,6 +103,7 @@ func (a *Alliance) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "request", Run: a.request},
 		ken.SubCommandHandler{Name: "invite", Run: a.invite},
 		ken.SubCommandHandler{Name: "accept", Run: a.accept},
+		ken.SubCommandHandler{Name: "delete", Run: a.delete},
 		ken.SubCommandGroup{
 			Name: "admin", SubHandler: []ken.CommandHandler{
 				ken.SubCommandHandler{Name: "approve", Run: a.adminApprove},
@@ -114,7 +124,7 @@ func (a *Alliance) request(ctx ken.SubCommandContext) (err error) {
 
 	err = handler.CreateAllinaceRequest(aName, requester.ID)
 	if err != nil {
-		if errors.Is(err, alliance.ErrAlreadyExists) {
+		if errors.Is(err, alliance.ErrCreateRequestAlreadyExists) {
 			return discord.ErrorMessage(ctx, "Alliance Already Exists", fmt.Sprintf("An alliance with the name %s already exists.", aName))
 		}
 		log.Println(err)
@@ -181,7 +191,7 @@ func (a *Alliance) adminApprove(ctx ken.SubCommandContext) (err error) {
 	handler := alliance.InitAllianceHandler(a.models)
 	newAlliance, err := handler.ApproveCreateRequest(allianceName, ctx.GetSession(), ctx.GetEvent())
 	if err != nil {
-		if errors.Is(err, alliance.ErrAlreadyExists) {
+		if errors.Is(err, alliance.ErrCreateRequestAlreadyExists) {
 			return discord.ErrorMessage(ctx, "Alliance Already Exists", fmt.Sprintf("An alliance with the name %s already exists.", allianceName))
 		}
 		log.Println(err)
@@ -198,4 +208,33 @@ func (a *Alliance) adminDecline(ctx ken.SubCommandContext) (err error) {
 // Version implements ken.SlashCommand.
 func (*Alliance) Version() string {
 	return "1.0.0"
+}
+
+func (a *Alliance) delete(ctx ken.SubCommandContext) (err error) {
+	allainceArgName := ctx.Options().GetByName("name").StringValue()
+	handler := alliance.InitAllianceHandler(a.models)
+	targetAlliance, err := a.models.Alliances.GetByName(allainceArgName)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return discord.ErrorMessage(ctx, "Alliance Not Found",
+				fmt.Sprintf("An alliance with the name %s was not found.", allainceArgName))
+		}
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to get alliance")
+	}
+
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) || targetAlliance.OwnerID != ctx.GetEvent().Member.User.ID {
+		return discord.NotAdminError(ctx)
+	}
+
+	err = handler.DeleteAlliance(targetAlliance.Name, ctx.GetSession())
+	if err != nil {
+		if errors.Is(err, alliance.ErrAllianceNotFound) {
+			return discord.ErrorMessage(ctx, "Alliance Not Found",
+				fmt.Sprintf("An alliance with the name %s was not found.", allainceArgName))
+		}
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to delete alliance or channel")
+	}
+	return discord.SuccessfulMessage(ctx, "Alliance Deleted", fmt.Sprintf("Alliance %s has been deleted.", targetAlliance.Name))
 }

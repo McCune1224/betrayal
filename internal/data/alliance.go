@@ -134,7 +134,7 @@ func (am *AllianceModel) Insert(alliance *Alliance) error {
 }
 
 // Delete any associated invites and requests with the alliance
-func (am *AllianceModel) DeleteAlliance(alliance *Alliance) error {
+func (am *AllianceModel) Delete(alliance *Alliance) error {
 	tx := am.DB.MustBegin()
 	// Delete all invites
 	inviteQuery := `DELETE FROM alliance_invites WHERE alliance_name=$1`
