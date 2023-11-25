@@ -70,6 +70,15 @@ func (am *AllianceModel) GetAllRequests() ([]AllianceRequest, error) {
 	return reqs, nil
 }
 
+func (ah *AllianceModel) DeleteRequestByName(name string) error {
+	query := `DELETE FROM alliance_requests WHERE name=$1`
+	_, err := ah.DB.Exec(query, name)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (am *AllianceModel) DeleteRequest(req *AllianceRequest) error {
 	query := `DELETE FROM alliance_requests WHERE id=$1`
 	_, err := am.DB.Exec(query, req.ID)
@@ -112,6 +121,20 @@ func (am *AllianceModel) GetByMemberID(discordID string) (*Alliance, error) {
 		return nil, err
 	}
 	return &alliance, nil
+}
+
+func (am *AllianceModel) GetAllByMemberID(discordID string) ([]Alliance, error) {
+	var alliances []Alliance
+	// need to check if any entry has the member id in the member_ids array
+	// the member_ids is stored in the psql db as a []varchar
+	// so we need to use the @> operator to check if the member id is in the array
+	foo := pq.StringArray{discordID}
+	query := `SELECT * FROM alliances WHERE member_ids @> $1`
+	err := am.DB.Select(&alliances, query, foo)
+	if err != nil {
+		return nil, err
+	}
+	return alliances, nil
 }
 
 func (am *AllianceModel) GetByOwnerID(discordID string) (*Alliance, error) {
@@ -200,6 +223,16 @@ func (am *AllianceModel) GetInvitesByAllianceName(allianceName string) ([]Allian
 	var invites []AllianceInvite
 	query := `SELECT * FROM alliance_invites WHERE alliance_name=$1`
 	err := am.DB.Select(&invites, query, allianceName)
+	if err != nil {
+		return nil, err
+	}
+	return invites, nil
+}
+
+func (am *AllianceModel) GetAllInvitesForUser(userID string) ([]AllianceInvite, error) {
+	var invites []AllianceInvite
+	query := `SELECT * FROM alliance_invites WHERE invitee_id=$1`
+	err := am.DB.Select(&invites, query, userID)
 	if err != nil {
 		return nil, err
 	}

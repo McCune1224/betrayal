@@ -10,6 +10,7 @@ var (
 	ErrMemberAlreadyExists        = errors.New("alliance member already exists")
 	ErrChannelAlreadyExists       = errors.New("alliance channel already exists")
 	ErrAlreadyAllianceOwner       = errors.New("user is already owner of an alliance")
+	ErrAlreadyAllianceMember      = errors.New("user is already a member of an alliance")
 )
 
 // Not found errors
