@@ -19,7 +19,7 @@ type AllianceRequest struct {
 }
 
 type AllianceInvite struct {
-	ID           int    `db:"int"`
+	ID           int    `db:"id"`
 	InviterID    string `db:"inviter_id"`
 	InviteeID    string `db:"invitee_id"`
 	AllianceName string `db:"alliance_name"`
