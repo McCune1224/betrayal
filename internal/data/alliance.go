@@ -8,7 +8,6 @@ import (
 type Alliance struct {
 	ID        int            `db:"id"`
 	Name      string         `db:"name"`
-	OwnerID   string         `db:"owner_id"`
 	ChannelID string         `db:"channel_id"`
 	MemberIDs pq.StringArray `db:"member_ids"`
 }
@@ -137,16 +136,6 @@ func (am *AllianceModel) GetAllByMemberID(discordID string) ([]Alliance, error) 
 	return alliances, nil
 }
 
-func (am *AllianceModel) GetByOwnerID(discordID string) (*Alliance, error) {
-	var alliance Alliance
-	query := `SELECT * FROM alliances WHERE owner_id=$1`
-	err := am.DB.Get(&alliance, query, discordID)
-	if err != nil {
-		return nil, err
-	}
-	return &alliance, nil
-}
-
 func (am *AllianceModel) Insert(alliance *Alliance) error {
 	query := `INSERT INTO alliances ` + PSQLGeneratedInsert(alliance)
 	_, err := am.DB.NamedExec(query, &alliance)
@@ -193,6 +182,15 @@ func (am *AllianceModel) InsertMember(alliance *Alliance) error {
 func (am *AllianceModel) InsertInvite(invite *AllianceInvite) error {
 	query := `INSERT INTO alliance_invites ` + PSQLGeneratedInsert(invite)
 	_, err := am.DB.NamedExec(query, &invite)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (am *AllianceModel) UpdateAllianceMembers(alliance *Alliance) error {
+	query := `UPDATE alliances SET member_ids=$1 WHERE id=$1`
+	_, err := am.DB.Exec(query, alliance.MemberIDs, alliance.ID)
 	if err != nil {
 		return err
 	}

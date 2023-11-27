@@ -38,20 +38,8 @@ func (ah *AllianceHandler) CreateAllinaceRequest(allianceName string, requestorI
 		return ErrAllianceAlreadyExists
 	}
 
-	// Check to make sure owner doesn't already have an alliance
-	existingOwnned, err := ah.m.Alliances.GetByOwnerID(requestorID)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		log.Println(err)
-		return err
-	}
-
-	if existingOwnned != nil {
-		return ErrAlreadyAllianceOwner
-	}
-
-	// Check to make sure owner isn't already in an alliance
+	// Check to make sure not already in an alliance
 	existingMember, err := ah.m.Alliances.GetByMemberID(requestorID)
-
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		log.Println(err)
 		return err
@@ -74,7 +62,6 @@ func (ah *AllianceHandler) ApproveCreateRequest(requestName string, s *discordgo
 	if err != nil {
 		return nil, err
 	}
-	log.Println("PENDING REQUEST: ", pendingRequest)
 
 	// make the channel to put alliance in (should always be hidden channel initially with only the requester and admin(s))
 	channelName := strings.ReplaceAll(pendingRequest.Name, " ", "-")
@@ -85,9 +72,8 @@ func (ah *AllianceHandler) ApproveCreateRequest(requestName string, s *discordgo
 
 	newAlliance := &data.Alliance{
 		Name:      pendingRequest.Name,
-		OwnerID:   pendingRequest.RequesterID,
 		ChannelID: channel.ID,
-		MemberIDs: pq.StringArray{},
+		MemberIDs: pq.StringArray{pendingRequest.RequesterID},
 	}
 
 	err = ah.m.Alliances.Insert(newAlliance)
@@ -102,7 +88,7 @@ func (ah *AllianceHandler) ApproveCreateRequest(requestName string, s *discordgo
 		return nil, err
 	}
 
-	discord.AddMemberToChannel(s, e, channel.ID, pendingRequest.RequesterID)
+	discord.AddMemberToChannel(s, channel.ID, pendingRequest.RequesterID)
 
 	return newAlliance, nil
 }

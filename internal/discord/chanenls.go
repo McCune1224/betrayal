@@ -74,22 +74,8 @@ func CreateHiddenChannel(s *discordgo.Session, e *discordgo.InteractionCreate, c
 
 	// allow the whitelistIds to see and interact with the channel
 	for _, id := range whiteListed {
-		AddMemberToChannel(s, e, channel.ID, id)
+		AddMemberToChannel(s, channel.ID, id)
 	}
-
-	//		for _, member := range guildMembers {
-	//			// skip the user if they're in the whitelist
-	//			if contains(whiteListed, member.User.ID) {
-	//				continue
-	//			}
-	//			err = s.ChannelPermissionSet(channel.ID, member.User.ID, discordgo.PermissionOverwriteTypeMember, 0, discordgo.PermissionViewChannel)
-	//			if err != nil {
-	//				return nil, err
-	//			}
-	//		}
-	//
-	//		return channel, nil
-	//	}
 	return channel, nil
 }
 
@@ -102,7 +88,7 @@ func contains(list []string, item string) bool {
 	return false
 }
 
-func AddMemberToChannel(s *discordgo.Session, e *discordgo.InteractionCreate, channelID string, userID string) error {
+func AddMemberToChannel(s *discordgo.Session, channelID string, userID string) error {
 	err := s.ChannelPermissionSet(channelID, userID, discordgo.PermissionOverwriteTypeMember, discordgo.PermissionViewChannel, discordgo.PermissionViewChannel)
 	if err != nil {
 		return err

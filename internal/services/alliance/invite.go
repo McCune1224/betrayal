@@ -7,7 +7,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/data"
 )
 
-func (ah *AllianceHandler) InvitePlayer(ownerID string, inviteeID string, allianceName string) error {
+func (ah *AllianceHandler) InvitePlayer(memberID string, inviteeID string, allianceName string) error {
 	//
 	// Check to make sure alliance exists
 	alliance, err := ah.m.Alliances.GetByName(allianceName)
@@ -27,7 +27,7 @@ func (ah *AllianceHandler) InvitePlayer(ownerID string, inviteeID string, allian
 	// Create the invite
 	invite := &data.AllianceInvite{
 		AllianceName: alliance.Name,
-		InviterID:    ownerID,
+		InviterID:    memberID,
 		InviteeID:    inviteeID,
 	}
 
