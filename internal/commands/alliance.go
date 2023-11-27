@@ -119,6 +119,7 @@ func (a *Alliance) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "invite", Run: a.invite},
 		ken.SubCommandHandler{Name: "accept", Run: a.accept},
 		ken.SubCommandHandler{Name: "pending", Run: a.pending},
+		ken.SubCommandHandler{Name: "leave", Run: a.leave},
 		ken.SubCommandGroup{
 			Name: "admin", SubHandler: []ken.CommandHandler{
 				ken.SubCommandHandler{Name: "approve", Run: a.adminApprove},
@@ -265,6 +266,19 @@ func (a *Alliance) accept(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.AlexError(ctx, "Unable to accept invite")
 	}
+
+	currAlliance, err := a.models.Alliances.GetByMemberID(e.Member.User.ID)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to get current alliance")
+	}
+
+	_, err = ctx.GetSession().ChannelMessageSend(currAlliance.ChannelID, fmt.Sprintf("%s has joined %s.", discord.MentionUser(e.Member.User.ID), allianceName))
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to send message to alliance channel")
+	}
+
 	return discord.SuccessfulMessage(ctx, "Alliance Joined", fmt.Sprintf("You have joined %s.", allianceName))
 }
 
@@ -429,8 +443,14 @@ func (a *Alliance) leave(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "Unable to find alliance")
 	}
 
-	handler := alliance.InitAllianceHandler(a.models)
-	err = handler.LeaveAlliance(ctx.GetEvent().Member.User.ID, allianceName, ctx.GetSession())
+	aHandler := alliance.InitAllianceHandler(a.models)
+	currAlliance, err := a.models.Alliances.GetByMemberID(ctx.GetEvent().Member.User.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return discord.ErrorMessage(ctx, "Not in Alliance", "You are not in an alliance.")
+		}
+	}
+	err = aHandler.LeaveAlliance(currAlliance, ctx.GetEvent().Member.User.ID, ctx.GetSession())
 	if err != nil {
 		if errors.Is(err, alliance.ErrAllianceNotFound) {
 			return discord.ErrorMessage(ctx, "Alliance Not Found",
