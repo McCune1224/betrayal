@@ -23,6 +23,7 @@ type AllianceInvite struct {
 	InviterID    string `db:"inviter_id"`
 	InviteeID    string `db:"invitee_id"`
 	AllianceName string `db:"alliance_name"`
+	Override     bool   `db:"override"`
 }
 
 type AllianceModel struct {

@@ -101,6 +101,11 @@ func (*Alliance) Options() []*discordgo.ApplicationCommandOption {
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "override",
+					Description: "Allow an invite for a player to bypass the alliance member limit.",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "delete",
 					Description: "Delete an alliance and associated channel. (admin only)",
 					Options: []*discordgo.ApplicationCommandOption{
@@ -124,10 +129,16 @@ func (a *Alliance) Run(ctx ken.Context) (err error) {
 			Name: "admin", SubHandler: []ken.CommandHandler{
 				ken.SubCommandHandler{Name: "approve", Run: a.adminApprove},
 				ken.SubCommandHandler{Name: "decline", Run: a.adminDecline},
+				ken.SubCommandHandler{Name: "override", Run: a.adminOverride},
 				ken.SubCommandHandler{Name: "delete", Run: a.adminDelete},
 			},
 		},
 	)
+}
+
+// Version implements ken.SlashCommand.
+func (*Alliance) Version() string {
+	return "1.0.0"
 }
 
 func (a *Alliance) request(ctx ken.SubCommandContext) (err error) {
@@ -196,6 +207,7 @@ func (a *Alliance) invite(ctx ken.SubCommandContext) (err error) {
 		}
 		log.Println(err)
 	}
+
 	err = handler.InvitePlayer(e.Member.User.ID, target.ID, currentAlliance.Name)
 	if err != nil {
 		if errors.Is(err, alliance.ErrAllianceNotFound) {
@@ -205,6 +217,7 @@ func (a *Alliance) invite(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.AlexError(ctx, fmt.Sprintf("Failed to invite create %s to alliance", discord.MentionUser(target.ID)))
 	}
+
 	inviteeInventory, err := a.models.Inventories.GetByDiscordID(target.ID)
 	if err != nil {
 		log.Println(err)
@@ -254,8 +267,6 @@ func (a *Alliance) accept(ctx ken.SubCommandContext) (err error) {
 			return discord.ErrorMessage(ctx, "Already Alliance Member", "You are already a member of an alliance.")
 		} else if errors.Is(err, alliance.ErrInviteNotFound) {
 			return discord.ErrorMessage(ctx, "Invite Not Found", "You do not have a pending invite for that alliance. see `/alliance pending`")
-		} else if errors.Is(err, alliance.ErrAllianceMemberLimitExceeded) {
-			return discord.ErrorMessage(ctx, "Alliance Member Limit Exceeded", "The alliance you are trying to join is full.")
 		} else if errors.Is(err, alliance.ErrAllianceNotFound) {
 			return discord.ErrorMessage(ctx, "Alliance Not Found", "The alliance you are trying to join does not exist.")
 		} else if errors.Is(err, alliance.ErrMemberAlreadyExists) {
@@ -280,6 +291,67 @@ func (a *Alliance) accept(ctx ken.SubCommandContext) (err error) {
 	}
 
 	return discord.SuccessfulMessage(ctx, "Alliance Joined", fmt.Sprintf("You have joined %s.", allianceName))
+}
+
+func (a *Alliance) pending(ctx ken.SubCommandContext) (err error) {
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	pendingInvites, err := a.models.Alliances.GetAllInvitesForUser(ctx.GetEvent().Member.User.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return discord.ErrorMessage(ctx, "No Pending Requests", "You have no pending alliance requests.")
+		}
+		log.Println(err)
+	}
+
+	msg := &discordgo.MessageEmbed{
+		Title:       "Pending Alliance Requests",
+		Description: fmt.Sprintf("You have %d pending invites", len(pendingInvites)),
+	}
+	fields := []*discordgo.MessageEmbedField{}
+	for _, invite := range pendingInvites {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   invite.AllianceName,
+			Value:  fmt.Sprintf("Invited by %s", discord.MentionUser(invite.InviterID)),
+			Inline: false,
+		})
+	}
+
+	msg.Fields = fields
+	return ctx.RespondEmbed(msg)
+}
+
+func (a *Alliance) leave(ctx ken.SubCommandContext) (err error) {
+	allianceName := ctx.Options().GetByName("name").StringValue()
+	_, err = a.models.Alliances.GetByName(allianceName)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return discord.ErrorMessage(ctx, "Alliance Not Found",
+				fmt.Sprintf("An alliance with the name %s was not found.", allianceName))
+		}
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to find alliance")
+	}
+
+	aHandler := alliance.InitAllianceHandler(a.models)
+	currAlliance, err := a.models.Alliances.GetByMemberID(ctx.GetEvent().Member.User.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return discord.ErrorMessage(ctx, "Not in Alliance", "You are not in an alliance.")
+		}
+	}
+	err = aHandler.LeaveAlliance(currAlliance, ctx.GetEvent().Member.User.ID, ctx.GetSession())
+	if err != nil {
+		if errors.Is(err, alliance.ErrAllianceNotFound) {
+			return discord.ErrorMessage(ctx, "Alliance Not Found",
+				fmt.Sprintf("An alliance with the name %s was not found.", allianceName))
+		}
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to leave allinace")
+	}
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Left alliance %s", allianceName), fmt.Sprintf("You have left alliance %s.", allianceName))
 }
 
 func (a *Alliance) adminApprove(ctx ken.SubCommandContext) (err error) {
@@ -359,11 +431,6 @@ func (a *Alliance) adminDecline(ctx ken.SubCommandContext) (err error) {
 	return discord.SuccessfulMessage(ctx, "Alliance Request Declined", fmt.Sprintf("Alliance request %s has been declined.", allianceName))
 }
 
-// Version implements ken.SlashCommand.
-func (*Alliance) Version() string {
-	return "1.0.0"
-}
-
 func (a *Alliance) adminDelete(ctx ken.SubCommandContext) (err error) {
 	allainceArgName := ctx.Options().GetByName("name").StringValue()
 	handler := alliance.InitAllianceHandler(a.models)
@@ -401,63 +468,6 @@ func (a *Alliance) adminDelete(ctx ken.SubCommandContext) (err error) {
 	return discord.SuccessfulMessage(ctx, "Alliance Deleted", fmt.Sprintf("Alliance %s has been deleted.", targetAlliance.Name))
 }
 
-func (a *Alliance) pending(ctx ken.SubCommandContext) (err error) {
-	if err = ctx.Defer(); err != nil {
-		log.Println(err)
-		return err
-	}
-	pendingInvites, err := a.models.Alliances.GetAllInvitesForUser(ctx.GetEvent().Member.User.ID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return discord.ErrorMessage(ctx, "No Pending Requests", "You have no pending alliance requests.")
-		}
-		log.Println(err)
-	}
-
-	msg := &discordgo.MessageEmbed{
-		Title:       "Pending Alliance Requests",
-		Description: fmt.Sprintf("You have %d pending invites", len(pendingInvites)),
-	}
-	fields := []*discordgo.MessageEmbedField{}
-	for _, invite := range pendingInvites {
-		fields = append(fields, &discordgo.MessageEmbedField{
-			Name:   invite.AllianceName,
-			Value:  fmt.Sprintf("Invited by %s", discord.MentionUser(invite.InviterID)),
-			Inline: false,
-		})
-	}
-
-	msg.Fields = fields
-	return ctx.RespondEmbed(msg)
-}
-
-func (a *Alliance) leave(ctx ken.SubCommandContext) (err error) {
-	allianceName := ctx.Options().GetByName("name").StringValue()
-	_, err = a.models.Alliances.GetByName(allianceName)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return discord.ErrorMessage(ctx, "Alliance Not Found",
-				fmt.Sprintf("An alliance with the name %s was not found.", allianceName))
-		}
-		log.Println(err)
-		return discord.AlexError(ctx, "Unable to find alliance")
-	}
-
-	aHandler := alliance.InitAllianceHandler(a.models)
-	currAlliance, err := a.models.Alliances.GetByMemberID(ctx.GetEvent().Member.User.ID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return discord.ErrorMessage(ctx, "Not in Alliance", "You are not in an alliance.")
-		}
-	}
-	err = aHandler.LeaveAlliance(currAlliance, ctx.GetEvent().Member.User.ID, ctx.GetSession())
-	if err != nil {
-		if errors.Is(err, alliance.ErrAllianceNotFound) {
-			return discord.ErrorMessage(ctx, "Alliance Not Found",
-				fmt.Sprintf("An alliance with the name %s was not found.", allianceName))
-		}
-		log.Println(err)
-		return discord.AlexError(ctx, "Unable to leave allinace")
-	}
-	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Left alliance %s", allianceName), fmt.Sprintf("You have left alliance %s.", allianceName))
+func (a *Alliance) adminOverride(ctx ken.SubCommandContext) (err error) {
+	return discord.AlexError(ctx, "IM LAZY")
 }

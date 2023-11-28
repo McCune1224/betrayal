@@ -1,2 +1,6 @@
-# betrayal
-Mono Repo for hosting the betrayal discord games.
+# Betrayal
+
+<!--toc:start-->
+
+- [Betrayal](#betrayal)
+<!--toc:end-->

@@ -23,4 +23,5 @@ var (
 // Misc errors
 var (
 	ErrAllianceMemberLimitExceeded = errors.New("alliance member limit exceeded")
+	ErrOverrideRequired            = errors.New("alliance override required")
 )

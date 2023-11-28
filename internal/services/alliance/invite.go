@@ -7,6 +7,8 @@ import (
 	"github.com/mccune1224/betrayal/internal/data"
 )
 
+var allianceMemberLimit = 4
+
 func (ah *AllianceHandler) InvitePlayer(memberID string, inviteeID string, allianceName string) error {
 	//
 	// Check to make sure alliance exists
@@ -29,13 +31,10 @@ func (ah *AllianceHandler) InvitePlayer(memberID string, inviteeID string, allia
 		AllianceName: alliance.Name,
 		InviterID:    memberID,
 		InviteeID:    inviteeID,
+		Override:     len(alliance.MemberIDs) >= allianceMemberLimit,
 	}
 
-	err = ah.m.Alliances.InsertInvite(invite)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ah.m.Alliances.InsertInvite(invite)
 }
 
 func (ah *AllianceHandler) AcceptInvite(inviteeID, allianceName string, bypassMemberLimit bool, bypassAllianceLimit bool) error {
@@ -64,9 +63,9 @@ func (ah *AllianceHandler) AcceptInvite(inviteeID, allianceName string, bypassMe
 		return err
 	}
 
-	// Check to make sure alliance has room (max 4 members (3 members + owner))
-	if len(alliance.MemberIDs) > 3 && !bypassMemberLimit {
-		return ErrAllianceMemberLimitExceeded
+	// Edge case where someone tries to accept an invite when an alliance is at limimt (4)
+	if invite.Override {
+		return ErrOverrideRequired
 	}
 
 	// Delete the invite
