@@ -19,7 +19,7 @@ func (ih *InventoryHandler) AddImmunity(immunity string) (string, error) {
 			return "", ErrImmunityExists
 		}
 	}
-	dbImmunity, err := ih.m.Statuses.GetFuzzy(immunity)
+	dbImmunity, err := ih.m.Statuses.GetByFuzzy(immunity)
 	if err != nil {
 		return "", ErrImmunityNotFound
 	}

@@ -55,10 +55,7 @@ func (sm *StatusModel) GetByName(name string) (*Status, error) {
 	return &status, nil
 }
 
-// Will attempt to fuzzy find a string, requires a string of at least 3 characters
-// to allow for a more accurate match to be found.
-// Generally lsower
-func (sm *StatusModel) GetFuzzy(name string) (*Status, error) {
+func (sm *StatusModel) GetByFuzzy(name string) (*Status, error) {
 	var status Status
 	var statusChoices []Status
 	var stringChoices []string
