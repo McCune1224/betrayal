@@ -14,6 +14,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/mccune1224/betrayal/internal/commands"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
+	"github.com/mccune1224/betrayal/internal/commands/roll"
 	"github.com/mccune1224/betrayal/internal/commands/view"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -128,18 +129,18 @@ func main() {
 	tally := app.RegisterBetrayalCommands(
 		new(inventory.Inventory),
 		new(commands.Test),
-		// new(roll.Roll),
-		// new(commands.ActionFunnel),
+		new(roll.Roll),
+		new(commands.ActionFunnel),
 		new(view.View),
 		new(commands.List),
-		// new(commands.Buy),
-		// new(commands.Insult),
-		// new(commands.Ping),
-		// new(commands.Vote),
-		// new(commands.Kill),
-		// new(commands.Revive),
-		// new(commands.Setup),
-		// new(commands.Alliance),
+		new(commands.Buy),
+		new(commands.Insult),
+		new(commands.Ping),
+		new(commands.Vote),
+		new(commands.Kill),
+		new(commands.Revive),
+		new(commands.Setup),
+		new(commands.Alliance),
 	)
 
 	app.betrayalManager.Session().AddHandler(logHandler)
