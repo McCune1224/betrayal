@@ -29,7 +29,6 @@ func (c *csvRole) GetDescription() string {
 func (c *csvRole) GetAbilities() ([]data.Ability, error) {
 	abilities := []data.Ability{}
 	for i, currAbilityString := range c.AbilitiesStrings {
-		// fmt.Println(currAbilityString)
 
 		name := ""
 		currAbility := data.Ability{}
@@ -44,17 +43,13 @@ func (c *csvRole) GetAbilities() ([]data.Ability, error) {
 
 		chargeIndex := strings.Index(snipString, " ")
 		if chargeIndex == -1 {
-			return nil, errors.New(
-				fmt.Sprintf("FAILED LINE %d: FAILED CHARGE PARSE %s", i, currAbilityString),
-			)
+			return nil, fmt.Errorf("failed line %d: failed charge parse %s", i, currAbilityString)
 		}
 		charge := snipString[:chargeIndex]
 
 		abilityTypeIndex := strings.Index(charge, "]") + 1
 		if abilityTypeIndex == 0 {
-			return nil, errors.New(
-				fmt.Sprintf("FAILED LINE %d: FAILED ABILITY TYPE PARSE %s", i, currAbilityString),
-			)
+			return nil, fmt.Errorf("failed line %d: failed ability type parse %s", i, currAbilityString)
 		}
 
 		abilityType := charge[abilityTypeIndex:]
@@ -71,16 +66,12 @@ func (c *csvRole) GetAbilities() ([]data.Ability, error) {
 		// Get number inside of [ ]
 		foo := strings.Index(charge, "[")
 		if foo == -1 {
-			return nil, errors.New(
-				fmt.Sprintf("FAILED LINE %d: FAILED CHARGE PARSE %s", i, currAbilityString),
-			)
+			return nil, fmt.Errorf("failed line %d: failed charge parse %s", i, currAbilityString)
 		}
 
 		bar := strings.Index(charge, "]")
 		if bar == -1 {
-			return nil, errors.New(
-				fmt.Sprintf("FAILED LINE %d: FAILED CHARGE PARSE %s", i, currAbilityString),
-			)
+			return nil, fmt.Errorf("failed line %d: failed charge parse %s", i, currAbilityString)
 		}
 
 		charge = charge[foo+1 : bar]
@@ -92,18 +83,14 @@ func (c *csvRole) GetAbilities() ([]data.Ability, error) {
 
 		chargeInt, err := strconv.Atoi(charge)
 		if err != nil {
-			return nil, errors.New(
-				fmt.Sprintf("FAILED LINE %d: FAILED CHARGE INT CONVERT %s", i, currAbilityString),
-			)
+			return nil, fmt.Errorf("failed line %d: failed charge int convERT %s", i, currAbilityString)
 		}
 
 		categoriesOpenIndex := strings.Index(snipString, "(")
 		categoriesCloseIndex := strings.Index(snipString, ")")
 
 		if categoriesOpenIndex == -1 || categoriesCloseIndex == -1 {
-			return nil, errors.New(
-				fmt.Sprintf("FAILED LINE %d: FAILED CATEGORY PARSE %s", i, currAbilityString),
-			)
+			return nil, fmt.Errorf("failed line %d: failed category parse %s", i, currAbilityString)
 		}
 		categoriesString := snipString[categoriesOpenIndex+1 : categoriesCloseIndex]
 		categoriesParse := strings.Split(categoriesString, "/")
@@ -128,7 +115,7 @@ func (c *csvRole) GetPerks() ([]data.Perk, error) {
 	for _, perkString := range c.PerksStrings {
 		split := strings.Split(perkString, "- ")
 		if len(split) < 2 {
-			return nil, errors.New("Failed to split perk string:\n " + perkString + "\n")
+			return nil, errors.New("failed to split perk string:\n " + perkString + "\n")
 		}
 
 		if len(split) > 2 {
@@ -161,21 +148,8 @@ func (*csvBuilder) BuildRoleCSV(csv [][]string) ([]csvRole, error) {
 		return nil, errors.New("csv is empty")
 	}
 
-	// Each entry in csv for a role will look like this:
-	// ,Name ,Description
-	// ,Agent,Perhaps we're asking the wrong questions.
-	// ,Abilities:,
-	// ,Follow [x3]* (Investigation/Neutral/Visiting) - You will know everything your target does and who to for 24 hours from use. Does not include perk-based actions.,
-	// ,Spy [x3]* (Investigation/Neutral/Visiting) - You will know everything that happens to your target and who is doing what to them for 24 hours on use.,
-	// ,"Hidden [x2]* (Redirection/Neutral/Non-visiting) - For 24 hours on use, anything done on you will be reflected back to the user.",
-	// ,Perks:,
-	// ,"Hawkeye - If someone steals from you, you will know who did it.",
-	// ,"Organised - Your vote cannot be stolen, blocked or tampered with in any way.",
-	// ,"Tracker - If anyone in your alliance does a positive action to someone outside of your alliance, you will know who gave who, but not what it was.",
-
 	currRole := csvRole{}
 	for i, line := range csv {
-		// fmt.Println(line[1 : len(line)-1])
 		switch line[1] {
 		case "Name ": // ,Name ,Description
 			roleName := csv[i+1][1]

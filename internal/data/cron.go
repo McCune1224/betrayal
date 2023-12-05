@@ -2,7 +2,6 @@ package data
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -40,15 +39,25 @@ func (icjm *InventoryCronJobModel) Insert(icj *InventoryCronJob) error {
 	return nil
 }
 
-func (icjm *InventoryCronJobModel) GetByJobID(jobID string) error {
+// Upsert will insert or update the cron job based on the job ID
+func (icjm *InventoryCronJobModel) Upsert(icj *InventoryCronJob) error {
+	query := `INSERT INTO inventory_cron_jobs ` + PSQLGeneratedInsert(icj) + ` ON CONFLICT (player_id, category, action_type, value) DO UPDATE SET invoke_time=$1`
+	_, err := icjm.DB.Exec(query, icj.InvokeTime)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (icjm *InventoryCronJobModel) GetByJobID(jobID string) (*InventoryCronJob, error) {
 	properties := strings.Split(jobID, "-")
 	query := `SELECT * FROM inventory_cron_jobs WHERE player_id=$1 AND category=$2 AND action_type=$3 AND value=$4`
 	var cronJob InventoryCronJob
 	err := icjm.DB.Get(&cronJob, query, properties[0], properties[1], properties[2], properties[3])
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return &cronJob, nil
 }
 
 func (icjm *InventoryCronJobModel) GetByInventoryID(inventoryID string) ([]InventoryCronJob, error) {
@@ -106,7 +115,6 @@ func (icjm *InventoryCronJobModel) DeletebyJobID(jobID string) error {
 	if err != nil {
 		return err
 	}
-	log.Println("Deleted JobID: ", jobID)
 	return nil
 }
 

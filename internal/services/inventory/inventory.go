@@ -29,6 +29,15 @@ func (ih *InventoryHandler) GetInventory() *data.Inventory {
 	return ih.i
 }
 
+func (ih *InventoryHandler) RefreshInventory() error {
+  inv, err := ih.m.Inventories.GetByDiscordID(ih.i.DiscordID)
+  if err != nil {
+    return err
+  }
+  ih.i = inv
+  return nil
+}
+
 func (ih *InventoryHandler) CreateInventory(initInv *data.Inventory) error {
 	inv := initInv
 	// FIXME: Lord please forgive for the unholy amount of switch statements I am about to unleash

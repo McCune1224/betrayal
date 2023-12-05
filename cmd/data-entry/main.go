@@ -67,13 +67,13 @@ func main() {
 	}
 	defer file.Close()
 
-	// CreateRolls(file, app, "EVIL")
+	CreateRolesNew(file, app, "GOOD")
 	// CreateAnyAbilities(file, app)
 	// CreateItems(file, app)
-	CreateStatuses(file, app)
+	// CreateStatuses(file, app)
 }
 
-func CreateRolls(file *os.File, app *application, alignment string) {
+func CreateRoles(file *os.File, app *application, alignment string) {
 	csvReader := csv.NewReader(file)
 	records, err := csvReader.ReadAll()
 	if err != nil {
@@ -139,25 +139,62 @@ func CreateRolls(file *os.File, app *application, alignment string) {
 	}
 }
 
-// func CreateItems(file *os.File, app *application) {
-// 	csvReader := csv.NewReader(file)
-// 	records, err := csvReader.ReadAll()
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	var b csvBuilder
-// 	items, err := b.BuildItemCSV(records)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-//
-// 	for _, item := range items {
-// 		_, err := app.models.Items.Insert(&item)
-// 		if err != nil {
-// 			log.Fatal(err)
-// 		}
-// 	}
-// }
+// Will isnert roles, abilities, any abilities, and perks into the DB
+func CreateRolesNew(file *os.File, app *application, alignment string) {
+	csvReader := csv.NewReader(file)
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var b csvBuilder
+	roleSheet, err := b.BuildNewRoleCSV(records, alignment)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db := app.models
+	for _, entry := range roleSheet {
+		log.Print("Inserting role ", entry.Role.Name)
+		role := entry.Role
+		rID, err := db.Roles.Insert(&role)
+		if err != nil {
+			log.Println("FAILED TO INSERT ROLE ", role.Name)
+			log.Fatal(err)
+		}
+
+		for _, ability := range entry.Abilities {
+			abID, err := db.Abilities.Insert(&ability)
+			if err != nil {
+				log.Println("FAILED TO INSERT ABILITY ", ability.Name)
+				log.Fatal(err)
+			}
+			err = db.Roles.InsertJoinAbility(rID, abID)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		for _, anyAbility := range entry.AnyAbilities {
+			err := db.Abilities.InsertAnyAbility(&anyAbility)
+			if err != nil {
+				log.Println("FAILED TO INSERT ANY ABILITY ", anyAbility.Name)
+				log.Fatal(err)
+			}
+		}
+
+		for _, perk := range entry.Perks {
+			pID, err := db.Perks.Insert(&perk)
+			if err != nil {
+				log.Println("FAILED TO INSERT PERK ", perk.Name)
+				log.Fatal(err)
+			}
+			err = db.Roles.InsertJoinPerk(rID, pID)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+}
 
 func CreateAnyAbilities(file *os.File, app *application) {
 	csvReader := csv.NewReader(file)
