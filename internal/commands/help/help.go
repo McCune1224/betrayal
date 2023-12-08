@@ -87,23 +87,23 @@ func (h *Help) overview(ctx ken.SubCommandContext) (err error) {
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:  "Inventory",
-				Value: "The `/inventory` command allows you to keep track of your inventory. Use it to keep track of your abilities, items, coins, statuses, and more. For more information, use `/help inventory`.",
+				Value: "The `/inv` (short for inventory) command allows you to keep track of your inventory. Use it to keep track of your abilities, items, coins, statuses, and more. For more information, use `/help inventory`.",
 			},
 			{
 				Name:  "Action",
-				Value: "The `/action` will send an action for processing. Any ability, item, etc should be done through this command.",
+				Value: "The `/action` command will send an action for processing. Any ability, item, etc should be done through this command.",
 			},
 			{
 				Name:  "Alliances",
-				Value: "The `/alliance` command allows you request creating, joining, and creating alliances. For more information, use `/help alliance`.",
+				Value: "The `/alliance` command allows you request creating, joining, and leaving alliances. For more information, use `/help alliance`.",
 			},
 			{
 				Name:  "View",
-				Value: "The `/view` and `/list` commands allow you to quickly fetch information about the game including details like roles, abilities, perks, items, and more. For more information, use `/help view`.",
+				Value: "The `/view` command allow you to quickly fetch information about the game including details like roles, abilities, perks, items, and more. For more information, use `/help view`.",
 			},
 			{
 				Name:  "List",
-				Value: "The `/view` and `/list` commands allow you to quickly fetch information about the game in list format, including details like [lol idk what to put here]. For more information, use `/help list`.",
+				Value: "The `/list` command allow you to quickly fetch information about the game in list format, including details like [lol idk what to put here]. For more information, use `/help list`.",
 			},
 		},
 	}
