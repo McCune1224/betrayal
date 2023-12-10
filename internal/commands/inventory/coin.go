@@ -11,6 +11,10 @@ import (
 )
 
 func (i *Inventory) addCoins(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	ctx.SetEphemeral(false)
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
@@ -38,6 +42,10 @@ func (i *Inventory) addCoins(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeCoins(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -70,6 +78,10 @@ func (i *Inventory) removeCoins(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setCoins(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -95,6 +107,10 @@ func (i *Inventory) setCoins(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addCoinBonus(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -127,6 +143,10 @@ func (i *Inventory) addCoinBonus(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeCoinBonus(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -156,6 +176,10 @@ func (i *Inventory) removeCoinBonus(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i Inventory) setCoinBonus(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {

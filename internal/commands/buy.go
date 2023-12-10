@@ -44,6 +44,10 @@ func (*Buy) Options() []*discordgo.ApplicationCommandOption {
 
 // Run implements ken.SlashCommand.
 func (b *Buy) Run(ctx ken.Context) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	event := ctx.GetEvent()
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.ErrorMessage(

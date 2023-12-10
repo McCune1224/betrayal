@@ -72,10 +72,18 @@ func (v *Vote) Run(ctx ken.Context) (err error) {
 }
 
 func (v *Vote) batch(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	return discord.SuccessfulMessage(ctx, "Alex needs to make this", "TODO: stop being lazy")
 }
 
 func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	voteUser := ctx.Options().GetByName("user").UserValue(ctx)
 	voteContext, ok := ctx.Options().GetByNameOptional("context")
 
@@ -103,6 +111,10 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 }
 
 func (v *Vote) location(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.NotAdminError(ctx)
 	}

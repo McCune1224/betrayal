@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -40,6 +41,10 @@ func (*Ping) Options() []*discordgo.ApplicationCommandOption {
 
 // Run implements ken.SlashCommand.
 func (p *Ping) Run(ctx ken.Context) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	now := time.Now()
 
 	err = ctx.Respond(&discordgo.InteractionResponse{

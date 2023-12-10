@@ -11,6 +11,10 @@ import (
 )
 
 func (i *Inventory) addPerk(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -40,6 +44,10 @@ func (i *Inventory) addPerk(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removePerk(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {

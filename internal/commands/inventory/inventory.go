@@ -67,7 +67,13 @@ func (*Inventory) Name() string {
 }
 
 func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
+
 	ctx.SetEphemeral(true)
+
 
 	player := ctx.Options().GetByName("user").UserValue(ctx)
 	inv, err := i.models.Inventories.GetByDiscordID(player.ID)
@@ -124,6 +130,10 @@ func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) delete(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	authed := discord.IsAdminRole(ctx, discord.AdminRoles...)
 	if !authed {
 		err = discord.ErrorMessage(
@@ -204,6 +214,10 @@ func (i *Inventory) inventoryAuthorized(ctx ken.SubCommandContext, inv *data.Inv
 }
 
 func (i *Inventory) listWhitelist(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	wishlists, _ := i.models.Whitelists.GetAll()
 	if len(wishlists) == 0 {
 		err = discord.ErrorMessage(ctx, "No whitelisted channels", "Nothing here...")

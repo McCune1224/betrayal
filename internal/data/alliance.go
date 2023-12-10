@@ -19,11 +19,11 @@ type AllianceRequest struct {
 }
 
 type AllianceInvite struct {
-	ID           int    `db:"id"`
-	InviterID    string `db:"inviter_id"`
-	InviteeID    string `db:"invitee_id"`
-	AllianceName string `db:"alliance_name"`
-	Override     bool   `db:"override"`
+	ID              int    `db:"id"`
+	InviterID       string `db:"inviter_id"`
+	InviteeID       string `db:"invitee_id"`
+	AllianceName    string `db:"alliance_name"`
+	InviteeAccepted bool   `db:"invitee_accepted"`
 }
 
 type AllianceModel struct {
@@ -183,6 +183,15 @@ func (am *AllianceModel) InsertMember(alliance *Alliance) error {
 func (am *AllianceModel) InsertInvite(invite *AllianceInvite) error {
 	query := `INSERT INTO alliance_invites ` + PSQLGeneratedInsert(invite)
 	_, err := am.DB.NamedExec(query, &invite)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (am *AllianceModel) UpdateInviteInviteeAccepted(invite *AllianceInvite) error {
+	query := `UPDATE alliance_invites SET invitee_accepted=$1 WHERE id=$2`
+	_, err := am.DB.Exec(query, invite.InviteeAccepted, invite.ID)
 	if err != nil {
 		return err
 	}

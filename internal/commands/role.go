@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"log"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -40,6 +42,10 @@ func (*RoleGet) Options() []*discordgo.ApplicationCommandOption {
 
 // Run implements ken.SlashCommand.
 func (rg *RoleGet) Run(ctx ken.Context) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	ctx.SetEphemeral(true)
 	data := ctx.Options().GetByName("name").StringValue()
 	role, err := rg.models.Roles.GetByFuzzy(data)

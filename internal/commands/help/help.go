@@ -175,18 +175,34 @@ func (h *Help) overview(ctx ken.SubCommandContext) (err error) {
 }
 
 func (h *Help) inventory(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	return ctx.RespondEmbed(InventoryHelpEmbed())
 }
 
 func (h *Help) alliance(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	return ctx.RespondEmbed(AllianceHelpEmbed())
 }
 
 func (h *Help) view(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	return ctx.RespondMessage("todo")
 }
 
 func (h *Help) list(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	return ctx.RespondMessage("todo")
 }
 
@@ -196,5 +212,9 @@ func (*Help) Version() string {
 }
 
 func (*Help) action(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	return ctx.RespondMessage("todo")
 }

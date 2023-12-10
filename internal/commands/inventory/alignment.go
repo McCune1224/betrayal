@@ -10,6 +10,10 @@ import (
 )
 
 func (i *Inventory) setAlignment(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	alignmentArg := ctx.Options().GetByName("name").StringValue()
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {

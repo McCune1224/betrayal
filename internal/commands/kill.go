@@ -122,6 +122,10 @@ func (k *Kill) killNorm(ctx ken.SubCommandContext) (err error) {
 }
 
 func (k *Kill) killLocation(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.NotAdminError(ctx)
 	}

@@ -11,7 +11,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/scheduler"
 	"github.com/mccune1224/betrayal/internal/services/alliance"
-	"github.com/mccune1224/betrayal/internal/services/betrayal"
+	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
 
@@ -42,7 +42,7 @@ func (*Alliance) Options() []*discordgo.ApplicationCommandOption {
 	return []*discordgo.ApplicationCommandOption{
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
-			Name:        "request",
+			Name:        "create",
 			Description: "Request to create an alliance.",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.StringCommandArg("name", "The name of the alliance.", true),
@@ -85,28 +85,37 @@ func (*Alliance) Options() []*discordgo.ApplicationCommandOption {
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Name:        "approve",
+					Name:        "create",
 					Description: "Approve a request to create an alliance.",
 					Options: []*discordgo.ApplicationCommandOption{
-						discord.StringCommandArg("name", "The name of the alliance.", true),
+						discord.StringCommandArg("name", "The name of the alliance. (admin only)", true),
 					},
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "decline",
-					Description: "Decline a request to create an alliance.",
+					Description: "Decline a request to create an alliance. (admin only)",
 					Options: []*discordgo.ApplicationCommandOption{
 						discord.StringCommandArg("name", "The name of the alliance.", true),
 					},
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Name:        "override",
-					Description: "Allow an invite for a player to bypass the alliance member limit.",
+					Name:        "invite",
+					Description: "Allow a member into an alliance. (admin only)",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.UserCommandArg(true),
+						discord.ChannelCommandArg(true),
+					},
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Name:        "delete",
+					Name:        "pending",
+					Description: "View all pending alliance requests and invites. (admin only)",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "wipe",
 					Description: "Delete an alliance and associated channel. (admin only)",
 					Options: []*discordgo.ApplicationCommandOption{
 						discord.StringCommandArg("name", "The name of the alliance.", true),
@@ -120,17 +129,18 @@ func (*Alliance) Options() []*discordgo.ApplicationCommandOption {
 // Run implements ken.SlashCommand.
 func (a *Alliance) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
-		ken.SubCommandHandler{Name: "request", Run: a.request},
+		ken.SubCommandHandler{Name: "create", Run: a.createRequest},
 		ken.SubCommandHandler{Name: "invite", Run: a.invite},
-		ken.SubCommandHandler{Name: "accept", Run: a.accept},
+		ken.SubCommandHandler{Name: "accept", Run: a.acceptRequest},
 		ken.SubCommandHandler{Name: "pending", Run: a.pending},
 		ken.SubCommandHandler{Name: "leave", Run: a.leave},
 		ken.SubCommandGroup{
 			Name: "admin", SubHandler: []ken.CommandHandler{
-				ken.SubCommandHandler{Name: "approve", Run: a.adminApprove},
-				ken.SubCommandHandler{Name: "decline", Run: a.adminDecline},
-				ken.SubCommandHandler{Name: "override", Run: a.adminOverride},
-				ken.SubCommandHandler{Name: "delete", Run: a.adminDelete},
+				ken.SubCommandHandler{Name: "create", Run: a.adminApproveCreate},
+				ken.SubCommandHandler{Name: "decline", Run: a.adminDeclineCreate},
+				ken.SubCommandHandler{Name: "invite", Run: a.adminApproveInvite},
+				ken.SubCommandHandler{Name: "pending", Run: a.adminPending},
+				ken.SubCommandHandler{Name: "wipe", Run: a.adminWipe},
 			},
 		},
 	)
@@ -141,7 +151,12 @@ func (*Alliance) Version() string {
 	return "1.0.0"
 }
 
-func (a *Alliance) request(ctx ken.SubCommandContext) (err error) {
+func (a *Alliance) createRequest(ctx ken.SubCommandContext) (err error) {
+  if err = ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
+
 	aName := ctx.Options().GetByName("name").StringValue()
 	e := ctx.GetEvent()
 	requester := e.Member.User
@@ -168,6 +183,20 @@ func (a *Alliance) request(ctx ken.SubCommandContext) (err error) {
 		}
 		log.Println(err)
 		return discord.AlexError(ctx, "Unable to create alliance request")
+	}
+
+	s := ctx.GetSession()
+	actionChannel, err := discord.GetChannelByName(s, e, "action-funnel")
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to get action funnel channel")
+	}
+
+	logMsg := discord.Code(fmt.Sprintf("%s - alliance create request '%s' - %s", requester.Username, aName, util.GetEstTimeStamp()))
+	_, err = s.ChannelMessageSend(actionChannel.ID, logMsg)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to log to action funnel channel")
 	}
 
 	return discord.SuccessfulMessage(ctx, "Alliance Successfully Requested.", fmt.Sprintf("Your alliance request '%s' has been sent for review.", aName))
@@ -208,6 +237,13 @@ func (a *Alliance) invite(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 	}
 
+	inviteeInventory, err := a.models.Inventories.GetByDiscordID(target.ID)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx,
+			fmt.Sprintf("Unable to find existing player %s.", discord.MentionUser(target.ID)))
+	}
+
 	err = handler.InvitePlayer(e.Member.User.ID, target.ID, currentAlliance.Name)
 	if err != nil {
 		if errors.Is(err, alliance.ErrAllianceNotFound) {
@@ -218,50 +254,51 @@ func (a *Alliance) invite(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, fmt.Sprintf("Failed to invite create %s to alliance", discord.MentionUser(target.ID)))
 	}
 
-	inviteeInventory, err := a.models.Inventories.GetByDiscordID(target.ID)
-	if err != nil {
-		log.Println(err)
-		return discord.AlexError(ctx,
-			fmt.Sprintf("Unable to get/find %s's confessional channel", discord.MentionUser(target.ID)))
-	}
-
 	_, err = s.ChannelMessageSendEmbed(inviteeInventory.UserPinChannel, &discordgo.MessageEmbed{
 		Title:       fmt.Sprintf("%s Alliance Invite", discord.EmojiInfo),
-		Description: fmt.Sprintf("You have been invited to join %s. Type `/alliance accept %s` to accept the invite.", currentAlliance.Name, currentAlliance.Name),
+		Description: fmt.Sprintf("You have been invited to join %s. Type `/alliance accept %s` to request admin approval to join alliance.", currentAlliance.Name, currentAlliance.Name),
 	})
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, fmt.Sprintf("Failed to send invite message to %s", discord.MentionUser(target.ID)))
 	}
 
-	return discord.SuccessfulMessage(ctx, "Invite Sent", fmt.Sprintf("Invite sent to %s", discord.MentionUser(target.ID)))
+	actionChannel, err := discord.GetChannelByName(s, e, "action-funnel")
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to get action funnel channel")
+	}
+	logMsg := discord.Code(fmt.Sprintf("%s - alliance invite for %s to %s - %s", e.Member.User.Username, target.Username, currentAlliance.Name, util.GetEstTimeStamp()))
+	_, err = s.ChannelMessageSend(actionChannel.ID, logMsg)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to log to action funnel channel")
+	}
+
+	return discord.SuccessfulMessage(ctx, "Alliance invite Sent", fmt.Sprintf("Invite sent to %s's confessional.", discord.MentionUser(target.ID)))
 }
 
-func (a *Alliance) accept(ctx ken.SubCommandContext) (err error) {
+func (a *Alliance) acceptRequest(ctx ken.SubCommandContext) (err error) {
+  if err = ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
+
 	allianceName := ctx.Options().GetByName("name").StringValue()
 	e := ctx.GetEvent()
 
 	handler := alliance.InitAllianceHandler(a.models)
-	existingAlliance, err := a.models.Alliances.GetByName(allianceName)
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(ctx, "Failed to find a valid alliance",
-			"You must be a member of an alliance to accept an invite.")
-	}
 	playerInv, err := a.models.Inventories.GetByDiscordID(e.Member.User.ID)
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, fmt.Sprintf("Unable to get/find %s's confessional channel", e.Member.User.Username))
 	}
 
-	bypassMemberLimit := false
-	if len(existingAlliance.MemberIDs) == 4 {
-		bypassMemberLimit = betrayal.AllianceMemberLimitBypass(playerInv.RoleName)
+	if playerInv.UserPinChannel != e.ChannelID {
+		return discord.ErrorMessage(ctx, "You must be in your confessional channel to accept an invite.", "Unable to accept invite")
 	}
 
-	bypassAllianceLimit := false
-
-	err = handler.AcceptInvite(e.Member.User.ID, allianceName, bypassMemberLimit, bypassAllianceLimit)
+	err = handler.AcceptInvite(ctx.GetSession(), e.Member.User.ID, allianceName)
 	if err != nil {
 		if errors.Is(err, alliance.ErrAlreadyAllianceMember) {
 			return discord.ErrorMessage(ctx, "Already Alliance Member", "You are already a member of an alliance.")
@@ -278,19 +315,23 @@ func (a *Alliance) accept(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "Unable to accept invite")
 	}
 
-	currAlliance, err := a.models.Alliances.GetByMemberID(e.Member.User.ID)
+	s := ctx.GetSession()
+	targetChannel, err := discord.GetChannelByName(s, e, "action-funnel")
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx, "Unable to get current alliance")
+		return discord.AlexError(ctx, "Unable to get action funnel channel")
 	}
 
-	_, err = ctx.GetSession().ChannelMessageSend(currAlliance.ChannelID, fmt.Sprintf("%s has joined %s.", discord.MentionUser(e.Member.User.ID), allianceName))
+	logMsg := discord.Code(fmt.Sprintf("%s - alliance invite accepted for '%s' - %s", e.Member.User.Username, allianceName, util.GetEstTimeStamp()))
+	_, err = s.ChannelMessageSend(targetChannel.ID, logMsg)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx, "Unable to send message to alliance channel")
+		return discord.AlexError(ctx, "Unable to log to action funnel channel")
 	}
 
-	return discord.SuccessfulMessage(ctx, "Alliance Joined", fmt.Sprintf("You have joined %s.", allianceName))
+	return discord.SuccessfulMessage(ctx,
+		fmt.Sprintf("Request to accept joining %s sent.", allianceName),
+		fmt.Sprintf("Request to join %s has been sent. An admin will need to approve your request.", allianceName))
 }
 
 func (a *Alliance) pending(ctx ken.SubCommandContext) (err error) {
@@ -299,16 +340,14 @@ func (a *Alliance) pending(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	pendingInvites, err := a.models.Alliances.GetAllInvitesForUser(ctx.GetEvent().Member.User.ID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return discord.ErrorMessage(ctx, "No Pending Requests", "You have no pending alliance requests.")
-		}
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		log.Println(err)
+		return discord.AlexError(ctx, "Failed to fetch all pending allinace invites")
 	}
 
 	msg := &discordgo.MessageEmbed{
 		Title:       "Pending Alliance Requests",
-		Description: fmt.Sprintf("You have %d pending invites", len(pendingInvites)),
+		Description: fmt.Sprintf("You have %d pending invites. To join one, do `/alliance accept [name]`", len(pendingInvites)),
 	}
 	fields := []*discordgo.MessageEmbedField{}
 	for _, invite := range pendingInvites {
@@ -324,6 +363,11 @@ func (a *Alliance) pending(ctx ken.SubCommandContext) (err error) {
 }
 
 func (a *Alliance) leave(ctx ken.SubCommandContext) (err error) {
+  if err = ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
+
 	allianceName := ctx.Options().GetByName("name").StringValue()
 	_, err = a.models.Alliances.GetByName(allianceName)
 	if err != nil {
@@ -354,7 +398,13 @@ func (a *Alliance) leave(ctx ken.SubCommandContext) (err error) {
 	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Left alliance %s", allianceName), fmt.Sprintf("You have left alliance %s.", allianceName))
 }
 
-func (a *Alliance) adminApprove(ctx ken.SubCommandContext) (err error) {
+func (a *Alliance) adminApproveCreate(ctx ken.SubCommandContext) (err error) {
+  if err = ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
+
+
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.NotAdminError(ctx)
 	}
@@ -386,11 +436,10 @@ func (a *Alliance) adminApprove(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "Unable to send message to owner")
 	}
 
-	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Successfully created alliance %s", newAlliance.Name),
-		fmt.Sprintf("Alliance %s has been created. Check it out in %s", newAlliance.Name, discord.MentionChannel(newAlliance.ChannelID)))
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Successfully created alliance %s", newAlliance.Name), "")
 }
 
-func (a *Alliance) adminDecline(ctx ken.SubCommandContext) (err error) {
+func (a *Alliance) adminDeclineCreate(ctx ken.SubCommandContext) (err error) {
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.NotAdminError(ctx)
 	}
@@ -431,7 +480,11 @@ func (a *Alliance) adminDecline(ctx ken.SubCommandContext) (err error) {
 	return discord.SuccessfulMessage(ctx, "Alliance Request Declined", fmt.Sprintf("Alliance request %s has been declined.", allianceName))
 }
 
-func (a *Alliance) adminDelete(ctx ken.SubCommandContext) (err error) {
+func (a *Alliance) adminWipe(ctx ken.SubCommandContext) (err error) {
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.NotAdminError(ctx)
+	}
+
 	allainceArgName := ctx.Options().GetByName("name").StringValue()
 	handler := alliance.InitAllianceHandler(a.models)
 	targetAlliance, err := a.models.Alliances.GetByName(allainceArgName)
@@ -468,6 +521,81 @@ func (a *Alliance) adminDelete(ctx ken.SubCommandContext) (err error) {
 	return discord.SuccessfulMessage(ctx, "Alliance Deleted", fmt.Sprintf("Alliance %s has been deleted.", targetAlliance.Name))
 }
 
-func (a *Alliance) adminOverride(ctx ken.SubCommandContext) (err error) {
-	return discord.AlexError(ctx, "IM LAZY")
+func (a *Alliance) adminApproveInvite(ctx ken.SubCommandContext) (err error) {
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.NotAdminError(ctx)
+	}
+
+	invitee := ctx.Options().GetByName("user").UserValue(ctx)
+	allianceChannel := ctx.Options().GetByName("channel").ChannelValue(ctx)
+
+	inviteeInv, err := a.models.Inventories.GetByDiscordID(invitee.ID)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to get invitee confessional channel")
+	}
+
+	handler := alliance.InitAllianceHandler(a.models)
+	err = handler.AdminApproveInvite(ctx.GetSession(), invitee.ID, allianceChannel.ID)
+	if err != nil {
+		if errors.Is(err, alliance.ErrInviteNotFound) {
+			return discord.ErrorMessage(ctx, "Invite Not Found", "You do not have a pending invite for that alliance. see `/alliance pending`")
+		}
+		if errors.Is(err, alliance.ErrAllianceNotFound) {
+			return discord.ErrorMessage(ctx, "Alliance Not Found", "The alliance you are trying to join does not exist.")
+		}
+
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to process admin invite.")
+	}
+
+	_, err = ctx.GetSession().ChannelMessageSendEmbed(inviteeInv.UserPinChannel, &discordgo.MessageEmbed{})
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to send message to invitee")
+	}
+
+	return discord.SuccessfulMessage(ctx, "Invite Accepted", fmt.Sprintf("%s has been invited to %s.", discord.MentionUser(invitee.ID), allianceChannel.Name))
+}
+
+func (a *Alliance) adminPending(ctx ken.SubCommandContext) (err error) {
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.NotAdminError(ctx)
+	}
+
+	allCreateRequests, err := a.models.Alliances.GetAllRequests()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to fetch all alliance requests")
+	}
+	allInvites, err := a.models.Alliances.GetAllInvites()
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		log.Println(err)
+		return discord.AlexError(ctx, "Unable to fetch all alliance invites")
+	}
+
+	createFields := []*discordgo.MessageEmbedField{}
+	for _, v := range allCreateRequests {
+		createFields = append(createFields, &discordgo.MessageEmbedField{
+			Name:   v.Name,
+			Value:  fmt.Sprintf("Requested by %s", discord.MentionUser(v.RequesterID)),
+			Inline: false,
+		})
+	}
+
+	inviteFields := []*discordgo.MessageEmbedField{}
+	for _, v := range allInvites {
+		inviteFields = append(inviteFields, &discordgo.MessageEmbedField{
+			Name:   v.AllianceName,
+			Value:  fmt.Sprintf("%s Invited by %s", discord.MentionUser(v.InviteeID), discord.MentionUser(v.InviterID)),
+			Inline: false,
+		})
+	}
+
+	msg := &discordgo.MessageEmbed{
+		Title:  "Pending Alliance Creates and Player Invite Requests",
+		Fields: append(createFields, inviteFields...),
+	}
+
+	return ctx.RespondEmbed(msg)
 }

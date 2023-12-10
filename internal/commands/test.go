@@ -95,6 +95,10 @@ func (t *Test) Run(ctx ken.Context) (err error) {
 }
 
 func (t *Test) getChannel(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	channelArg := ctx.Options().GetByName("channel").ChannelValue(ctx)
 
 	currentChannelPerimssions := channelArg.PermissionOverwrites
@@ -119,6 +123,10 @@ func (t *Test) getChannel(ctx ken.SubCommandContext) (err error) {
 }
 
 func (t *Test) deleteChannel(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.NotAdminError(ctx)
 	}
@@ -142,6 +150,10 @@ func (*Test) Version() string {
 }
 
 func (t *Test) createChanenl(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	// if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 	// 	return discord.NotAdminError(ctx)
 	// }
@@ -170,6 +182,10 @@ func (t *Test) createChanenl(ctx ken.SubCommandContext) (err error) {
 }
 
 func (t *Test) remind(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	name := ctx.Options().GetByName("name").StringValue()
 	timer := ctx.Options().GetByName("timer").StringValue()
 	dur, err := time.ParseDuration(timer)

@@ -4,13 +4,14 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/internal/discord"
 )
 
 var allianceMemberLimit = 4
 
 func (ah *AllianceHandler) InvitePlayer(memberID string, inviteeID string, allianceName string) error {
-	//
 	// Check to make sure alliance exists
 	alliance, err := ah.m.Alliances.GetByName(allianceName)
 	if err != nil {
@@ -28,56 +29,69 @@ func (ah *AllianceHandler) InvitePlayer(memberID string, inviteeID string, allia
 
 	// Create the invite
 	invite := &data.AllianceInvite{
-		AllianceName: alliance.Name,
-		InviterID:    memberID,
-		InviteeID:    inviteeID,
-		Override:     len(alliance.MemberIDs) >= allianceMemberLimit,
+		AllianceName:    alliance.Name,
+		InviterID:       memberID,
+		InviteeID:       inviteeID,
+		InviteeAccepted: false,
 	}
 
 	return ah.m.Alliances.InsertInvite(invite)
 }
 
-func (ah *AllianceHandler) AcceptInvite(inviteeID, allianceName string, bypassMemberLimit bool, bypassAllianceLimit bool) error {
-	// Check to make sure player isn't already a member of an alliance (unless they have a bypass because of a role perk)
-	if !bypassAllianceLimit {
-		alliances, err := ah.m.Alliances.GetAllByMemberID(inviteeID)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return err
-		}
-		if len(alliances) != 1 {
-			return ErrAlreadyAllianceMember
-		}
-	}
-
-	// Check to make sure invite exists
-	invite, err := ah.m.Alliances.GetInviteByInviteeIDAndAllianceName(inviteeID, allianceName)
-	if err != nil {
-		return err
-	}
-	if invite.AllianceName == "" {
-		return ErrInviteNotFound
-	}
+func (ah *AllianceHandler) AcceptInvite(s *discordgo.Session, inviteeID, allianceName string) error {
 	// Get Alliance
 	alliance, err := ah.m.Alliances.GetByName(allianceName)
 	if err != nil {
-		return err
+    if errors.Is(err, sql.ErrNoRows) {
+      return ErrAllianceNotFound
+    }
+    return err
 	}
 
-	// Edge case where someone tries to accept an invite when an alliance is at limimt (4)
-	if invite.Override {
-		return ErrOverrideRequired
-	}
-
-	// Delete the invite
-	err = ah.m.Alliances.DeleteInvite(invite)
+	// Get invite
+	pendingInvite, err := ah.m.Alliances.GetInviteByInviteeIDAndAllianceName(inviteeID, alliance.Name)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrInviteNotFound
+		}
 		return err
 	}
+
+	// Update the invite
+	pendingInvite.InviteeAccepted = true
+	return ah.m.Alliances.UpdateInviteInviteeAccepted(pendingInvite)
+}
+
+func (ah *AllianceHandler) AdminApproveInvite(s *discordgo.Session, allianceName string, inviteeID string) error {
+	// Check to make sure alliance exists
+	alliance, err := ah.m.Alliances.GetByName(allianceName)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrAllianceNotFound
+		}
+		return err
+	}
+	pendingInvite, err := ah.m.Alliances.GetInviteByInviteeIDAndAllianceName(inviteeID, alliance.Name)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrInviteNotFound
+		}
+		return err
+	}
+
+	if !pendingInvite.InviteeAccepted {
+		return ErrInviteNotAccepted
+	}
+
 	// Add the player to the alliance
 	alliance.MemberIDs = append(alliance.MemberIDs, inviteeID)
 	err = ah.m.Alliances.InsertMember(alliance)
 	if err != nil {
 		return err
 	}
-	return nil
+	err = discord.AddMemberToChannel(s, allianceName, inviteeID)
+	if err != nil {
+		return err
+	}
+	return ah.m.Alliances.DeleteInvite(pendingInvite)
 }

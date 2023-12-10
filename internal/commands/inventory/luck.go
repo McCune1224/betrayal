@@ -10,6 +10,10 @@ import (
 )
 
 func (i *Inventory) addLuck(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -36,6 +40,10 @@ func (i *Inventory) addLuck(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeLuck(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -62,6 +70,10 @@ func (i *Inventory) removeLuck(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setLuck(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {

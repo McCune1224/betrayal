@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
@@ -61,6 +62,10 @@ func (i *Insult) Run(ctx ken.Context) (err error) {
 }
 
 func (i *Insult) add(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	args := ctx.Options()
 	insultArg := args.GetByName("insult")
 	var insult data.Insult
@@ -81,6 +86,10 @@ func (i *Insult) add(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Insult) get(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	insult, err := i.models.Insults.GetRandom()
 	if err != nil {
 		ctx.SetEphemeral(true)

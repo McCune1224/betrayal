@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -9,6 +10,10 @@ import (
 )
 
 func (i *Inventory) addWhitelist(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	ctx.SetEphemeral(false)
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		discord.NotAdminError(ctx)
@@ -59,6 +64,10 @@ func (i *Inventory) addWhitelist(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeWhitelist(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.NotAdminError(ctx)
 	}

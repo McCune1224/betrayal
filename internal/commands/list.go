@@ -100,6 +100,10 @@ func (l *List) Run(ctx ken.Context) (err error) {
 }
 
 func (l *List) listStatuses(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	statuses, err := l.models.Statuses.GetAll()
 	if err != nil {
 		log.Println(err)
@@ -120,6 +124,10 @@ func (l *List) listStatuses(ctx ken.SubCommandContext) (err error) {
 }
 
 func (l *List) listEvents(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	fields := []*discordgo.MessageEmbedField{}
 	for _, e := range GameEvents {
 		split := strings.Split(e, " -")
@@ -138,10 +146,18 @@ func (l *List) listEvents(ctx ken.SubCommandContext) (err error) {
 }
 
 func (l *List) listItems(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	return discord.AlexError(ctx, "not implemented")
 }
 
 func (l *List) listActiveRoles(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	_, err = l.models.RoleLists.Get()
 	if err != nil {
 		log.Println(err)

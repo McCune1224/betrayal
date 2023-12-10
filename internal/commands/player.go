@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
@@ -67,6 +68,10 @@ func (p *Player) Run(ctx ken.Context) (err error) {
 }
 
 func (p *Player) add(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	ctx.SetEphemeral(true)
 	args := ctx.Options()
 	name := args.GetByName("name").UserValue(ctx)
@@ -101,6 +106,10 @@ func (p *Player) add(ctx ken.SubCommandContext) (err error) {
 }
 
 func (p *Player) get(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	ctx.SetEphemeral(true)
 	args := ctx.Options()
 	name := args.Get(0).UserValue(ctx)

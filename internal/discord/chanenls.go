@@ -2,6 +2,7 @@ package discord
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -94,4 +95,26 @@ func AddMemberToChannel(s *discordgo.Session, channelID string, userID string) e
 		return err
 	}
 	return nil
+}
+
+func GetChannelByName(s *discordgo.Session, e *discordgo.InteractionCreate, name string) (*discordgo.Channel, error) {
+	guildID := e.GuildID
+	channels, err := s.GuildChannels(guildID)
+	if err != nil {
+		return nil, err
+	}
+	target := &discordgo.Channel{}
+
+	for _, c := range channels {
+    if strings.EqualFold(c.Name, name) {
+      target = c
+      break
+    }
+	}
+
+  if target.ID == "" {
+    return nil, ErrChannelNotFound
+  }
+
+  return target, nil
 }

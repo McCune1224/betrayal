@@ -70,6 +70,10 @@ func (*ActionFunnel) Version() string {
 }
 
 func (af *ActionFunnel) location(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	locationArg := ctx.Options().GetByName("channel")
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.ErrorMessage(ctx,

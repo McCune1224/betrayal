@@ -11,6 +11,10 @@ import (
 )
 
 func (i *Inventory) addItem(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -36,6 +40,10 @@ func (i *Inventory) addItem(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeItem(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -60,6 +68,10 @@ func (i *Inventory) removeItem(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) addItemLimit(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		log.Println(err)
@@ -82,6 +94,10 @@ func (i *Inventory) addItemLimit(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeItemLimit(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	inv, err := Fetch(ctx, i.models, true)
 	if err != nil {
 		log.Println(err)
@@ -105,6 +121,10 @@ func (i *Inventory) removeItemLimit(ctx ken.SubCommandContext) (err error) {
 
 
 func (i *Inventory) setItemsLimit(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {

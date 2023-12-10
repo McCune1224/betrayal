@@ -11,6 +11,10 @@ import (
 )
 
 func (i *Inventory) addImmunity(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	ctx.SetEphemeral(false)
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
@@ -39,6 +43,10 @@ func (i *Inventory) addImmunity(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeImmunity(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
