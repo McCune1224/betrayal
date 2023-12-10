@@ -199,6 +199,12 @@ func (am *AllianceModel) UpdateInviteInviteeAccepted(invite *AllianceInvite) err
 }
 
 func (am *AllianceModel) UpdateAllianceMembers(alliance *Alliance) error {
+	if len(alliance.MemberIDs) == 0 {
+		// No members left in the alliance, reinitialize the array and insert
+		alliance.MemberIDs = pq.StringArray{}
+		return am.InsertMember(alliance)
+	}
+
 	query := `UPDATE alliances SET member_ids=$1 WHERE id=$1`
 	_, err := am.DB.Exec(query, alliance.MemberIDs, alliance.ID)
 	if err != nil {

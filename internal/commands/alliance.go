@@ -152,10 +152,10 @@ func (*Alliance) Version() string {
 }
 
 func (a *Alliance) createRequest(ctx ken.SubCommandContext) (err error) {
-  if err = ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 
 	aName := ctx.Options().GetByName("name").StringValue()
 	e := ctx.GetEvent()
@@ -279,10 +279,10 @@ func (a *Alliance) invite(ctx ken.SubCommandContext) (err error) {
 }
 
 func (a *Alliance) acceptRequest(ctx ken.SubCommandContext) (err error) {
-  if err = ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 
 	allianceName := ctx.Options().GetByName("name").StringValue()
 	e := ctx.GetEvent()
@@ -363,10 +363,10 @@ func (a *Alliance) pending(ctx ken.SubCommandContext) (err error) {
 }
 
 func (a *Alliance) leave(ctx ken.SubCommandContext) (err error) {
-  if err = ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 
 	allianceName := ctx.Options().GetByName("name").StringValue()
 	_, err = a.models.Alliances.GetByName(allianceName)
@@ -399,11 +399,10 @@ func (a *Alliance) leave(ctx ken.SubCommandContext) (err error) {
 }
 
 func (a *Alliance) adminApproveCreate(ctx ken.SubCommandContext) (err error) {
-  if err = ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
-
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.NotAdminError(ctx)
@@ -428,7 +427,7 @@ func (a *Alliance) adminApproveCreate(ctx ken.SubCommandContext) (err error) {
 
 	s := ctx.GetSession()
 	_, err = s.ChannelMessageSendEmbed(playerInventory.UserPinChannel, &discordgo.MessageEmbed{
-		Title:       fmt.Sprintf("%s Alliance Created, %s", discord.EmojiInfo, discord.EmojiInfo),
+		Title:       fmt.Sprintf("%s Alliance Created %s", discord.EmojiInfo, discord.EmojiInfo),
 		Description: fmt.Sprintf("Your alliance %s has been created. Check it out in %s. Start inviting people with `/alliance invite`", newAlliance.Name, discord.MentionChannel(newAlliance.ChannelID)),
 	})
 	if err != nil {
@@ -495,18 +494,6 @@ func (a *Alliance) adminWipe(ctx ken.SubCommandContext) (err error) {
 		}
 		log.Println(err)
 		return discord.AlexError(ctx, "Unable to get alliance")
-	}
-
-	withinAlliance := false
-	for _, memberID := range targetAlliance.MemberIDs {
-		if memberID == ctx.GetEvent().Member.User.ID {
-			withinAlliance = true
-			break
-		}
-	}
-
-	if !discord.IsAdminRole(ctx, discord.AdminRoles...) || !withinAlliance {
-		return discord.NotAdminError(ctx)
 	}
 
 	err = handler.DeleteAlliance(targetAlliance.Name, ctx.GetSession())

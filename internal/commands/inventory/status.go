@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/services/inventory"
@@ -11,10 +12,10 @@ import (
 )
 
 func (i *Inventory) addStatus(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	ctx.SetEphemeral(false)
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
@@ -23,7 +24,15 @@ func (i *Inventory) addStatus(ctx ken.SubCommandContext) (err error) {
 		}
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
+	dur := time.Duration(0)
 	statusNameArg := ctx.Options().GetByName("name").StringValue()
+	durationArg, ok := ctx.Options().GetByNameOptional("duration")
+	if ok {
+		dur, err = time.ParseDuration(durationArg.StringValue())
+		if err != nil {
+			return discord.ErrorMessage(ctx, "Failed to parse duration", err.Error())
+		}
+	}
 	res, err := handler.AddStatus(statusNameArg)
 	if err != nil {
 		if errors.Is(err, inventory.ErrStatusAlreadyExists) {
@@ -36,14 +45,23 @@ func (i *Inventory) addStatus(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
+
+	if dur > 0 {
+		err = i.scheduler.ScheduleStatus(statusNameArg, handler.GetInventory(), dur, ctx.GetSession())
+		if err != nil {
+			log.Println(err)
+			return discord.ErrorMessage(ctx, "Failed to schedule status", err.Error())
+		}
+	}
+
 	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Added Status %s", res), fmt.Sprintf("Added for %s", discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) removeStatus(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {

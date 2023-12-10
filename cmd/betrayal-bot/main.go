@@ -13,6 +13,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
 	"github.com/mccune1224/betrayal/internal/commands"
+	"github.com/mccune1224/betrayal/internal/commands/help"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
 	"github.com/mccune1224/betrayal/internal/commands/roll"
 	"github.com/mccune1224/betrayal/internal/commands/view"
@@ -141,7 +142,7 @@ func main() {
 		new(commands.Revive),
 		new(commands.Setup),
 		new(commands.Alliance),
-		// new(help.Help),
+		new(help.Help),
 	)
 
 	app.betrayalManager.Session().AddHandler(logHandler)

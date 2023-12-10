@@ -88,6 +88,41 @@ func (bs *BetrayalScheduler) InsertJob(jobData *data.InventoryCronJob, jf func()
 	return nil
 }
 
+func (bs *BetrayalScheduler) RescheduleJob(jobData *data.InventoryCronJob, jf func()) error {
+  jobID := jobData.MakeJobID()
+  job, err := bs.s.FindJobsByTag(jobID)
+  if err != nil {
+    return err
+  }
+  if len(job) > 1 {
+    return ErrJobDuplicate
+  }
+
+  err = bs.s.RemoveByTag(jobID)
+  if err != nil {
+    return err
+  }
+  _, err = bs.s.Every(1).StartAt(time.Now()).WaitForSchedule().LimitRunsTo(1).Tag(jobID).Do(jf)
+  if err != nil {
+    return err
+  }
+  return nil
+}
+
+// Manualyly invoke a job by ID and then remove it from the database (really for when the job is already expired i.e bot down when timer expired)
+func (bs *BetrayalScheduler) InvokeJob(jobID string, jf func()) error {
+	_, err := bs.s.Every(1).StartAt(time.Now()).WaitForSchedule().LimitRunsTo(1).Do(jf)
+	  if err != nil {
+	    return err
+	  }
+  err = bs.m.InventoryCronJobs.DeletebyJobID(jobID)
+  if err != nil {
+    return err
+  }
+
+	  return nil
+}
+
 // Get uunderlying gocron.Scheduler
 func (bs *BetrayalScheduler) GetScheduler() *gocron.Scheduler {
 	return bs.s

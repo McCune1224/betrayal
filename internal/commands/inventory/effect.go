@@ -43,7 +43,7 @@ func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, fmt.Sprintf("Failed to add effect %s", best))
 	}
 
-	err = i.updateInventoryMessage(ctx, handler.GetInventory())
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, "Failed to update inventory message")

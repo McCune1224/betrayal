@@ -211,6 +211,7 @@ func (i *Inventory) Options() []*discordgo.ApplicationCommandOption {
 					Description: "add a status",
 					Options: []*discordgo.ApplicationCommandOption{
 						discord.StringCommandArg("name", "add a status", true),
+						discord.StringCommandArg("duration", "how long to keep status", false),
 						discord.UserCommandArg(false),
 					},
 					Choices: statusChoices,
