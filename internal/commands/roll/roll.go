@@ -136,6 +136,9 @@ func (r *Roll) Run(ctx ken.Context) (err error) {
 }
 
 func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.NotAdminError(ctx)
+	}
 	var inv *data.Inventory
 	opts := ctx.Options()
 	target := opts.GetByName("target").StringValue()
@@ -237,14 +240,7 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 
 func (r *Roll) luckDebug(ctx ken.SubCommandContext) (err error) {
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		return discord.ErrorMessage(
-			ctx,
-			"You do not have permission to use this command",
-			fmt.Sprintf(
-				"You must have one of the following roles: %v",
-				strings.Join(discord.AdminRoles, ","),
-			),
-		)
+		return discord.NotAdminError(ctx)
 	}
 
 	rng := rand.Float64()
@@ -255,6 +251,9 @@ func (r *Roll) luckDebug(ctx ken.SubCommandContext) (err error) {
 }
 
 func (r *Roll) luckTable(ctx ken.SubCommandContext) (err error) {
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.NotAdminError(ctx)
+	}
 	// Setting to eph for now to avoid flooding channels with bulky messages
 	ctx.SetEphemeral(true)
 	low := 0
@@ -345,10 +344,13 @@ func (r *Roll) getRandomItem(rarity string) (*data.Item, error) {
 }
 
 func (r *Roll) wheel(ctx ken.SubCommandContext) (err error) {
-	// Def need to defer as this will 100% take longer than 3 seconds to respond
 	if err = ctx.Defer(); err != nil {
 		log.Println(err)
 		return err
+	}
+
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.NotAdminError(ctx)
 	}
 
 	s := ctx.GetSession()

@@ -129,7 +129,6 @@ func main() {
 
 	tally := app.RegisterBetrayalCommands(
 		new(inventory.Inventory),
-		new(commands.Test),
 		new(roll.Roll),
 		new(commands.ActionFunnel),
 		new(view.View),

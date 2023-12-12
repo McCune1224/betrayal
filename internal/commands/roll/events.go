@@ -17,6 +17,9 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
 		return err
 	}
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.NotAdminError(ctx)
+	}
 	inv, err := inventory.Fetch(ctx, r.models, true)
 	if err != nil {
 		if errors.Is(err, inventory.ErrNotAuthorized) {
@@ -162,6 +165,10 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.NotAdminError(ctx)
+	}
+
 	inv, err := inventory.Fetch(ctx, r.models, true)
 	if err != nil {
 		return discord.ErrorMessage(
@@ -276,9 +283,14 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 
 // Get 1 Random Item and 1 Random AA
 func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
+
 	if err = ctx.Defer(); err != nil {
 		log.Println(err)
 		return err
+	}
+
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.NotAdminError(ctx)
 	}
 
 	inv, err := inventory.Fetch(ctx, r.models, true)
