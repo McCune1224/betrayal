@@ -43,13 +43,15 @@ func (*csvBuilder) BuildNewRoleCSV(csv [][]string, alignment string) ([]csvNewRo
 	chunk := [][]string{}
 	superChunk := [][][]string{}
 	for i := 1; i < len(csv); i++ {
-		// edge case for last line
 		if i == len(csv)-1 {
 			superChunk = append(superChunk, chunk)
 			break
 		}
 
+		// snip off first column as it's always empty
 		line := csv[i][1:]
+
+		// Blank column means new role
 		chunk = append(chunk, line)
 		if line[0] == "" {
 			superChunk = append(superChunk, chunk)
@@ -59,11 +61,12 @@ func (*csvBuilder) BuildNewRoleCSV(csv [][]string, alignment string) ([]csvNewRo
 
 	for _, chunk := range superChunk {
 		role := csvNewRole{}
-		role.Role.Name = chunk[1][0]
-		role.Role.Description = chunk[1][1]
-		role.Role.Alignment = alignment
+		role.Role.Name = strings.TrimSpace(chunk[1][0])
+		role.Role.Description = strings.TrimSpace(chunk[1][1])
+		role.Role.Alignment = strings.TrimSpace(alignment)
 
-		abIdx := 4
+		// Abilities will start on 3rd line of the role chunk
+		abIdx := 3
 		for chunk[abIdx][0] != "Perks:" {
 			chargeStr := chunk[abIdx][1]
 			// ∞
@@ -76,6 +79,9 @@ func (*csvBuilder) BuildNewRoleCSV(csv [][]string, alignment string) ([]csvNewRo
 				charge = chargeParse
 			}
 			categories := pq.StringArray(strings.Split(chunk[abIdx][4], "/"))
+			for i := range categories {
+				categories[i] = strings.TrimSpace(categories[i])
+			}
 
 			ability := data.Ability{
 				Name:        chunk[abIdx][0],
@@ -87,10 +93,10 @@ func (*csvBuilder) BuildNewRoleCSV(csv [][]string, alignment string) ([]csvNewRo
 				ability.AnyAbility = true
 
 				aa := data.AnyAbility{
-					Name:         chunk[abIdx][0],
-					Description:  chunk[abIdx][3],
+					Name:         strings.TrimSpace(chunk[abIdx][0]),
+					Description:  strings.TrimSpace(chunk[abIdx][3]),
 					Categories:   categories,
-					Rarity:       chunk[abIdx][5],
+					Rarity:       strings.TrimSpace(chunk[abIdx][5]),
 					RoleSpecific: role.Role.Name,
 				}
 				role.AnyAbilities = append(role.AnyAbilities, aa)
@@ -104,8 +110,8 @@ func (*csvBuilder) BuildNewRoleCSV(csv [][]string, alignment string) ([]csvNewRo
 		perkIdx := abIdx + 1
 		for perkIdx < len(chunk) {
 			perk := data.Perk{
-				Name:        chunk[perkIdx][0],
-				Description: chunk[perkIdx][1],
+				Name:        strings.TrimSpace(chunk[perkIdx][0]),
+				Description: strings.TrimSpace(chunk[perkIdx][1]),
 			}
 			if perk.Name == "" {
 				break
