@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -119,6 +120,7 @@ func (*csvBuilder) BuildNewRoleCSV(csv [][]string, alignment string) ([]csvNewRo
 			role.Perks = append(role.Perks, perk)
 			perkIdx++
 		}
+		fmt.Println(role.Role.Name)
 		roles = append(roles, role)
 	}
 

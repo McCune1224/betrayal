@@ -42,16 +42,16 @@ func (rm *RoleModel) Get(id int64) (*Role, error) {
 	return &r, nil
 }
 
-// func (rm *RoleModel) GetByName(name string) (*Role, error) {
-// 	var r Role
-// 	// Make it find closest match if no exact match
-// 	query := `SELECT * FROM roles WHERE name ILIKE '%' || $1 || '%'`
-// 	err := rm.DB.Get(&r, query, name)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &r, nil
-// }
+func (rm *RoleModel) GetByName(name string) (*Role, error) {
+	var r Role
+	// Make it find closest match if no exact match
+	query := `SELECT * FROM roles WHERE name ILIKE '%' || $1 || '%'`
+	err := rm.DB.Get(&r, query, name)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
 
 func (rm *RoleModel) GetByFuzzy(name string) (*Role, error) {
 	var r Role

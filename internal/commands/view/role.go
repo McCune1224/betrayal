@@ -2,11 +2,13 @@ package view
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/zekrotja/ken"
 )
 
 // Helper to build the embed for a role
@@ -88,6 +90,87 @@ func (v *View) roleEmbed(role *data.Role) (*discordgo.MessageEmbed, error) {
 		},
 	}
 	return embed, nil
+}
+
+// Given three options, return the two that are not the given role
+func missing(role string) []string {
+  options := []string{"Nephilim", "Nephilim - Offensive", "Nephilim - Defensive"}
+  missing := []string{}
+  for _, option := range options {
+    if option != role {
+      missing = append(missing, option)
+    }
+  }
+  return missing
+}
+
+// Outlier role that has stances to it (aka 3 roles in one).
+// Really just need to attach button components to this to pull up the other two roles
+func (v *View) generateNephRole(ctx ken.Context, role *data.Role) (err error) {
+  base, err := v.roleEmbed(role)
+  if err != nil {
+    log.Println(err)
+    return discord.AlexError(ctx, fmt.Sprintf("Failed to generate embeded message for role %s", role.Name))
+  }
+
+  missing := missing(role.Name)
+  firstMissing := missing[0]
+  secondMissing := missing[1]
+
+
+  firstMissingRole, err := v.models.Roles.GetByName(firstMissing)
+  if err != nil {
+    log.Println(err)
+    return discord.AlexError(ctx, fmt.Sprintf("Failed to generate embeded message for role %s", firstMissing))
+  }
+
+  secondMissingRole, err := v.models.Roles.GetByName(secondMissing)
+  if err != nil {
+    log.Println(err)
+    return discord.AlexError(ctx, fmt.Sprintf("Failed to generate embeded message for role %s", secondMissing))
+  }
+
+  missingRoles := []*data.Role{firstMissingRole, secondMissingRole}
+
+
+  b := ctx.FollowUpEmbed(base)
+	b.AddComponents(func(cb *ken.ComponentBuilder) {
+		cb.AddActionsRow(func(b ken.ComponentAssembler) {
+				b.Add(discordgo.Button{
+					CustomID: missingRoles[0].Name,
+					Style:    discordgo.PrimaryButton,
+					Label:    missingRoles[0].Name,
+				}, func(ctx ken.ComponentContext) bool {
+					roleEmbed, err := v.roleEmbed(missingRoles[0])
+          if err != nil {
+          ctx.RespondMessage("Idek neph is stupid to format lol xd")
+          return true
+          }
+					ctx.SetEphemeral(true)
+					ctx.RespondEmbed(roleEmbed)
+					return true
+				}, false)
+				b.Add(discordgo.Button{
+					CustomID: missingRoles[1].Name,
+          Style:    discordgo.PrimaryButton,
+					Label:    missingRoles[1].Name,
+				}, func(ctx ken.ComponentContext) bool {
+					roleEmbed, err := v.roleEmbed(missingRoles[1])
+          if err != nil {
+          ctx.RespondMessage("Idek neph is stupid to format lol xd")
+          return true
+          }
+					ctx.SetEphemeral(true)
+					ctx.RespondEmbed(roleEmbed)
+					return true
+				}, false)
+		}, false).Condition(func(cctx ken.ComponentContext) bool {
+			return true
+		})
+	})
+
+  fum := b.Send()
+  return fum.Error
 }
 
 // Joke role

@@ -67,7 +67,7 @@ func main() {
 	}
 	defer file.Close()
 
-	CreateRolesNew(file, app, "GOOD")
+	CreateRolesNew(file, app, "EVIL")
 	// CreateAnyAbilities(file, app)
 	// CreateItems(file, app)
 	// CreateStatuses(file, app)

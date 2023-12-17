@@ -121,6 +121,11 @@ func (v *View) Run(ctx ken.Context) (err error) {
 }
 
 func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
+  if err = ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
+
 	nameArg := ctx.Options().GetByName("name").StringValue()
 	// haha funny easter egg
 	if strings.ToLower(nameArg) == "ferrari" {
@@ -133,6 +138,10 @@ func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
 			"Error Finding Role",
 		)
 		return err
+	}
+
+	if role.Name == "Nephilim" || role.Name == "Nephilism - Defensive" || role.Name == "Nephilism - Offensive" {
+    return v.generateNephRole(ctx, role)
 	}
 
 	roleEmbed, err := v.roleEmbed(role)
@@ -149,6 +158,7 @@ func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
 
 func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
+    log.Println(err)
 		return err
 	}
 	nameArg := ctx.Options().GetByName("name").StringValue()
