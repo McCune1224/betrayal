@@ -67,13 +67,12 @@ func (*Inventory) Name() string {
 }
 
 func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 
 	ctx.SetEphemeral(true)
-
 
 	player := ctx.Options().GetByName("user").UserValue(ctx)
 	inv, err := i.models.Inventories.GetByDiscordID(player.ID)
@@ -129,11 +128,47 @@ func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
 	return ctx.RespondEmbed(embd)
 }
 
+func (i *Inventory) me(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	ctx.SetEphemeral(true)
+	player := ctx.GetEvent().Member.User
+	inv, err := i.models.Inventories.GetByDiscordID(player.ID)
+	if err != nil {
+		discord.ErrorMessage(ctx, "Failed to find your inventory.", "Are you sure you're an active player or in your confessional?")
+		return err
+	}
+	allowed := i.inventoryAuthorized(ctx, inv)
+
+	if !allowed {
+		ctx.SetEphemeral(true)
+		err = discord.ErrorMessage(ctx, "Unauthorized",
+			"Please only use this command in your confessional.")
+		return err
+	}
+
+	host := discord.IsAdminRole(ctx, discord.AdminRoles...)
+	// embd := InventoryEmbedBuilder(inv, host)
+	embd := &discordgo.MessageEmbed{}
+
+	e := ctx.GetEvent()
+	if e.ChannelID == inv.UserPinChannel {
+		ctx.SetEphemeral(false)
+		embd = InventoryEmbedBuilder(inv, false)
+	} else {
+		embd = InventoryEmbedBuilder(inv, host)
+	}
+	return ctx.RespondEmbed(embd)
+}
+
 func (i *Inventory) delete(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	authed := discord.IsAdminRole(ctx, discord.AdminRoles...)
 	if !authed {
 		err = discord.ErrorMessage(
@@ -214,10 +249,10 @@ func (i *Inventory) inventoryAuthorized(ctx ken.SubCommandContext, inv *data.Inv
 }
 
 func (i *Inventory) listWhitelist(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	wishlists, _ := i.models.Whitelists.GetAll()
 	if len(wishlists) == 0 {
 		err = discord.ErrorMessage(ctx, "No whitelisted channels", "Nothing here...")

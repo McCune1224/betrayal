@@ -39,7 +39,7 @@ func (*ActionFunnel) Options() []*discordgo.ApplicationCommandOption {
 	return []*discordgo.ApplicationCommandOption{
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
-			Name:        "req",
+			Name:        "request",
 			Description: "Request an action to be performed",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.StringCommandArg("action", "Action to be preformed", true),
@@ -59,7 +59,7 @@ func (*ActionFunnel) Options() []*discordgo.ApplicationCommandOption {
 // Run implements ken.SlashCommand.
 func (af *ActionFunnel) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
-		ken.SubCommandHandler{Name: "req", Run: af.request},
+		ken.SubCommandHandler{Name: "request", Run: af.request},
 		ken.SubCommandHandler{Name: "location", Run: af.location},
 	)
 }
@@ -163,28 +163,7 @@ func (af *ActionFunnel) request(ctx ken.SubCommandContext) (err error) {
 	reqArg := ctx.Options().GetByName("action").StringValue()
 	// East coast time babyyy
 	humanReqTime := util.GetEstTimeStamp()
-	// reqUser, err := ctx.GetSession().User(inventory.DiscordID)
-	// if err != nil {
-	// 	log.Println(err)
-	// 	return discord.ErrorMessage(ctx, "Error getting user of confessional",
-	// 		"There was an error getting the user. Let Alex know he's a bad programmer.")
-	// }
-	// actionRequest := data.Action{
-	// 	RequestedAction:    reqArg,
-	// 	RequesterID:        reqUser.ID,
-	// 	RequestedChannelID: event.ChannelID,
-	// 	RequestedMessageID: event.ID,
-	// 	RequestedAt:        sqlReqTime,
-	// 	// TODO: this is a hack for handling current "day" in game. Need to fix this, for now... Too bad!
-	// 	RequestedDay: time.Now().Unix(),
-	// }
-	// _, err = af.models.Actions.Insert(&actionRequest)
-	// if err != nil {
-	// 	log.Println(err)
-	// 	return discord.ErrorMessage(ctx, "Error inserting action request",
-	// 		"There was an error inserting the action request. Let Alex know he's a bad programmer.")
-	// }
-
+  
 	funnelChannel, err := af.models.FunnelChannels.Get(event.GuildID)
 	if err != nil {
 		log.Println(err)

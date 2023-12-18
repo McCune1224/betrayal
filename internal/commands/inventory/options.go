@@ -30,9 +30,14 @@ func (i *Inventory) Options() []*discordgo.ApplicationCommandOption {
 			Description: "get player's inventory",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.UserCommandArg(true),
-				discord.BoolCommandArg("show", "show inventory message (admin view)", false),
+				discord.BoolCommandArg("show", "(admin only) show inventory to user within confessional", false),
 			},
 		},
+    {
+      Type:       discordgo.ApplicationCommandOptionSubCommand,
+      Name :      "me",
+      Description: "get your own inventory",
+    },
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "create",
@@ -464,6 +469,7 @@ func (i *Inventory) Options() []*discordgo.ApplicationCommandOption {
 func (i *Inventory) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "get", Run: i.get},
+		ken.SubCommandHandler{Name: "me", Run: i.me},
 		ken.SubCommandHandler{Name: "create", Run: i.create},
 		ken.SubCommandHandler{Name: "delete", Run: i.delete},
 		ken.SubCommandGroup{Name: "whitelist", SubHandler: []ken.CommandHandler{
