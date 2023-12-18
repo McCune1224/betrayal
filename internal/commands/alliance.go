@@ -54,6 +54,7 @@ func (*Alliance) Options() []*discordgo.ApplicationCommandOption {
 			Description: "Invite a player to join your alliance",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.UserCommandArg(true),
+				discord.StringCommandArg("name", "name of the alliance to invite to.", true),
 			},
 		},
 		{
@@ -208,11 +209,13 @@ func (a *Alliance) invite(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	target := ctx.Options().GetByName("user").UserValue(ctx)
+	targetUser := ctx.Options().GetByName("user").UserValue(ctx)
+	targetAllianceArg := ctx.Options().GetByName("name").StringValue()
+
 	s := ctx.GetSession()
 	e := ctx.GetEvent()
 
-	if target.ID == e.Member.User.ID {
+	if targetUser.ID == e.Member.User.ID {
 		return discord.ErrorMessage(ctx, "Invalid Target", "You cannot invite yourself to an alliance.")
 	}
 
@@ -228,39 +231,52 @@ func (a *Alliance) invite(ctx ken.SubCommandContext) (err error) {
 	}
 
 	handler := alliance.InitAllianceHandler(a.models)
-	currentAlliance, err := a.models.Alliances.GetByMemberID(e.Member.User.ID)
+
+	targetAlliance, err := a.models.Alliances.GetByName(targetAllianceArg)
 	if err != nil {
+		log.Println(err)
 		if errors.Is(err, sql.ErrNoRows) {
 			return discord.ErrorMessage(ctx, "Failed to find a valid alliance",
 				"You must be the within an alliance to invite a player. Use `/alliance request` to create an alliance.")
 		}
-		log.Println(err)
+		return discord.AlexError(ctx, fmt.Sprintf("Unable to find alliance %s", targetAllianceArg))
 	}
 
-	inviteeInventory, err := a.models.Inventories.GetByDiscordID(target.ID)
+	isMember := false
+	for _, id := range targetAlliance.MemberIDs {
+		if id == e.Member.User.ID {
+			isMember = true
+			break
+		}
+	}
+	if !isMember {
+		return discord.ErrorMessage(ctx, "Unable to invite player.", "You must be a member of the alliance to invite a player.")
+	}
+
+	inviteeInventory, err := a.models.Inventories.GetByDiscordID(targetUser.ID)
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx,
-			fmt.Sprintf("Unable to find existing player %s.", discord.MentionUser(target.ID)))
+			fmt.Sprintf("Unable to find existing player %s.", discord.MentionUser(targetUser.ID)))
 	}
 
-	err = handler.InvitePlayer(e.Member.User.ID, target.ID, currentAlliance.Name)
+	err = handler.InvitePlayer(e.Member.User.ID, targetUser.ID, targetAlliance.Name)
 	if err != nil {
 		if errors.Is(err, alliance.ErrAllianceNotFound) {
 			return discord.ErrorMessage(ctx, "Failed to find a valid alliance",
 				"You must be within an alliance to invite a player. Use `/alliance request` to create an alliance.")
 		}
 		log.Println(err)
-		return discord.AlexError(ctx, fmt.Sprintf("Failed to invite create %s to alliance", discord.MentionUser(target.ID)))
+		return discord.AlexError(ctx, fmt.Sprintf("Failed to invite create %s to alliance", discord.MentionUser(targetUser.ID)))
 	}
 
 	_, err = s.ChannelMessageSendEmbed(inviteeInventory.UserPinChannel, &discordgo.MessageEmbed{
 		Title:       fmt.Sprintf("%s Alliance Invite", discord.EmojiInfo),
-		Description: fmt.Sprintf("You have been invited to join %s. Type `/alliance accept %s` to request admin approval to join alliance.", currentAlliance.Name, currentAlliance.Name),
+		Description: fmt.Sprintf("You have been invited to join %s. Type `/alliance accept %s` to request admin approval to join alliance.", targetAlliance.Name, targetAlliance.Name),
 	})
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx, fmt.Sprintf("Failed to send invite message to %s", discord.MentionUser(target.ID)))
+		return discord.AlexError(ctx, fmt.Sprintf("Failed to send invite message to %s", discord.MentionUser(targetUser.ID)))
 	}
 
 	actionChannel, err := discord.GetChannelByName(s, e, "action-funnel")
@@ -268,14 +284,14 @@ func (a *Alliance) invite(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.AlexError(ctx, "Unable to get action funnel channel")
 	}
-	logMsg := discord.Code(fmt.Sprintf("%s - alliance invite for %s to %s - %s", e.Member.User.Username, target.Username, currentAlliance.Name, util.GetEstTimeStamp()))
+	logMsg := discord.Code(fmt.Sprintf("%s - alliance invite for %s to %s - %s", e.Member.User.Username, targetUser.Username, targetAlliance.Name, util.GetEstTimeStamp()))
 	_, err = s.ChannelMessageSend(actionChannel.ID, logMsg)
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, "Unable to log to action funnel channel")
 	}
 
-	return discord.SuccessfulMessage(ctx, "Alliance invite Sent", fmt.Sprintf("Invite sent to %s's confessional.", discord.MentionUser(target.ID)))
+	return discord.SuccessfulMessage(ctx, "Alliance invite Sent", fmt.Sprintf("Invite sent to %s's confessional.", discord.MentionUser(targetUser.ID)))
 }
 
 func (a *Alliance) acceptRequest(ctx ken.SubCommandContext) (err error) {
