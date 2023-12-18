@@ -10,10 +10,10 @@ import (
 )
 
 func (i *Inventory) addLuck(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -36,14 +36,14 @@ func (i *Inventory) addLuck(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
 	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Added %d Luck", luckArg),
-		fmt.Sprintf("%d => %d for ", old, handler.GetInventory().Luck))
+		fmt.Sprintf("%d => %d for %s", old, handler.GetInventory().Luck, handler.GetInventory().DiscordID))
 }
 
 func (i *Inventory) removeLuck(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -70,10 +70,10 @@ func (i *Inventory) removeLuck(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setLuck(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
