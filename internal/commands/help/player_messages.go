@@ -5,20 +5,23 @@ import "github.com/bwmarrin/discordgo"
 func actionHelpEmbed() *discordgo.MessageEmbed {
 	msg := &discordgo.MessageEmbed{
 		Title:       "Action",
-		Description: "**TLDR: Just use `/action request [thing]`.** \n\n Actions are sent to admins for approval.",
+		Description: "**TLDR: Just use `/action request [thing]` or `/action request [thing at person].** \n\n Actions are sent to admins for approval.",
 
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Value: "`/action request [thing]` to request an action for processing. This is setup so that your action request will be sent to hosts for processing. You will be informed by a host/co-host on the results of the action.",
-			},
-			{
-				Value: "For example with an ability, if you're playing the role Wizard and wish to cast Fireball. You would do so by using `/action request cast Fireball`. You can also add additional information to your request by using `/action request Fireball at [player name]`.",
+				Value: "`/action request [thing]` to request an action for processing. This is setup so that your action request will be sent to hosts for processing. You will be informed by a host/co-host on the results of the action either in the form of emoji reaction (confirming that it was received) or if feedback is applicable, through host feeback).",
 			},
 			{
 				Value: "For example with an item, if you wanted to use the item 'Tip', you would simply do `/action request Tip`. No need to specify on action's that don't ask for a target.",
 			},
 			{
-				Value: "*As a reminder, these only put in a request for an action. The action will not be performed until a host/co-host approves it. You will be notified in your confessional when your action is processed.*",
+				Value: "For example with an ability, if you have the ability 'Disappear' (either from being the neutral role Ghost, or via AA), you can cast it by submitting `/action request cast Disappear`.",
+			},
+			{
+				Value: "For example with an ability that requires a target, if you have the ability 'Fireball' and want to use it on player 'Greg', you would do `/action request Fireball at Greg`. (*For abilities that require a target, you **MUST** specify a player*)",
+			},
+			{
+				Value: "*As a reminder, these only put in a request for an action. The action will not be performed until a host/co-host approves it.*",
 			},
 		},
 	}

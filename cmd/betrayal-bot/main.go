@@ -227,9 +227,9 @@ func formatOption(s *discordgo.Session, o *discordgo.ApplicationCommandInteracti
 	case discordgo.ApplicationCommandOptionChannel:
 		return fmt.Sprintf("%s:%s, ", o.Name, o.ChannelValue(s).Name)
 	case discordgo.ApplicationCommandOptionSubCommand:
-		return processOptions(s, o.Options)
+		return fmt.Sprintf("%s %s", o.Name, processOptions(s, o.Options))
 	case discordgo.ApplicationCommandOptionSubCommandGroup:
-		return fmt.Sprintf("%s  %s", o.Name, processOptions(s, o.Options))
+		return fmt.Sprintf("%s %s", o.Name, processOptions(s, o.Options))
 
 		// I don't think there's ever going to be a case where I'm using these...
 	case discordgo.ApplicationCommandOptionRole:
