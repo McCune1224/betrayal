@@ -1,8 +1,13 @@
 package help
 
-import "github.com/bwmarrin/discordgo"
+import (
+	"fmt"
 
-func actionHelpEmbed() *discordgo.MessageEmbed {
+	"github.com/bwmarrin/discordgo"
+	"github.com/mccune1224/betrayal/internal/discord"
+)
+
+func playerActionHelpEmbed() *discordgo.MessageEmbed {
 	msg := &discordgo.MessageEmbed{
 		Title:       "Action",
 		Description: "**TLDR: Just use `/action request [thing]` or `/action request [thing at person].** \n\n Actions are sent to admins for approval.",
@@ -28,7 +33,7 @@ func actionHelpEmbed() *discordgo.MessageEmbed {
 	return msg
 }
 
-func InventoryHelpEmbed() *discordgo.MessageEmbed {
+func playerInventoryHelpEmbed() *discordgo.MessageEmbed {
 	msg := &discordgo.MessageEmbed{
 		Title:       "Inventory",
 		Description: "**TLDR: Just use `/inv me`.** Your inventory is also updated in real time and is always pinned as a message in confessional channel.",
@@ -48,7 +53,7 @@ func InventoryHelpEmbed() *discordgo.MessageEmbed {
 	return msg
 }
 
-func AllianceHelpEmbed() *discordgo.MessageEmbed {
+func playerAllianceHelpEmbed() *discordgo.MessageEmbed {
 	msg := &discordgo.MessageEmbed{
 		Title:       "Alliances",
 		Description: "`/alliance` allows you request creating, joining, and leaving alliances. Mostly everything alliance based needs admin approval. Once approved, you will be notified in your confessional.",
@@ -64,6 +69,55 @@ func AllianceHelpEmbed() *discordgo.MessageEmbed {
 			},
 			{
 				Value: "`/alliance leave [alliance name]` to leave the alliance. You will be no longer be associated with the requested alliance and be removed from the alliance channel automatically.",
+			},
+		},
+	}
+	return msg
+}
+
+func playerListHelpEmbed() *discordgo.MessageEmbed {
+	msg := &discordgo.MessageEmbed{
+		Title:       "List",
+		Description: "**TLDR: Just use `/list [category] [thing]`.**List is a command that allows you to view a list of things. Some useful things to pull up here are things like active_role, events.",
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Value: "`/list [category] [thing]` to view a list of things. For example, `/list active_role` will show you a list of all active roles.",
+			},
+			{
+				Value: fmt.Sprintf("You will notice that there are pre-defined categories. These are the only categories that you can use with `/list`. Let %s know if you would like to see a new category added.", discord.MentionUser(discord.McKusaID)),
+			},
+		},
+	}
+	return msg
+}
+
+func playerVoteHelpEmbed() *discordgo.MessageEmbed {
+	msg := &discordgo.MessageEmbed{
+		Title:       "Vote",
+		Description: "**TLDR: Just use `/vote player [target]`.** Vote is a command that allows you to vote on who to eliminate for today's vote. You can choose to vote for one or many players depending on if you have an ability or item that allows you to do so.",
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Value: "`/vote player [target]` to vote on a player. For example, `/vote player Greg` will vote for Greg.",
+			},
+			{
+				Value: "`/vote batch [tagets]` to vote on multiple players. The targets is free form. Feel free to use commas, spaces, or whatever you want to separate the targets. For example, `/vote batch Greg, Bob, Joe` will vote for Greg, Bob, and Joe.",
+			},
+		},
+	}
+	return msg
+}
+
+func playerViewHelpEmbed() *discordgo.MessageEmbed {
+	msg := &discordgo.MessageEmbed{
+		Title:       "View",
+		Description: "**TLDR: Just use `/view [category] [thing]`.** View is a command that allows you to quickly get info on many roles, abilities, perks, items, etc. Some useful things to pull up here are things like abilities, and perks. If the ability/perk is associated with a role, you will be provided a button to view the role.",
+
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Value: "`/view [category] [thing]` to view a thing. For example, `/view role Wizard` will give you a full description of the Wizard role, including its abilities, alignment, perks, and description. These can be used to help you infer current game info or perhaps help you with your action requests.",
+			},
+			{
+				Value: fmt.Sprintf("You will notice that there are pre-defined categories. These are the only categories that you can use with `/view`.  Let %s know if you would like to see a new category added.", discord.MentionUser(discord.McKusaID)),
 			},
 		},
 	}

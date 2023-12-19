@@ -1,7 +1,6 @@
 package help
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/bwmarrin/discordgo"
@@ -56,7 +55,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				Style:    discordgo.SecondaryButton,
 			}, func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
-				ctx.RespondEmbed(InventoryHelpEmbed())
+				ctx.RespondEmbed(playerInventoryHelpEmbed())
 				return true
 			}, clearAll)
 			b.Add(discordgo.Button{
@@ -65,7 +64,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				Label:    "Action",
 			}, func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
-				ctx.RespondEmbed(actionHelpEmbed())
+				ctx.RespondEmbed(playerActionHelpEmbed())
 				return true
 			}, clearAll)
 			b.Add(discordgo.Button{
@@ -74,7 +73,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				Label:    "Alliance",
 			}, func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
-				ctx.RespondEmbed(AllianceHelpEmbed())
+				ctx.RespondEmbed(playerAllianceHelpEmbed())
 				return true
 			}, clearAll)
 			b.Add(discordgo.Button{
@@ -83,9 +82,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				Label:    "View",
 			}, func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
-				ctx.RespondEmbed(&discordgo.MessageEmbed{
-					Description: fmt.Sprintf("Responded to %s", ctx.GetData().CustomID),
-				})
+				ctx.RespondEmbed(playerViewHelpEmbed())
 				return true
 			}, clearAll)
 			b.Add(discordgo.Button{
@@ -94,9 +91,16 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				Label:    "List",
 			}, func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
-				ctx.RespondEmbed(&discordgo.MessageEmbed{
-					Description: fmt.Sprintf("Responded to %s", ctx.GetData().CustomID),
-				})
+				ctx.RespondEmbed(playerListHelpEmbed())
+				return true
+			}, clearAll)
+			b.Add(discordgo.Button{
+				CustomID: "vote-help",
+				Style:    discordgo.SecondaryButton,
+				Label:    "Vote",
+			}, func(ctx ken.ComponentContext) bool {
+				ctx.SetEphemeral(true)
+				ctx.RespondEmbed(playerVoteHelpEmbed())
 				return true
 			}, clearAll)
 		}, clearAll)
@@ -114,7 +118,7 @@ func (*Help) playerAction(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	return ctx.RespondEmbed(actionHelpEmbed())
+	return ctx.RespondEmbed(playerActionHelpEmbed())
 }
 
 func (h *Help) playerAlliance(ctx ken.SubCommandContext) (err error) {
@@ -122,7 +126,7 @@ func (h *Help) playerAlliance(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	return ctx.RespondEmbed(AllianceHelpEmbed())
+	return ctx.RespondEmbed(playerAllianceHelpEmbed())
 }
 
 func (h *Help) playerInventory(ctx ken.SubCommandContext) (err error) {
@@ -130,7 +134,7 @@ func (h *Help) playerInventory(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	return ctx.RespondEmbed(InventoryHelpEmbed())
+	return ctx.RespondEmbed(playerInventoryHelpEmbed())
 }
 
 func (h *Help) playerList(ctx ken.SubCommandContext) (err error) {
@@ -138,7 +142,7 @@ func (h *Help) playerList(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	return ctx.RespondMessage("todo")
+	return ctx.RespondEmbed(playerListHelpEmbed())
 }
 
 func (h *Help) playerView(ctx ken.SubCommandContext) (err error) {
@@ -146,7 +150,7 @@ func (h *Help) playerView(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	return ctx.RespondMessage("todo")
+	return ctx.RespondEmbed(playerViewHelpEmbed())
 }
 
 func (*Help) playerVote(ctx ken.SubCommandContext) (err error) {
@@ -154,5 +158,5 @@ func (*Help) playerVote(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	return ctx.RespondMessage("todo")
+	return ctx.RespondEmbed(playerVoteHelpEmbed())
 }
