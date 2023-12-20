@@ -112,7 +112,8 @@ func main() {
 		OnCommandError: func(err error, ctx *ken.Ctx) {
 			// get the command name, options and args
 			// TODO: Make this show full argument details like logHandler?
-			log.Printf("[CMD] %s - %s : %s\n", ctx.Command.Name(), ctx.GetEvent().Member.User.Username, err.Error())
+			cmdArg := processOptions(bot, ctx.GetEvent().ApplicationCommandData().Options)
+			log.Printf("[CMD] %s - %s : %s\n", cmdArg, ctx.GetEvent().Member.User.Username, err.Error())
 		},
 		// Not really doing events but keeping this in just in case...
 		OnEventError: func(context string, err error) {
