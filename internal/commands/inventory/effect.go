@@ -4,18 +4,20 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/services/inventory"
 	"github.com/zekrotja/ken"
 )
 
 func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	ctx.SetEphemeral(false)
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
@@ -66,10 +68,10 @@ func (i *Inventory) addEffect(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeEffect(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -88,6 +90,20 @@ func (i *Inventory) removeEffect(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Failed to get effect", fmt.Sprintf("Effect %s not found in inventory.", effectArg))
 	}
 
+	potentialJobID := fmt.Sprintf("%s-%s-%s-%s", handler.GetInventory().DiscordID, "effect", "remove", strings.ToLower(best))
+	exists := i.scheduler.JobExists(potentialJobID)
+	log.Println(exists, potentialJobID)
+	if exists {
+		err := i.scheduler.DeleteJob(potentialJobID)
+		if err != nil {
+			log.Println(err)
+			ctx.GetSession().ChannelMessageSendEmbed(ctx.GetEvent().ChannelID,
+				&discordgo.MessageEmbed{
+					Title:       "FAILED TO REMOVE TIMING FOR EFFECT",
+					Description: fmt.Sprintf("Was able to remove effect, but failed to remove scheduled job for removal. Please contact %s to fix.", discord.MentionUser(discord.McKusaID)),
+				})
+		}
+	}
 	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Removed effect %s", best),
 		fmt.Sprintf("Removed effect for %s", discord.MentionUser(handler.GetInventory().DiscordID)))
 }

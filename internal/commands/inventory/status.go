@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/services/inventory"
 	"github.com/zekrotja/ken"
@@ -80,7 +82,23 @@ func (i *Inventory) removeStatus(ctx ken.SubCommandContext) (err error) {
 		log.Print(err)
 		return discord.AlexError(ctx, "Failed to remove status")
 	}
-
+	potentialJobID := fmt.Sprintf("%s-%s-%s-%s", handler.GetInventory().DiscordID, "effect", "remove", strings.ToLower(res))
+	exists := i.scheduler.JobExists(potentialJobID)
+	log.Println(exists, potentialJobID)
+	if exists {
+		err := i.scheduler.DeleteJob(potentialJobID)
+		if err != nil {
+			log.Println(err)
+			if err != nil {
+				log.Println(err)
+				ctx.GetSession().ChannelMessageSendEmbed(ctx.GetEvent().ChannelID,
+					&discordgo.MessageEmbed{
+						Title:       "FAILED TO REMOVE TIMING FOR EFFECT",
+						Description: fmt.Sprintf("Was able to remove effect, but failed to remove scheduled job for removal. Please contact %s to fix.", discord.MentionUser(discord.McKusaID)),
+					})
+			}
+		}
+	}
 	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
 	if err != nil {
 		log.Println(err)
