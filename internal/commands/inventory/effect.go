@@ -87,6 +87,7 @@ func (i *Inventory) removeEffect(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.ErrorMessage(ctx, "Failed to get effect", fmt.Sprintf("Effect %s not found in inventory.", effectArg))
 	}
+
 	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Removed effect %s", best),
 		fmt.Sprintf("Removed effect for %s", discord.MentionUser(handler.GetInventory().DiscordID)))
 }

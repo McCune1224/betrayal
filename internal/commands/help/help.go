@@ -88,7 +88,37 @@ func (*Help) Options() []*discordgo.ApplicationCommandOption {
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "overview",
-					Description: "Get an overview of all admin commands",
+					Description: "get an overview of all admin commands",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "inventory",
+					Description: "how to use inventory commands",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "alliance",
+					Description: "how to use alliance commands",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "buy",
+					Description: "how to use buy commands",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "kill",
+					Description: "how to use kill and revive commands",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "roll",
+					Description: "how to use roll commands",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "setup",
+					Description: "how to use setup commands",
 				},
 			},
 		},
@@ -109,6 +139,12 @@ func (h *Help) Run(ctx ken.Context) (err error) {
 		}},
 		ken.SubCommandGroup{Name: "admin", SubHandler: []ken.CommandHandler{
 			ken.SubCommandHandler{Name: "overview", Run: h.adminOverview},
+			ken.SubCommandHandler{Name: "inventory", Run: h.adminInventory},
+			ken.SubCommandHandler{Name: "alliance", Run: h.adminAlliance},
+			ken.SubCommandHandler{Name: "buy", Run: h.adminBuy},
+			ken.SubCommandHandler{Name: "kill", Run: h.adminKill},
+			ken.SubCommandHandler{Name: "roll", Run: h.adminRoll},
+			ken.SubCommandHandler{Name: "setup", Run: h.adminSetup},
 		}},
 	)
 }
