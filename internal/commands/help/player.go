@@ -46,7 +46,9 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 
 	b := ctx.FollowUpEmbed(msg)
 
+	// FIXME: What the actual hell
 	clearAll := false
+	clearAll2 := false
 	b.AddComponents(func(cb *ken.ComponentBuilder) {
 		cb.AddActionsRow(func(b ken.ComponentAssembler) {
 			b.Add(discordgo.Button{
@@ -76,6 +78,11 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				ctx.RespondEmbed(playerAllianceHelpEmbed())
 				return true
 			}, clearAll)
+		}, clearAll)
+	})
+
+	b.AddComponents(func(cb *ken.ComponentBuilder) {
+		cb.AddActionsRow(func(b ken.ComponentAssembler) {
 			b.Add(discordgo.Button{
 				CustomID: "view-help",
 				Style:    discordgo.SecondaryButton,
@@ -84,7 +91,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerViewHelpEmbed())
 				return true
-			}, clearAll)
+			}, clearAll2)
 			b.Add(discordgo.Button{
 				CustomID: "list-help",
 				Style:    discordgo.SecondaryButton,
@@ -93,7 +100,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerListHelpEmbed())
 				return true
-			}, clearAll)
+			}, clearAll2)
 			b.Add(discordgo.Button{
 				CustomID: "vote-help",
 				Style:    discordgo.SecondaryButton,
@@ -102,8 +109,8 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerVoteHelpEmbed())
 				return true
-			}, clearAll)
-		}, clearAll)
+			}, clearAll2)
+		}, clearAll2)
 	})
 
 	fum := b.Send()
