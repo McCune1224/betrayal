@@ -60,7 +60,7 @@ func (h *Help) adminAlliance(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-  return ctx.RespondMessage("TODO")
+	return ctx.RespondEmbed(adminAllianceEmbed())
 }
 
 func (h *Help) adminBuy(ctx ken.SubCommandContext) (err error) {
@@ -68,7 +68,7 @@ func (h *Help) adminBuy(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-  return ctx.RespondMessage("TODO")
+	return ctx.RespondMessage("TODO")
 }
 
 func (h *Help) adminKill(ctx ken.SubCommandContext) (err error) {
@@ -76,7 +76,7 @@ func (h *Help) adminKill(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-  return ctx.RespondMessage("TODO")
+	return ctx.RespondMessage("TODO")
 }
 
 func (h *Help) adminRoll(ctx ken.SubCommandContext) (err error) {
@@ -84,7 +84,7 @@ func (h *Help) adminRoll(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-  return ctx.RespondMessage("TODO")
+	return ctx.RespondMessage("TODO")
 }
 
 func (h *Help) adminSetup(ctx ken.SubCommandContext) (err error) {
@@ -92,5 +92,5 @@ func (h *Help) adminSetup(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-  return ctx.RespondMessage("TODO")
+	return ctx.RespondMessage("TODO")
 }
