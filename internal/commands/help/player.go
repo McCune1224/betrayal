@@ -52,7 +52,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 	b.AddComponents(func(cb *ken.ComponentBuilder) {
 		cb.AddActionsRow(func(b ken.ComponentAssembler) {
 			b.Add(discordgo.Button{
-				CustomID: "inventory-help",
+				CustomID: "p-inventory-help",
 				Label:    "Inventory",
 				Style:    discordgo.SecondaryButton,
 			}, func(ctx ken.ComponentContext) bool {
@@ -61,7 +61,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				return true
 			}, clearAll)
 			b.Add(discordgo.Button{
-				CustomID: "action-help",
+				CustomID: "p-action-help",
 				Style:    discordgo.SecondaryButton,
 				Label:    "Action",
 			}, func(ctx ken.ComponentContext) bool {
@@ -70,7 +70,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				return true
 			}, clearAll)
 			b.Add(discordgo.Button{
-				CustomID: "alliance-help",
+				CustomID: "p-alliance-help",
 				Style:    discordgo.SecondaryButton,
 				Label:    "Alliance",
 			}, func(ctx ken.ComponentContext) bool {
@@ -84,7 +84,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 	b.AddComponents(func(cb *ken.ComponentBuilder) {
 		cb.AddActionsRow(func(b ken.ComponentAssembler) {
 			b.Add(discordgo.Button{
-				CustomID: "view-help",
+				CustomID: "p-view-help",
 				Style:    discordgo.SecondaryButton,
 				Label:    "View",
 			}, func(ctx ken.ComponentContext) bool {
@@ -93,7 +93,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				return true
 			}, clearAll2)
 			b.Add(discordgo.Button{
-				CustomID: "list-help",
+				CustomID: "p-list-help",
 				Style:    discordgo.SecondaryButton,
 				Label:    "List",
 			}, func(ctx ken.ComponentContext) bool {
@@ -102,7 +102,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				return true
 			}, clearAll2)
 			b.Add(discordgo.Button{
-				CustomID: "vote-help",
+				CustomID: "p-vote-help",
 				Style:    discordgo.SecondaryButton,
 				Label:    "Vote",
 			}, func(ctx ken.ComponentContext) bool {

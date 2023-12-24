@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -86,6 +87,11 @@ func (*List) Options() []*discordgo.ApplicationCommandOption {
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Description: "List of all statuses",
 		},
+		{
+			Name:        "players",
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Description: "List of all active players",
+		},
 	}
 }
 
@@ -96,14 +102,15 @@ func (l *List) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "active_roles", Run: l.listActiveRoles},
 		ken.SubCommandHandler{Name: "events", Run: l.listEvents},
 		ken.SubCommandHandler{Name: "statuses", Run: l.listStatuses},
+		ken.SubCommandHandler{Name: "players", Run: l.listPlayers},
 	)
 }
 
 func (l *List) listStatuses(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	statuses, err := l.models.Statuses.GetAll()
 	if err != nil {
 		log.Println(err)
@@ -124,10 +131,10 @@ func (l *List) listStatuses(ctx ken.SubCommandContext) (err error) {
 }
 
 func (l *List) listEvents(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	fields := []*discordgo.MessageEmbedField{}
 	for _, e := range GameEvents {
 		split := strings.Split(e, " -")
@@ -146,18 +153,18 @@ func (l *List) listEvents(ctx ken.SubCommandContext) (err error) {
 }
 
 func (l *List) listItems(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	return discord.AlexError(ctx, "not implemented")
 }
 
 func (l *List) listActiveRoles(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	_, err = l.models.RoleLists.Get()
 	if err != nil {
 		log.Println(err)
@@ -188,6 +195,31 @@ func (l *List) listActiveRoles(ctx ken.SubCommandContext) (err error) {
 	}
 
 	return ctx.RespondEmbed(listEmbed)
+}
+
+func (l *List) listPlayers(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	players, err := l.models.Inventories.GetAll()
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to fetch all player inventories.")
+	}
+
+	fields := []*discordgo.MessageEmbedField{}
+
+	for _, p := range players {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Value: fmt.Sprintf("%s - %s", discord.MentionUser(p.DiscordID), discord.MentionChannel(p.UserPinChannel)),
+		})
+	}
+	msg := &discordgo.MessageEmbed{
+		Title:  fmt.Sprintf("Players - %d", len(players)),
+		Fields: fields,
+	}
+	return ctx.RespondEmbed(msg)
 }
 
 // Version implements ken.SlashCommand.

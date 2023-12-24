@@ -14,6 +14,7 @@ type AnyAbility struct {
 	Description  string         `db:"description"`
 	Categories   pq.StringArray `db:"categories"`
 	Rarity       string         `db:"rarity"`
+  // Name of the role that this ability is specific to. If empty, it is not specific to any role.
 	RoleSpecific string         `db:"role_specific"`
 }
 

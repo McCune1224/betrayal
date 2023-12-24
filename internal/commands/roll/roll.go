@@ -76,7 +76,7 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "manual",
-			Description: "Manual roll for item or ability. Optional argument to add to an inventory",
+			Description: "Manual roll for item or ability.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
@@ -86,34 +86,34 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 					Choices:     options,
 				},
 				discord.IntCommandArg("level", "level to roll for", true),
-				discord.UserCommandArg(false),
+				discord.UserCommandArg(true),
 			},
 		},
-		{
-			Type:        discordgo.ApplicationCommandOptionSubCommand,
-			Name:        "debug",
-			Description: "simulate roll and show chances",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "target",
-					Description: "target type",
-					Required:    true,
-					Choices:     options,
-				},
-				discord.IntCommandArg("level", "level to roll for", true),
-				discord.UserCommandArg(false),
-			},
-		},
-		{
-			Type:        discordgo.ApplicationCommandOptionSubCommand,
-			Name:        "table",
-			Description: "Table view of luck calculations",
-			Options: []*discordgo.ApplicationCommandOption{
-				discord.IntCommandArg("low", "low range for luck", false),
-				discord.IntCommandArg("high", "high range for luck", false),
-			},
-		},
+		// {
+		// 	Type:        discordgo.ApplicationCommandOptionSubCommand,
+		// 	Name:        "debug",
+		// 	Description: "simulate roll and show chances",
+		// 	Options: []*discordgo.ApplicationCommandOption{
+		// 		{
+		// 			Type:        discordgo.ApplicationCommandOptionString,
+		// 			Name:        "target",
+		// 			Description: "target type",
+		// 			Required:    true,
+		// 			Choices:     options,
+		// 		},
+		// 		discord.IntCommandArg("level", "level to roll for", true),
+		// 		discord.UserCommandArg(false),
+		// 	},
+		// },
+		// {
+		// 	Type:        discordgo.ApplicationCommandOptionSubCommand,
+		// 	Name:        "table",
+		// 	Description: "Table view of luck calculations",
+		// 	Options: []*discordgo.ApplicationCommandOption{
+		// 		discord.IntCommandArg("low", "low range for luck", false),
+		// 		discord.IntCommandArg("high", "high range for luck", false),
+		// 	},
+		// },
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "wheel",
@@ -126,9 +126,9 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 func (r *Roll) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "manual", Run: r.luckManual},
-		ken.SubCommandHandler{Name: "debug", Run: r.luckDebug},
+		// ken.SubCommandHandler{Name: "debug", Run: r.luckDebug},
 		ken.SubCommandHandler{Name: "care_package", Run: r.luckCarePackage},
-		ken.SubCommandHandler{Name: "table", Run: r.luckTable},
+		// ken.SubCommandHandler{Name: "table", Run: r.luckTable},
 		ken.SubCommandHandler{Name: "item_rain", Run: r.luckItemRain},
 		ken.SubCommandHandler{Name: "power_drop", Run: r.luckPowerDrop},
 		ken.SubCommandHandler{Name: "wheel", Run: r.wheel},
@@ -136,102 +136,49 @@ func (r *Roll) Run(ctx ken.Context) (err error) {
 }
 
 func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
-	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		return discord.NotAdminError(ctx)
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
 	}
-	var inv *data.Inventory
+
+	handler, err := inventory.FetchHandler(ctx, r.models, true)
+	if err != nil {
+		if errors.Is(err, inventory.ErrNotAuthorized) {
+			return discord.NotAdminError(ctx)
+		}
+		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
+	}
+
 	opts := ctx.Options()
 	target := opts.GetByName("target").StringValue()
 	level := opts.GetByName("level").IntValue()
-	user, ok := opts.GetByNameOptional("user")
-	if ok {
-		inv, err = inventory.Fetch(ctx, r.models, true)
-		if err != nil {
-			if errors.Is(err, inventory.ErrNotAuthorized) {
-				return discord.NotAdminError(ctx)
-			}
-		}
-	}
 
 	rng := rand.Float64()
 	luckType := RollLuck(float64(level), rng)
 
 	if target == "item" {
-		isAdding := false
 		item, err := r.getRandomItem(luckType)
 		if err != nil {
-			isAdding = true
 			log.Println(err)
 			return discord.AlexError(ctx, "Failed to get random item")
 		}
-		if inv != nil {
-			inv.Items = append(inv.Items, item.Name)
-			err = r.models.Inventories.UpdateItems(inv)
-			if err != nil {
-				log.Println(err)
-				return discord.AlexError(ctx, "Failed to update items")
-			}
-			err = inventory.UpdateInventoryMessage(ctx.GetSession(), inv)
-			if err != nil {
-				log.Println(err)
-				return discord.AlexError(ctx, "Failed to update inventory message")
-			}
-		}
-		foot := &discordgo.MessageEmbedFooter{}
-		if isAdding {
-			foot.Text = fmt.Sprintf("Added to %s's inventory", user.UserValue(ctx).Username)
-		}
+
 		return ctx.RespondEmbed(&discordgo.MessageEmbed{
 			Title:       fmt.Sprintf("Got Item %s (%s)", item.Name, luckType),
 			Description: item.Description,
-			Footer:      foot,
 		})
 	}
 
-	if target == "ability" {
-		isAdding := false
-		ability, err := r.getRandomAnyAbility(inv.RoleName, luckType)
+	if target == "aa" {
+		ability, err := r.getRandomAnyAbility(handler.GetInventory().RoleName, luckType)
 		if err != nil {
-			isAdding = true
 			log.Println(err)
 			return discord.AlexError(ctx, "Failed to get random ability")
 		}
-		if inv != nil {
-			if ability.RoleSpecific == inv.RoleName {
-				ab, err := r.models.Abilities.GetByFuzzy(ability.RoleSpecific)
-				if err != nil {
-					log.Println(err)
-					return discord.AlexError(ctx, "Failed to get ability")
-				}
-				inventory.UpsertAbility(inv, ab)
-				err = r.models.Inventories.UpdateAbilities(inv)
-				if err != nil {
-					log.Println(err)
-					return discord.AlexError(ctx, "Failed to update abilities")
-				}
 
-			} else {
-				inventory.UpsertAA(inv, ability)
-				err = r.models.Inventories.UpdateAnyAbilities(inv)
-				if err != nil {
-					log.Println(err)
-					return discord.AlexError(ctx, "Failed to update any abilities")
-				}
-			}
-			err = inventory.UpdateInventoryMessage(ctx.GetSession(), inv)
-			if err != nil {
-				log.Println(err)
-				return discord.AlexError(ctx, "Failed to update inventory message")
-			}
-		}
-		foot := &discordgo.MessageEmbedFooter{}
-		if isAdding {
-			foot.Text = fmt.Sprintf("Added to %s's inventory", user.UserValue(ctx).Username)
-		}
 		return ctx.RespondEmbed(&discordgo.MessageEmbed{
 			Title:       fmt.Sprintf("Got Ability %s (%s)", ability.Name, luckType),
 			Description: ability.Description,
-			Footer:      foot,
 		})
 	}
 
@@ -307,25 +254,16 @@ func (r *Roll) Initialize(m data.Models, s *scheduler.BetrayalScheduler) {
 	r.scheduler = s
 }
 
-// Helper to get a random ability. If it is not an any ability, need to check to
-// make sure that the ability is the same as the user's current class roll
-func (r *Roll) getRandomAnyAbility(role string, rarity string, rec ...int) (*data.AnyAbility, error) {
+func (r *Roll) getRandomAnyAbility(role string, rarity string) (*data.AnyAbility, error) {
 	// lil saftey net to prevent infinite recursion (hopefully)
-	rec = append(rec, 1)
-	if len(rec) > 0 && rec[0] > 10 {
-		return nil, errors.New("too many attempts to get ability")
-	}
 	ab, err := r.models.Abilities.GetRandomAnyAbilityByRarity(rarity)
 	if err != nil {
 		return nil, err
 	}
-
-	if ab.RoleSpecific != "" {
-		if !strings.EqualFold(ab.RoleSpecific, role) {
-			// FIXME: Every time a recursive call is made an angel loses its wings
-			return r.getRandomAnyAbility(role, rarity, rec[0]+1)
-		}
+	if ab.RoleSpecific != "" && !strings.EqualFold(ab.RoleSpecific, role) {
+		return r.getRandomAnyAbility(role, rarity)
 	}
+
 	return ab, nil
 }
 
@@ -339,7 +277,6 @@ func (r *Roll) getRandomItem(rarity string) (*data.Item, error) {
 	if item.Rarity == "Unique" {
 		return r.getRandomItem(rarity)
 	}
-
 	return item, nil
 }
 

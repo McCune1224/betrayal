@@ -89,14 +89,11 @@ func (i *Inventory) removeStatus(ctx ken.SubCommandContext) (err error) {
 		err := i.scheduler.DeleteJob(potentialJobID)
 		if err != nil {
 			log.Println(err)
-			if err != nil {
-				log.Println(err)
-				ctx.GetSession().ChannelMessageSendEmbed(ctx.GetEvent().ChannelID,
-					&discordgo.MessageEmbed{
-						Title:       "FAILED TO REMOVE TIMING FOR EFFECT",
-						Description: fmt.Sprintf("Was able to remove effect, but failed to remove scheduled job for removal. Please contact %s to fix.", discord.MentionUser(discord.McKusaID)),
-					})
-			}
+			ctx.GetSession().ChannelMessageSendEmbed(ctx.GetEvent().ChannelID,
+				&discordgo.MessageEmbed{
+					Title:       "FAILED TO REMOVE TIMING FOR EFFECT",
+					Description: fmt.Sprintf("Was able to remove effect, but failed to remove scheduled job for removal. Please contact %s to fix.", discord.MentionUser(discord.McKusaID)),
+				})
 		}
 	}
 	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())

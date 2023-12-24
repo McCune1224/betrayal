@@ -57,3 +57,40 @@ func adminAllianceEmbed() *discordgo.MessageEmbed {
 	}
 	return msg
 }
+
+func adminRollEmbed() *discordgo.MessageEmbed {
+	msg := &discordgo.MessageEmbed{
+		Title:       "Roll Admin Commands",
+		Description: "Roll is a helper command that allows you to roll game events as well as items/abilities on the fly with confirmable menus before sending.",
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Value: "`/roll manual [category] [level] [player]`, allows simulation one-off rolls for a player. *(must use something like `/inv item/aa add` to add the item to the player's inventory)*",
+			},
+			{
+				Value: "`/roll [care_package / power_drop / item_rain] [player]`, Allows to do an event roll for target player. Will give an option to accept/decline the outcome. Will inform player in their confessional if accepted and auto add to their inventory.",
+			},
+			{
+				Value: "`/roll wheel`, Fun command that will spin a wheel and give you a random event for the day.",
+			},
+		},
+	}
+	return msg
+}
+
+func adminBuyEmbed() *discordgo.MessageEmbed {
+	msg := &discordgo.MessageEmbed{
+		Title:       "Buy Admin Command",
+		Description: "Buy is a helper command that allows you to buy an item on behalf of a player. This is useful for when a player is unable to use the `/buy` command themselves. This command follows the flow of `/buy [item] [player]`.",
+
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Value: "`/buy [item] [player]`. This is how you buy an item on behalf of a player. This command can be issued anywhere you could a confessional or whitelisted channel.",
+			},
+			{
+				Value: "Buy will fail if the player does not have enough coins to buy the item.",
+			},
+		},
+	}
+
+	return msg
+}

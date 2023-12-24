@@ -11,6 +11,11 @@ import (
 	"github.com/mccune1224/betrayal/internal/data"
 )
 
+const (
+	RoleSpcificAnyAbility = "^"
+	AnyAbilityRarity      = "*"
+)
+
 type csvNewRole struct {
 	Role         data.Role
 	Abilities    []data.Ability
@@ -94,12 +99,16 @@ func (*csvBuilder) BuildNewRoleCSV(csv [][]string, alignment string) ([]csvNewRo
 				ability.AnyAbility = true
 
 				aa := data.AnyAbility{
-					Name:         strings.TrimSpace(chunk[abIdx][0]),
-					Description:  strings.TrimSpace(chunk[abIdx][3]),
-					Categories:   categories,
-					Rarity:       strings.TrimSpace(chunk[abIdx][5]),
-					RoleSpecific: role.Role.Name,
+					Name:        strings.TrimSpace(chunk[abIdx][0]),
+					Description: strings.TrimSpace(chunk[abIdx][3]),
+					Categories:  categories,
+					Rarity:      strings.TrimSpace(chunk[abIdx][5]),
 				}
+
+				if strings.TrimSpace(chunk[abIdx][2]) == RoleSpcificAnyAbility {
+					aa.RoleSpecific = strings.TrimSpace(role.Role.Name)
+				}
+
 				role.AnyAbilities = append(role.AnyAbilities, aa)
 			} else {
 				ability.AnyAbility = false

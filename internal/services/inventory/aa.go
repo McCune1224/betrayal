@@ -13,7 +13,7 @@ var (
 	ErrAnyAbilityAlreadyExists = errors.New("ability already exists")
 )
 
-// Will insert or update a given any ability for an inventory
+// Will insert or update a given any ability for an inventory. Will default charge to 1 if not provided.
 func (ih *InventoryHandler) AddAnyAbility(abilityName string, chargeOpt ...int) (AbilityString, error) {
 	charge := 1
 	if len(chargeOpt) > 0 {

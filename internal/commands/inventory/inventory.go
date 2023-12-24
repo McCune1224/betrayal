@@ -195,15 +195,12 @@ func (i *Inventory) delete(ctx ken.SubCommandContext) (err error) {
 				userArg.Username, channel.Name))
 	}
 	err = i.models.Inventories.Delete(userArg.ID)
+	log.Println(err)
 	if err != nil {
 		return discord.ErrorMessage(ctx, "Failed to Delete Inventory",
 			fmt.Sprintf("Failed to delete inventory for %s", userArg.Username))
 	}
-	return discord.SuccessfulMessage(
-		ctx,
-		"Inventory Deleted",
-		fmt.Sprintf("Removed inventory for channel %s", discord.MentionChannel(inv.UserPinChannel)),
-	)
+	return discord.SuccessfulMessage(ctx, "Inventory Deleted", fmt.Sprintf("Removed inventory for channel %s", discord.MentionChannel(inv.UserPinChannel)))
 }
 
 // Version implements ken.SlashCommand.

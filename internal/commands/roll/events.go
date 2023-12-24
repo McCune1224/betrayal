@@ -15,6 +15,7 @@ import (
 
 func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
+		log.Println(err)
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -68,7 +69,7 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 			discord.EmojiWarning,
 		)
 	} else {
-		footerMessage += fmt.Sprintf("\n %s added %d items to inventory %s",
+		footerMessage += fmt.Sprintf("\n %s adding %d items to inventory %s",
 			discord.EmojiSuccess,
 			rollAmount,
 			discord.EmojiSuccess)
@@ -123,7 +124,7 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 						discord.EmojiWarning,
 					)
 				} else {
-					newFooterMessage += fmt.Sprintf("\n %s added %d items to inventory %s",
+					newFooterMessage += fmt.Sprintf("\n %s adding %d items to inventory %s",
 						discord.EmojiSuccess,
 						rollAmount,
 						discord.EmojiSuccess)
@@ -283,7 +284,6 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 
 // Get 1 Random Item and 1 Random AA
 func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
-
 	if err = ctx.Defer(); err != nil {
 		log.Println(err)
 		return err
