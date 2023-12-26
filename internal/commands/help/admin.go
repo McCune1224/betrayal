@@ -78,6 +78,12 @@ func (h *Help) adminOverview(ctx ken.SubCommandContext) (err error) {
 				return true
 			}, clearAll)
 
+		}, clearAll)
+	})
+
+	b.AddComponents(func(cb *ken.ComponentBuilder) {
+		cb.AddActionsRow(func(b ken.ComponentAssembler) {
+
 			b.Add(discordgo.Button{
 				CustomID: "a-buy-help",
 				Label:    "Buy",
@@ -87,6 +93,27 @@ func (h *Help) adminOverview(ctx ken.SubCommandContext) (err error) {
 				ctx.RespondEmbed(adminBuyEmbed())
 				return true
 			}, clearAll)
+
+			b.Add(discordgo.Button{
+				CustomID: "a-kill-help",
+				Label:    "Kill/Revive",
+				Style:    discordgo.SecondaryButton,
+			}, func(ctx ken.ComponentContext) bool {
+				ctx.SetEphemeral(true)
+				ctx.RespondEmbed(adminKillEmebd())
+				return true
+			}, clearAll)
+
+			b.Add(discordgo.Button{
+				CustomID: "a-setup-help",
+				Label:    "Setup",
+				Style:    discordgo.SecondaryButton,
+			}, func(ctx ken.ComponentContext) bool {
+				ctx.SetEphemeral(true)
+				ctx.RespondEmbed(adminSetupEmbed())
+				return true
+			}, clearAll)
+
 		}, clearAll)
 	})
 
@@ -125,7 +152,7 @@ func (h *Help) adminKill(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	return ctx.RespondMessage("TODO")
+	return ctx.RespondEmbed(adminKillEmebd())
 }
 
 func (h *Help) adminRoll(ctx ken.SubCommandContext) (err error) {
@@ -133,7 +160,7 @@ func (h *Help) adminRoll(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	return ctx.RespondMessage("TODO")
+	return ctx.RespondEmbed(adminRollEmbed())
 }
 
 func (h *Help) adminSetup(ctx ken.SubCommandContext) (err error) {
@@ -141,5 +168,5 @@ func (h *Help) adminSetup(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	return ctx.RespondMessage("TODO")
+	return ctx.RespondEmbed(adminSetupEmbed())
 }

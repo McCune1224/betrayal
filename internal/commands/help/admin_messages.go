@@ -94,3 +94,36 @@ func adminBuyEmbed() *discordgo.MessageEmbed {
 
 	return msg
 }
+
+func adminKillEmebd() *discordgo.MessageEmbed {
+	msg := &discordgo.MessageEmbed{
+		Title:       "Kill/Revive Admin Commands",
+		Description: "Kill and Revive are helper commands that allows you to mark players as alive/dead.",
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Value: "`/kill [player]`. This is how you kill a player. This command can be issued anywhere you could a confessional or whitelisted channel.",
+			},
+			{
+				Value: "`/revive [player]`. This is how you revive a player. This command can be issued anywhere you could a confessional or whitelisted channel.",
+			},
+			{
+				Value: "`/kill location [channel]`. Set the location to show status board for players that are marked as dead. This board ideally should be put in a channel that is not accessible to all players.",
+			},
+		},
+	}
+	return msg
+}
+
+func adminSetupEmbed() *discordgo.MessageEmbed {
+	msg := &discordgo.MessageEmbed{
+		Title:       "Setup Admin Command",
+		Description: "Setup is a helper command that allows you to determine roles for game creation. This command will walk you through the process of setting up the game. This command follows the flow of `/setup [player count] [deceptionist count] [good count] [evil count]`.",
+
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Value: "`/setup [player count] `. Help generate the role list pool you'd like for the game. By default it will assume all user's with a deceiptionist role are in the game. But if you'd like to change the value, you can include the additional argument `deceptionist count`.",
+			},
+		},
+	}
+	return msg
+}

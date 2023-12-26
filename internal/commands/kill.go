@@ -41,8 +41,8 @@ func (*Kill) Options() []*discordgo.ApplicationCommandOption {
 	return []*discordgo.ApplicationCommandOption{
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
-			Name:        "norm",
-			Description: "Normal kill",
+			Name:        "player",
+			Description: "Mark a player as dead and update kill list.",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.UserCommandArg(true),
 			},
@@ -60,7 +60,7 @@ func (*Kill) Options() []*discordgo.ApplicationCommandOption {
 
 func (k *Kill) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
-		ken.SubCommandHandler{Name: "norm", Run: k.killNorm},
+		ken.SubCommandHandler{Name: "player", Run: k.killNorm},
 		ken.SubCommandHandler{Name: "location", Run: k.killLocation},
 	)
 }
@@ -122,10 +122,10 @@ func (k *Kill) killNorm(ctx ken.SubCommandContext) (err error) {
 }
 
 func (k *Kill) killLocation(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.NotAdminError(ctx)
 	}

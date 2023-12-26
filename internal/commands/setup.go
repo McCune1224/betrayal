@@ -37,7 +37,8 @@ func (*Setup) Name() string {
 // Options implements ken.SlashCommand.
 func (*Setup) Options() []*discordgo.ApplicationCommandOption {
 	return []*discordgo.ApplicationCommandOption{
-		discord.IntCommandArg("playercount", "number of players for the game", true),
+		discord.IntCommandArg("player_count", "number of players for the game", true),
+		discord.IntCommandArg("decept_count", "number of deceptionists for the game", false),
 	}
 }
 
@@ -51,14 +52,22 @@ func (s *Setup) Run(ctx ken.Context) (err error) {
 	// generate role pool
 	// and make embed view
 
-	decepts := getDeceptionist(ctx.GetSession(), ctx.GetEvent().GuildID)
 	rolePool, err := generateRoleSelectPool(s.models)
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, "failed to generate role pool")
 	}
 	playerCount := int(ctx.Options().GetByName("playercount").IntValue())
-	decepCount := len(decepts)
+
+	//Default grab all deceptionists from server if not specified
+	decepCount := 0
+	if decepArg, ok := ctx.Options().GetByNameOptional("deceptionistcount"); ok {
+		decepCount = int(decepArg.IntValue())
+	} else {
+		decepts := getDeceptionist(ctx.GetSession(), ctx.GetEvent().GuildID)
+		decepCount = len(decepts)
+	}
+
 	rp := generateRolePools(rolePool, playerCount, decepCount)
 	msg := roleSetupEmbed(rp)
 	return ctx.RespondEmbed(msg)

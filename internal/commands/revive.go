@@ -40,8 +40,8 @@ func (*Revive) Options() []*discordgo.ApplicationCommandOption {
 	return []*discordgo.ApplicationCommandOption{
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
-			Name:        "norm",
-			Description: "Normal revive",
+			Name:        "player",
+			Description: "revive a player.",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.UserCommandArg(true),
 			},
@@ -52,7 +52,7 @@ func (*Revive) Options() []*discordgo.ApplicationCommandOption {
 // Run implements ken.SlashCommand.
 func (r *Revive) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
-		ken.SubCommandHandler{Name: "norm", Run: r.normRevive},
+		ken.SubCommandHandler{Name: "revive", Run: r.normRevive},
 	)
 }
 
