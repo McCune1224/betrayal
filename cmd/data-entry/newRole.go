@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/lib/pq"
-	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/pkg/data"
 )
 
 const (

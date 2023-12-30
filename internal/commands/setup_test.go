@@ -7,7 +7,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
-	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/pkg/data"
 )
 
 func DbInit() *sqlx.DB {

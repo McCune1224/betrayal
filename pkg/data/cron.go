@@ -11,14 +11,14 @@ import (
 type InventoryCronJob struct {
 	ID int `db:"id"`
 	// foreign key to Inventory ID
-	InventoryID int64  `db:"inventory_id"`
-	ChannelID   string `db:"channel_id"`
-	PlayerID    string `db:"player_id"`
-	Category    string `db:"category"`
-	ActionType  string `db:"action_type"`
-	Value       string `db:"value"`
-	StartTime   int64  `db:"start_time"`
-	InvokeTime  int64  `db:"invoke_time"`
+	InventoryID int64  `db:"inventory_id" json:"inventory_id"`
+	ChannelID   string `db:"channel_id" json:"channel_id"`
+	PlayerID    string `db:"player_id" json:"player_id"`
+	Category    string `db:"category" json:"category"`
+	ActionType  string `db:"action_type" json:"action_type"`
+	Value       string `db:"value" json:"value"`
+	StartTime   int64  `db:"start_time" json:"start_time"`
+	InvokeTime  int64  `db:"invoke_time" json:"invoke_time"`
 }
 
 // MakeJobID returns a unique job ID for the cron job based on the inventory ID, category, action type, and value

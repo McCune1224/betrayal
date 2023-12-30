@@ -3,9 +3,9 @@ package data
 import "github.com/jmoiron/sqlx"
 
 type Hitlist struct {
-	ID         int64  `db:"id"`
-	PinChannel string `db:"pin_channel"`
-	PinMessage string `db:"pin_message"`
+	ID         int64  `db:"id" json:"id"`
+	PinChannel string `db:"pin_channel" json:"pin_channel"`
+	PinMessage string `db:"pin_message" json:"pin_message"`
 }
 
 type HitlistModel struct {

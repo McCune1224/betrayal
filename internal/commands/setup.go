@@ -6,9 +6,9 @@ import (
 	"math/rand"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/scheduler"
+	"github.com/mccune1224/betrayal/pkg/data"
 	"github.com/zekrotja/ken"
 )
 
@@ -59,7 +59,7 @@ func (s *Setup) Run(ctx ken.Context) (err error) {
 	}
 	playerCount := int(ctx.Options().GetByName("playercount").IntValue())
 
-	//Default grab all deceptionists from server if not specified
+	// Default grab all deceptionists from server if not specified
 	decepCount := 0
 	if decepArg, ok := ctx.Options().GetByNameOptional("deceptionistcount"); ok {
 		decepCount = int(decepArg.IntValue())

@@ -5,10 +5,10 @@ import (
 )
 
 type Insult struct {
-	Id        int64  `db:"id"`
-	Insult    string `db:"insult"`
-	AuthorID  string `db:"author_id"`
-	CreatedAt string `db:"created_at"`
+	Id        int64  `db:"id" json:"id"`
+	Insult    string `db:"insult" json:"insult"`
+	AuthorID  string `db:"author_id" json:"author_id"`
+	CreatedAt string `db:"created_at" json:"created_at"`
 }
 
 type InsultModel struct {

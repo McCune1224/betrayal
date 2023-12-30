@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/services/inventory"
 	"github.com/mccune1224/betrayal/internal/util"
+	"github.com/mccune1224/betrayal/pkg/data"
 )
 
 func (bs *BetrayalScheduler) ScheduleEffect(effect string, inv *data.Inventory, duration time.Duration, s *discordgo.Session, expired ...bool) error {

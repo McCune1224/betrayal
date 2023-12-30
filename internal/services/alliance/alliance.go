@@ -1,6 +1,6 @@
 package alliance
 
-import "github.com/mccune1224/betrayal/internal/data"
+import "github.com/mccune1224/betrayal/pkg/data"
 
 type AllianceHandler struct {
 	m data.Models

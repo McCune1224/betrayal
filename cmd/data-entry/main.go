@@ -10,7 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
-	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/pkg/data"
 )
 
 // Flags for CLI app

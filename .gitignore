@@ -26,11 +26,11 @@ go.work
 .env
 
 
-# Local Air configuration file
+# air command toggle
 .air.toml
-
-# any directory named tmp
 tmp/
+
+# data entry stuff
 fat-dumpy/
 
 

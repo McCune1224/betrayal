@@ -8,10 +8,10 @@ import (
 )
 
 type Status struct {
-	ID          int64  `db:"id"`
-	Name        string `db:"name"`
-	Description string `db:"description"`
-	CratedAt    string `db:"created_at"`
+	ID          int64  `db:"id" json:"id"`
+	Name        string `db:"name" json:"name"`
+	Description string `db:"description" json:"description"`
+	CratedAt    string `db:"created_at" json:"created_at"`
 }
 
 type StatusModel struct {

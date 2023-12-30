@@ -3,10 +3,10 @@ package data
 import "github.com/jmoiron/sqlx"
 
 type FunnelChannel struct {
-	ID         int64  `db:"id"`
-	ChannelID  string `db:"channel_id"`
-	GuildID    string `db:"guild_id"`
-	CurrentDay int    `db:"current_day"`
+	ID         int64  `db:"id" json:"id"`
+	ChannelID  string `db:"channel_id" json:"channel_id"`
+	GuildID    string `db:"guild_id" json:"guild_id"`
+	CurrentDay int    `db:"current_day" json:"current_day"`
 }
 
 type FunnelChannelModel struct {
@@ -46,13 +46,13 @@ func (fcm *FunnelChannelModel) Get(guildID string) (*FunnelChannel, error) {
 }
 
 type Action struct {
-	ID                 int64  `db:"id"`
-	RequestedAction    string `db:"requested_action"`
-	RequestedChannelID string `db:"requested_channel_id"`
-	RequestedMessageID string `db:"requested_message_id"`
-	RequesterID        string `db:"requester_id"`
-	RequestedAt        string `db:"requested_at"`
-	RequestedDay       int64  `db:"requested_day"`
+	ID                 int64  `db:"id" json:"id"`
+	RequestedAction    string `db:"requested_action" json:"requested_action"`
+	RequestedChannelID string `db:"requested_channel_id" json:"requested_channel_id"`
+	RequestedMessageID string `db:"requested_message_id" json:"requested_message_id"`
+	RequesterID        string `db:"requester_id" json:"requester_id"`
+	RequestedAt        string `db:"requested_at" json:"requested_at"`
+	RequestedDay       int64  `db:"requested_day" json:"requested_day"`
 }
 
 type ActionModel struct {

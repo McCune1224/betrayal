@@ -7,9 +7,9 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	cmdInv "github.com/mccune1224/betrayal/internal/commands/inventory"
-	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/scheduler"
+	"github.com/mccune1224/betrayal/pkg/data"
 	"github.com/zekrotja/ken"
 )
 
@@ -44,10 +44,10 @@ func (*Buy) Options() []*discordgo.ApplicationCommandOption {
 
 // Run implements ken.SlashCommand.
 func (b *Buy) Run(ctx ken.Context) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	event := ctx.GetEvent()
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.ErrorMessage(

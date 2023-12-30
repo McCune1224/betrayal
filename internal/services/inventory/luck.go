@@ -1,6 +1,6 @@
 package inventory
 
-import "github.com/mccune1224/betrayal/internal/data"
+import "github.com/mccune1224/betrayal/pkg/data"
 
 // Magic number where 100% mythical drop
 const maxLuck = 398

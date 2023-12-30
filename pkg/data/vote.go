@@ -3,8 +3,8 @@ package data
 import "github.com/jmoiron/sqlx"
 
 type Vote struct {
-	ID        int    `db:"id"`
-	ChannelID string `db:"channel_id"`
+	ID        int    `db:"id" json:"id"`
+	ChannelID string `db:"channel_id" json:"channel_id"`
 }
 
 type VoteModel struct {

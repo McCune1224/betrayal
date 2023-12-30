@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/pkg/data"
 	"github.com/zekrotja/ken"
 )
 

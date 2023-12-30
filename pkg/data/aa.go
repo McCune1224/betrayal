@@ -9,13 +9,13 @@ import (
 
 // Ability that can be rolled in AA events
 type AnyAbility struct {
-	ID           int64          `db:"id"`
-	Name         string         `db:"name"`
-	Description  string         `db:"description"`
-	Categories   pq.StringArray `db:"categories"`
-	Rarity       string         `db:"rarity"`
-  // Name of the role that this ability is specific to. If empty, it is not specific to any role.
-	RoleSpecific string         `db:"role_specific"`
+	ID          int64          `db:"id" json:"id"`
+	Name        string         `db:"name" json:"name"`
+	Description string         `db:"description" json:"description"`
+	Categories  pq.StringArray `db:"categories" json:"categories"`
+	Rarity      string         `db:"rarity" json:"rarity"`
+	// Name of the role that this ability is specific to. If empty, it is not specific to any role.
+	RoleSpecific string `db:"role_specific"`
 }
 
 func (am *AbilityModel) InsertAnyAbility(aa *AnyAbility) error {

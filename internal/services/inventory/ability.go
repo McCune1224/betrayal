@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/util"
+	"github.com/mccune1224/betrayal/pkg/data"
 )
 
 var ErrAbilityNotFound = errors.New("ability not found")

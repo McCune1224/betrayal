@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/scheduler"
+	"github.com/mccune1224/betrayal/pkg/data"
 	"github.com/zekrotja/ken"
 )
 
@@ -121,10 +121,10 @@ func (v *View) Run(ctx ken.Context) (err error) {
 }
 
 func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
-  if err = ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 
 	nameArg := ctx.Options().GetByName("name").StringValue()
 	// haha funny easter egg
@@ -141,7 +141,7 @@ func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
 	}
 
 	if role.Name == "Nephilim" || role.Name == "Nephilism - Defensive" || role.Name == "Nephilism - Offensive" {
-    return v.generateNephRole(ctx, role)
+		return v.generateNephRole(ctx, role)
 	}
 
 	roleEmbed, err := v.roleEmbed(role)
@@ -158,7 +158,7 @@ func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
 
 func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-    log.Println(err)
+		log.Println(err)
 		return err
 	}
 	nameArg := ctx.Options().GetByName("name").StringValue()

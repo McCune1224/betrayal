@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/lib/pq"
-	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/pkg/data"
 )
 
 // Handles all inventory related actions
@@ -30,12 +30,12 @@ func (ih *InventoryHandler) GetInventory() *data.Inventory {
 }
 
 func (ih *InventoryHandler) RefreshInventory() error {
-  inv, err := ih.m.Inventories.GetByDiscordID(ih.i.DiscordID)
-  if err != nil {
-    return err
-  }
-  ih.i = inv
-  return nil
+	inv, err := ih.m.Inventories.GetByDiscordID(ih.i.DiscordID)
+	if err != nil {
+		return err
+	}
+	ih.i = inv
+	return nil
 }
 
 func (ih *InventoryHandler) CreateInventory(initInv *data.Inventory) error {

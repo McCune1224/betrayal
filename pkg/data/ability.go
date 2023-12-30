@@ -15,15 +15,14 @@ const (
 
 // Ability that is role specific.
 type Ability struct {
-	ID          int64          `db:"id"`
-	Name        string         `db:"name"`
-	Description string         `db:"description"`
-	Categories  pq.StringArray `db:"categories"`
-	Charges     int            `db:"charges"`
-	AnyAbility  bool           `db:"any_ability"`
-	// will be listed as 'Role' if AA ability
-	Rarity    string `db:"rarity"`
-	CreatedAt string `db:"created_at"`
+	ID          int64          `db:"id" json:"id"`
+	Name        string         `db:"name" json:"name"`
+	Description string         `db:"description" json:"description"`
+	Categories  pq.StringArray `db:"categories" json:"categories"`
+	Charges     int            `db:"charges" json:"charges"`
+	AnyAbility  bool           `db:"any_ability" json:"any_ability"`
+	Rarity      string         `db:"rarity" json:"rarity"`
+	CreatedAt   string         `db:"created_at" json:"created_at"`
 }
 
 type AbilityModel struct {

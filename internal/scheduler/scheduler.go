@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/go-co-op/gocron"
-	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/pkg/data"
 )
 
 var (

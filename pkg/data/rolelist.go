@@ -6,8 +6,8 @@ import (
 )
 
 type RoleList struct {
-	ID    int            `db:"id"`
-	Roles pq.StringArray `db:"roles"`
+	ID    int            `db:"id" json:"id"`
+	Roles pq.StringArray `db:"roles" json:"roles"`
 }
 
 type RoleListModel struct {

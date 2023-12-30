@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mccune1224/betrayal/internal/data"
+import "github.com/mccune1224/betrayal/pkg/data"
 
 func (*csvBuilder) BuildStatusCSV(csv [][]string) ([]data.Status, error) {
 	var statuses []data.Status

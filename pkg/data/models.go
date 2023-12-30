@@ -23,7 +23,6 @@ type Models struct {
 	Perks             PerkModel
 	Statuses          StatusModel
 	Items             ItemModel
-	Players           PlayerModel
 	Inventories       InventoryModel
 	Whitelists        WhitelistModel
 	Actions           ActionModel
@@ -44,7 +43,6 @@ func NewModels(db *sqlx.DB) Models {
 		Perks:             PerkModel{DB: db},
 		Statuses:          StatusModel{DB: db},
 		Items:             ItemModel{DB: db},
-		Players:           PlayerModel{DB: db},
 		Inventories:       InventoryModel{DB: db},
 		Whitelists:        WhitelistModel{DB: db},
 		Actions:           ActionModel{DB: db},

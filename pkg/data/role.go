@@ -10,11 +10,11 @@ import (
 
 // How roles are stored in the database.
 type Role struct {
-	ID          int64  `db:"id"`
-	Name        string `db:"name"`
-	Description string `db:"description"`
-	Alignment   string `db:"alignment"`
-	CreatedAt   string `db:"created_at"`
+	ID          int64  `db:"id" json:"id"`
+	Name        string `db:"name" json:"name"`
+	Description string `db:"description" json:"description"`
+	Alignment   string `db:"alignment" json:"alignment"`
+	CreatedAt   string `db:"created_at" json:"created_at"`
 }
 
 type RoleModel struct {

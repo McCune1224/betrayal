@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/pkg/data"
 )
 
 var allianceMemberLimit = 4
@@ -42,10 +42,10 @@ func (ah *AllianceHandler) AcceptInvite(s *discordgo.Session, inviteeID, allianc
 	// Get Alliance
 	alliance, err := ah.m.Alliances.GetByName(allianceName)
 	if err != nil {
-    if errors.Is(err, sql.ErrNoRows) {
-      return ErrAllianceNotFound
-    }
-    return err
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrAllianceNotFound
+		}
+		return err
 	}
 
 	// Get invite

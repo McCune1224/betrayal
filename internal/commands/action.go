@@ -5,10 +5,10 @@ import (
 	"log"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/mccune1224/betrayal/internal/data"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/scheduler"
 	"github.com/mccune1224/betrayal/internal/util"
+	"github.com/mccune1224/betrayal/pkg/data"
 	"github.com/zekrotja/ken"
 )
 
@@ -70,10 +70,10 @@ func (*ActionFunnel) Version() string {
 }
 
 func (af *ActionFunnel) location(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	locationArg := ctx.Options().GetByName("channel")
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.ErrorMessage(ctx,
@@ -163,7 +163,7 @@ func (af *ActionFunnel) request(ctx ken.SubCommandContext) (err error) {
 	reqArg := ctx.Options().GetByName("action").StringValue()
 	// East coast time babyyy
 	humanReqTime := util.GetEstTimeStamp()
-  
+
 	funnelChannel, err := af.models.FunnelChannels.Get(event.GuildID)
 	if err != nil {
 		log.Println(err)

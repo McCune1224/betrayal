@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/lib/pq"
-	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/pkg/data"
 )
 
 func (*csvBuilder) BuildItemCSV(csv [][]string) ([]data.Item, error) {

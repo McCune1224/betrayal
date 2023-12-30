@@ -6,7 +6,7 @@ import (
 	"slices"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/pkg/data"
 )
 
 func (ah *AllianceHandler) DeleteAlliance(allianceName string, s *discordgo.Session) error {

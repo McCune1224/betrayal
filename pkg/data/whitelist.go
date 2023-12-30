@@ -5,10 +5,10 @@ import (
 )
 
 type Whitelist struct {
-	ID          int64    `db:"id"`
-	ChannelID   string `db:"channel_id"`
-	GuildID     string `db:"guild_id"`
-	ChannelName string `db:"channel_name"`
+	ID          int64  `db:"id" json:"id"`
+	ChannelID   string `db:"channel_id" json:"channel_id"`
+	GuildID     string `db:"guild_id" json:"guild_id"`
+	ChannelName string `db:"channel_name" json:"channel_name"`
 }
 
 type WhitelistModel struct {
@@ -38,6 +38,7 @@ func (w *WhitelistModel) Delete(whitelist *Whitelist) (err error) {
 	)
 	return err
 }
+
 func (w *WhitelistModel) GetByChannelName(channelName string) (whitelist *Whitelist, err error) {
 	err = w.DB.Get(&whitelist, "SELECT * FROM whitelist WHERE channel_name=$1", channelName)
 	return whitelist, err

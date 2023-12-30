@@ -4,7 +4,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/mccune1224/betrayal/internal/data"
+	"github.com/mccune1224/betrayal/pkg/data"
 )
 
 func (*csvBuilder) BuildAnyAbilityCSV(csv [][]string) ([]data.AnyAbility, error) {

@@ -6,24 +6,24 @@ import (
 )
 
 type Alliance struct {
-	ID        int            `db:"id"`
-	Name      string         `db:"name"`
-	ChannelID string         `db:"channel_id"`
-	MemberIDs pq.StringArray `db:"member_ids"`
+	ID        int            `db:"id" json:"id"`
+	Name      string         `db:"name" json:"name"`
+	ChannelID string         `db:"channel_id" json:"channel_id"`
+	MemberIDs pq.StringArray `db:"member_ids" json:"member_ids"`
 }
 
 type AllianceRequest struct {
-	ID          int    `db:"id"`
-	RequesterID string `db:"requester_id"`
-	Name        string `db:"name"`
+	ID          int    `db:"id" json:"id"`
+	RequesterID string `db:"requester_id" json:"requester_id"`
+	Name        string `db:"name" json:"name"`
 }
 
 type AllianceInvite struct {
-	ID              int    `db:"id"`
-	InviterID       string `db:"inviter_id"`
-	InviteeID       string `db:"invitee_id"`
-	AllianceName    string `db:"alliance_name"`
-	InviteeAccepted bool   `db:"invitee_accepted"`
+	ID              int    `db:"id" json:"id"`
+	InviterID       string `db:"inviter_id" json:"inviter_id"`
+	InviteeID       string `db:"invitee_id" json:"invitee_id"`
+	AllianceName    string `db:"alliance_name" json:"alliance_name"`
+	InviteeAccepted bool   `db:"invitee_accepted" json:"invitee_accepted"`
 }
 
 type AllianceModel struct {

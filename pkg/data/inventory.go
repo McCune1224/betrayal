@@ -6,28 +6,26 @@ import (
 )
 
 type Inventory struct {
-	ID             int64  `db:"id"`
-	DiscordID      string `db:"discord_id"`
-	UserPinChannel string `db:"user_pin_channel"`
-	UserPinMessage string `db:"user_pin_message"`
-	RoleName       string `db:"role_name"`
-	Alignment      string `db:"alignment"`
-	// Ability [Charge]
-	Abilities pq.StringArray `db:"abilities"`
-	// Ability [Charge]
-	AnyAbilities pq.StringArray `db:"any_abilities"`
-	Statuses     pq.StringArray `db:"statuses"`
-	Immunities   pq.StringArray `db:"immunities"`
-	Effects      pq.StringArray `db:"effects"`
-	Items        pq.StringArray `db:"items"`
-	ItemLimit    int            `db:"item_limit"`
-	Perks        pq.StringArray `db:"perks"`
-	IsAlive      bool           `db:"is_alive"`
-	Coins        int64          `db:"coins"`
-	CoinBonus    float32        `db:"coin_bonus"`
-	Luck         int64          `db:"luck"`
-	Notes        pq.StringArray `db:"notes"`
-	CreatedAt    string         `db:"created_at"`
+	ID             int64          `db:"id" json:"id"`
+	DiscordID      string         `db:"discord_id" json:"discord_id"`
+	UserPinChannel string         `db:"user_pin_channel" json:"user_pin_channel"`
+	UserPinMessage string         `db:"user_pin_message" json:"user_pin_message"`
+	RoleName       string         `db:"role_name" json:"role_name"`
+	Alignment      string         `db:"alignment" json:"alignment"`
+	Abilities      pq.StringArray `db:"abilities" json:"abilities"`
+	AnyAbilities   pq.StringArray `db:"any_abilities" json:"any_abilities"`
+	Statuses       pq.StringArray `db:"statuses" json:"statuses"`
+	Immunities     pq.StringArray `db:"immunities" json:"immunities"`
+	Effects        pq.StringArray `db:"effects" json:"effects"`
+	Items          pq.StringArray `db:"items" json:"items"`
+	ItemLimit      int            `db:"item_limit" json:"item_limit"`
+	Perks          pq.StringArray `db:"perks" json:"perks"`
+	IsAlive        bool           `db:"is_alive" json:"is_alive"`
+	Coins          int64          `db:"coins" json:"coins"`
+	CoinBonus      float32        `db:"coin_bonus" json:"coin_bonus"`
+	Luck           int64          `db:"luck" json:"luck"`
+	Notes          pq.StringArray `db:"notes" json:"notes"`
+	CreatedAt      string         `db:"created_at" json:"created_at"`
 }
 
 type InventoryModel struct {
