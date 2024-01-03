@@ -57,11 +57,11 @@ func (s *Setup) Run(ctx ken.Context) (err error) {
 		log.Println(err)
 		return discord.AlexError(ctx, "failed to generate role pool")
 	}
-	playerCount := int(ctx.Options().GetByName("playercount").IntValue())
+	playerCount := int(ctx.Options().GetByName("player_count").IntValue())
 
 	// Default grab all deceptionists from server if not specified
 	decepCount := 0
-	if decepArg, ok := ctx.Options().GetByNameOptional("deceptionistcount"); ok {
+	if decepArg, ok := ctx.Options().GetByNameOptional("decept_count"); ok {
 		decepCount = int(decepArg.IntValue())
 	} else {
 		decepts := getDeceptionist(ctx.GetSession(), ctx.GetEvent().GuildID)
