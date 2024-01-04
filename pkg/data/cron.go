@@ -126,3 +126,9 @@ func (icjm *InventoryCronJobModel) DeleteByID(id int) error {
 	}
 	return nil
 }
+
+func (icjm *InventoryCronJobModel) DeleteAllByPlayerID(playerID string) error {
+	query := `DELETE FROM inventory_cron_jobs WHERE player_id=$1`
+	_, err := icjm.DB.Exec(query, playerID)
+	return err
+}
