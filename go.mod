@@ -3,7 +3,7 @@ module github.com/mccune1224/betrayal
 go 1.21
 
 require (
-	github.com/bwmarrin/discordgo v0.27.1
+	github.com/bwmarrin/discordgo v0.27.2-0.20240104041734-f70a01544f56
 	github.com/go-co-op/gocron v1.35.3
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.5.1
