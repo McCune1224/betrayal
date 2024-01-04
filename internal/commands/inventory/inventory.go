@@ -194,9 +194,16 @@ func (i *Inventory) delete(ctx ken.SubCommandContext) (err error) {
 			fmt.Sprintf("Failed to delete message for %s, could not find message in channel %s",
 				userArg.Username, channel.Name))
 	}
-	err = i.models.Inventories.Delete(userArg.ID)
-	log.Println(err)
+	err = i.models.InventoryCronJobs.DeleteAllByPlayerID(userArg.ID)
+
 	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to delete scheduled jobs for player", fmt.Sprintf("Failed to delete scheduled jobs for player %s", userArg.Username))
+	}
+
+	err = i.models.Inventories.Delete(userArg.ID)
+	if err != nil {
+		log.Println(err)
 		return discord.ErrorMessage(ctx, "Failed to Delete Inventory",
 			fmt.Sprintf("Failed to delete inventory for %s", userArg.Username))
 	}
