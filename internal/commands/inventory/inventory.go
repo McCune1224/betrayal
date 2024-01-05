@@ -401,8 +401,7 @@ func FetchHandler(ctx ken.SubCommandContext, m data.Models, adminOnly bool) (han
 			log.Println(err)
 			return nil, err
 		}
-	}
-	if inv == nil {
+	} else {
 		inv, err = m.Inventories.GetByDiscordID(userArg.UserValue(ctx).ID)
 		if err != nil {
 			log.Println(err)
@@ -417,7 +416,7 @@ func FetchHandler(ctx ken.SubCommandContext, m data.Models, adminOnly bool) (han
 	if !InventoryAuthorized(ctx, inv, wl) {
 		return nil, ErrNotAuthorized
 	}
-	if inv == nil {
+	if inv.RoleName == "" {
 		return nil, errors.New("somehow inventory is nil in middleware")
 	}
 	handler = inventory.InitInventoryHandler(m, inv)
