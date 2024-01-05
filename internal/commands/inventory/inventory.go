@@ -109,9 +109,9 @@ func (i *Inventory) get(ctx ken.SubCommandContext) (err error) {
 				hide = !showArg.BoolValue()
 			}
 
-			if hide {
+			if !hide {
 				ctx.SetEphemeral(true)
-				embd = InventoryEmbedBuilder(inv, true)
+				embd = InventoryEmbedBuilder(inv, false)
 				return ctx.RespondEmbed(embd)
 			} else {
 				ctx.SetEphemeral(false)
