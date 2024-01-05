@@ -30,13 +30,13 @@ func (i *Inventory) addLuck(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.AlexError(ctx, "Failed to add luck")
 	}
-	err = i.updateInventoryMessage(ctx, handler.GetInventory())
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, "Failed to update inventory message")
 	}
 	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Added %d Luck", luckArg),
-		fmt.Sprintf("%d => %d for %s", old, handler.GetInventory().Luck, handler.GetInventory().DiscordID))
+		fmt.Sprintf("%d => %d for %s", old, handler.GetInventory().Luck, discord.MentionUser(handler.GetInventory().DiscordID)))
 }
 
 func (i *Inventory) removeLuck(ctx ken.SubCommandContext) (err error) {

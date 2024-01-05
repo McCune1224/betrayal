@@ -206,12 +206,12 @@ func (m *InventoryModel) UpdateItemLimit(inventory *Inventory) error {
 }
 
 func (m *InventoryModel) UpdateRoleName(inventory *Inventory) error {
-  query := `UPDATE inventories SET role_name=$1 WHERE discord_id=$2`
-  _, err := m.DB.Exec(query, inventory.RoleName, inventory.DiscordID)
-  if err != nil {
-    return err
-  }
-  return nil
+	query := `UPDATE inventories SET role_name=$1 WHERE discord_id=$2`
+	_, err := m.DB.Exec(query, inventory.RoleName, inventory.DiscordID)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (m *InventoryModel) GetAll() ([]Inventory, error) {
