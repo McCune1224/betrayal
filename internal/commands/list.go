@@ -13,9 +13,13 @@ import (
 )
 
 // TODO: Slap these in the database once game is close to starting and roles are finalized
+//
+//
+//
+
 var (
-	DummyGoodRoles    = []string{"Agent", "Analyst", "Biker", "Cerberus", "Detective", "Fisherman", "Gunman", "Hero", "Hydra", "Judge", "Major", "Mecha", "Medium", "Nurse", "Seraph", "Terminal", "Time Traveler", "Undercover", "Wizard", "Yeti"}
-	DummyNeutralRoles = []string{"Amalgamation", "Backstabber", "Banker", "Bomber", "Cheater", "Cyborg", "Empress", "Ghost", "Goliath", "Journalist", "Magician", "Masochist", "Mercenary", "Mimic", "Pathologist", "Salesman", "Siren", "Tinkerer", "Villager", "Wanderer"}
+	DummyGoodRoles    = []string{"Agent", "Analyst", "Biker", "Cerberus", "Detective", "Fisherman", "Gunman", "Hero", "Hydra", "Judge", "The Major", "Mecha", "Medium", "Nurse", "Seraph", "Terminal", "Time Traveler", "Undercover", "Wizard", "Yeti"}
+	DummyNeutralRoles = []string{"Amalgamation", "Backstabber", "Bard", "Bomber", "Cheater", "Cyborg", "Empress", "Ghost", "Goliath", "Incubus", "Magician", "Masochist", "Mercenary", "Mimic", "Pathologist", "Salesman", "Siren", "Sidekick", "Villager", "Wanderer"}
 	DummyEvilRoles    = []string{"Anarchist", "Arsonist", "Bartender", "Consort", "Director", "Doll", "Forsaken Angel", "Gatekeeper", "Hacker", "Highwayman", "Hunter", "Imp", "Jester", "Juggernaut", "Overlord", "Phantom", "Psychotherapist", "Slaughterer", "Threatener", "Witchdoctor"}
 	GameEvents        = []string{
 		"Care Package - Game Start - Each player starts off with a care package which contains 1 item and 1 Any Ability.",

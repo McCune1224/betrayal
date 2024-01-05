@@ -342,10 +342,7 @@ func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
 		Fields: embededFields,
 	}
 	if item.Name == "Zingy" {
-		// attach zingy image to embed
-		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{
-			URL: "https://www.fairy-tales-inc.com/images/thumbs/0058033_bashful-zingy-bunny-medium-by-jellycat_550.jpeg",
-		}
+		return zingyCase(ctx, item)
 	}
 
 	if item.Cost == 0 {
@@ -432,4 +429,57 @@ func determineColor(rarity string) int {
 	default:
 		return discord.ColorThemeWhite
 	}
+}
+
+func zingyCase(ctx ken.SubCommandContext, zingy *data.Item) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	// attach zingy image to embed
+
+	// split zingy message into 2 based of \n
+	split := strings.Split(zingy.Description, "\n")
+
+	initMsg := &discordgo.MessageEmbed{
+		Title:       zingy.Name,
+		Description: split[0],
+		Thumbnail: &discordgo.MessageEmbedThumbnail{
+			URL: "https://www.fairy-tales-inc.com/images/thumbs/0058033_bashful-zingy-bunny-medium-by-jellycat_550.jpeg",
+		},
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: fmt.Sprintf("%s this item is not purchasable nor obtainable from random event (like item rain) %s", discord.EmojiWarning, discord.EmojiWarning),
+		},
+	}
+
+	secondaryMsg := &discordgo.MessageEmbed{
+		Title:       zingy.Name,
+		Description: strings.Join(split[1:], "\n"),
+		Thumbnail: &discordgo.MessageEmbedThumbnail{
+			URL: "https://www.fairy-tales-inc.com/images/thumbs/0058033_bashful-zingy-bunny-medium-by-jellycat_550.jpeg",
+		},
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: fmt.Sprintf("%s this item is not purchasable nor obtainable from random event (like item rain) %s", discord.EmojiWarning, discord.EmojiWarning),
+		},
+	}
+
+	b := ctx.FollowUpEmbed(initMsg)
+
+	b.AddComponents(func(cb *ken.ComponentBuilder) {
+		cb.AddActionsRow(func(b ken.ComponentAssembler) {
+			b.Add(discordgo.Button{
+				CustomID: "outcomes",
+				Style:    discordgo.PrimaryButton,
+				Label:    "Roll Outcomes",
+			}, func(ctx ken.ComponentContext) bool {
+				ctx.SetEphemeral(true)
+				ctx.RespondEmbed(secondaryMsg)
+				return true
+			}, false)
+		}, false).Condition(func(cctx ken.ComponentContext) bool {
+			return true
+		})
+	})
+
+	return b.Send().Error
 }
