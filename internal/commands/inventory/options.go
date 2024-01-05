@@ -83,6 +83,23 @@ func (i *Inventory) Options() []*discordgo.ApplicationCommandOption {
 				},
 			},
 		},
+
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+			Name:        "role",
+			Description: "set role name for inventory (will auto update alignment)",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "set",
+					Description: "set role name and respective alignment for inventory",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("name", "Name of the role", true),
+						discord.UserCommandArg(false),
+					},
+				},
+			},
+		},
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
 			Name:        "ability",
@@ -472,6 +489,9 @@ func (i *Inventory) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "me", Run: i.me},
 		ken.SubCommandHandler{Name: "create", Run: i.create},
 		ken.SubCommandHandler{Name: "delete", Run: i.delete},
+		ken.SubCommandGroup{Name: "role", SubHandler: []ken.CommandHandler{
+			ken.SubCommandHandler{Name: "set", Run: i.SetRoleName},
+		}},
 		ken.SubCommandGroup{Name: "whitelist", SubHandler: []ken.CommandHandler{
 			ken.SubCommandHandler{Name: "add", Run: i.addWhitelist},
 			ken.SubCommandHandler{Name: "remove", Run: i.removeWhitelist},
