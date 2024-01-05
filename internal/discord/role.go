@@ -9,7 +9,7 @@ import (
 var AdminRoles = []string{
 	"Host",
 	"Co-Host",
-	// "Bot Developer",
+	"Bot Developer",
 }
 
 // Check if user who invoked command has required role
