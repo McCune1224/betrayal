@@ -59,7 +59,7 @@ func (i *Inventory) removeNote(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Invalid note index",
 			fmt.Sprintf("Please enter a number between 1 and %d", len(handler.GetInventory().Notes)))
 	}
-	err = handler.RemoveLimit(noteArg)
+	err = handler.RemoveNote(noteArg)
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, "Failed to remove note")
