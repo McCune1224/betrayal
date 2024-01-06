@@ -210,9 +210,5 @@ func (af *ActionFunnel) request(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 
-	return discord.SuccessfulMessage(
-		ctx,
-		"Action Requested",
-		"Your action request has been for review.",
-	)
+	return discord.SuccessfulMessage( ctx, "Action Requested", fmt.Sprintf("Request '%s' sent for processing", reqArg))
 }

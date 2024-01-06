@@ -251,9 +251,9 @@ func (*List) listWheel(ctx ken.SubCommandContext) (err error) {
 
 	for i, e := range WheelEvents {
 		if i%2 == 0 {
-			left.Value += fmt.Sprintf("%s\n", e)
+			left.Value += fmt.Sprintf("- %s\n", e)
 		} else {
-			right.Value += fmt.Sprintf("%s\n", e)
+			right.Value += fmt.Sprintf("- %s\n", e)
 		}
 	}
 	return ctx.RespondEmbed(&discordgo.MessageEmbed{
