@@ -245,14 +245,23 @@ func (*List) listWheel(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	field := []*discordgo.MessageEmbedField{{Inline: true}}
-	for _, e := range WheelEvents {
-		field[0].Value += fmt.Sprintf("%s\n", e)
+
+	left := &discordgo.MessageEmbedField{Inline: true}
+	right := &discordgo.MessageEmbedField{Inline: true}
+
+	for i, e := range WheelEvents {
+		if i%2 == 0 {
+			left.Value += fmt.Sprintf("%s\n", e)
+		} else {
+			right.Value += fmt.Sprintf("%s\n", e)
+		}
 	}
 	return ctx.RespondEmbed(&discordgo.MessageEmbed{
 		Title:       "Wheel Events",
 		Description: "All events that can happen from the wheel",
-		Fields:      field,
+		Fields: append([]*discordgo.MessageEmbedField{
+			left, right,
+		}),
 	})
 }
 
