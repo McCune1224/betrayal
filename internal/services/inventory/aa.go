@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -58,9 +59,9 @@ func (ih *InventoryHandler) SetAnyAbilityCharges(aaName string, charge int) erro
 	best, _ := util.FuzzyFind(aaName, ih.i.AnyAbilities)
 	bestIaas := AbilityString(best)
 	i := slices.Index(ih.i.AnyAbilities, best)
-	if i != -1 {
+	if i == -1 {
 		return ErrAnyAbilityNotFound
 	}
-	ih.i.AnyAbilities[i] = string(bestIaas.SetCharges(charge))
+	ih.i.AnyAbilities[i] = fmt.Sprintf("%s [%d]", bestIaas.GetName(), charge)
 	return ih.m.Inventories.UpdateAnyAbilities(ih.i)
 }

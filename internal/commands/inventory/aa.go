@@ -11,10 +11,10 @@ import (
 )
 
 func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -45,10 +45,10 @@ func (i *Inventory) addAnyAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -77,10 +77,10 @@ func (i *Inventory) removeAnyAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
 	handler, err := FetchHandler(ctx, i.models, true)
 	if err != nil {
 		if errors.Is(err, ErrNotAuthorized) {
@@ -92,7 +92,19 @@ func (i *Inventory) setAnyAbility(ctx ken.SubCommandContext) (err error) {
 	abilityNameArg := ctx.Options().GetByName("name").StringValue()
 	chargesArg := ctx.Options().GetByName("charges").IntValue()
 
-	handler.SetAnyAbilityCharges(abilityNameArg, int(chargesArg))
+  err = handler.SetAnyAbilityCharges(abilityNameArg, int(chargesArg))
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to set ability charges")
+	}
 
-	return discord.ErrorMessage(ctx, "Unable to Set Ability Charge", fmt.Sprintf("Ability %s not found in inventory.", abilityNameArg))
+
+	err = UpdateInventoryMessage(ctx.GetSession(), handler.GetInventory())
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to update inventory message")
+	}
+  
+  return discord.SuccessfulMessage(ctx, fmt.Sprintf("Updated charges for %s", abilityNameArg), fmt.Sprintf("Charges set to %d", chargesArg))
+
 }

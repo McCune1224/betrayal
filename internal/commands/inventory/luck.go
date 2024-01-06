@@ -22,6 +22,11 @@ func (i *Inventory) addLuck(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 
+	if ctx.GetEvent().ChannelID != handler.GetInventory().UserPinChannel {
+		ctx.SetEphemeral(true)
+		return discord.ErrorMessage(ctx, "Do not use this command here", "use this in an admin only channel as listed in `/inv whitelist list`")
+	}
+
 	ctx.SetEphemeral(true)
 	luckArg := ctx.Options().GetByName("amount").IntValue()
 	old := handler.GetInventory().Luck
@@ -53,6 +58,12 @@ func (i *Inventory) removeLuck(ctx ken.SubCommandContext) (err error) {
 	}
 	ctx.SetEphemeral(true)
 
+
+  if ctx.GetEvent().ChannelID != handler.GetInventory().UserPinChannel {
+    ctx.SetEphemeral(true)
+    return discord.ErrorMessage(ctx, "Do not use this command here", "use this in an admin only channel as listed in `/inv whitelist list`")
+  }
+
 	luck := ctx.Options().GetByName("amount").IntValue()
 
 	err = handler.RemoveLuck(luck)
@@ -82,6 +93,13 @@ func (i *Inventory) setLuck(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(true)
+
+  if ctx.GetEvent().ChannelID != handler.GetInventory().UserPinChannel {
+    ctx.SetEphemeral(true)
+    return discord.ErrorMessage(ctx, "Do not use this command here", "use this in an admin only channel as listed in `/inv whitelist list`")
+  }
+
+
 	luckLevelArg := ctx.Options().GetByName("amount").IntValue()
 	oldLuck := handler.GetInventory().Luck
 

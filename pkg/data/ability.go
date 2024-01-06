@@ -106,7 +106,7 @@ func (am *AbilityModel) GetByFuzzy(name string) (*Ability, error) {
 
 func (am *AbilityModel) GetAll() ([]Ability, error) {
 	var abilities []Ability
-	err := am.DB.Select(&abilities, "SELECT * FROM Abilities")
+	err := am.DB.Select(&abilities, "SELECT * FROM abilities")
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (am *AbilityModel) GetAll() ([]Ability, error) {
 
 func (am *AbilityModel) GetByCategory(category string) ([]Ability, error) {
 	var abilities []Ability
-	err := am.DB.Select(&abilities, "SELECT * FROM Abilities WHERE categories ILIKE $1", category)
+	err := am.DB.Select(&abilities, "SELECT * FROM abilities WHERE categories ILIKE $1", category)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (am *AbilityModel) GetByCategory(category string) ([]Ability, error) {
 
 func (am *AbilityModel) GetByRarity(rarity string) ([]Ability, error) {
 	var abilities []Ability
-	err := am.DB.Select(&abilities, "SELECT * FROM Abilities WHERE rarity ILIKE $1", rarity)
+	err := am.DB.Select(&abilities, "SELECT * FROM abilities WHERE rarity ILIKE $1", rarity)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func (am *AbilityModel) GetRandomByRarity(rarity string) (*Ability, error) {
 	var a Ability
 	err := am.DB.Get(
 		&a,
-		"SELECT * FROM Abilities WHERE rarity ILIKE $1 ORDER BY RANDOM() LIMIT 1",
+		"SELECT * FROM abilities WHERE rarity ILIKE $1 ORDER BY RANDOM() LIMIT 1",
 		rarity,
 	)
 	if err != nil {
@@ -145,7 +145,7 @@ func (am *AbilityModel) GetRandomByRarity(rarity string) (*Ability, error) {
 }
 
 func (am *AbilityModel) Update(a *Ability) error {
-	query := `UPDATE Abilities SET name = $1, description = $2, categories = $3, charges = $4, any_ability = $5, rarity = $6 WHERE id = $7`
+	query := `UPDATE abilities SET name = $1, description = $2, categories = $3, charges = $4, any_ability = $5, rarity = $6 WHERE id = $7`
 	_, err := am.DB.Exec(
 		query,
 		a.Name,
@@ -163,7 +163,7 @@ func (am *AbilityModel) Update(a *Ability) error {
 }
 
 func (am *AbilityModel) Delete(id int64) error {
-	_, err := am.DB.Exec("DELETE FROM Abilities WHERE id = $1", id)
+	_, err := am.DB.Exec("DELETE FROM abilities WHERE id = $1", id)
 	if err != nil {
 		return err
 	}
@@ -171,7 +171,7 @@ func (am *AbilityModel) Delete(id int64) error {
 }
 
 func (am *AbilityModel) WipeTable() error {
-	_, err := am.DB.Exec("DELETE FROM Abilities")
+	_, err := am.DB.Exec("DELETE FROM abilities")
 	if err != nil {
 		return err
 	}
@@ -179,7 +179,7 @@ func (am *AbilityModel) WipeTable() error {
 }
 
 func (am *AbilityModel) Upsert(a *Ability) error {
-	query := `INSERT INTO Abilities (name, description, categories, charges, any_ability, rarity)
+	query := `INSERT INTO abilities (name, description, categories, charges, any_ability, rarity)
     VALUES ($1, $2, $3, $4, $5, $6)
     ON CONFLICT (name) DO UPDATE
     SET name = $1, description = $2, categories = $3, charges = $4, any_ability = $5, rarity = $6`

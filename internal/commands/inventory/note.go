@@ -24,6 +24,11 @@ func (i *Inventory) addNote(ctx ken.SubCommandContext) (err error) {
 	noteArg := ctx.Options().GetByName("message").StringValue()
 	ctx.SetEphemeral(true)
 
+  if ctx.GetEvent().ChannelID != handler.GetInventory().UserPinChannel {
+    ctx.SetEphemeral(true)
+    return discord.ErrorMessage(ctx, "Do not use this command here", "use this in an admin only channel as listed in `/inv whitelist list`")
+  }
+
 	err = handler.AddNote(noteArg)
 	if err != nil {
 		log.Println(err)
@@ -50,6 +55,13 @@ func (i *Inventory) removeNote(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
 	}
 	ctx.SetEphemeral(true)
+
+  if ctx.GetEvent().ChannelID != handler.GetInventory().UserPinChannel {
+    ctx.SetEphemeral(true)
+    return discord.ErrorMessage(ctx, "Do not use this command here", "use this in an admin only channel as listed in `/inv whitelist list`")
+  }
+
+
 	if len(handler.GetInventory().Notes) == 0 {
 		return discord.ErrorMessage(ctx, "No notes to remove", "Nothing to see here officer...")
 	}

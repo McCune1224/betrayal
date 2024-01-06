@@ -85,7 +85,7 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 					Required:    true,
 					Choices:     options,
 				},
-				discord.IntCommandArg("level", "level to roll for", true),
+				discord.IntCommandArg("luck", "level to roll for", true),
 				discord.UserCommandArg(true),
 			},
 		},
@@ -151,7 +151,7 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 
 	opts := ctx.Options()
 	target := opts.GetByName("target").StringValue()
-	level := opts.GetByName("level").IntValue()
+	level := opts.GetByName("luck").IntValue()
 
 	rng := rand.Float64()
 	luckType := RollLuck(float64(level), rng)
