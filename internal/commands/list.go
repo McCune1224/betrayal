@@ -33,6 +33,14 @@ var (
 		"Ultimate Exchange - Five Player Event - Whoever is holding the Lucky Coin may convert it into 1500 coins.",
 		"Double Elimination - Random Event - There will be two Elimination Phases today.",
 	}
+	WheelEvents = []string{
+		"Sunder", "Lawful", "Sunder Lawful", "Everyone Gets a Doggo", "Random 6pb", "Duels", "Everyone gets 3k", "Random polymorph", "Votes are public 24hr", "Actions are public 24hr",
+		"Random Zingy", "Random revival", "Random role swap", "Dimensional shatter", "Random Russian revolver present", "Care package present", "Double event to next roll", "RPS event",
+		"Coin bonuses randomized", "Remove negative statuses from everyone", "Everyone is drunk", "Jury vote determines game winner", "Game winner is determined by the wheel",
+		"Host quiz", "Everyone can only use gifs/emojis for 6 hours", "Everyone is made mad as a random role", "Host choice", "Random mythical item for all", "Random legendary AA for all",
+		"Someone explodes", "Graveyard and living switch places", "Two people revive", "oops all villagers", "All good roles get elim immunity", "All neut roles get elim immunity",
+		"All evil roles get elim immunity", "Shotgun present", "Two players explode", "Three players randomly bent", "Everyone can pick one AA to get",
+	}
 )
 
 type List struct {
@@ -87,6 +95,11 @@ func (*List) Options() []*discordgo.ApplicationCommandOption {
 			Description: "List of all events",
 		},
 		{
+			Name:        "wheel_events",
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Description: "List of all events that can happen from the wheel",
+		},
+		{
 			Name:        "statuses",
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Description: "List of all statuses",
@@ -105,6 +118,7 @@ func (l *List) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "items", Run: l.listItems},
 		ken.SubCommandHandler{Name: "active_roles", Run: l.listActiveRoles},
 		ken.SubCommandHandler{Name: "events", Run: l.listEvents},
+		ken.SubCommandHandler{Name: "wheel_events", Run: l.listWheel},
 		ken.SubCommandHandler{Name: "statuses", Run: l.listStatuses},
 		ken.SubCommandHandler{Name: "players", Run: l.listPlayers},
 	)
@@ -224,6 +238,25 @@ func (l *List) listPlayers(ctx ken.SubCommandContext) (err error) {
 		Fields: fields,
 	}
 	return ctx.RespondEmbed(msg)
+}
+
+func (*List) listWheel(ctx ken.SubCommandContext) (err error) {
+  if err := ctx.Defer(); err != nil {
+    log.Println(err)
+    return err
+  }
+  fields := []*discordgo.MessageEmbedField{}
+  for _, e := range WheelEvents {
+    fields = append(fields, &discordgo.MessageEmbedField{
+      Name:  e,
+      Value: "",
+    })
+  }
+  return ctx.RespondEmbed(&discordgo.MessageEmbed{
+    Title:       "Wheel Events",
+    Description: "All events that can happen from the wheel",
+    Fields:      fields,
+  })
 }
 
 // Version implements ken.SlashCommand.

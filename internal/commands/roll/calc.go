@@ -3,6 +3,7 @@ package roll
 import (
 	"fmt"
 	"math"
+	"math/rand"
 
 	"github.com/mccune1224/betrayal/internal/discord"
 )
@@ -21,6 +22,9 @@ var (
 	legendaryLuck = 0.010
 	// 0.5%
 	mythicalLuck = 0.005
+
+	// list of luck types in order of rarity
+	rarityPriorities = []string{"common", "uncommon", "rare", "epic", "legendary", "mythical"}
 )
 
 func commonLuckChance(level float64) float64 {
@@ -133,6 +137,20 @@ func RollLuck(level float64, roll float64) string {
 
 	// Anything above like 397 is just mythical so just return that
 	return "mythical"
+}
+
+func rollAtRarity(level float64, allowedRarities []string) string {
+	roll := rand.Float64()
+	// roll until we get a rarity that is allowed
+	for {
+		rarity := RollLuck(level, roll)
+		for _, allowed := range allowedRarities {
+			if allowed == rarity {
+				return rarity
+			}
+		}
+		roll = rand.Float64()
+	}
 }
 
 // display chances of each type at a given level

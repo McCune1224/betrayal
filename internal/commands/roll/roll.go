@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/mccune1224/betrayal/internal/commands"
 	"github.com/mccune1224/betrayal/internal/commands/inventory"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/scheduler"
@@ -36,12 +38,18 @@ func (*Roll) Name() string {
 // Options implements ken.SlashCommand.
 func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 	targetTypes := []string{"item", "aa"}
-
-	options := []*discordgo.ApplicationCommandOptionChoice{}
+	targetOpts := []*discordgo.ApplicationCommandOptionChoice{}
 	for _, t := range targetTypes {
-		options = append(options, &discordgo.ApplicationCommandOptionChoice{
+		targetOpts = append(targetOpts, &discordgo.ApplicationCommandOptionChoice{
 			Name:  t,
 			Value: t,
+		})
+	}
+	minRarityOpts := []*discordgo.ApplicationCommandOptionChoice{}
+	for _, r := range rarityPriorities {
+		minRarityOpts = append(minRarityOpts, &discordgo.ApplicationCommandOptionChoice{
+			Name:  r,
+			Value: r,
 		})
 	}
 
@@ -83,37 +91,35 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 					Name:        "target",
 					Description: "target type",
 					Required:    true,
-					Choices:     options,
+					Choices:     targetOpts,
 				},
 				discord.IntCommandArg("luck", "level to roll for", true),
 				discord.UserCommandArg(true),
 			},
 		},
-		// {
-		// 	Type:        discordgo.ApplicationCommandOptionSubCommand,
-		// 	Name:        "debug",
-		// 	Description: "simulate roll and show chances",
-		// 	Options: []*discordgo.ApplicationCommandOption{
-		// 		{
-		// 			Type:        discordgo.ApplicationCommandOptionString,
-		// 			Name:        "target",
-		// 			Description: "target type",
-		// 			Required:    true,
-		// 			Choices:     options,
-		// 		},
-		// 		discord.IntCommandArg("level", "level to roll for", true),
-		// 		discord.UserCommandArg(false),
-		// 	},
-		// },
-		// {
-		// 	Type:        discordgo.ApplicationCommandOptionSubCommand,
-		// 	Name:        "table",
-		// 	Description: "Table view of luck calculations",
-		// 	Options: []*discordgo.ApplicationCommandOption{
-		// 		discord.IntCommandArg("low", "low range for luck", false),
-		// 		discord.IntCommandArg("high", "high range for luck", false),
-		// 	},
-		// },
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "rarity",
+			Description: "Roll for an item/any ability at a minimum rarity",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "target",
+					Description: "target type",
+					Required:    true,
+					Choices:     targetOpts,
+				},
+				discord.IntCommandArg("luck", "level to roll for", true),
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "min_rarity",
+					Description: "minimum rarity to roll for",
+					Required:    true,
+					Choices:     minRarityOpts,
+				},
+				discord.UserCommandArg(true),
+			},
+		},
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "wheel",
@@ -126,7 +132,7 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 func (r *Roll) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "manual", Run: r.luckManual},
-		// ken.SubCommandHandler{Name: "debug", Run: r.luckDebug},
+		ken.SubCommandHandler{Name: "rarity", Run: r.rollByMinimumRarity},
 		ken.SubCommandHandler{Name: "care_package", Run: r.luckCarePackage},
 		// ken.SubCommandHandler{Name: "table", Run: r.luckTable},
 		ken.SubCommandHandler{Name: "item_rain", Run: r.luckItemRain},
@@ -183,18 +189,6 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 	}
 
 	return discord.ErrorMessage(ctx, "Failed to get category", "Alex is a bad programmer")
-}
-
-func (r *Roll) luckDebug(ctx ken.SubCommandContext) (err error) {
-	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		return discord.NotAdminError(ctx)
-	}
-
-	rng := rand.Float64()
-	level := ctx.Options().GetByName("level").IntValue()
-	view := tableView(float64(level), rng)
-
-	return ctx.RespondMessage(view)
 }
 
 func (r *Roll) luckTable(ctx ken.SubCommandContext) (err error) {
@@ -292,48 +286,6 @@ func (r *Roll) wheel(ctx ken.SubCommandContext) (err error) {
 
 	s := ctx.GetSession()
 	e := ctx.GetEvent()
-	events := []string{
-		"Sunder",
-		"Lawful",
-		"Sunder Lawful",
-		"Everyone Gets a Doggo",
-		"Random 6pb",
-		"Duels",
-		"Everyone gets 3k",
-		"Random polymorph",
-		"Votes are public 24hr",
-		"Actions are public 24hr",
-		"Random Zingy",
-		"Random revival",
-		"Random role swap",
-		"Dimensional shatter",
-		"Random Russian revolver present",
-		"Care package present",
-		"Double event to next roll",
-		"RPS event",
-		"Coin bonuses randomized",
-		"Remove negative statuses from everyone",
-		"Everyone is drunk",
-		"Jury vote determines game winner",
-		"Game winner is determined by the wheel",
-		"Host quiz",
-		"Everyone can only use gifs/emojis for 6 hours",
-		"Everyone is made mad as a random role",
-		"Host choice",
-		"Random mythical item for all",
-		"Random legendary AA for all",
-		"Someone explodes",
-		"Graveyard and living switch places",
-		"Two people revive",
-		"oops all villagers",
-		"All good roles get elim immunity",
-		"All neut roles get elim immunity",
-		"All evil roles get elim immunity",
-		"Shotgun present",
-		"Two players explode",
-		"Three players randomly bent",
-		"Everyone can pick one AA to get",
-	}
 	// Send Placeholder message
 	base := fmt.Sprintf("%s Spinning the wheel...", discord.EmojiRoll)
 	tempMsg, err := s.ChannelMessageSend(e.ChannelID, base)
@@ -344,25 +296,76 @@ func (r *Roll) wheel(ctx ken.SubCommandContext) (err error) {
 	// precalculate rolls to reduce delay
 	rolls := []int{}
 	for i := 0; i < 7; i++ {
-		rolls = append(rolls, rand.Intn(len(events)))
+		rolls = append(rolls, rand.Intn(len(commands.WheelEvents)))
 	}
 
 	for i := 0; i < 7; i++ {
 		time.Sleep(450 * time.Millisecond)
 		// increase delay by 100 each iteration
-		event := events[rolls[i]]
+		event := commands.WheelEvents[rolls[i]]
 		_, err = s.ChannelMessageEdit(e.ChannelID, tempMsg.ID, fmt.Sprintf("%s %s", base, event))
 		if err != nil {
 			log.Println(err)
 			return discord.AlexError(ctx, "Failed to edit message")
 		}
 	}
-	final := events[rand.Intn(len(events))]
+	final := commands.WheelEvents[rand.Intn(len(commands.WheelEvents))]
 	// delet tempMsg
 	err = s.ChannelMessageDelete(e.ChannelID, tempMsg.ID)
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, "Failed to delete message")
 	}
-	return discord.SuccessfulMessage(ctx, fmt.Sprintf("%s Event Rolled!", final), "(use /list events to see all events)")
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("%s Event Rolled!", final), "(use `/list wheel_events` to see all possible random events.)")
+}
+
+func (r *Roll) rollByMinimumRarity(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	level := ctx.Options().GetByName("luck").IntValue()
+	minimumRarity := ctx.Options().GetByName("min_rarity").StringValue()
+	target := ctx.Options().GetByName("target").StringValue()
+
+	userInv, err := inventory.FetchHandler(ctx, r.models, true)
+	if err != nil {
+		return discord.ErrorMessage(ctx, "Failed to get user inventory", err.Error())
+	}
+
+	start := slices.Index(rarityPriorities, minimumRarity)
+
+	rarityOptions := rarityPriorities[start:]
+
+	rarity := rollAtRarity(float64(level), rarityOptions)
+
+	if target == "item" {
+		item, err := r.getRandomItem(rarity)
+		if err != nil {
+			log.Println(err)
+			return discord.AlexError(ctx, "Failed to get random item")
+		}
+		return ctx.RespondEmbed(&discordgo.MessageEmbed{
+			Title:       fmt.Sprintf("Got Item %s (%s)", item.Name, rarity),
+			Description: item.Description,
+			Footer: &discordgo.MessageEmbedFooter{
+				Text: fmt.Sprintf("%s Note, this will not auto add to an inventory.", discord.EmojiWarning),
+			},
+		})
+	} else {
+		ability, err := r.getRandomAnyAbility(userInv.GetInventory().RoleName, rarity)
+		if err != nil {
+			log.Println(err)
+			return discord.AlexError(ctx, "Failed to get random ability")
+		}
+		return ctx.RespondEmbed(&discordgo.MessageEmbed{
+			Title:       fmt.Sprintf("Got Ability %s (%s)", ability.Name, rarity),
+			Description: ability.Description,
+
+			Footer: &discordgo.MessageEmbedFooter{
+				Text: fmt.Sprintf("%s Note, this will not auto add to an inventory.", discord.EmojiWarning),
+			},
+		})
+	}
 }
