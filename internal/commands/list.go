@@ -241,22 +241,22 @@ func (l *List) listPlayers(ctx ken.SubCommandContext) (err error) {
 }
 
 func (*List) listWheel(ctx ken.SubCommandContext) (err error) {
-  if err := ctx.Defer(); err != nil {
-    log.Println(err)
-    return err
-  }
-  fields := []*discordgo.MessageEmbedField{}
-  for _, e := range WheelEvents {
-    fields = append(fields, &discordgo.MessageEmbedField{
-      Name:  e,
-      Value: "",
-    })
-  }
-  return ctx.RespondEmbed(&discordgo.MessageEmbed{
-    Title:       "Wheel Events",
-    Description: "All events that can happen from the wheel",
-    Fields:      fields,
-  })
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	fields := []*discordgo.MessageEmbedField{}
+	for _, e := range WheelEvents {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:  e,
+			Value: "",
+		})
+	}
+	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+		Title:       "Wheel Events",
+		Description: "All events that can happen from the wheel",
+		Fields:      fields,
+	})
 }
 
 // Version implements ken.SlashCommand.
