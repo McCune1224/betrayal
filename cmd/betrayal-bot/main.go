@@ -187,6 +187,7 @@ func logHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	msg := processOptions(s, options)
 
 	logOutput := fmt.Sprintf("%s - /%s %s - %s", i.Member.User.Username, i.ApplicationCommandData().Name, msg, util.GetEstTimeStamp())
+	log.Println("[CMD] - " + logOutput)
 	_, err := s.ChannelMessageSend(testLoggerID, discord.Code(logOutput))
 	if err != nil {
 		log.Println(err)

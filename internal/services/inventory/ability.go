@@ -112,6 +112,6 @@ func (ih *InventoryHandler) SetAbilityCharges(abilityName string, charge int) er
 	if i == -1 {
 		return ErrAbilityNotFound
 	}
-	ih.i.AnyAbilities[i] = fmt.Sprintf("%s [%d]", bestIaas.GetName(), charge)
+	ih.i.Abilities[i] = fmt.Sprintf("%s [%d]", bestIaas.GetName(), charge)
 	return ih.m.Inventories.UpdateAbilities(ih.i)
 }
