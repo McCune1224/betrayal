@@ -2,6 +2,7 @@ package discord
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -106,15 +107,43 @@ func GetChannelByName(s *discordgo.Session, e *discordgo.InteractionCreate, name
 	target := &discordgo.Channel{}
 
 	for _, c := range channels {
-    if strings.EqualFold(c.Name, name) {
-      target = c
-      break
-    }
+		if strings.EqualFold(c.Name, name) {
+			target = c
+			break
+		}
 	}
 
-  if target.ID == "" {
-    return nil, ErrChannelNotFound
-  }
+	if target.ID == "" {
+		return nil, ErrChannelNotFound
+	}
 
-  return target, nil
+	return target, nil
+}
+
+func GetChannelMembers(s *discordgo.Session, e *discordgo.InteractionCreate, channelID string) ([]*discordgo.Member, error) {
+	members, err := s.GuildMembers(BetraylGuildID, "", 1000)
+	if err != nil {
+		return nil, err
+	}
+
+	permissions, err := s.State.UserChannelPermissions(s.State.User.ID, channelID)
+	if err != nil {
+		fmt.Println("Error getting user permissions,", err)
+		return nil, err
+	}
+
+	allowedMembers := []*discordgo.Member{}
+	guildRoles, _ := s.GuildRoles(e.GuildID)
+	for _, member := range members {
+		if permissions&discordgo.PermissionViewChannel == discordgo.PermissionViewChannel {
+			for _, rid := range member.Roles {
+				for _, r := range guildRoles {
+					if rid == r.ID && r.Name == "Participant" {
+						allowedMembers = append(allowedMembers, member)
+					}
+				}
+			}
+		}
+	}
+	return allowedMembers, nil
 }

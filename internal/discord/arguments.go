@@ -6,6 +6,7 @@ import "github.com/bwmarrin/discordgo"
 // Thse are really just here because indentation hell is a thing with discordgo.
 // I'm not sure if I like this or not, but it's better than the alternative.
 
+// Require an option called "user" within the command.
 func UserCommandArg(required bool) *discordgo.ApplicationCommandOption {
 	return &discordgo.ApplicationCommandOption{
 		Type:        discordgo.ApplicationCommandOptionUser,
@@ -54,6 +55,7 @@ func BoolCommandArg(
 	}
 }
 
+// Require an option called "channel" within the command.
 func ChannelCommandArg(required bool) *discordgo.ApplicationCommandOption {
 	return &discordgo.ApplicationCommandOption{
 		Type:        discordgo.ApplicationCommandOptionChannel,

@@ -111,6 +111,14 @@ func (*Alliance) Options() []*discordgo.ApplicationCommandOption {
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "refresh",
+					Description: "Update an alliance channel to match the current alliance members. (admin only)",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.ChannelCommandArg(true),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "pending",
 					Description: "View all pending alliance requests and invites. (admin only)",
 				},
@@ -142,6 +150,7 @@ func (a *Alliance) Run(ctx ken.Context) (err error) {
 				ken.SubCommandHandler{Name: "invite", Run: a.adminApproveInvite},
 				ken.SubCommandHandler{Name: "pending", Run: a.adminPending},
 				ken.SubCommandHandler{Name: "wipe", Run: a.adminWipe},
+				ken.SubCommandHandler{Name: "refresh", Run: a.adminRefresh},
 			},
 		},
 	)
@@ -601,4 +610,57 @@ func (a *Alliance) adminPending(ctx ken.SubCommandContext) (err error) {
 	}
 
 	return ctx.RespondEmbed(msg)
+}
+
+func (a *Alliance) adminRefresh(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.NotAdminError(ctx)
+	}
+
+	channelOpt := ctx.Options().GetByName("channel").ChannelValue(ctx)
+
+	potentialAlliance, err := a.models.Alliances.GetByChannelID(channelOpt.ID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to verify if channel is already an alliance channel exists or not")
+	}
+	if potentialAlliance.ChannelID != "" {
+		a.models.Alliances.Delete(potentialAlliance)
+		if err != nil {
+			log.Println(err)
+			return discord.AlexError(ctx, "Failed to delete alliance")
+		}
+	}
+
+	allowedParticipants, err := discord.GetChannelMembers(ctx.GetSession(), ctx.GetEvent(), channelOpt.ID)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to get channel members")
+	}
+
+	newAlliance := &data.Alliance{
+		Name:      channelOpt.Name,
+		ChannelID: channelOpt.ID,
+	}
+
+	for _, m := range allowedParticipants {
+		newAlliance.MemberIDs = append(newAlliance.MemberIDs, m.User.ID)
+	}
+	err = a.models.Alliances.Insert(newAlliance)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to insert new alliance")
+	}
+
+	allianceMembersStr := "Includes the following participants:\n"
+	for _, m := range newAlliance.MemberIDs {
+		allianceMembersStr += fmt.Sprintf("%s\n", discord.MentionUser(m))
+	}
+
+	return discord.SuccessfulMessage(ctx, fmt.Sprintf("Alliance %s has been refreshed.", newAlliance.Name), fmt.Sprintf("Alliance members:\n%s", allianceMembersStr))
 }

@@ -108,6 +108,16 @@ func (am *AllianceModel) GetByName(name string) (*Alliance, error) {
 	return &alliance, nil
 }
 
+func (am *AllianceModel) GetByChannelID(channelID string) (*Alliance, error) {
+	var alliance Alliance
+	query := `SELECT * FROM alliances WHERE channel_id=$1`
+	err := am.DB.Get(&alliance, query, channelID)
+	if err != nil {
+		return nil, err
+	}
+	return &alliance, nil
+}
+
 func (am *AllianceModel) GetByMemberID(discordID string) (*Alliance, error) {
 	var alliance Alliance
 	// need to check if any entry has the member id in the member_ids array
