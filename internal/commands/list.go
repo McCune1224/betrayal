@@ -310,8 +310,8 @@ func (l *List) listPurchaseableItems(ctx ken.SubCommandContext) (err error) {
 	fields := []*discordgo.MessageEmbedField{}
 	for _, i := range accurateItems {
 		fields = append(fields, &discordgo.MessageEmbedField{
-			Name:  i.Name,
-			Value: fmt.Sprintf("%d coins", i.Cost),
+			Name:  fmt.Sprintf("%s - %d (%s)", i.Name, i.Cost, i.Rarity),
+			Value: i.Description,
 		})
 	}
 
