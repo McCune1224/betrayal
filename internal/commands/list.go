@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -109,6 +110,11 @@ func (*List) Options() []*discordgo.ApplicationCommandOption {
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Description: "List of all active players",
 		},
+		{
+			Name:        "purchaseable_items",
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Description: "List of all items that you can purchase. (Confessional Only command)",
+		},
 	}
 }
 
@@ -121,6 +127,7 @@ func (l *List) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "wheel_events", Run: l.listWheel},
 		ken.SubCommandHandler{Name: "statuses", Run: l.listStatuses},
 		ken.SubCommandHandler{Name: "players", Run: l.listPlayers},
+		ken.SubCommandHandler{Name: "purchaseable_items", Run: l.listPurchaseableItems},
 	)
 }
 
@@ -262,6 +269,59 @@ func (*List) listWheel(ctx ken.SubCommandContext) (err error) {
 		Fields: append([]*discordgo.MessageEmbedField{
 			left, right,
 		}),
+	})
+}
+
+func (l *List) listPurchaseableItems(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	inventory, err := l.models.Inventories.GetByDiscordID(ctx.GetEvent().Member.User.ID)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	if inventory.UserPinChannel != ctx.GetEvent().ChannelID {
+		log.Println(err)
+		return discord.NotConfessionalError(ctx, inventory.UserPinChannel)
+	}
+
+	items, err := l.models.Items.GetAllWithinCost(inventory.Coins)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to fetch purchasable items")
+	}
+
+	accurateItems := []data.Item{}
+	for _, i := range items {
+		if i.Cost == 0 {
+			continue
+		}
+		accurateItems = append(accurateItems, i)
+	}
+	// sort by cost
+	sort.Slice(accurateItems, func(i, j int) bool {
+		return accurateItems[i].Cost < accurateItems[j].Cost
+	})
+
+	fields := []*discordgo.MessageEmbedField{}
+	for _, i := range accurateItems {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:  i.Name,
+			Value: fmt.Sprintf("%d coins", i.Cost),
+		})
+	}
+
+	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+		Title:       "Purchaseable Items",
+		Description: fmt.Sprintf("All items that you can request a purchase for with your current coins %d", inventory.Coins),
+		Fields:      fields,
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: fmt.Sprintf("%s When in doubt, buy a Tip! %s", discord.EmojiInfo, discord.EmojiInfo),
+		},
 	})
 }
 

@@ -107,6 +107,15 @@ func (im *ItemModel) GetAll() ([]Item, error) {
 	return items, nil
 }
 
+func (im *ItemModel) GetAllWithinCost(cost int64) ([]Item, error) {
+	var items []Item
+	err := im.DB.Select(&items, "SELECT * FROM items WHERE cost <= $1", cost)
+	if err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 func (im *ItemModel) GetRandomByRarity(rarity string) (*Item, error) {
 	var item Item
 
