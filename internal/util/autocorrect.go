@@ -62,6 +62,9 @@ func FuzzyFind(arg string, choices []string) (bestString string, lowesetDistance
 	f := fuzzy.RankFindFold(arg, choices)
 	if len(f) == 0 {
 		for i := range choices {
+			if len(choices[i]) == 0 {
+				continue
+			}
 			lv := LevenshteinDistance(arg, choices[i])
 			if lv < lowestDistance {
 				lowestDistance = lv
