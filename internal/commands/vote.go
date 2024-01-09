@@ -41,6 +41,33 @@ func (*Vote) Options() []*discordgo.ApplicationCommandOption {
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "batch",
 			Description: "Batch vote players up to 5 players",
+			Options: []*discordgo.ApplicationCommandOption{
+				discord.UserCommandArg(true),
+				{
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Name:        "user2",
+					Description: "User to vote",
+					Required:    false,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Name:        "user3",
+					Description: "User to vote",
+					Required:    false,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Name:        "user4",
+					Description: "User to vote",
+					Required:    false,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Name:        "user5",
+					Description: "User to vote",
+					Required:    false,
+				},
+			},
 		},
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -76,7 +103,37 @@ func (v *Vote) batch(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	return discord.SuccessfulMessage(ctx, "Alex needs to make this", "TODO: stop being lazy")
+
+	users := []*discordgo.User{ctx.Options().GetByName("user").UserValue(ctx)}
+
+	for i := 2; i <= 5; i++ {
+		user, ok := ctx.Options().GetByNameOptional(fmt.Sprintf("user%d", i))
+		if ok {
+			users = append(users, user.UserValue(ctx))
+		}
+	}
+
+	voteMsg := fmt.Sprintf("%s voted for", ctx.User().Username)
+	for _, user := range users {
+		voteMsg += fmt.Sprintf(" %s", user.Username)
+	}
+
+	voteChannel, err := v.models.Votes.Get()
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Vote location not set", "Please have admin set a vote location using /vote location")
+	}
+	sesh := ctx.GetSession()
+	_, err = sesh.ChannelMessageSend(voteChannel.ChannelID, discord.Code(voteMsg))
+	if err != nil {
+		return discord.AlexError(ctx, "Failed to send vote message")
+	}
+
+	votedFor := ""
+	for _, user := range users {
+		votedFor += fmt.Sprintf("%s ", discord.MentionUser(user.Username))
+	}
+	return discord.SuccessfulMessage(ctx, "Vote Sent for Processing.", fmt.Sprintf("Voted for %s", votedFor))
 }
 
 func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
@@ -107,7 +164,7 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "Failed to send vote message")
 	}
 
-	return discord.SuccessfulMessage(ctx, "Vote Sent for Processing.", fmt.Sprintf("Voted for %s", voteUser.Username))
+	return discord.SuccessfulMessage(ctx, "Vote Sent for Processing.", fmt.Sprintf("Voted for %s", discord.MentionUser(voteUser.ID)))
 }
 
 func (v *Vote) location(ctx ken.SubCommandContext) (err error) {
