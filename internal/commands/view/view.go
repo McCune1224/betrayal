@@ -162,7 +162,8 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	nameArg := ctx.Options().GetByName("name").StringValue()
-	ability, err := v.models.Abilities.GetByFuzzy(nameArg)
+	// ability, err := v.models.Abilities.GetByFuzzy(nameArg)
+	ability, err := v.models.Abilities.GetByName(nameArg)
 	if err != nil {
 		discord.ErrorMessage(ctx,
 			"Error Finding Ability",
@@ -191,7 +192,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 			},
 		},
 	}
-	aa, _ := v.models.Abilities.GetAnyAbilitybyFuzzy(ability.Name)
+	aa, _ := v.models.Abilities.GetAnyAbilityByName(ability.Name)
 	if aa != nil {
 		msg := ""
 		if aa.RoleSpecific != "" {
@@ -246,7 +247,7 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	nameArg := ctx.Options().GetByName("name").StringValue()
-	perk, err := v.models.Perks.GetByFuzzy(nameArg)
+	perk, err := v.models.Perks.GetByName(nameArg)
 	if err != nil {
 		ctx.RespondError("Unable to find Perk",
 			fmt.Sprintf("Unable to find Perk: %s", nameArg),
@@ -303,7 +304,7 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 
 func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
 	data := ctx.Options().GetByName("name").StringValue()
-	item, err := v.models.Items.GetByFuzzy(data)
+	item, err := v.models.Items.GetByName(data)
 	if err != nil {
 		discord.ErrorMessage(ctx,
 			"Unable to find Item",
