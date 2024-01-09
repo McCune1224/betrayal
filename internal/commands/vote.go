@@ -131,7 +131,7 @@ func (v *Vote) batch(ctx ken.SubCommandContext) (err error) {
 
 	votedFor := ""
 	for _, user := range users {
-		votedFor += fmt.Sprintf("%s ", discord.MentionUser(user.Username))
+		votedFor += fmt.Sprintf("%s ", discord.MentionUser(user.ID))
 	}
 	return discord.SuccessfulMessage(ctx, "Vote Sent for Processing.", fmt.Sprintf("Voted for %s", votedFor))
 }
