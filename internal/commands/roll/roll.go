@@ -122,6 +122,23 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 		},
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "player",
+			Description: "Pick a random player",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Name:        "target_a",
+					Description: "First player to choose from",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Name:        "target_b",
+					Description: "Second player to choose from",
+				},
+			},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "wheel",
 			Description: "Spin the wheel for a game event",
 		},
@@ -138,6 +155,7 @@ func (r *Roll) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "item_rain", Run: r.luckItemRain},
 		ken.SubCommandHandler{Name: "power_drop", Run: r.luckPowerDrop},
 		ken.SubCommandHandler{Name: "wheel", Run: r.wheel},
+		ken.SubCommandHandler{Name: "player", Run: r.player},
 	)
 }
 
@@ -367,5 +385,17 @@ func (r *Roll) rollByMinimumRarity(ctx ken.SubCommandContext) (err error) {
 				Text: fmt.Sprintf("%s Note, this will not auto add to an inventory.", discord.EmojiWarning),
 			},
 		})
+	}
+}
+
+func (r *Roll) player(ctx ken.SubCommandContext) (err error) {
+	playerA := ctx.Options().GetByName("target_a").UserValue(ctx)
+	playerB := ctx.Options().GetByName("target_b").UserValue(ctx)
+
+	roll := rand.Intn(2)
+	if roll == 0 {
+		return ctx.RespondMessage(fmt.Sprintf("%s %s was chosen", discord.EmojiRoll, playerA.Mention()))
+	} else {
+		return ctx.RespondMessage(fmt.Sprintf("%s %s was chosen", discord.EmojiRoll, playerB.Mention()))
 	}
 }
