@@ -22,3 +22,29 @@ func (q *Queries) CreateRolePerkJoin(ctx context.Context, arg CreateRolePerkJoin
 	_, err := q.db.Exec(ctx, createRolePerkJoin, arg.RoleID, arg.PerkID)
 	return err
 }
+
+const listRolePerkForRole = `-- name: ListRolePerkForRole :many
+select perk_info.id, perk_info.name, perk_info.description from role_perk
+inner join perk_info on role_perk.perk_id = perk_info.id
+where role_perk.role_id = $1
+`
+
+func (q *Queries) ListRolePerkForRole(ctx context.Context, roleID int32) ([]PerkInfo, error) {
+	rows, err := q.db.Query(ctx, listRolePerkForRole, roleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PerkInfo
+	for rows.Next() {
+		var i PerkInfo
+		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

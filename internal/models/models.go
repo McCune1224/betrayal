@@ -7,6 +7,8 @@ package models
 import (
 	"database/sql/driver"
 	"fmt"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Alignment string
@@ -62,6 +64,7 @@ const (
 	RarityLEGENDARY    Rarity = "LEGENDARY"
 	RarityMYTHICAL     Rarity = "MYTHICAL"
 	RarityROLESPECIFIC Rarity = "ROLE_SPECIFIC"
+	RarityUNIQUE       Rarity = "UNIQUE"
 )
 
 func (e *Rarity) Scan(src interface{}) error {
@@ -135,6 +138,27 @@ type PerkInfo struct {
 	ID          int32  `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+}
+
+type Player struct {
+	ID        int32       `json:"id"`
+	RoleID    pgtype.Int4 `json:"role_id"`
+	Alive     bool        `json:"alive"`
+	Coins     int32       `json:"coins"`
+	Luck      int32       `json:"luck"`
+	Alignment Alignment   `json:"alignment"`
+}
+
+type PlayerConfessional struct {
+	PlayerID     int32 `json:"player_id"`
+	ChannelID    int32 `json:"channel_id"`
+	PinMessageID int32 `json:"pin_message_id"`
+}
+
+type PlayerItem struct {
+	PlayerID int32 `json:"player_id"`
+	ItemID   int32 `json:"item_id"`
+	Quantity int32 `json:"quantity"`
 }
 
 type Role struct {

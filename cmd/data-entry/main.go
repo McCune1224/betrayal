@@ -65,24 +65,31 @@ func main() {
 	}
 	defer db.Close()
 
+	// file, err := os.Open(*fileName)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	//
+	// if strings.Contains(file.Name(), "GOOD") {
+	// 	alignment := string(models.AlignmentGOOD)
+	// 	SyncRolesCsv(db, file, alignment)
+	// } else if strings.Contains(file.Name(), "EVIL") {
+	// 	alignment := string(models.AlignmentEVIL)
+	// 	SyncRolesCsv(db, file, alignment)
+	// } else if strings.Contains(file.Name(), "NEUTRAL") {
+	// 	alignment := string(models.AlignmentNEUTRAL)
+	// 	SyncRolesCsv(db, file, alignment)
+	// } else {
+	// 	log.Fatal("Invalid alignment")
+	// }
+	// file.Close()
+
 	file, err := os.Open(*fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
-
-	if strings.Contains(file.Name(), "GOOD") {
-		alignment := string(models.AlignmentGOOD)
-		SyncRolesCsv(db, file, alignment)
-	} else if strings.Contains(file.Name(), "EVIL") {
-		alignment := string(models.AlignmentEVIL)
-		SyncRolesCsv(db, file, alignment)
-	} else if strings.Contains(file.Name(), "NEUTRAL") {
-		alignment := string(models.AlignmentNEUTRAL)
-		SyncRolesCsv(db, file, alignment)
-	} else {
-		log.Fatal("Invalid alignment")
-	}
+	SyncItemsCsv(db, file)
+	file.Close()
 }
 
 type TempCreateAbilityInfoParams struct {
@@ -153,12 +160,6 @@ func SyncRolesCsv(db *pgxpool.Pool, file *os.File, alignment string) error {
 	}
 
 	q := models.New(db)
-
-	// err := q.NukeRoles(context.Background())
-	// if err != nil {
-	// 	log.Println("Error Nuking Roles", err)
-	// 	return err
-	// }
 
 	// NOTE: Need to create the role first before creating the ability/passive, otherwise the ability/passive will be created with the wrong role_id
 	// hence why this is in its own loop
@@ -317,24 +318,75 @@ func parseRoleChunk(chunk [][]string) (models.CreateRoleParams, []TempCreateAbil
 	return roleParams, tempRoleAbilityDetailParams, rolePassiveDetailParams, nil
 }
 
-func SyncItemsCVS(db *pgxpool.Pool, file *os.File) error {
+func SyncItemsCsv(db *pgxpool.Pool, file *os.File) error {
 	reader := csv.NewReader(file)
-	chunks := [][][]string{}
-	currChunk := [][]string{}
-	for {
-		record, err := reader.Read()
-		if err == io.EOF {
-			chunks = append(chunks, currChunk)
-			break
+	csv, err := reader.ReadAll()
+	if err != nil {
+		return err
+	}
+	for i, entry := range csv {
+		if i == 0 || i == 1 {
+			continue
 		}
+
+		item := models.CreateItemParams{
+			// Rarity:      entry[1],
+			Name:        entry[2],
+			Description: entry[5],
+		}
+		switch strings.ToUpper(entry[1]) {
+		case "COMMON":
+			item.Rarity = models.RarityCOMMON
+		case "UNCOMMON":
+			item.Rarity = models.RarityUNCOMMON
+		case "RARE":
+			item.Rarity = models.RarityRARE
+		case "EPIC":
+			item.Rarity = models.RarityEPIC
+		case "LEGENDARY":
+			item.Rarity = models.RarityLEGENDARY
+		case "MYTHICAL":
+			item.Rarity = models.RarityMYTHICAL
+		case "UNIQUE":
+			item.Rarity = models.RarityUNIQUE
+		}
+
+		// FIXME: This is stinky and very specific to the item csv, Too Bad!
+		strCost := entry[3]
+		if strCost == "X" {
+			item.Cost = 0
+		} else {
+			cost, err := strconv.ParseInt(strCost, 10, 64)
+			if err != nil {
+				return err
+			}
+			item.Cost = int32(cost)
+		}
+
+		categories := entry[4]
+		parsedCategories := strings.Split(categories, "/")
+		for i, category := range parsedCategories {
+			parsedCategories[i] = strings.TrimSpace(category)
+		}
+
+		q := models.New(db)
+
+		dbItem, err := q.CreateItem(context.Background(), item)
 		if err != nil {
+			log.Println("Error Creating Item", err)
 			return err
 		}
-		if record[1] == "" {
-			chunks = append(chunks, currChunk)
-			currChunk = [][]string{}
-		} else {
-			currChunk = append(currChunk, record)
+
+		for _, category := range parsedCategories {
+			dbCategory, err := q.GetCategoryByFuzzy(context.Background(), strings.ToUpper(category))
+			if err != nil {
+				log.Println("Error Getting Category ID", category, err)
+			}
+			q.CreateItemCategoryJoin(context.Background(), models.CreateItemCategoryJoinParams{
+				ItemID:     dbItem.ID,
+				CategoryID: dbCategory.ID,
+			})
 		}
 	}
+	return nil
 }
