@@ -15,7 +15,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/mccune1224/betrayal/internal/commands/help"
 	"github.com/mccune1224/betrayal/internal/discord"
-	"github.com/mccune1224/betrayal/internal/scheduler"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 	"github.com/zekrotja/ken/state"
@@ -35,8 +34,8 @@ type config struct {
 
 // Global app struct
 type app struct {
-	dbPool          *pgxpool.Pool
-	scheduler       scheduler.BetrayalScheduler
+	dbPool *pgxpool.Pool
+	// scheduler       scheduler.BetrayalScheduler
 	betrayalManager *ken.Ken
 	conifg          config
 }
@@ -45,14 +44,15 @@ type app struct {
 // (AKA basically every command)
 type BetrayalCommand interface {
 	ken.Command
-	Initialize(*pgxpool.Pool, *scheduler.BetrayalScheduler)
+	Initialize(*pgxpool.Pool)
 }
 
 // Wrapper for ken.RegisterBetrayalCommands for inserting DB access
 func (a *app) RegisterBetrayalCommands(commands ...BetrayalCommand) int {
 	tally := 0
 	for _, command := range commands {
-		command.Initialize(a.dbPool, &a.scheduler)
+		// command.Initialize(a.dbPool, &a.scheduler)
+		command.Initialize(a.dbPool)
 		err := a.betrayalManager.RegisterCommands(command)
 		if err != nil {
 			log.Fatal(err)
@@ -152,8 +152,8 @@ func main() {
 
 	// start the scheduler
 
-	app.scheduler.QueueScheduleJobs(app.betrayalManager.Session())
-	app.scheduler.Start()
+	// app.scheduler.QueueScheduleJobs(app.betrayalManager.Session())
+	// app.scheduler.Start()
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)

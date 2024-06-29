@@ -3,18 +3,15 @@ package help
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/mccune1224/betrayal/internal/scheduler"
 	"github.com/zekrotja/ken"
 )
 
 type Help struct {
-	dbPool    *pgxpool.Pool
-	scheduler *scheduler.BetrayalScheduler
+	dbPool *pgxpool.Pool
 }
 
-func (h *Help) Initialize(pool *pgxpool.Pool, scheduler *scheduler.BetrayalScheduler) {
+func (h *Help) Initialize(pool *pgxpool.Pool) {
 	h.dbPool = pool
-	h.scheduler = scheduler
 }
 
 var _ ken.SlashCommand = (*Help)(nil)
