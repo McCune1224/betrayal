@@ -2,18 +2,18 @@ package help
 
 import (
 	"github.com/bwmarrin/discordgo"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mccune1224/betrayal/internal/scheduler"
-	"github.com/mccune1224/betrayal/pkg/data"
 	"github.com/zekrotja/ken"
 )
 
 type Help struct {
-	models    data.Models
+	dbPool    *pgxpool.Pool
 	scheduler *scheduler.BetrayalScheduler
 }
 
-func (h *Help) Initialize(models data.Models, scheduler *scheduler.BetrayalScheduler) {
-	h.models = models
+func (h *Help) Initialize(pool *pgxpool.Pool, scheduler *scheduler.BetrayalScheduler) {
+	h.dbPool = pool
 	h.scheduler = scheduler
 }
 
