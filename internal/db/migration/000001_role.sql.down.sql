@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS role CASCADE;
+DROP TYPE alignment;
+DROP TYPE rarity;
+
+
