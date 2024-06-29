@@ -118,6 +118,19 @@ type Category struct {
 	Name string `json:"name"`
 }
 
+type Item struct {
+	ID          int32  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Rarity      Rarity `json:"rarity"`
+	Cost        int32  `json:"cost"`
+}
+
+type ItemCategory struct {
+	ItemID     int32 `json:"item_id"`
+	CategoryID int32 `json:"category_id"`
+}
+
 type PerkInfo struct {
 	ID          int32  `json:"id"`
 	Name        string `json:"name"`
@@ -139,4 +152,10 @@ type RoleAbility struct {
 type RolePerk struct {
 	RoleID int32 `json:"role_id"`
 	PerkID int32 `json:"perk_id"`
+}
+
+type Status struct {
+	ID          int32  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }

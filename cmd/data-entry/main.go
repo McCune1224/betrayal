@@ -316,3 +316,25 @@ func parseRoleChunk(chunk [][]string) (models.CreateRoleParams, []TempCreateAbil
 
 	return roleParams, tempRoleAbilityDetailParams, rolePassiveDetailParams, nil
 }
+
+func SyncItemsCVS(db *pgxpool.Pool, file *os.File) error {
+	reader := csv.NewReader(file)
+	chunks := [][][]string{}
+	currChunk := [][]string{}
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			chunks = append(chunks, currChunk)
+			break
+		}
+		if err != nil {
+			return err
+		}
+		if record[1] == "" {
+			chunks = append(chunks, currChunk)
+			currChunk = [][]string{}
+		} else {
+			currChunk = append(currChunk, record)
+		}
+	}
+}
