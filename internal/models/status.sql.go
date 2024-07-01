@@ -26,7 +26,8 @@ func (q *Queries) CreateStatus(ctx context.Context, arg CreateStatusParams) (Sta
 }
 
 const deleteStatus = `-- name: DeleteStatus :exec
-DELETE FROM status WHERE id = $1
+delete from status
+where id = $1
 `
 
 func (q *Queries) DeleteStatus(ctx context.Context, id int32) error {
@@ -35,18 +36,23 @@ func (q *Queries) DeleteStatus(ctx context.Context, id int32) error {
 }
 
 const getStatusByFuzzy = `-- name: GetStatusByFuzzy :one
-SELECT id, name, description from status WHERE name ILIKE $1
+select id, name, description
+from status
+order by levenshtein(name, $1) asc
+limit 1
 `
 
-func (q *Queries) GetStatusByFuzzy(ctx context.Context, name string) (Status, error) {
-	row := q.db.QueryRow(ctx, getStatusByFuzzy, name)
+func (q *Queries) GetStatusByFuzzy(ctx context.Context, levenshtein interface{}) (Status, error) {
+	row := q.db.QueryRow(ctx, getStatusByFuzzy, levenshtein)
 	var i Status
 	err := row.Scan(&i.ID, &i.Name, &i.Description)
 	return i, err
 }
 
 const getStatusByName = `-- name: GetStatusByName :one
-SELECT id, name, description from status WHERE name = $1
+select id, name, description
+from status
+where name = $1
 `
 
 func (q *Queries) GetStatusByName(ctx context.Context, name string) (Status, error) {
@@ -57,7 +63,8 @@ func (q *Queries) GetStatusByName(ctx context.Context, name string) (Status, err
 }
 
 const listStatus = `-- name: ListStatus :many
-SELECT id, name, description from status
+select id, name, description
+from status
 `
 
 func (q *Queries) ListStatus(ctx context.Context) ([]Status, error) {

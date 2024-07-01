@@ -39,7 +39,8 @@ func (q *Queries) CreateItem(ctx context.Context, arg CreateItemParams) (Item, e
 }
 
 const deleteItem = `-- name: DeleteItem :exec
-DELETE FROM item WHERE id = $1
+delete from item
+where id = $1
 `
 
 func (q *Queries) DeleteItem(ctx context.Context, id int32) error {
@@ -48,7 +49,9 @@ func (q *Queries) DeleteItem(ctx context.Context, id int32) error {
 }
 
 const getItem = `-- name: GetItem :one
-SELECT id, name, description, rarity, cost from item WHERE id = $1
+select id, name, description, rarity, cost
+from item
+where id = $1
 `
 
 func (q *Queries) GetItem(ctx context.Context, id int32) (Item, error) {
@@ -65,11 +68,14 @@ func (q *Queries) GetItem(ctx context.Context, id int32) (Item, error) {
 }
 
 const getItemByFuzzy = `-- name: GetItemByFuzzy :one
-SELECT id, name, description, rarity, cost from item WHERE name ILIKE $1
+select id, name, description, rarity, cost
+from item
+order by levenshtein(name, $1) asc
+limit 1
 `
 
-func (q *Queries) GetItemByFuzzy(ctx context.Context, name string) (Item, error) {
-	row := q.db.QueryRow(ctx, getItemByFuzzy, name)
+func (q *Queries) GetItemByFuzzy(ctx context.Context, levenshtein interface{}) (Item, error) {
+	row := q.db.QueryRow(ctx, getItemByFuzzy, levenshtein)
 	var i Item
 	err := row.Scan(
 		&i.ID,
@@ -82,7 +88,9 @@ func (q *Queries) GetItemByFuzzy(ctx context.Context, name string) (Item, error)
 }
 
 const getItemByName = `-- name: GetItemByName :one
-SELECT id, name, description, rarity, cost from item WHERE name = $1
+select id, name, description, rarity, cost
+from item
+where name = $1
 `
 
 func (q *Queries) GetItemByName(ctx context.Context, name string) (Item, error) {
@@ -99,7 +107,8 @@ func (q *Queries) GetItemByName(ctx context.Context, name string) (Item, error) 
 }
 
 const listItem = `-- name: ListItem :many
-SELECT id, name, description, rarity, cost from item
+select id, name, description, rarity, cost
+from item
 `
 
 func (q *Queries) ListItem(ctx context.Context) ([]Item, error) {

@@ -42,7 +42,8 @@ func (q *Queries) CreateAbilityInfo(ctx context.Context, arg CreateAbilityInfoPa
 }
 
 const deleteAbilityInfo = `-- name: DeleteAbilityInfo :exec
-DELETE FROM ability_info WHERE id = $1
+delete from ability_info
+where id = $1
 `
 
 func (q *Queries) DeleteAbilityInfo(ctx context.Context, id int32) error {
@@ -51,7 +52,9 @@ func (q *Queries) DeleteAbilityInfo(ctx context.Context, id int32) error {
 }
 
 const getAbilityInfo = `-- name: GetAbilityInfo :one
-SELECT id, name, description, default_charges, any_ability, rarity from ability_info WHERE id = $1
+select id, name, description, default_charges, any_ability, rarity
+from ability_info
+where id = $1
 `
 
 func (q *Queries) GetAbilityInfo(ctx context.Context, id int32) (AbilityInfo, error) {
@@ -69,11 +72,14 @@ func (q *Queries) GetAbilityInfo(ctx context.Context, id int32) (AbilityInfo, er
 }
 
 const getAbilityInfoByFuzzy = `-- name: GetAbilityInfoByFuzzy :one
-SELECT id, name, description, default_charges, any_ability, rarity from ability_info WHERE name ILIKE $1
+select id, name, description, default_charges, any_ability, rarity
+from ability_info
+order by levenshtein(name, $1) asc
+limit 1
 `
 
-func (q *Queries) GetAbilityInfoByFuzzy(ctx context.Context, name string) (AbilityInfo, error) {
-	row := q.db.QueryRow(ctx, getAbilityInfoByFuzzy, name)
+func (q *Queries) GetAbilityInfoByFuzzy(ctx context.Context, levenshtein interface{}) (AbilityInfo, error) {
+	row := q.db.QueryRow(ctx, getAbilityInfoByFuzzy, levenshtein)
 	var i AbilityInfo
 	err := row.Scan(
 		&i.ID,
@@ -87,7 +93,9 @@ func (q *Queries) GetAbilityInfoByFuzzy(ctx context.Context, name string) (Abili
 }
 
 const getAbilityInfoByName = `-- name: GetAbilityInfoByName :one
-SELECT id, name, description, default_charges, any_ability, rarity from ability_info WHERE name = $1
+select id, name, description, default_charges, any_ability, rarity
+from ability_info
+where name = $1
 `
 
 func (q *Queries) GetAbilityInfoByName(ctx context.Context, name string) (AbilityInfo, error) {
@@ -105,7 +113,8 @@ func (q *Queries) GetAbilityInfoByName(ctx context.Context, name string) (Abilit
 }
 
 const listAbilityInfo = `-- name: ListAbilityInfo :many
-SELECT id, name, description, default_charges, any_ability, rarity from ability_info
+select id, name, description, default_charges, any_ability, rarity
+from ability_info
 `
 
 func (q *Queries) ListAbilityInfo(ctx context.Context) ([]AbilityInfo, error) {

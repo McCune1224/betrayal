@@ -26,7 +26,8 @@ func (q *Queries) CreatePerkInfo(ctx context.Context, arg CreatePerkInfoParams) 
 }
 
 const deletePerkInfo = `-- name: DeletePerkInfo :exec
-DELETE FROM perk_info WHERE id = $1
+delete from perk_info
+where id = $1
 `
 
 func (q *Queries) DeletePerkInfo(ctx context.Context, id int32) error {
@@ -35,7 +36,9 @@ func (q *Queries) DeletePerkInfo(ctx context.Context, id int32) error {
 }
 
 const getPerkInfo = `-- name: GetPerkInfo :one
-SELECT id, name, description from perk_info WHERE id = $1
+select id, name, description
+from perk_info
+where id = $1
 `
 
 func (q *Queries) GetPerkInfo(ctx context.Context, id int32) (PerkInfo, error) {
@@ -46,18 +49,23 @@ func (q *Queries) GetPerkInfo(ctx context.Context, id int32) (PerkInfo, error) {
 }
 
 const getPerkInfoByFuzzy = `-- name: GetPerkInfoByFuzzy :one
-SELECT id, name, description from perk_info WHERE name ILIKE $1
+select id, name, description
+from perk_info
+order by levenshtein(name, $1) asc
+limit 1
 `
 
-func (q *Queries) GetPerkInfoByFuzzy(ctx context.Context, name string) (PerkInfo, error) {
-	row := q.db.QueryRow(ctx, getPerkInfoByFuzzy, name)
+func (q *Queries) GetPerkInfoByFuzzy(ctx context.Context, levenshtein interface{}) (PerkInfo, error) {
+	row := q.db.QueryRow(ctx, getPerkInfoByFuzzy, levenshtein)
 	var i PerkInfo
 	err := row.Scan(&i.ID, &i.Name, &i.Description)
 	return i, err
 }
 
 const getPerkInfoByName = `-- name: GetPerkInfoByName :one
-SELECT id, name, description from perk_info WHERE name = $1
+select id, name, description
+from perk_info
+where name = $1
 `
 
 func (q *Queries) GetPerkInfoByName(ctx context.Context, name string) (PerkInfo, error) {
@@ -68,7 +76,8 @@ func (q *Queries) GetPerkInfoByName(ctx context.Context, name string) (PerkInfo,
 }
 
 const listPerkInfo = `-- name: ListPerkInfo :many
-SELECT id, name, description from perk_info
+select id, name, description
+from perk_info
 `
 
 func (q *Queries) ListPerkInfo(ctx context.Context) ([]PerkInfo, error) {

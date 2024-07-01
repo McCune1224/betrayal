@@ -32,7 +32,8 @@ func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) (Role, e
 }
 
 const deleteRole = `-- name: DeleteRole :exec
-DELETE FROM role WHERE id = $1
+delete from role
+where id = $1
 `
 
 func (q *Queries) DeleteRole(ctx context.Context, id int32) error {
@@ -41,7 +42,9 @@ func (q *Queries) DeleteRole(ctx context.Context, id int32) error {
 }
 
 const getRole = `-- name: GetRole :one
-SELECT id, name, description, alignment FROM role WHERE id = $1
+select id, name, description, alignment
+from role
+where id = $1
 `
 
 func (q *Queries) GetRole(ctx context.Context, id int32) (Role, error) {
@@ -57,11 +60,14 @@ func (q *Queries) GetRole(ctx context.Context, id int32) (Role, error) {
 }
 
 const getRoleByFuzzy = `-- name: GetRoleByFuzzy :one
-SELECT id, name, description, alignment FROM role WHERE name ILIKE $1
+select id, name, description, alignment
+from role
+order by levenshtein(name, $1) asc
+limit 1
 `
 
-func (q *Queries) GetRoleByFuzzy(ctx context.Context, name string) (Role, error) {
-	row := q.db.QueryRow(ctx, getRoleByFuzzy, name)
+func (q *Queries) GetRoleByFuzzy(ctx context.Context, levenshtein interface{}) (Role, error) {
+	row := q.db.QueryRow(ctx, getRoleByFuzzy, levenshtein)
 	var i Role
 	err := row.Scan(
 		&i.ID,
@@ -73,7 +79,9 @@ func (q *Queries) GetRoleByFuzzy(ctx context.Context, name string) (Role, error)
 }
 
 const getRoleByName = `-- name: GetRoleByName :one
-SELECT id, name, description, alignment FROM role WHERE name = $1
+select id, name, description, alignment
+from role
+where name = $1
 `
 
 func (q *Queries) GetRoleByName(ctx context.Context, name string) (Role, error) {
@@ -89,7 +97,8 @@ func (q *Queries) GetRoleByName(ctx context.Context, name string) (Role, error) 
 }
 
 const listrole = `-- name: Listrole :many
-SELECT id, name, description, alignment FROM role
+select id, name, description, alignment
+from role
 `
 
 func (q *Queries) Listrole(ctx context.Context) ([]Role, error) {

@@ -1,17 +1,32 @@
 -- name: GetAbilityInfo :one
-SELECT * from ability_info WHERE id = $1;
+select *
+from ability_info
+where id = $1
+;
 
 -- name: GetAbilityInfoByName :one
-SELECT * from ability_info WHERE name = $1;
+select *
+from ability_info
+where name = $1
+;
 
 -- name: GetAbilityInfoByFuzzy :one
-SELECT * from ability_info WHERE name ILIKE $1;
+select *
+from ability_info
+order by levenshtein(name, $1) asc
+limit 1
+;
 
 -- name: ListAbilityInfo :many
-SELECT * from ability_info;
+select *
+from ability_info
+;
 
 -- name: CreateAbilityInfo :one
 INSERT INTO ability_info (name, description, default_charges, any_ability, rarity) VALUES ($1, $2, $3, $4, $5) RETURNING *;
 
 -- name: DeleteAbilityInfo :exec
-DELETE FROM ability_info WHERE id = $1;
+delete from ability_info
+where id = $1
+;
+

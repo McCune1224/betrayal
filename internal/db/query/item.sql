@@ -1,17 +1,32 @@
 -- name: GetItem :one
-SELECT * from item WHERE id = $1;
+select *
+from item
+where id = $1
+;
 
 -- name: GetItemByName :one
-SELECT * from item WHERE name = $1;
+select *
+from item
+where name = $1
+;
 
 -- name: GetItemByFuzzy :one
-SELECT * from item WHERE name ILIKE $1;
+select *
+from item
+order by levenshtein(name, $1) asc
+limit 1
+;
 
 -- name: ListItem :many
-SELECT * from item;
+select *
+from item
+;
 
 -- name: CreateItem :one
 INSERT INTO item (name, description, rarity, cost) VALUES ($1, $2, $3, $4) RETURNING *;
 
 -- name: DeleteItem :exec
-DELETE FROM item WHERE id = $1;
+delete from item
+where id = $1
+;
+

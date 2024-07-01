@@ -21,7 +21,8 @@ func (q *Queries) CreateCategory(ctx context.Context, name string) (Category, er
 }
 
 const deleteCategory = `-- name: DeleteCategory :exec
-DELETE FROM category WHERE id = $1
+delete from category
+where id = $1
 `
 
 func (q *Queries) DeleteCategory(ctx context.Context, id int32) error {
@@ -30,18 +31,23 @@ func (q *Queries) DeleteCategory(ctx context.Context, id int32) error {
 }
 
 const getCategoryByFuzzy = `-- name: GetCategoryByFuzzy :one
-SELECT id, name from category WHERE name ILIKE $1
+select id, name
+from category
+order by levenshtein(name, $1) asc
+limit 1
 `
 
-func (q *Queries) GetCategoryByFuzzy(ctx context.Context, name string) (Category, error) {
-	row := q.db.QueryRow(ctx, getCategoryByFuzzy, name)
+func (q *Queries) GetCategoryByFuzzy(ctx context.Context, levenshtein interface{}) (Category, error) {
+	row := q.db.QueryRow(ctx, getCategoryByFuzzy, levenshtein)
 	var i Category
 	err := row.Scan(&i.ID, &i.Name)
 	return i, err
 }
 
 const getCategoryByName = `-- name: GetCategoryByName :one
-SELECT id, name from category WHERE name = $1
+select id, name
+from category
+where name = $1
 `
 
 func (q *Queries) GetCategoryByName(ctx context.Context, name string) (Category, error) {
@@ -52,7 +58,8 @@ func (q *Queries) GetCategoryByName(ctx context.Context, name string) (Category,
 }
 
 const listCategory = `-- name: ListCategory :many
-SELECT id, name from category
+select id, name
+from category
 `
 
 func (q *Queries) ListCategory(ctx context.Context) ([]Category, error) {
