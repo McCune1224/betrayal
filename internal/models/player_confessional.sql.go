@@ -10,16 +10,17 @@ import (
 )
 
 const createPlayerConfessional = `-- name: CreatePlayerConfessional :one
-INSERT INTO player_confessional (player_id, channel_id) VALUES ($1, $2) RETURNING player_id, channel_id, pin_message_id
+INSERT INTO player_confessional (player_id, channel_id, pin_message_id) VALUES ($1, $2, $3) RETURNING player_id, channel_id, pin_message_id
 `
 
 type CreatePlayerConfessionalParams struct {
-	PlayerID  int32 `json:"player_id"`
-	ChannelID int32 `json:"channel_id"`
+	PlayerID     int32 `json:"player_id"`
+	ChannelID    int32 `json:"channel_id"`
+	PinMessageID int32 `json:"pin_message_id"`
 }
 
 func (q *Queries) CreatePlayerConfessional(ctx context.Context, arg CreatePlayerConfessionalParams) (PlayerConfessional, error) {
-	row := q.db.QueryRow(ctx, createPlayerConfessional, arg.PlayerID, arg.ChannelID)
+	row := q.db.QueryRow(ctx, createPlayerConfessional, arg.PlayerID, arg.ChannelID, arg.PinMessageID)
 	var i PlayerConfessional
 	err := row.Scan(&i.PlayerID, &i.ChannelID, &i.PinMessageID)
 	return i, err

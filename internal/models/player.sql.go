@@ -12,10 +12,11 @@ import (
 )
 
 const createPlayer = `-- name: CreatePlayer :one
-INSERT INTO player (role_id, alive, coins, luck, alignment) VALUES ($1, $2, $3, $4, $5) RETURNING id, role_id, alive, coins, luck, alignment
+INSERT INTO player (id, role_id, alive, coins, luck, alignment) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, role_id, alive, coins, luck, alignment
 `
 
 type CreatePlayerParams struct {
+	ID        int32       `json:"id"`
 	RoleID    pgtype.Int4 `json:"role_id"`
 	Alive     bool        `json:"alive"`
 	Coins     int32       `json:"coins"`
@@ -25,6 +26,7 @@ type CreatePlayerParams struct {
 
 func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) (Player, error) {
 	row := q.db.QueryRow(ctx, createPlayer,
+		arg.ID,
 		arg.RoleID,
 		arg.Alive,
 		arg.Coins,
@@ -44,7 +46,8 @@ func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) (Pla
 }
 
 const deletePlayer = `-- name: DeletePlayer :exec
-DELETE FROM player WHERE id = $1
+delete from player
+where id = $1
 `
 
 func (q *Queries) DeletePlayer(ctx context.Context, id int32) error {
@@ -53,7 +56,9 @@ func (q *Queries) DeletePlayer(ctx context.Context, id int32) error {
 }
 
 const getPlayer = `-- name: GetPlayer :one
-SELECT id, role_id, alive, coins, luck, alignment from player WHERE id = $1
+select id, role_id, alive, coins, luck, alignment
+from player
+where id = $1
 `
 
 func (q *Queries) GetPlayer(ctx context.Context, id int32) (Player, error) {
@@ -71,7 +76,8 @@ func (q *Queries) GetPlayer(ctx context.Context, id int32) (Player, error) {
 }
 
 const listPlayer = `-- name: ListPlayer :many
-SELECT id, role_id, alive, coins, luck, alignment from player
+select id, role_id, alive, coins, luck, alignment
+from player
 `
 
 func (q *Queries) ListPlayer(ctx context.Context) ([]Player, error) {

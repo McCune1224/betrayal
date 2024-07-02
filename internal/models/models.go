@@ -149,6 +149,12 @@ type Player struct {
 	Alignment Alignment   `json:"alignment"`
 }
 
+type PlayerAbility struct {
+	PlayerID  int32 `json:"player_id"`
+	AbilityID int32 `json:"ability_id"`
+	Quantity  int32 `json:"quantity"`
+}
+
 type PlayerConfessional struct {
 	PlayerID     int32 `json:"player_id"`
 	ChannelID    int32 `json:"channel_id"`
@@ -158,6 +164,17 @@ type PlayerConfessional struct {
 type PlayerItem struct {
 	PlayerID int32 `json:"player_id"`
 	ItemID   int32 `json:"item_id"`
+	Quantity int32 `json:"quantity"`
+}
+
+type PlayerPerk struct {
+	PlayerID int32 `json:"player_id"`
+	PerkID   int32 `json:"perk_id"`
+}
+
+type PlayerStatus struct {
+	PlayerID int32 `json:"player_id"`
+	StatusID int32 `json:"status_id"`
 	Quantity int32 `json:"quantity"`
 }
 
