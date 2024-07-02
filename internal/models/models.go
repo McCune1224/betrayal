@@ -146,6 +146,7 @@ type Player struct {
 	Alive     bool        `json:"alive"`
 	Coins     int32       `json:"coins"`
 	Luck      int32       `json:"luck"`
+	ItemLimit int32       `json:"item_limit"`
 	Alignment Alignment   `json:"alignment"`
 }
 
@@ -159,6 +160,11 @@ type PlayerConfessional struct {
 	PlayerID     int64 `json:"player_id"`
 	ChannelID    int64 `json:"channel_id"`
 	PinMessageID int64 `json:"pin_message_id"`
+}
+
+type PlayerImmunity struct {
+	PlayerID int64 `json:"player_id"`
+	StatusID int32 `json:"status_id"`
 }
 
 type PlayerItem struct {

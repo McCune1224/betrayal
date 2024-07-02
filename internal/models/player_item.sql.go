@@ -12,7 +12,8 @@ import (
 )
 
 const deletePlayerItem = `-- name: DeletePlayerItem :exec
-DELETE FROM player_item WHERE player_id = $1 AND item_id = $2
+delete from player_item
+where player_id = $1 and item_id = $2
 `
 
 type DeletePlayerItemParams struct {
@@ -26,10 +27,11 @@ func (q *Queries) DeletePlayerItem(ctx context.Context, arg DeletePlayerItemPara
 }
 
 const getPlayerItem = `-- name: GetPlayerItem :one
-SELECT item.id, name, description, rarity, cost, player_id, item_id, quantity, player.id, role_id, alive, coins, luck, alignment from item 
-INNER JOIN player_item ON item.id = player_item.item_id
-INNER JOIN player ON player.id = player_item.player_id
-WHERE player.id = $1 AND player_item.item_id = $2
+select item.id, name, description, rarity, cost, player_id, item_id, quantity, player.id, role_id, alive, coins, luck, item_limit, alignment
+from item
+inner join player_item on item.id = player_item.item_id
+inner join player on player.id = player_item.player_id
+where player.id = $1 and player_item.item_id = $2
 `
 
 type GetPlayerItemParams struct {
@@ -51,6 +53,7 @@ type GetPlayerItemRow struct {
 	Alive       bool        `json:"alive"`
 	Coins       int32       `json:"coins"`
 	Luck        int32       `json:"luck"`
+	ItemLimit   int32       `json:"item_limit"`
 	Alignment   Alignment   `json:"alignment"`
 }
 
@@ -71,59 +74,34 @@ func (q *Queries) GetPlayerItem(ctx context.Context, arg GetPlayerItemParams) (G
 		&i.Alive,
 		&i.Coins,
 		&i.Luck,
+		&i.ItemLimit,
 		&i.Alignment,
 	)
 	return i, err
 }
 
 const listPlayerItem = `-- name: ListPlayerItem :many
-SELECT item.id, name, description, rarity, cost, player_id, item_id, quantity, player.id, role_id, alive, coins, luck, alignment from item 
-INNER JOIN player_item ON item.id = player_item.item_id
-INNER JOIN player ON player.id = player_item.player_id
-WHERE player.id = $1
+select item.id, item.name, item.description, item.rarity, item.cost
+from player_item
+inner join item on player_item.item_id = item.id
+where player_item.player_id = $1
 `
 
-type ListPlayerItemRow struct {
-	ID          int32       `json:"id"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Rarity      Rarity      `json:"rarity"`
-	Cost        int32       `json:"cost"`
-	PlayerID    int64       `json:"player_id"`
-	ItemID      int32       `json:"item_id"`
-	Quantity    int32       `json:"quantity"`
-	ID_2        int64       `json:"id_2"`
-	RoleID      pgtype.Int4 `json:"role_id"`
-	Alive       bool        `json:"alive"`
-	Coins       int32       `json:"coins"`
-	Luck        int32       `json:"luck"`
-	Alignment   Alignment   `json:"alignment"`
-}
-
-func (q *Queries) ListPlayerItem(ctx context.Context, id int64) ([]ListPlayerItemRow, error) {
-	rows, err := q.db.Query(ctx, listPlayerItem, id)
+func (q *Queries) ListPlayerItem(ctx context.Context, playerID int64) ([]Item, error) {
+	rows, err := q.db.Query(ctx, listPlayerItem, playerID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListPlayerItemRow
+	var items []Item
 	for rows.Next() {
-		var i ListPlayerItemRow
+		var i Item
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
 			&i.Description,
 			&i.Rarity,
 			&i.Cost,
-			&i.PlayerID,
-			&i.ItemID,
-			&i.Quantity,
-			&i.ID_2,
-			&i.RoleID,
-			&i.Alive,
-			&i.Coins,
-			&i.Luck,
-			&i.Alignment,
 		); err != nil {
 			return nil, err
 		}

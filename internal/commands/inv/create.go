@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -122,7 +123,6 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.ErrorMessage(ctx, "Failed to create player", "Unable to create player in database")
 	}
-	log.Println("hit part 1")
 
 	// return ctx.RespondMessage(fmt.Sprintf("%v", player))
 
@@ -139,7 +139,6 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 			return discord.ErrorMessage(ctx, "Failed to create player ability", "Unable to create player ability in database")
 		}
 	}
-	log.Println("hit part 2")
 
 	//3. Create the player_perk
 
@@ -154,7 +153,222 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 			return discord.ErrorMessage(ctx, "Failed to create player perk", "Unable to create player perk in database")
 		}
 	}
-	log.Println("hit part 3")
+
+	// FIXME: Lord please forgive for the unholy amount of switch statements I am about to unleash
+	// Will need to make some sort of Website or UI to allow for custom roles to be created instead of me hardcoding them
+	roleName := strings.ToLower(roleResult.data.Name)
+	statuses, _ := query.ListStatus(bgCtx)
+	statusMap := make(map[string]int32, len(statuses))
+	for _, status := range statuses {
+		statusMap[status.Name] = status.ID
+	}
+	switch roleName {
+	// --- GOOD ROLES ---
+	case "cerberus":
+		// Due to perk Hades' Hound
+		immunities := []string{"Frozen", "Burned"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+
+	case "detective":
+		// Due to perk Clever
+		immunities := []string{"Blackmailed", "Disabled", "Despaired"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "fisherman":
+		// Due to perk Barrels
+		_, err := query.UpdatePlayerItemLimit(bgCtx, models.UpdatePlayerItemLimitParams{
+			ID:        player.ID,
+			ItemLimit: 8,
+		})
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to update item limit", "Unable to update item limit in database")
+		}
+	case "hero":
+		// Due to perk Compos Mentis
+		immunities := []string{"Madness"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "nurse":
+		// Due to perk Powerful Immunity
+		immunities := []string{"Death Cursed", "Frozen", "Paralyzed", "Burned", "Empowered", "Drunk", "Restrained", "Disabled", "Blackmailed", "Despaired", "Madness", "Unlucky"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "terminal":
+		// Due to perk Heartbeats
+		immunities := []string{"Death Cursed", "Frozen", "Paralyzed", "Burned", "Empowered", "Drunk", "Restrained", "Disabled", "Blackmailed", "Despaired", "Madness", "Unlucky"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "wizard":
+		// due to perk Magic Barrier
+		immunities := []string{"Frozen", "Paralyzed", "Burned", "Cursed"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "yeti":
+		// Due to perk Winter Coat
+		immunities := []string{"Frozen"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+
+		// Neutral Roles
+	case "cyborg":
+		immunities := []string{"Paralyzed", "Frozen", "Burned", "Despaired", "Blackmailed", "Drunk"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "entertainer":
+		// Due to perk Top-Hat Tip
+		immunities := []string{"Unlucky"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+		statuses := []string{"Lucky"}
+		err = mapStatuses(query, player, statuses, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "magician":
+		// Due to perk Top-Hat Tip
+		statuses := []string{"Lucky"}
+		err := mapImmunities(query, player, statuses, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+		immunities := []string{"Unlucky"}
+		err = mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "masochist":
+		// Due to perk One Track Mind
+		immunities := []string{"Lucky"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "succubus":
+		// Due to perk Dominatrix
+		immunities := []string{"Blackmail"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	//
+	// Evil Roles
+	case "arsonist":
+		// Due to perk Ashes to Ashes / Flamed
+		immunities := []string{"Burned"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "cultist":
+		immunities := []string{"Curse"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "director":
+		immunities := []string{"Despaired", "Blackmailed", "Drunk"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "gatekeeper":
+		immunities := []string{"Restrained", "Paralyzed", "Frozen"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "hacker":
+		immunities := []string{"Disabled", "Blackmailed"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "highwayman":
+		immunities := []string{"Madness"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "imp":
+		immunities := []string{"Despaired", "Paralyzed"}
+		err := mapImmunities(query, player, immunities, statusMap)
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
+		}
+	case "threatener":
+		_, err := query.UpdatePlayerItemLimit(bgCtx, models.UpdatePlayerItemLimitParams{
+			ID:        player.ID,
+			ItemLimit: 6,
+		})
+		if err != nil {
+			log.Println(err)
+			query.DeletePlayer(bgCtx, player.ID)
+			return discord.ErrorMessage(ctx, "Failed to update item limit", "Unable to update item limit in database")
+		}
+	}
 
 	//4. Create the player_confessional
 	// embd := InventoryEmbedBuilder(defaultInv, false)
@@ -246,4 +460,32 @@ func (i Inv) delete(ctx ken.SubCommandContext) (err error) {
 	}
 
 	return discord.SuccessfulMessage(ctx, "Deleted Player Inventory", fmt.Sprintf("Deleted inventory for %s", playerArg.Username))
+}
+
+func mapImmunities(query *models.Queries, player models.Player, immunities []string, statusMap map[string]int32) (err error) {
+	for _, immunity := range immunities {
+		_, err := query.CreatePlayerImmunityJoin(context.Background(), models.CreatePlayerImmunityJoinParams{
+			PlayerID: player.ID,
+			StatusID: statusMap[immunity],
+		})
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+	}
+	return nil
+}
+
+func mapStatuses(query *models.Queries, player models.Player, statuses []string, statusMap map[string]int32) (err error) {
+	for _, status := range statuses {
+		_, err := query.CreatePlayerStatusJoin(context.Background(), models.CreatePlayerStatusJoinParams{
+			PlayerID: player.ID,
+			StatusID: statusMap[status],
+		})
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+	}
+	return nil
 }

@@ -24,3 +24,30 @@ func (q *Queries) CreatePlayerPerkJoin(ctx context.Context, arg CreatePlayerPerk
 	err := row.Scan(&i.PlayerID, &i.PerkID)
 	return i, err
 }
+
+const listPlayerPerk = `-- name: ListPlayerPerk :many
+select perk_info.id, perk_info.name, perk_info.description
+from player_perk
+inner join perk_info on player_perk.perk_id = perk_info.id
+where player_perk.player_id = $1
+`
+
+func (q *Queries) ListPlayerPerk(ctx context.Context, playerID int64) ([]PerkInfo, error) {
+	rows, err := q.db.Query(ctx, listPlayerPerk, playerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PerkInfo
+	for rows.Next() {
+		var i PerkInfo
+		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

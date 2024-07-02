@@ -25,3 +25,37 @@ func (q *Queries) CreatePlayerAbilityJoin(ctx context.Context, arg CreatePlayerA
 	err := row.Scan(&i.PlayerID, &i.AbilityID, &i.Quantity)
 	return i, err
 }
+
+const listPlayerAbility = `-- name: ListPlayerAbility :many
+select ability_info.id, ability_info.name, ability_info.description, ability_info.default_charges, ability_info.any_ability, ability_info.rarity
+from player_ability
+inner join ability_info on player_ability.ability_id = ability_info.id
+where player_ability.player_id = $1
+`
+
+func (q *Queries) ListPlayerAbility(ctx context.Context, playerID int64) ([]AbilityInfo, error) {
+	rows, err := q.db.Query(ctx, listPlayerAbility, playerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AbilityInfo
+	for rows.Next() {
+		var i AbilityInfo
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.DefaultCharges,
+			&i.AnyAbility,
+			&i.Rarity,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
