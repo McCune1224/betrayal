@@ -37,6 +37,14 @@ func (i *Inv) Options() []*discordgo.ApplicationCommandOption {
 				discord.StringCommandArg("role", "Role to create inventory for", true),
 			},
 		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "delete",
+			Description: "Delete a player's inventory",
+			Options: []*discordgo.ApplicationCommandOption{
+				discord.UserCommandArg(true),
+			},
+		},
 	}
 }
 
@@ -44,6 +52,7 @@ func (i *Inv) Options() []*discordgo.ApplicationCommandOption {
 func (i *Inv) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "create", Run: i.create},
+		ken.SubCommandHandler{Name: "delete", Run: i.delete},
 	)
 }
 

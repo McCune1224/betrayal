@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/models"
+	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
 
@@ -26,11 +27,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-		err = discord.ErrorMessage(
-			ctx,
-			"Unauthorized",
-			"You are not authorized to use this command.",
-		)
+		err = discord.ErrorMessage(ctx, "Unauthorized", "You are not authorized to use this command.")
 		return err
 	}
 
@@ -106,10 +103,14 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 	}
 
 	//1. Create the player
-	discordID, _ := strconv.Atoi(playerArg.ID)
+	discordID, err := util.Atoi64(playerArg.ID)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Failed to create player", "Unable to create player in database")
+	}
 	player, err := query.CreatePlayer(bgCtx,
 		models.CreatePlayerParams{
-			ID:        int32(discordID),
+			ID:        int64(discordID),
 			RoleID:    pgtype.Int4{Int32: roleResult.data.ID, Valid: true},
 			Alive:     true,
 			Coins:     defaultCoins,
@@ -119,7 +120,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 	)
 	if err != nil {
 		log.Println(err)
-		discord.ErrorMessage(ctx, "Failed to create player", "Unable to create player in database")
+		return discord.ErrorMessage(ctx, "Failed to create player", "Unable to create player in database")
 	}
 	log.Println("hit part 1")
 
@@ -135,7 +136,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		if err != nil {
 			log.Println(err)
 			query.DeletePlayer(bgCtx, player.ID)
-			discord.ErrorMessage(ctx, "Failed to create player ability", "Unable to create player ability in database")
+			return discord.ErrorMessage(ctx, "Failed to create player ability", "Unable to create player ability in database")
 		}
 	}
 	log.Println("hit part 2")
@@ -150,7 +151,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		if err != nil {
 			log.Println(err)
 			query.DeletePlayer(bgCtx, player.ID)
-			discord.ErrorMessage(ctx, "Failed to create player perk", "Unable to create player perk in database")
+			return discord.ErrorMessage(ctx, "Failed to create player perk", "Unable to create player perk in database")
 		}
 	}
 	log.Println("hit part 3")
@@ -174,31 +175,75 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 	if err != nil {
 		query.DeletePlayer(bgCtx, player.ID)
 		log.Println(err)
-		discord.ErrorMessage(ctx, "Failed to edit inventory message", fmt.Sprintf("Could not send to channel %s", discord.MentionChannel(channelID)))
 		ctx.GetSession().ChannelMessageDelete(channelID, pinMsg.ID)
-		return err
+		return discord.ErrorMessage(ctx, "Failed to edit inventory message", fmt.Sprintf("Could not send to channel %s", discord.MentionChannel(channelID)))
 	}
 
-	iChannelID, _ := strconv.Atoi(channelID)
+	iChannelID, _ := util.Atoi64(channelID)
+	iPinMessageID, _ := util.Atoi64(pinMsg.ID)
 	_, err = query.CreatePlayerConfessional(bgCtx, models.CreatePlayerConfessionalParams{
 		PlayerID:     player.ID,
-		ChannelID:    int32(iChannelID),
-		PinMessageID: 0,
+		ChannelID:    iChannelID,
+		PinMessageID: iPinMessageID,
 	})
 	if err != nil {
 		log.Println(err)
 		query.DeletePlayer(bgCtx, player.ID)
-		discord.ErrorMessage(ctx, "Failed to update inventory", fmt.Sprintf("Unable to update inventory for %s", playerArg.Username))
 		ctx.GetSession().ChannelMessageDelete(channelID, pinMsg.ID)
-		return err
+		return discord.ErrorMessage(ctx, "Failed to update inventory", fmt.Sprintf("Unable to update inventory for %s", playerArg.Username))
 	}
 	err = ctx.GetSession().ChannelMessagePin(channelID, pinMsg.ID)
 	if err != nil {
 		log.Println(err)
 		query.DeletePlayer(bgCtx, player.ID)
-		discord.ErrorMessage(ctx, "Failed to pin inventory message", fmt.Sprintf("Unable to pin inventory message for %s", playerArg.Username))
-		return err
+		return discord.ErrorMessage(ctx, "Failed to pin inventory message", fmt.Sprintf("Unable to pin inventory message for %s", playerArg.Username))
 	}
 
 	return discord.SuccessfulMessage(ctx, "Inventory Created", fmt.Sprintf("Created and pinined inventory for %s", playerArg.Username))
+}
+
+func (i Inv) delete(ctx ken.SubCommandContext) (err error) {
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		err = discord.ErrorMessage(ctx, "Unauthorized", "You are not authorized to use this command.")
+		return err
+	}
+
+	playerArg := ctx.Options().GetByName("user").UserValue(ctx)
+	query := models.New(i.dbPool)
+	bgCtx := context.Background()
+
+	pId, _ := util.Atoi64(playerArg.ID)
+	player, err := query.GetPlayer(bgCtx, int64(pId))
+	if err != nil {
+		log.Println(err)
+		discord.ErrorMessage(ctx, "Failed to get player", fmt.Sprintf("Unable to get player %s", playerArg.Username))
+		return err
+	}
+
+	playerConf, err := query.GetPlayerConfessional(bgCtx, player.ID)
+	if err != nil {
+		log.Println(err)
+		discord.ErrorMessage(ctx, "Failed to get player confessional", fmt.Sprintf("Unable to get player confessional for %s", playerArg.Username))
+		return err
+	}
+
+	err = ctx.GetSession().ChannelMessageDelete(util.Itoa64(playerConf.ChannelID), strconv.Itoa(int(playerConf.PinMessageID)))
+	if err != nil {
+		log.Println(err)
+		discord.ErrorMessage(ctx, "Failed to delete message", fmt.Sprintf("Unable to delete message for %s", playerArg.Username))
+		return err
+	}
+
+	err = query.DeletePlayer(bgCtx, player.ID)
+	if err != nil {
+		log.Println(err)
+		discord.ErrorMessage(ctx, "Failed to delete player", fmt.Sprintf("Unable to delete player %s", playerArg.Username))
+		return err
+	}
+
+	return discord.SuccessfulMessage(ctx, "Deleted Player Inventory", fmt.Sprintf("Deleted inventory for %s", playerArg.Username))
 }

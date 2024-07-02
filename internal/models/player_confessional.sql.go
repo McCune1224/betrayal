@@ -14,9 +14,9 @@ INSERT INTO player_confessional (player_id, channel_id, pin_message_id) VALUES (
 `
 
 type CreatePlayerConfessionalParams struct {
-	PlayerID     int32 `json:"player_id"`
-	ChannelID    int32 `json:"channel_id"`
-	PinMessageID int32 `json:"pin_message_id"`
+	PlayerID     int64 `json:"player_id"`
+	ChannelID    int64 `json:"channel_id"`
+	PinMessageID int64 `json:"pin_message_id"`
 }
 
 func (q *Queries) CreatePlayerConfessional(ctx context.Context, arg CreatePlayerConfessionalParams) (PlayerConfessional, error) {
@@ -24,4 +24,52 @@ func (q *Queries) CreatePlayerConfessional(ctx context.Context, arg CreatePlayer
 	var i PlayerConfessional
 	err := row.Scan(&i.PlayerID, &i.ChannelID, &i.PinMessageID)
 	return i, err
+}
+
+const deletePlayerConfessional = `-- name: DeletePlayerConfessional :exec
+delete from player_confessional
+where player_id = $1
+`
+
+func (q *Queries) DeletePlayerConfessional(ctx context.Context, playerID int64) error {
+	_, err := q.db.Exec(ctx, deletePlayerConfessional, playerID)
+	return err
+}
+
+const getPlayerConfessional = `-- name: GetPlayerConfessional :one
+select player_id, channel_id, pin_message_id
+from player_confessional
+where player_id = $1
+`
+
+func (q *Queries) GetPlayerConfessional(ctx context.Context, playerID int64) (PlayerConfessional, error) {
+	row := q.db.QueryRow(ctx, getPlayerConfessional, playerID)
+	var i PlayerConfessional
+	err := row.Scan(&i.PlayerID, &i.ChannelID, &i.PinMessageID)
+	return i, err
+}
+
+const listPlayerConfessional = `-- name: ListPlayerConfessional :many
+select player_id, channel_id, pin_message_id
+from player_confessional
+`
+
+func (q *Queries) ListPlayerConfessional(ctx context.Context) ([]PlayerConfessional, error) {
+	rows, err := q.db.Query(ctx, listPlayerConfessional)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PlayerConfessional
+	for rows.Next() {
+		var i PlayerConfessional
+		if err := rows.Scan(&i.PlayerID, &i.ChannelID, &i.PinMessageID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

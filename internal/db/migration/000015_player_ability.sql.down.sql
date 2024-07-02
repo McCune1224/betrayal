@@ -1,2 +1,2 @@
-DROP TABLE IF EXISTS role_ability CASCADE;
+DROP TABLE IF EXISTS player_ability CASCADE;
 

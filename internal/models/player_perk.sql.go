@@ -14,7 +14,7 @@ INSERT INTO player_perk (player_id, perk_id) VALUES ($1, $2) RETURNING player_id
 `
 
 type CreatePlayerPerkJoinParams struct {
-	PlayerID int32 `json:"player_id"`
+	PlayerID int64 `json:"player_id"`
 	PerkID   int32 `json:"perk_id"`
 }
 

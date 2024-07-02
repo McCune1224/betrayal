@@ -16,7 +16,7 @@ INSERT INTO player (id, role_id, alive, coins, luck, alignment) VALUES ($1, $2, 
 `
 
 type CreatePlayerParams struct {
-	ID        int32       `json:"id"`
+	ID        int64       `json:"id"`
 	RoleID    pgtype.Int4 `json:"role_id"`
 	Alive     bool        `json:"alive"`
 	Coins     int32       `json:"coins"`
@@ -50,7 +50,7 @@ delete from player
 where id = $1
 `
 
-func (q *Queries) DeletePlayer(ctx context.Context, id int32) error {
+func (q *Queries) DeletePlayer(ctx context.Context, id int64) error {
 	_, err := q.db.Exec(ctx, deletePlayer, id)
 	return err
 }
@@ -61,7 +61,7 @@ from player
 where id = $1
 `
 
-func (q *Queries) GetPlayer(ctx context.Context, id int32) (Player, error) {
+func (q *Queries) GetPlayer(ctx context.Context, id int64) (Player, error) {
 	row := q.db.QueryRow(ctx, getPlayer, id)
 	var i Player
 	err := row.Scan(
@@ -112,7 +112,7 @@ UPDATE player SET role_id = $2, alive = $3, coins = $4, luck = $5, alignment = $
 `
 
 type UpdatePlayerParams struct {
-	ID        int32       `json:"id"`
+	ID        int64       `json:"id"`
 	RoleID    pgtype.Int4 `json:"role_id"`
 	Alive     bool        `json:"alive"`
 	Coins     int32       `json:"coins"`
@@ -146,7 +146,7 @@ UPDATE player SET alignment = $2 WHERE id = $1 RETURNING id, role_id, alive, coi
 `
 
 type UpdatePlayerAlignmentParams struct {
-	ID        int32     `json:"id"`
+	ID        int64     `json:"id"`
 	Alignment Alignment `json:"alignment"`
 }
 
@@ -169,7 +169,7 @@ UPDATE player SET alive = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, 
 `
 
 type UpdatePlayerAliveParams struct {
-	ID    int32 `json:"id"`
+	ID    int64 `json:"id"`
 	Alive bool  `json:"alive"`
 }
 
@@ -192,7 +192,7 @@ UPDATE player SET coins = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, 
 `
 
 type UpdatePlayerCoinsParams struct {
-	ID    int32 `json:"id"`
+	ID    int64 `json:"id"`
 	Coins int32 `json:"coins"`
 }
 
@@ -215,7 +215,7 @@ UPDATE player SET luck = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, l
 `
 
 type UpdatePlayerLuckParams struct {
-	ID   int32 `json:"id"`
+	ID   int64 `json:"id"`
 	Luck int32 `json:"luck"`
 }
 

@@ -14,7 +14,7 @@ INSERT INTO player_ability (player_id, ability_id, quantity) VALUES ($1, $2, $3)
 `
 
 type CreatePlayerAbilityJoinParams struct {
-	PlayerID  int32 `json:"player_id"`
+	PlayerID  int64 `json:"player_id"`
 	AbilityID int32 `json:"ability_id"`
 	Quantity  int32 `json:"quantity"`
 }

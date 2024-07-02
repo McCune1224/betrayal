@@ -16,7 +16,7 @@ DELETE FROM player_item WHERE player_id = $1 AND item_id = $2
 `
 
 type DeletePlayerItemParams struct {
-	PlayerID int32 `json:"player_id"`
+	PlayerID int64 `json:"player_id"`
 	ItemID   int32 `json:"item_id"`
 }
 
@@ -33,7 +33,7 @@ WHERE player.id = $1 AND player_item.item_id = $2
 `
 
 type GetPlayerItemParams struct {
-	ID     int32 `json:"id"`
+	ID     int64 `json:"id"`
 	ItemID int32 `json:"item_id"`
 }
 
@@ -43,10 +43,10 @@ type GetPlayerItemRow struct {
 	Description string      `json:"description"`
 	Rarity      Rarity      `json:"rarity"`
 	Cost        int32       `json:"cost"`
-	PlayerID    int32       `json:"player_id"`
+	PlayerID    int64       `json:"player_id"`
 	ItemID      int32       `json:"item_id"`
 	Quantity    int32       `json:"quantity"`
-	ID_2        int32       `json:"id_2"`
+	ID_2        int64       `json:"id_2"`
 	RoleID      pgtype.Int4 `json:"role_id"`
 	Alive       bool        `json:"alive"`
 	Coins       int32       `json:"coins"`
@@ -89,10 +89,10 @@ type ListPlayerItemRow struct {
 	Description string      `json:"description"`
 	Rarity      Rarity      `json:"rarity"`
 	Cost        int32       `json:"cost"`
-	PlayerID    int32       `json:"player_id"`
+	PlayerID    int64       `json:"player_id"`
 	ItemID      int32       `json:"item_id"`
 	Quantity    int32       `json:"quantity"`
-	ID_2        int32       `json:"id_2"`
+	ID_2        int64       `json:"id_2"`
 	RoleID      pgtype.Int4 `json:"role_id"`
 	Alive       bool        `json:"alive"`
 	Coins       int32       `json:"coins"`
@@ -100,7 +100,7 @@ type ListPlayerItemRow struct {
 	Alignment   Alignment   `json:"alignment"`
 }
 
-func (q *Queries) ListPlayerItem(ctx context.Context, id int32) ([]ListPlayerItemRow, error) {
+func (q *Queries) ListPlayerItem(ctx context.Context, id int64) ([]ListPlayerItemRow, error) {
 	rows, err := q.db.Query(ctx, listPlayerItem, id)
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ UPDATE player_item SET quantity = $3 WHERE player_id = $1 AND item_id = $2 RETUR
 `
 
 type UpdatePlayerItemQuantityParams struct {
-	PlayerID int32 `json:"player_id"`
+	PlayerID int64 `json:"player_id"`
 	ItemID   int32 `json:"item_id"`
 	Quantity int32 `json:"quantity"`
 }
@@ -159,7 +159,7 @@ DO UPDATE SET quantity = player_item.quantity + EXCLUDED.quantity
 `
 
 type UpsertPlayerItemJoinParams struct {
-	PlayerID int32 `json:"player_id"`
+	PlayerID int64 `json:"player_id"`
 	ItemID   int32 `json:"item_id"`
 	Quantity int32 `json:"quantity"`
 }
