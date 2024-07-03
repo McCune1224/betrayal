@@ -1,2 +1,2 @@
-DROP TABLE IF EXISTS immunity CASCADE;
+DROP TABLE IF EXISTS player_immunity CASCADE;
 
