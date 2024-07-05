@@ -45,6 +45,14 @@ func (i *Inv) Options() []*discordgo.ApplicationCommandOption {
 				discord.UserCommandArg(true),
 			},
 		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "get",
+			Description: "Get player's inventory",
+			Options: []*discordgo.ApplicationCommandOption{
+				discord.UserCommandArg(true),
+			},
+		},
 	}
 }
 
@@ -53,6 +61,7 @@ func (i *Inv) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "create", Run: i.create},
 		ken.SubCommandHandler{Name: "delete", Run: i.delete},
+		ken.SubCommandHandler{Name: "get", Run: i.get},
 	)
 }
 

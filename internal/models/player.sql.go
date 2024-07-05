@@ -77,6 +77,54 @@ func (q *Queries) GetPlayer(ctx context.Context, id int64) (Player, error) {
 	return i, err
 }
 
+const getPlayerInventory = `-- name: GetPlayerInventory :one
+select
+    player.id, player.role_id, player.alive, player.coins, player.luck, player.item_limit, player.alignment,
+    array_agg(distinct ability_info.*) as ability_details,
+    array_agg(distinct item.*) as item_details,
+    array_agg(distinct "status".*) as immunity_details
+from player
+inner join player_ability on player.id = player_ability.player_id
+inner join ability_info on player_ability.ability_id = ability_info.id
+left join player_item on player.id = player_item.player_id
+left join item on player_item.item_id = item.id
+left join player_immunity on player.id = player_immunity.player_id
+left join status on player_immunity.status_id = status.id
+where player.id = $1
+group by player.id
+`
+
+type GetPlayerInventoryRow struct {
+	ID              int64       `json:"id"`
+	RoleID          pgtype.Int4 `json:"role_id"`
+	Alive           bool        `json:"alive"`
+	Coins           int32       `json:"coins"`
+	Luck            int32       `json:"luck"`
+	ItemLimit       int32       `json:"item_limit"`
+	Alignment       Alignment   `json:"alignment"`
+	AbilityDetails  interface{} `json:"ability_details"`
+	ItemDetails     interface{} `json:"item_details"`
+	ImmunityDetails interface{} `json:"immunity_details"`
+}
+
+func (q *Queries) GetPlayerInventory(ctx context.Context, id int64) (GetPlayerInventoryRow, error) {
+	row := q.db.QueryRow(ctx, getPlayerInventory, id)
+	var i GetPlayerInventoryRow
+	err := row.Scan(
+		&i.ID,
+		&i.RoleID,
+		&i.Alive,
+		&i.Coins,
+		&i.Luck,
+		&i.ItemLimit,
+		&i.Alignment,
+		&i.AbilityDetails,
+		&i.ItemDetails,
+		&i.ImmunityDetails,
+	)
+	return i, err
+}
+
 const listPlayer = `-- name: ListPlayer :many
 select id, role_id, alive, coins, luck, item_limit, alignment
 from player
@@ -108,6 +156,82 @@ func (q *Queries) ListPlayer(ctx context.Context) ([]Player, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const playerFoo = `-- name: PlayerFoo :one
+select
+    player.id,
+    player.role_id,
+    player.alive,
+    player.coins,
+    player.luck,
+    player.item_limit,
+    player.alignment,
+    json_agg(
+        json_build_object(
+            'ability_id',
+            ability_info.id,
+            'name',
+            ability_info.name,
+            'description',
+            ability_info.description
+        )
+    ) as ability_details,
+    json_agg(
+        json_build_object(
+            'item_id', item.id, 'name', item.name, 'description', item.description
+        )
+    ) as item_details,
+    json_agg(
+        json_build_object(
+            'immunity_id',
+            status.id,
+            'name',
+            status.name,
+            'description',
+            status.description
+        )
+    ) as immunity_details
+from player
+left join player_ability on player.id = player_ability.player_id
+left join ability_info on player_ability.ability_id = ability_info.id
+left join player_item on player.id = player_item.player_id
+left join item on player_item.item_id = item.id
+left join player_immunity on player.id = player_immunity.player_id
+left join status on player_immunity.status_id = status.id
+where player.id = $1
+group by player.id
+`
+
+type PlayerFooRow struct {
+	ID              int64       `json:"id"`
+	RoleID          pgtype.Int4 `json:"role_id"`
+	Alive           bool        `json:"alive"`
+	Coins           int32       `json:"coins"`
+	Luck            int32       `json:"luck"`
+	ItemLimit       int32       `json:"item_limit"`
+	Alignment       Alignment   `json:"alignment"`
+	AbilityDetails  []byte      `json:"ability_details"`
+	ItemDetails     []byte      `json:"item_details"`
+	ImmunityDetails []byte      `json:"immunity_details"`
+}
+
+func (q *Queries) PlayerFoo(ctx context.Context, id int64) (PlayerFooRow, error) {
+	row := q.db.QueryRow(ctx, playerFoo, id)
+	var i PlayerFooRow
+	err := row.Scan(
+		&i.ID,
+		&i.RoleID,
+		&i.Alive,
+		&i.Coins,
+		&i.Luck,
+		&i.ItemLimit,
+		&i.Alignment,
+		&i.AbilityDetails,
+		&i.ItemDetails,
+		&i.ImmunityDetails,
+	)
+	return i, err
 }
 
 const updatePlayer = `-- name: UpdatePlayer :one
