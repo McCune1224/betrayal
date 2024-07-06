@@ -102,6 +102,3 @@ where player.id = $1
 group by player.id
 ;
 
--- name: GetPlayerRole
-
-

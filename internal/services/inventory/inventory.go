@@ -10,6 +10,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/models"
 	"github.com/mccune1224/betrayal/internal/util"
+	"github.com/zekrotja/ken"
 )
 
 type PlayerInventory struct {
@@ -251,4 +252,41 @@ func (ih *InventoryHandler) UpdateInventoryMessage(sesh *discordgo.Session) (err
 		return err
 	}
 	return nil
+}
+
+func (ih *InventoryHandler) InventoryAuthorized(ctx ken.SubCommandContext) (bool, error) {
+	event := ctx.GetEvent()
+	invokeChannelID := event.ChannelID
+	invoker := event.Member
+	query := models.New(ih.pool)
+	playerConf, err := query.GetPlayerConfessional(context.Background(), ih.player.ID)
+	if err != nil {
+		return false, err
+	}
+
+	// Base case of user is in confessional channel and is the owner of the inventory
+	if util.Itoa64(ih.player.ID) == invoker.User.ID && util.Itoa64(playerConf.ChannelID) == invokeChannelID {
+		return true, nil
+	}
+
+	// If not in confessional channel, check if in whitelist
+	whitelistChannels, _ := query.ListAdminChannel(context.Background())
+	if invokeChannelID != util.Itoa64(playerConf.ChannelID) {
+		for _, whitelistChannelID := range whitelistChannels {
+			if whitelistChannelID == invokeChannelID {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+
+	// Go through and make sure user has one of the allowed roles:
+	for _, role := range invoker.Roles {
+		for _, allowedRole := range discord.AdminRoles {
+			if role == allowedRole {
+				return true, nil
+			}
+		}
+	}
+	return true, nil
 }

@@ -116,6 +116,10 @@ type AbilityInfo struct {
 	Rarity         Rarity `json:"rarity"`
 }
 
+type AdminChannel struct {
+	ChannelID string `json:"channel_id"`
+}
+
 type Category struct {
 	ID   int32  `json:"id"`
 	Name string `json:"name"`
@@ -177,11 +181,6 @@ type PlayerItem struct {
 type PlayerPerk struct {
 	PlayerID int64 `json:"player_id"`
 	PerkID   int32 `json:"perk_id"`
-}
-
-type PlayerRole struct {
-	PlayerID int64 `json:"player_id"`
-	RoleID   int32 `json:"role_id"`
 }
 
 type PlayerStatus struct {
