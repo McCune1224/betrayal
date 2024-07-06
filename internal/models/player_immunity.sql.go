@@ -24,3 +24,30 @@ func (q *Queries) CreatePlayerImmunityJoin(ctx context.Context, arg CreatePlayer
 	err := row.Scan(&i.PlayerID, &i.StatusID)
 	return i, err
 }
+
+const listPlayerImmunity = `-- name: ListPlayerImmunity :many
+select status.id, status.name, status.description
+from player_immunity
+inner join status on status.id = player_immunity.status_id
+where player_immunity.player_id = $1
+`
+
+func (q *Queries) ListPlayerImmunity(ctx context.Context, playerID int64) ([]Status, error) {
+	rows, err := q.db.Query(ctx, listPlayerImmunity, playerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Status
+	for rows.Next() {
+		var i Status
+		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

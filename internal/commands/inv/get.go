@@ -24,20 +24,20 @@ func (i *Inv) get(ctx ken.SubCommandContext) (err error) {
 	if err != nil {
 		return discord.AlexError(ctx, "WHY DOES DISCORD STORE THEIR PLAYER IDS AS STRINGS LULW")
 	}
+
 	h, err := inventory.NewInventoryHandler(pId, i.dbPool, false)
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
-	log.Println("Hit inv init")
-	//FIXME: The sqlc query here def is not working...
+
 	inv, err := h.FetchInventory()
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, "failed to fetch player inv")
 	}
-	log.Println("hit inv create")
 
-	log.Println(inv)
-	return discord.SuccessfulMessage(ctx, "cool", "epic")
+	msg := h.InventoryEmbedBuilder(inv, false)
+
+	return ctx.RespondEmbed(msg)
 }

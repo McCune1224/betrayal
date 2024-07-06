@@ -59,3 +59,48 @@ func (q *Queries) ListPlayerAbility(ctx context.Context, playerID int64) ([]Abil
 	}
 	return items, nil
 }
+
+const listPlayerAbilityInventory = `-- name: ListPlayerAbilityInventory :many
+select ability_info.id, ability_info.name, ability_info.description, ability_info.default_charges, ability_info.any_ability, ability_info.rarity, player_ability.quantity
+from player_ability
+inner join ability_info on player_ability.ability_id = ability_info.id
+where player_ability.player_id = $1
+`
+
+type ListPlayerAbilityInventoryRow struct {
+	ID             int32  `json:"id"`
+	Name           string `json:"name"`
+	Description    string `json:"description"`
+	DefaultCharges int32  `json:"default_charges"`
+	AnyAbility     bool   `json:"any_ability"`
+	Rarity         Rarity `json:"rarity"`
+	Quantity       int32  `json:"quantity"`
+}
+
+func (q *Queries) ListPlayerAbilityInventory(ctx context.Context, playerID int64) ([]ListPlayerAbilityInventoryRow, error) {
+	rows, err := q.db.Query(ctx, listPlayerAbilityInventory, playerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPlayerAbilityInventoryRow
+	for rows.Next() {
+		var i ListPlayerAbilityInventoryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.DefaultCharges,
+			&i.AnyAbility,
+			&i.Rarity,
+			&i.Quantity,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/models"
+	"github.com/mccune1224/betrayal/internal/services/inventory"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
@@ -412,6 +413,9 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		query.DeletePlayer(bgCtx, player.ID)
 		return discord.ErrorMessage(ctx, "Failed to pin inventory message", fmt.Sprintf("Unable to pin inventory message for %s", playerArg.Username))
 	}
+
+	h, _ := inventory.NewInventoryHandler(player.ID, i.dbPool, false)
+	defer h.UpdateInventoryMessage(ctx.GetSession())
 
 	return discord.SuccessfulMessage(ctx, "Inventory Created", fmt.Sprintf("Created and pinined inventory for %s", playerArg.Username))
 }

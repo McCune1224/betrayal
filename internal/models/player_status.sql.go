@@ -51,3 +51,42 @@ func (q *Queries) ListPlayerStatus(ctx context.Context, playerID int64) ([]Statu
 	}
 	return items, nil
 }
+
+const listPlayerStatusInventory = `-- name: ListPlayerStatusInventory :many
+select status.id, status.name, status.description, player_status.quantity
+from player_status
+inner join status on player_status.status_id = status.id
+where player_status.player_id = $1
+`
+
+type ListPlayerStatusInventoryRow struct {
+	ID          int32  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Quantity    int32  `json:"quantity"`
+}
+
+func (q *Queries) ListPlayerStatusInventory(ctx context.Context, playerID int64) ([]ListPlayerStatusInventoryRow, error) {
+	rows, err := q.db.Query(ctx, listPlayerStatusInventory, playerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPlayerStatusInventoryRow
+	for rows.Next() {
+		var i ListPlayerStatusInventoryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Quantity,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

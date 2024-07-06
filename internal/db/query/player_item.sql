@@ -20,6 +20,13 @@ inner join item on player_item.item_id = item.id
 where player_item.player_id = $1
 ;
 
+-- name: ListPlayerItemInventory :many
+select item.*, player_item.quantity
+from player_item
+inner join item on player_item.item_id = item.id
+where player_item.player_id = $1
+;
+
 
 -- name: UpdatePlayerItemQuantity :one
 UPDATE player_item SET quantity = $3 WHERE player_id = $1 AND item_id = $2 RETURNING *;

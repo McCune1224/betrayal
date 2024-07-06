@@ -8,3 +8,11 @@ inner join ability_info on player_ability.ability_id = ability_info.id
 where player_ability.player_id = $1
 ;
 
+
+-- name: ListPlayerAbilityInventory :many
+select ability_info.*, player_ability.quantity
+from player_ability
+inner join ability_info on player_ability.ability_id = ability_info.id
+where player_ability.player_id = $1
+;
+

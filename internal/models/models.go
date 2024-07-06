@@ -141,13 +141,14 @@ type PerkInfo struct {
 }
 
 type Player struct {
-	ID        int64       `json:"id"`
-	RoleID    pgtype.Int4 `json:"role_id"`
-	Alive     bool        `json:"alive"`
-	Coins     int32       `json:"coins"`
-	Luck      int32       `json:"luck"`
-	ItemLimit int32       `json:"item_limit"`
-	Alignment Alignment   `json:"alignment"`
+	ID        int64          `json:"id"`
+	RoleID    pgtype.Int4    `json:"role_id"`
+	Alive     bool           `json:"alive"`
+	Coins     int32          `json:"coins"`
+	CoinBonus pgtype.Numeric `json:"coin_bonus"`
+	Luck      int32          `json:"luck"`
+	ItemLimit int32          `json:"item_limit"`
+	Alignment Alignment      `json:"alignment"`
 }
 
 type PlayerAbility struct {
@@ -176,6 +177,11 @@ type PlayerItem struct {
 type PlayerPerk struct {
 	PlayerID int64 `json:"player_id"`
 	PerkID   int32 `json:"perk_id"`
+}
+
+type PlayerRole struct {
+	PlayerID int64 `json:"player_id"`
+	RoleID   int32 `json:"role_id"`
 }
 
 type PlayerStatus struct {

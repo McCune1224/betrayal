@@ -10,16 +10,19 @@ from player
 ;
 
 -- name: CreatePlayer :one
-INSERT INTO player (id, role_id, alive, coins, luck, alignment) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
+INSERT INTO player (id, role_id, alive, coins, coin_bonus, luck, alignment) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
 
 -- name: UpdatePlayer :one
-UPDATE player SET role_id = $2, alive = $3, coins = $4, luck = $5, item_limit = $6, alignment = $7 WHERE id = $1 RETURNING *;
+UPDATE player SET role_id = $2, alive = $3, coins = $4, coin_bonus = $5, luck = $6, item_limit = $7, alignment = $8 WHERE id = $1 RETURNING *;
 
 -- name: UpdatePlayerAlive :one
 UPDATE player SET alive = $2 WHERE id = $1 RETURNING *;
 
 -- name: UpdatePlayerCoins :one
 UPDATE player SET coins = $2 WHERE id = $1 RETURNING *;
+--
+-- name: UpdatePlayerCoinBonus :one
+UPDATE player SET coin_bonus = $2 WHERE id = $1 RETURNING *;
 
 -- name: UpdatePlayerAlignment :one
 UPDATE player SET alignment = $2 WHERE id = $1 RETURNING *;
@@ -98,4 +101,7 @@ left join status on player_immunity.status_id = status.id
 where player.id = $1
 group by player.id
 ;
+
+-- name: GetPlayerRole
+
 

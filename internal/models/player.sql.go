@@ -12,16 +12,17 @@ import (
 )
 
 const createPlayer = `-- name: CreatePlayer :one
-INSERT INTO player (id, role_id, alive, coins, luck, alignment) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, role_id, alive, coins, luck, item_limit, alignment
+INSERT INTO player (id, role_id, alive, coins, coin_bonus, luck, alignment) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment
 `
 
 type CreatePlayerParams struct {
-	ID        int64       `json:"id"`
-	RoleID    pgtype.Int4 `json:"role_id"`
-	Alive     bool        `json:"alive"`
-	Coins     int32       `json:"coins"`
-	Luck      int32       `json:"luck"`
-	Alignment Alignment   `json:"alignment"`
+	ID        int64          `json:"id"`
+	RoleID    pgtype.Int4    `json:"role_id"`
+	Alive     bool           `json:"alive"`
+	Coins     int32          `json:"coins"`
+	CoinBonus pgtype.Numeric `json:"coin_bonus"`
+	Luck      int32          `json:"luck"`
+	Alignment Alignment      `json:"alignment"`
 }
 
 func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) (Player, error) {
@@ -30,6 +31,7 @@ func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) (Pla
 		arg.RoleID,
 		arg.Alive,
 		arg.Coins,
+		arg.CoinBonus,
 		arg.Luck,
 		arg.Alignment,
 	)
@@ -39,6 +41,7 @@ func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) (Pla
 		&i.RoleID,
 		&i.Alive,
 		&i.Coins,
+		&i.CoinBonus,
 		&i.Luck,
 		&i.ItemLimit,
 		&i.Alignment,
@@ -57,7 +60,7 @@ func (q *Queries) DeletePlayer(ctx context.Context, id int64) error {
 }
 
 const getPlayer = `-- name: GetPlayer :one
-select id, role_id, alive, coins, luck, item_limit, alignment
+select id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment
 from player
 where id = $1
 `
@@ -70,6 +73,7 @@ func (q *Queries) GetPlayer(ctx context.Context, id int64) (Player, error) {
 		&i.RoleID,
 		&i.Alive,
 		&i.Coins,
+		&i.CoinBonus,
 		&i.Luck,
 		&i.ItemLimit,
 		&i.Alignment,
@@ -79,7 +83,7 @@ func (q *Queries) GetPlayer(ctx context.Context, id int64) (Player, error) {
 
 const getPlayerInventory = `-- name: GetPlayerInventory :one
 select
-    player.id, player.role_id, player.alive, player.coins, player.luck, player.item_limit, player.alignment,
+    player.id, player.role_id, player.alive, player.coins, player.coin_bonus, player.luck, player.item_limit, player.alignment,
     array_agg(distinct ability_info.*) as ability_details,
     array_agg(distinct item.*) as item_details,
     array_agg(distinct "status".*) as immunity_details
@@ -95,16 +99,17 @@ group by player.id
 `
 
 type GetPlayerInventoryRow struct {
-	ID              int64       `json:"id"`
-	RoleID          pgtype.Int4 `json:"role_id"`
-	Alive           bool        `json:"alive"`
-	Coins           int32       `json:"coins"`
-	Luck            int32       `json:"luck"`
-	ItemLimit       int32       `json:"item_limit"`
-	Alignment       Alignment   `json:"alignment"`
-	AbilityDetails  interface{} `json:"ability_details"`
-	ItemDetails     interface{} `json:"item_details"`
-	ImmunityDetails interface{} `json:"immunity_details"`
+	ID              int64          `json:"id"`
+	RoleID          pgtype.Int4    `json:"role_id"`
+	Alive           bool           `json:"alive"`
+	Coins           int32          `json:"coins"`
+	CoinBonus       pgtype.Numeric `json:"coin_bonus"`
+	Luck            int32          `json:"luck"`
+	ItemLimit       int32          `json:"item_limit"`
+	Alignment       Alignment      `json:"alignment"`
+	AbilityDetails  interface{}    `json:"ability_details"`
+	ItemDetails     interface{}    `json:"item_details"`
+	ImmunityDetails interface{}    `json:"immunity_details"`
 }
 
 func (q *Queries) GetPlayerInventory(ctx context.Context, id int64) (GetPlayerInventoryRow, error) {
@@ -115,6 +120,7 @@ func (q *Queries) GetPlayerInventory(ctx context.Context, id int64) (GetPlayerIn
 		&i.RoleID,
 		&i.Alive,
 		&i.Coins,
+		&i.CoinBonus,
 		&i.Luck,
 		&i.ItemLimit,
 		&i.Alignment,
@@ -126,7 +132,7 @@ func (q *Queries) GetPlayerInventory(ctx context.Context, id int64) (GetPlayerIn
 }
 
 const listPlayer = `-- name: ListPlayer :many
-select id, role_id, alive, coins, luck, item_limit, alignment
+select id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment
 from player
 `
 
@@ -144,6 +150,7 @@ func (q *Queries) ListPlayer(ctx context.Context) ([]Player, error) {
 			&i.RoleID,
 			&i.Alive,
 			&i.Coins,
+			&i.CoinBonus,
 			&i.Luck,
 			&i.ItemLimit,
 			&i.Alignment,
@@ -235,17 +242,18 @@ func (q *Queries) PlayerFoo(ctx context.Context, id int64) (PlayerFooRow, error)
 }
 
 const updatePlayer = `-- name: UpdatePlayer :one
-UPDATE player SET role_id = $2, alive = $3, coins = $4, luck = $5, item_limit = $6, alignment = $7 WHERE id = $1 RETURNING id, role_id, alive, coins, luck, item_limit, alignment
+UPDATE player SET role_id = $2, alive = $3, coins = $4, coin_bonus = $5, luck = $6, item_limit = $7, alignment = $8 WHERE id = $1 RETURNING id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment
 `
 
 type UpdatePlayerParams struct {
-	ID        int64       `json:"id"`
-	RoleID    pgtype.Int4 `json:"role_id"`
-	Alive     bool        `json:"alive"`
-	Coins     int32       `json:"coins"`
-	Luck      int32       `json:"luck"`
-	ItemLimit int32       `json:"item_limit"`
-	Alignment Alignment   `json:"alignment"`
+	ID        int64          `json:"id"`
+	RoleID    pgtype.Int4    `json:"role_id"`
+	Alive     bool           `json:"alive"`
+	Coins     int32          `json:"coins"`
+	CoinBonus pgtype.Numeric `json:"coin_bonus"`
+	Luck      int32          `json:"luck"`
+	ItemLimit int32          `json:"item_limit"`
+	Alignment Alignment      `json:"alignment"`
 }
 
 func (q *Queries) UpdatePlayer(ctx context.Context, arg UpdatePlayerParams) (Player, error) {
@@ -254,6 +262,7 @@ func (q *Queries) UpdatePlayer(ctx context.Context, arg UpdatePlayerParams) (Pla
 		arg.RoleID,
 		arg.Alive,
 		arg.Coins,
+		arg.CoinBonus,
 		arg.Luck,
 		arg.ItemLimit,
 		arg.Alignment,
@@ -264,6 +273,7 @@ func (q *Queries) UpdatePlayer(ctx context.Context, arg UpdatePlayerParams) (Pla
 		&i.RoleID,
 		&i.Alive,
 		&i.Coins,
+		&i.CoinBonus,
 		&i.Luck,
 		&i.ItemLimit,
 		&i.Alignment,
@@ -272,7 +282,7 @@ func (q *Queries) UpdatePlayer(ctx context.Context, arg UpdatePlayerParams) (Pla
 }
 
 const updatePlayerAlignment = `-- name: UpdatePlayerAlignment :one
-UPDATE player SET alignment = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, luck, item_limit, alignment
+UPDATE player SET alignment = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment
 `
 
 type UpdatePlayerAlignmentParams struct {
@@ -288,6 +298,7 @@ func (q *Queries) UpdatePlayerAlignment(ctx context.Context, arg UpdatePlayerAli
 		&i.RoleID,
 		&i.Alive,
 		&i.Coins,
+		&i.CoinBonus,
 		&i.Luck,
 		&i.ItemLimit,
 		&i.Alignment,
@@ -296,7 +307,7 @@ func (q *Queries) UpdatePlayerAlignment(ctx context.Context, arg UpdatePlayerAli
 }
 
 const updatePlayerAlive = `-- name: UpdatePlayerAlive :one
-UPDATE player SET alive = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, luck, item_limit, alignment
+UPDATE player SET alive = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment
 `
 
 type UpdatePlayerAliveParams struct {
@@ -312,6 +323,32 @@ func (q *Queries) UpdatePlayerAlive(ctx context.Context, arg UpdatePlayerAlivePa
 		&i.RoleID,
 		&i.Alive,
 		&i.Coins,
+		&i.CoinBonus,
+		&i.Luck,
+		&i.ItemLimit,
+		&i.Alignment,
+	)
+	return i, err
+}
+
+const updatePlayerCoinBonus = `-- name: UpdatePlayerCoinBonus :one
+UPDATE player SET coin_bonus = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment
+`
+
+type UpdatePlayerCoinBonusParams struct {
+	ID        int64          `json:"id"`
+	CoinBonus pgtype.Numeric `json:"coin_bonus"`
+}
+
+func (q *Queries) UpdatePlayerCoinBonus(ctx context.Context, arg UpdatePlayerCoinBonusParams) (Player, error) {
+	row := q.db.QueryRow(ctx, updatePlayerCoinBonus, arg.ID, arg.CoinBonus)
+	var i Player
+	err := row.Scan(
+		&i.ID,
+		&i.RoleID,
+		&i.Alive,
+		&i.Coins,
+		&i.CoinBonus,
 		&i.Luck,
 		&i.ItemLimit,
 		&i.Alignment,
@@ -320,7 +357,7 @@ func (q *Queries) UpdatePlayerAlive(ctx context.Context, arg UpdatePlayerAlivePa
 }
 
 const updatePlayerCoins = `-- name: UpdatePlayerCoins :one
-UPDATE player SET coins = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, luck, item_limit, alignment
+UPDATE player SET coins = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment
 `
 
 type UpdatePlayerCoinsParams struct {
@@ -336,6 +373,7 @@ func (q *Queries) UpdatePlayerCoins(ctx context.Context, arg UpdatePlayerCoinsPa
 		&i.RoleID,
 		&i.Alive,
 		&i.Coins,
+		&i.CoinBonus,
 		&i.Luck,
 		&i.ItemLimit,
 		&i.Alignment,
@@ -344,7 +382,7 @@ func (q *Queries) UpdatePlayerCoins(ctx context.Context, arg UpdatePlayerCoinsPa
 }
 
 const updatePlayerItemLimit = `-- name: UpdatePlayerItemLimit :one
-UPDATE player SET item_limit = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, luck, item_limit, alignment
+UPDATE player SET item_limit = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment
 `
 
 type UpdatePlayerItemLimitParams struct {
@@ -360,6 +398,7 @@ func (q *Queries) UpdatePlayerItemLimit(ctx context.Context, arg UpdatePlayerIte
 		&i.RoleID,
 		&i.Alive,
 		&i.Coins,
+		&i.CoinBonus,
 		&i.Luck,
 		&i.ItemLimit,
 		&i.Alignment,
@@ -368,7 +407,7 @@ func (q *Queries) UpdatePlayerItemLimit(ctx context.Context, arg UpdatePlayerIte
 }
 
 const updatePlayerLuck = `-- name: UpdatePlayerLuck :one
-UPDATE player SET luck = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, luck, item_limit, alignment
+UPDATE player SET luck = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment
 `
 
 type UpdatePlayerLuckParams struct {
@@ -384,6 +423,7 @@ func (q *Queries) UpdatePlayerLuck(ctx context.Context, arg UpdatePlayerLuckPara
 		&i.RoleID,
 		&i.Alive,
 		&i.Coins,
+		&i.CoinBonus,
 		&i.Luck,
 		&i.ItemLimit,
 		&i.Alignment,
