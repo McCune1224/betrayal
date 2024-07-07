@@ -49,6 +49,19 @@ func (q *Queries) GetPlayerConfessional(ctx context.Context, playerID int64) (Pl
 	return i, err
 }
 
+const getPlayerConfessionalByChannelID = `-- name: GetPlayerConfessionalByChannelID :one
+select player_id, channel_id, pin_message_id
+from player_confessional
+where channel_id = $1
+`
+
+func (q *Queries) GetPlayerConfessionalByChannelID(ctx context.Context, channelID int64) (PlayerConfessional, error) {
+	row := q.db.QueryRow(ctx, getPlayerConfessionalByChannelID, channelID)
+	var i PlayerConfessional
+	err := row.Scan(&i.PlayerID, &i.ChannelID, &i.PinMessageID)
+	return i, err
+}
+
 const listPlayerConfessional = `-- name: ListPlayerConfessional :many
 select player_id, channel_id, pin_message_id
 from player_confessional

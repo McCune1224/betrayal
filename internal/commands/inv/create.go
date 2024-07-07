@@ -414,7 +414,11 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Failed to pin inventory message", fmt.Sprintf("Unable to pin inventory message for %s", playerArg.Username))
 	}
 
-	h, _ := inventory.NewInventoryHandler(player.ID, i.dbPool, false)
+	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "failed to init inv handler")
+	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
 
 	return discord.SuccessfulMessage(ctx, "Inventory Created", fmt.Sprintf("Created and pinined inventory for %s", playerArg.Username))

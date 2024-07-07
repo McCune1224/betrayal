@@ -28,9 +28,27 @@ type InventoryHandler struct {
 	player models.Player
 }
 
-func NewInventoryHandler(playerID int64, db *pgxpool.Pool, adminOnly bool) (*InventoryHandler, error) {
+// In order for this to work 1 of 2 things must happen:
+// 1. This command is called within the player's confessional by an admin
+// 2. This command is called within a whitelisted channel and explictly asks for the player's inventory
+func NewInventoryHandler(ctx ken.SubCommandContext, db *pgxpool.Pool) (*InventoryHandler, error) {
 	handler := &InventoryHandler{pool: db}
 	query := models.New(db)
+	playerID := int64(0)
+	if playerArg, ok := ctx.Options().GetByNameOptional("user"); ok {
+		playerID, _ = util.Atoi64((playerArg.UserValue(ctx).ID))
+	}
+
+	if playerID == 0 {
+		channelID, _ := util.Atoi64(ctx.GetEvent().ChannelID)
+		playerConfessional, err := query.GetPlayerConfessionalByChannelID(context.Background(), channelID)
+		if err != nil {
+			return nil, err
+		}
+
+		playerID = playerConfessional.PlayerID
+	}
+
 	player, err := query.GetPlayer(context.Background(), playerID)
 	if err != nil {
 		return nil, err

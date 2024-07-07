@@ -5,7 +5,6 @@ import (
 
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/services/inventory"
-	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
 
@@ -14,18 +13,10 @@ func (i *Inv) get(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-
-	targetPlayer := ctx.Options().GetByName("user").UserValue(ctx)
-
-	pId, err := util.Atoi64(targetPlayer.ID)
-	if err != nil {
-		return discord.AlexError(ctx, "WHY DOES DISCORD STORE THEIR PLAYER IDS AS STRINGS LULW")
-	}
-
-	h, err := inventory.NewInventoryHandler(pId, i.dbPool, false)
+	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx, "failed to init inv handler")
+		return discord.AlexError(ctx, err.Error())
 	}
 
 	authorized, err := h.InventoryAuthorized(ctx)

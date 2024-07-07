@@ -29,12 +29,48 @@ func (i *Inv) Name() string {
 func (i *Inv) Options() []*discordgo.ApplicationCommandOption {
 	return []*discordgo.ApplicationCommandOption{
 		{
+			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+			Name:        "ability",
+			Description: "create/update/delete an ability in an inventory",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "add",
+					Description: "Add an ability",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("ability", "Ability to add", true),
+						discord.IntCommandArg("quantity", "amount of charges to add", false),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "delete",
+					Description: "Delete an ability",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("ability", "Ability to add", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "set",
+					Description: "set the quantity of an ability",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.StringCommandArg("ability", "Ability to add", true),
+						discord.IntCommandArg("quantity", "amount of charges to st", true),
+						discord.UserCommandArg(false),
+					},
+				},
+			},
+		},
+		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "create",
 			Description: "Create a player's inventory",
 			Options: []*discordgo.ApplicationCommandOption{
-				discord.UserCommandArg(true),
 				discord.StringCommandArg("role", "Role to create inventory for", true),
+				discord.UserCommandArg(true),
 			},
 		},
 		{
@@ -62,6 +98,11 @@ func (i *Inv) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "create", Run: i.create},
 		ken.SubCommandHandler{Name: "delete", Run: i.delete},
 		ken.SubCommandHandler{Name: "get", Run: i.get},
+		ken.SubCommandGroup{Name: "ability", SubHandler: []ken.CommandHandler{
+			ken.SubCommandHandler{Name: "add", Run: i.addAbility},
+			ken.SubCommandHandler{Name: "delete", Run: i.deleteAbility},
+			ken.SubCommandHandler{Name: "set", Run: i.setAbility},
+		}},
 	)
 }
 

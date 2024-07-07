@@ -26,6 +26,21 @@ func (q *Queries) CreatePlayerAbilityJoin(ctx context.Context, arg CreatePlayerA
 	return i, err
 }
 
+const deletePlayerAbility = `-- name: DeletePlayerAbility :exec
+delete from player_ability
+where player_ability.player_id = $1 and player_ability.ability_id = $2
+`
+
+type DeletePlayerAbilityParams struct {
+	PlayerID  int64 `json:"player_id"`
+	AbilityID int32 `json:"ability_id"`
+}
+
+func (q *Queries) DeletePlayerAbility(ctx context.Context, arg DeletePlayerAbilityParams) error {
+	_, err := q.db.Exec(ctx, deletePlayerAbility, arg.PlayerID, arg.AbilityID)
+	return err
+}
+
 const listPlayerAbility = `-- name: ListPlayerAbility :many
 select ability_info.id, ability_info.name, ability_info.description, ability_info.default_charges, ability_info.any_ability, ability_info.rarity
 from player_ability
@@ -103,4 +118,48 @@ func (q *Queries) ListPlayerAbilityInventory(ctx context.Context, playerID int64
 		return nil, err
 	}
 	return items, nil
+}
+
+const listPlayerAbilityJoin = `-- name: ListPlayerAbilityJoin :many
+select player_ability.player_id, player_ability.ability_id, player_ability.quantity
+from player_ability
+where player_ability.player_id = $1
+`
+
+func (q *Queries) ListPlayerAbilityJoin(ctx context.Context, playerID int64) ([]PlayerAbility, error) {
+	rows, err := q.db.Query(ctx, listPlayerAbilityJoin, playerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PlayerAbility
+	for rows.Next() {
+		var i PlayerAbility
+		if err := rows.Scan(&i.PlayerID, &i.AbilityID, &i.Quantity); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updatePlayerAbilityQuantity = `-- name: UpdatePlayerAbilityQuantity :one
+update player_ability set quantity = $1 where player_ability.player_id = $2 and player_ability.ability_id = $3
+returning player_id, ability_id, quantity
+`
+
+type UpdatePlayerAbilityQuantityParams struct {
+	Quantity  int32 `json:"quantity"`
+	PlayerID  int64 `json:"player_id"`
+	AbilityID int32 `json:"ability_id"`
+}
+
+func (q *Queries) UpdatePlayerAbilityQuantity(ctx context.Context, arg UpdatePlayerAbilityQuantityParams) (PlayerAbility, error) {
+	row := q.db.QueryRow(ctx, updatePlayerAbilityQuantity, arg.Quantity, arg.PlayerID, arg.AbilityID)
+	var i PlayerAbility
+	err := row.Scan(&i.PlayerID, &i.AbilityID, &i.Quantity)
+	return i, err
 }

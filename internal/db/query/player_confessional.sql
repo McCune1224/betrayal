@@ -7,6 +7,13 @@ from player_confessional
 where player_id = $1
 ;
 
+
+-- name: GetPlayerConfessionalByChannelID :one
+select *
+from player_confessional
+where channel_id = $1
+;
+
 -- name: ListPlayerConfessional :many
 select *
 from player_confessional
