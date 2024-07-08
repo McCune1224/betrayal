@@ -9,7 +9,8 @@ import (
 	"github.com/zekrotja/ken"
 )
 
-func (i *Inv) addAbility(ctx ken.SubCommandContext) (err error) {
+func (i *Inv) addCoin(ctx ken.SubCommandContext) (err error) {
+
 	if err = ctx.Defer(); err != nil {
 		log.Println(err)
 		return err
@@ -23,18 +24,18 @@ func (i *Inv) addAbility(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
-
-	abilityNameArg := ctx.Options().GetByName("ability").StringValue()
-	quantityArg := int32(ctx.Options().GetByName("quantity").IntValue())
-	ability, err := h.AddAbility(abilityNameArg, quantityArg)
+	coinsArg := ctx.Options().GetByName("coin").IntValue()
+	err = h.AddCoin(int32(coinsArg))
 	if err != nil {
-		return discord.AlexError(ctx, "failed to add ability")
+		log.Println(err)
+		return discord.AlexError(ctx, "failed to add coins")
 	}
-	return discord.SuccessfulMessage(ctx, "Ability Added", fmt.Sprintf("Added ability %s", ability.Name))
+	player := h.GetPlayer()
+	return discord.SuccessfulMessage(ctx, "Coins Added", fmt.Sprintf("Added %d coins %d => %d", coinsArg, player.Coins-int32(coinsArg), player.Coins))
 }
-
-func (i *Inv) deleteAbility(ctx ken.SubCommandContext) (err error) {
+func (i *Inv) deleteCoin(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
+		log.Println(err)
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -46,16 +47,18 @@ func (i *Inv) deleteAbility(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
-
-	abilityNameArg := ctx.Options().GetByName("ability").StringValue()
-	ability, err := h.RemoveAbility(abilityNameArg)
+	coinsArg := ctx.Options().GetByName("coin").IntValue()
+	err = h.RemoveCoin(int32(coinsArg))
 	if err != nil {
-		return discord.AlexError(ctx, "failed to remove ability")
+		log.Println(err)
+		return discord.AlexError(ctx, "failed to remove coins")
 	}
-	return discord.SuccessfulMessage(ctx, "Ability Removed", fmt.Sprintf("Removed ability %s", ability.Name))
+
+	player := h.GetPlayer()
+	return discord.SuccessfulMessage(ctx, "Coins Removed", fmt.Sprintf("Removed %d coins %d => %d", coinsArg, player.Coins+int32(coinsArg), player.Coins))
 }
+func (i *Inv) setCoin(ctx ken.SubCommandContext) (err error) {
 
-func (i *Inv) setAbility(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
 		log.Println(err)
 		return err
@@ -69,13 +72,12 @@ func (i *Inv) setAbility(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
-
-	abilityNameArg := ctx.Options().GetByName("ability").StringValue()
-	quantityArg := int(ctx.Options().GetByName("quantity").IntValue())
-	ability, err := h.UpdateAbility(abilityNameArg, quantityArg)
+	coinsArg := ctx.Options().GetByName("coin").IntValue()
+	err = h.SetCoin(int32(coinsArg))
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx, "failed to remove ability")
+		return discord.AlexError(ctx, "failed to set coins")
 	}
-	return discord.SuccessfulMessage(ctx, "Ability Updated Charges", fmt.Sprintf("ability %s set to %d", ability.Name, quantityArg))
+	player := h.GetPlayer()
+	return discord.SuccessfulMessage(ctx, "Coins Set", fmt.Sprintf("Set %d coins %d => %d", coinsArg, player.Coins, player.Coins))
 }

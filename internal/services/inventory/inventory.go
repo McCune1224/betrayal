@@ -123,7 +123,13 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 	}
 	abSts := []string{}
 	for _, ab := range inv.Abilities {
-		abSts = append(abSts, fmt.Sprintf("[%d] %s", ab.Quantity, ab.Name))
+		str := fmt.Sprintf("[%d] %s", ab.Quantity, ab.Name)
+		if ab.AnyAbility {
+			abSts = append(abSts, str+" (AA)")
+		} else {
+			abSts = append(abSts, str)
+		}
+
 	}
 	abilitiesField := &discordgo.MessageEmbedField{
 		Name:   fmt.Sprintf("%s Abilities", discord.EmojiAbility),
@@ -307,4 +313,10 @@ func (ih *InventoryHandler) InventoryAuthorized(ctx ken.SubCommandContext) (bool
 		}
 	}
 	return true, nil
+}
+
+func (ih *InventoryHandler) GetPlayer() models.Player {
+	query := models.New(ih.pool)
+	newPlayer, _ := query.GetPlayer(context.Background(), ih.player.ID)
+	return newPlayer
 }

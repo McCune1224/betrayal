@@ -65,6 +65,40 @@ func (i *Inv) Options() []*discordgo.ApplicationCommandOption {
 			},
 		},
 		{
+			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+			Name:        "coin",
+			Description: "create/update/delete an coin in an inventory",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "add",
+					Description: "Add coins",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.IntCommandArg("coin", "Add X coins", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "remove",
+					Description: "Remove X coins",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.IntCommandArg("coin", "amount of coins to remove", true),
+						discord.UserCommandArg(false),
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "set",
+					Description: "Set the coins to X",
+					Options: []*discordgo.ApplicationCommandOption{
+						discord.IntCommandArg("coin", "set coins to specified amount", true),
+						discord.UserCommandArg(false),
+					},
+				},
+			},
+		},
+		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "create",
 			Description: "Create a player's inventory",
@@ -102,6 +136,11 @@ func (i *Inv) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "add", Run: i.addAbility},
 			ken.SubCommandHandler{Name: "delete", Run: i.deleteAbility},
 			ken.SubCommandHandler{Name: "set", Run: i.setAbility},
+		}},
+		ken.SubCommandGroup{Name: "coin", SubHandler: []ken.CommandHandler{
+			ken.SubCommandHandler{Name: "add", Run: i.addCoin},
+			ken.SubCommandHandler{Name: "remove", Run: i.deleteCoin},
+			ken.SubCommandHandler{Name: "set", Run: i.setCoin},
 		}},
 	)
 }
