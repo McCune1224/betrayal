@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
+	"github.com/mccune1224/betrayal/internal/commands/help"
 	"github.com/mccune1224/betrayal/internal/commands/inv"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/util"
@@ -132,7 +133,7 @@ func main() {
 		// new(commands.Revive),
 		// new(commands.Setup),
 		// new(commands.Alliance),
-		// new(help.Help),
+		new(help.Help),
 		new(inv.Inv),
 	)
 

@@ -28,76 +28,8 @@ func (i *Inv) Name() string {
 // Options implements ken.SlashCommand.
 func (i *Inv) Options() []*discordgo.ApplicationCommandOption {
 	return []*discordgo.ApplicationCommandOption{
-		{
-			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
-			Name:        "ability",
-			Description: "create/update/delete an ability in an inventory",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Name:        "add",
-					Description: "Add an ability",
-					Options: []*discordgo.ApplicationCommandOption{
-						discord.StringCommandArg("ability", "Ability to add", true),
-						discord.IntCommandArg("quantity", "amount of charges to add", false),
-						discord.UserCommandArg(false),
-					},
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Name:        "delete",
-					Description: "Delete an ability",
-					Options: []*discordgo.ApplicationCommandOption{
-						discord.StringCommandArg("ability", "Ability to add", true),
-						discord.UserCommandArg(false),
-					},
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Name:        "set",
-					Description: "set the quantity of an ability",
-					Options: []*discordgo.ApplicationCommandOption{
-						discord.StringCommandArg("ability", "Ability to add", true),
-						discord.IntCommandArg("quantity", "amount of charges to st", true),
-						discord.UserCommandArg(false),
-					},
-				},
-			},
-		},
-		{
-			Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
-			Name:        "coin",
-			Description: "create/update/delete an coin in an inventory",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Name:        "add",
-					Description: "Add coins",
-					Options: []*discordgo.ApplicationCommandOption{
-						discord.IntCommandArg("coin", "Add X coins", true),
-						discord.UserCommandArg(false),
-					},
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Name:        "remove",
-					Description: "Remove X coins",
-					Options: []*discordgo.ApplicationCommandOption{
-						discord.IntCommandArg("coin", "amount of coins to remove", true),
-						discord.UserCommandArg(false),
-					},
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-					Name:        "set",
-					Description: "Set the coins to X",
-					Options: []*discordgo.ApplicationCommandOption{
-						discord.IntCommandArg("coin", "set coins to specified amount", true),
-						discord.UserCommandArg(false),
-					},
-				},
-			},
-		},
+		i.abilityCommandArgBuilder(),
+		i.coinCommandArgBuilder(),
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "create",
@@ -132,16 +64,12 @@ func (i *Inv) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "create", Run: i.create},
 		ken.SubCommandHandler{Name: "delete", Run: i.delete},
 		ken.SubCommandHandler{Name: "get", Run: i.get},
-		ken.SubCommandGroup{Name: "ability", SubHandler: []ken.CommandHandler{
-			ken.SubCommandHandler{Name: "add", Run: i.addAbility},
-			ken.SubCommandHandler{Name: "delete", Run: i.deleteAbility},
-			ken.SubCommandHandler{Name: "set", Run: i.setAbility},
-		}},
-		ken.SubCommandGroup{Name: "coin", SubHandler: []ken.CommandHandler{
-			ken.SubCommandHandler{Name: "add", Run: i.addCoin},
-			ken.SubCommandHandler{Name: "remove", Run: i.deleteCoin},
-			ken.SubCommandHandler{Name: "set", Run: i.setCoin},
-		}},
+		i.abilityCommandGroupBuilder(),
+		i.coinCommandGroupBuilder(),
+		// ken.SubCommandGroup{Name: "immunity", SubHandler: []ken.CommandHandler{
+		// 	ken.SubCommandHandler{Name: "add", Run: i.addImmunity},
+		// 	ken.SubCommandHandler{Name: "remove", Run: i.removeImmunity},
+		// }},
 	)
 }
 

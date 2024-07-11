@@ -57,7 +57,6 @@ func NewInventoryHandler(ctx ken.SubCommandContext, db *pgxpool.Pool) (*Inventor
 	return handler, nil
 }
 
-// FIXME: The sqlc query here def is not working...
 func (ih *InventoryHandler) FetchInventory() (*PlayerInventory, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -65,6 +64,7 @@ func (ih *InventoryHandler) FetchInventory() (*PlayerInventory, error) {
 	query := models.New(ih.pool)
 
 	abilityChan := make(chan []models.ListPlayerAbilityInventoryRow, 1)
+	perksChan := make(chan []models.PerkInfo, 1)
 	itemCh := make(chan []models.ListPlayerItemInventoryRow, 1)
 	statusChan := make(chan []models.ListPlayerStatusInventoryRow, 1)
 	immunityChan := make(chan []models.Status, 1)
@@ -72,6 +72,10 @@ func (ih *InventoryHandler) FetchInventory() (*PlayerInventory, error) {
 
 	go util.DbTask(ctx, roleChan, func() (models.Role, error) {
 		return query.GetRole(ctx, ih.player.RoleID.Int32)
+	})
+
+	go util.DbTask(ctx, perksChan, func() ([]models.PerkInfo, error) {
+		return query.ListPlayerPerk(ctx, ih.player.ID)
 	})
 
 	go util.DbTask(ctx, abilityChan, func() ([]models.ListPlayerAbilityInventoryRow, error) {
@@ -96,6 +100,7 @@ func (ih *InventoryHandler) FetchInventory() (*PlayerInventory, error) {
 	inv.Items = <-itemCh
 	inv.Immunities = <-immunityChan
 	inv.Statuses = <-statusChan
+	inv.Perks = <-perksChan
 	return inv, nil
 }
 

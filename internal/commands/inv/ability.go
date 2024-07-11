@@ -4,10 +4,58 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/services/inventory"
 	"github.com/zekrotja/ken"
 )
+
+func (i *Inv) abilityCommandGroupBuilder() ken.SubCommandGroup {
+	return ken.SubCommandGroup{Name: "ability", SubHandler: []ken.CommandHandler{
+		ken.SubCommandHandler{Name: "add", Run: i.addAbility},
+		ken.SubCommandHandler{Name: "delete", Run: i.deleteAbility},
+		ken.SubCommandHandler{Name: "set", Run: i.setAbility},
+	}}
+}
+
+func (i *Inv) abilityCommandArgBuilder() *discordgo.ApplicationCommandOption {
+	return &discordgo.ApplicationCommandOption{
+		Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+		Name:        "ability",
+		Description: "create/update/delete an ability in an inventory",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Name:        "add",
+				Description: "Add an ability",
+				Options: []*discordgo.ApplicationCommandOption{
+					discord.StringCommandArg("ability", "Ability to add", true),
+					discord.IntCommandArg("quantity", "amount of charges to add", false),
+					discord.UserCommandArg(false),
+				},
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Name:        "delete",
+				Description: "Delete an ability",
+				Options: []*discordgo.ApplicationCommandOption{
+					discord.StringCommandArg("ability", "Ability to add", true),
+					discord.UserCommandArg(false),
+				},
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Name:        "set",
+				Description: "set the quantity of an ability",
+				Options: []*discordgo.ApplicationCommandOption{
+					discord.StringCommandArg("ability", "Ability to add", true),
+					discord.IntCommandArg("quantity", "amount of charges to st", true),
+					discord.UserCommandArg(false),
+				},
+			},
+		},
+	}
+}
 
 func (i *Inv) addAbility(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
