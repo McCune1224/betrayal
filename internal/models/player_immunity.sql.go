@@ -25,6 +25,21 @@ func (q *Queries) CreatePlayerImmunityJoin(ctx context.Context, arg CreatePlayer
 	return i, err
 }
 
+const deletePlayerImmunity = `-- name: DeletePlayerImmunity :exec
+delete from player_immunity
+where player_id = $1 and status_id = $2
+`
+
+type DeletePlayerImmunityParams struct {
+	PlayerID int64 `json:"player_id"`
+	StatusID int32 `json:"status_id"`
+}
+
+func (q *Queries) DeletePlayerImmunity(ctx context.Context, arg DeletePlayerImmunityParams) error {
+	_, err := q.db.Exec(ctx, deletePlayerImmunity, arg.PlayerID, arg.StatusID)
+	return err
+}
+
 const listPlayerImmunity = `-- name: ListPlayerImmunity :many
 select status.id, status.name, status.description
 from player_immunity

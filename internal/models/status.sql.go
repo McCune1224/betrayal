@@ -38,12 +38,12 @@ func (q *Queries) DeleteStatus(ctx context.Context, id int32) error {
 const getStatusByFuzzy = `-- name: GetStatusByFuzzy :one
 select id, name, description
 from status
-order by levenshtein(name, $1) asc
+order by levenshtein(name, $1::varchar(255)) asc
 limit 1
 `
 
-func (q *Queries) GetStatusByFuzzy(ctx context.Context, levenshtein interface{}) (Status, error) {
-	row := q.db.QueryRow(ctx, getStatusByFuzzy, levenshtein)
+func (q *Queries) GetStatusByFuzzy(ctx context.Context, dollar_1 string) (Status, error) {
+	row := q.db.QueryRow(ctx, getStatusByFuzzy, dollar_1)
 	var i Status
 	err := row.Scan(&i.ID, &i.Name, &i.Description)
 	return i, err
