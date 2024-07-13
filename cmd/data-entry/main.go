@@ -65,31 +65,30 @@ func main() {
 	}
 	defer db.Close()
 
-	file, err := os.Open(*fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if strings.Contains(file.Name(), "GOOD") {
-		alignment := string(models.AlignmentGOOD)
-		SyncRolesCsv(db, file, alignment)
-	} else if strings.Contains(file.Name(), "EVIL") {
-		alignment := string(models.AlignmentEVIL)
-		SyncRolesCsv(db, file, alignment)
-	} else if strings.Contains(file.Name(), "NEUTRAL") {
-		alignment := string(models.AlignmentNEUTRAL)
-		SyncRolesCsv(db, file, alignment)
-	} else {
-		log.Fatal("Invalid alignment")
-	}
-	file.Close()
-
 	// file, err := os.Open(*fileName)
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
-	// SyncItemsCsv(db, file)
+	// if strings.Contains(file.Name(), "GOOD") {
+	// 	alignment := string(models.AlignmentGOOD)
+	// 	SyncRolesCsv(db, file, alignment)
+	// } else if strings.Contains(file.Name(), "EVIL") {
+	// 	alignment := string(models.AlignmentEVIL)
+	// 	SyncRolesCsv(db, file, alignment)
+	// } else if strings.Contains(file.Name(), "NEUTRAL") {
+	// 	alignment := string(models.AlignmentNEUTRAL)
+	// 	SyncRolesCsv(db, file, alignment)
+	// } else {
+	// 	log.Fatal("Invalid alignment")
+	// }
 	// file.Close()
+
+	file, err := os.Open(*fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	SyncItemsCsv(db, file)
+	file.Close()
 }
 
 type TempCreateAbilityInfoParams struct {
@@ -326,7 +325,7 @@ func SyncItemsCsv(db *pgxpool.Pool, file *os.File) error {
 		return err
 	}
 	for i, entry := range csv {
-		if i == 0 || i == 1 {
+		if i == 0 || i == 1 || len(csv) == i-1 {
 			continue
 		}
 

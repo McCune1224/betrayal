@@ -31,6 +31,7 @@ func (i *Inv) Options() []*discordgo.ApplicationCommandOption {
 		i.abilityCommandArgBuilder(),
 		i.coinCommandArgBuilder(),
 		i.immunityCommandArgBuilder(),
+		i.itemCommandArgBuilder(),
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "create",
@@ -68,6 +69,7 @@ func (i *Inv) Run(ctx ken.Context) (err error) {
 		i.abilityCommandGroupBuilder(),
 		i.coinCommandGroupBuilder(),
 		i.immunityCommandGroupBuilder(),
+		i.itemCommandGroupBuilder(),
 		// ken.SubCommandGroup{Name: "immunity", SubHandler: []ken.CommandHandler{
 		// 	ken.SubCommandHandler{Name: "add", Run: i.addImmunity},
 		// 	ken.SubCommandHandler{Name: "remove", Run: i.removeImmunity},

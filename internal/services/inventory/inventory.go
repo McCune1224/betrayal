@@ -165,11 +165,14 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 	// }
 
 	itemsSts := []string{}
+	itemQuantity := int32(0)
 	for _, item := range inv.Items {
-		itemsSts = append(itemsSts, item.Name)
+		itemQuantity += item.Quantity
+		itemsSts = append(itemsSts, fmt.Sprintf("%s [%d]", item.Name, item.Quantity))
 	}
+
 	itemsField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("%s Items (%d/%d)", discord.EmojiItem, len(inv.Items), inv.ItemLimit),
+		Name:   fmt.Sprintf("%s Items (%d/%d)", discord.EmojiItem, itemQuantity, inv.ItemLimit),
 		Value:  strings.Join(itemsSts, "\n"),
 		Inline: true,
 	}

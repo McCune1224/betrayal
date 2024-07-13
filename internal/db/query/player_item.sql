@@ -36,3 +36,10 @@ delete from player_item
 where player_id = $1 and item_id = $2
 ;
 
+
+-- name: GetPlayerItemCount :one 
+select coalesce(sum(quantity), 0) as item_count
+from player_item
+where player_item.player_id = $1
+;
+

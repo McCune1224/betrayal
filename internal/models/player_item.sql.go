@@ -82,6 +82,19 @@ func (q *Queries) GetPlayerItem(ctx context.Context, arg GetPlayerItemParams) (G
 	return i, err
 }
 
+const getPlayerItemCount = `-- name: GetPlayerItemCount :one
+select coalesce(sum(quantity), 0) as item_count
+from player_item
+where player_item.player_id = $1
+`
+
+func (q *Queries) GetPlayerItemCount(ctx context.Context, playerID int64) (interface{}, error) {
+	row := q.db.QueryRow(ctx, getPlayerItemCount, playerID)
+	var item_count interface{}
+	err := row.Scan(&item_count)
+	return item_count, err
+}
+
 const listPlayerItem = `-- name: ListPlayerItem :many
 select item.id, item.name, item.description, item.rarity, item.cost
 from player_item

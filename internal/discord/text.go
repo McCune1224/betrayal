@@ -24,12 +24,15 @@ const (
 
 // inventory emojis
 const (
-	EmojiInventory  = Emoji("🎒")
-	EmojiAlignment  = Emoji("⚖️")
-	EmojiAbility    = Emoji("💪")
-	EmojiPerk       = Emoji("➕")
-	EmojiItem       = Emoji("📦")
-	EmojiStatus     = Emoji("🔵")
+	EmojiInventory = Emoji("🎒")
+	EmojiAlignment = Emoji("⚖️")
+	// EmojiAbility    = Emoji("💪")
+	EmojiAbility = Emoji("🔮")
+	// EmojiPerk       = Emoji("➕")
+	EmojiPerk = Emoji("💪")
+	EmojiItem = Emoji("📦")
+	// EmojiStatus     = Emoji("🔵")
+	EmojiStatus     = Emoji("🧊")
 	EmojiImmunity   = Emoji("🛡️")
 	EmojiEffect     = Emoji("🌟")
 	EmojiCoins      = Emoji("💰")
@@ -153,7 +156,12 @@ func UpdatePinnedMessage(
 func SuccessfulMessage(ctx ken.Context,
 	title string,
 	message string,
+	footer ...string,
 ) (err error) {
+	footMsg := ""
+	if len(footer) > 0 {
+		footMsg = footer[0]
+	}
 	resp := &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -163,6 +171,7 @@ func SuccessfulMessage(ctx ken.Context,
 					Title:       fmt.Sprintf("%s %s %s", EmojiSuccess, title, EmojiSuccess),
 					Description: message,
 					Color:       ColorThemeGreen,
+					Footer:      &discordgo.MessageEmbedFooter{Text: footMsg},
 				},
 			},
 		},
