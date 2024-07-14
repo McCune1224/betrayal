@@ -8,3 +8,9 @@ inner join perk_info on player_perk.perk_id = perk_info.id
 where player_perk.player_id = $1
 ;
 
+
+-- name: DeletePlayerPerk :exec
+delete from player_perk
+where player_id = $1 and perk_id = $2
+;
+

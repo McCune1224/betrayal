@@ -30,6 +30,9 @@ UPDATE player SET alignment = $2 WHERE id = $1 RETURNING *;
 -- name: UpdatePlayerItemLimit :one
 UPDATE player SET item_limit = $2 WHERE id = $1 RETURNING *;
 
+-- name: UpdatePlayerRole :one
+UPDATE player SET role_id = $2 WHERE id = $1 RETURNING *;
+
 -- name: UpdatePlayerLuck :one
 UPDATE player SET luck = $2 WHERE id = $1 RETURNING *;
 

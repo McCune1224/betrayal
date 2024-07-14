@@ -25,6 +25,21 @@ func (q *Queries) CreatePlayerPerkJoin(ctx context.Context, arg CreatePlayerPerk
 	return i, err
 }
 
+const deletePlayerPerk = `-- name: DeletePlayerPerk :exec
+delete from player_perk
+where player_id = $1 and perk_id = $2
+`
+
+type DeletePlayerPerkParams struct {
+	PlayerID int64 `json:"player_id"`
+	PerkID   int32 `json:"perk_id"`
+}
+
+func (q *Queries) DeletePlayerPerk(ctx context.Context, arg DeletePlayerPerkParams) error {
+	_, err := q.db.Exec(ctx, deletePlayerPerk, arg.PlayerID, arg.PerkID)
+	return err
+}
+
 const listPlayerPerk = `-- name: ListPlayerPerk :many
 select perk_info.id, perk_info.name, perk_info.description
 from player_perk

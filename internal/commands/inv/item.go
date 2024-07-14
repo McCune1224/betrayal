@@ -16,6 +16,7 @@ func (i *Inv) itemCommandGroupBuilder() ken.SubCommandGroup {
 	return ken.SubCommandGroup{Name: "item", SubHandler: []ken.CommandHandler{
 		ken.SubCommandHandler{Name: "add", Run: i.addItem},
 		ken.SubCommandHandler{Name: "delete", Run: i.deleteItem},
+		ken.SubCommandHandler{Name: "limit", Run: i.setLimit},
 	}}
 }
 
@@ -42,6 +43,15 @@ func (i *Inv) itemCommandArgBuilder() *discordgo.ApplicationCommandOption {
 				Options: []*discordgo.ApplicationCommandOption{
 					discord.StringCommandArg("item", "Item to add", true),
 					discord.IntCommandArg("quantity", "amount the item to add", false),
+					discord.UserCommandArg(false),
+				},
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Name:        "limit",
+				Description: "Set the player inventory item limit",
+				Options: []*discordgo.ApplicationCommandOption{
+					discord.IntCommandArg("size", "new item limit size", true),
 					discord.UserCommandArg(false),
 				},
 			},
@@ -76,10 +86,10 @@ func (i *Inv) addItem(ctx ken.SubCommandContext) (err error) {
 	}
 
 	q := models.New(i.dbPool)
-	itemCount, _ := q.GetPlayerItemCount(context.Background(), h.GetPlayer().ID)
+	itemCount, _ := q.GetPlayerItemCount(context.Background(), h.SyncPlayer().ID)
 	warningMsg := ""
-	if int32(itemCount.(int64)) >= h.GetPlayer().ItemLimit {
-		warningMsg = fmt.Sprintf("%s %d items out of %d used slots. Use it before you lose it! %s", discord.EmojiWarning, itemCount.(int64), h.GetPlayer().ItemLimit, discord.EmojiWarning)
+	if int32(itemCount.(int64)) >= h.SyncPlayer().ItemLimit {
+		warningMsg = fmt.Sprintf("%s %d items out of %d used slots. Use it before you lose it! %s", discord.EmojiWarning, itemCount.(int64), h.SyncPlayer().ItemLimit, discord.EmojiWarning)
 	}
 	return discord.SuccessfulMessage(ctx, "Item Added", fmt.Sprintf("Added item %s", item.Name), warningMsg)
 }
@@ -111,4 +121,33 @@ func (i *Inv) deleteItem(ctx ken.SubCommandContext) (err error) {
 	}
 
 	return discord.SuccessfulMessage(ctx, "Item Removed", fmt.Sprintf("Removed item %s", item.Name))
+}
+
+func (i *Inv) setLimit(ctx ken.SubCommandContext) (err error) {
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.NotAdminError(ctx)
+	}
+	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "failed to init inv handler")
+	}
+	defer h.UpdateInventoryMessage(ctx.GetSession())
+
+	itemLimitArg := ctx.Options().GetByName("size").IntValue()
+
+	q := models.New(i.dbPool)
+	_, err = q.UpdatePlayerItemLimit(context.Background(), models.UpdatePlayerItemLimitParams{
+		ID:        h.GetPlayer().ID,
+		ItemLimit: int32(itemLimitArg),
+	})
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to set item limit")
+	}
+	return discord.SuccessfulMessage(ctx, "Updated item Limit", fmt.Sprintf("Updated item limit to %d", itemLimitArg))
 }

@@ -25,6 +25,21 @@ func (q *Queries) CreatePlayerStatusJoin(ctx context.Context, arg CreatePlayerSt
 	return i, err
 }
 
+const deletePlayerStatus = `-- name: DeletePlayerStatus :exec
+delete from player_status
+where player_id = $1 and status_id = $2
+`
+
+type DeletePlayerStatusParams struct {
+	PlayerID int64 `json:"player_id"`
+	StatusID int32 `json:"status_id"`
+}
+
+func (q *Queries) DeletePlayerStatus(ctx context.Context, arg DeletePlayerStatusParams) error {
+	_, err := q.db.Exec(ctx, deletePlayerStatus, arg.PlayerID, arg.StatusID)
+	return err
+}
+
 const listPlayerStatus = `-- name: ListPlayerStatus :many
 select status.id, status.name, status.description
 from player_status
@@ -89,4 +104,38 @@ func (q *Queries) ListPlayerStatusInventory(ctx context.Context, playerID int64)
 		return nil, err
 	}
 	return items, nil
+}
+
+const updatePlayerStatusQuantity = `-- name: UpdatePlayerStatusQuantity :one
+UPDATE player_status SET quantity = $3 WHERE player_id = $1 AND status_id = $2 RETURNING player_id, status_id, quantity
+`
+
+type UpdatePlayerStatusQuantityParams struct {
+	PlayerID int64 `json:"player_id"`
+	StatusID int32 `json:"status_id"`
+	Quantity int32 `json:"quantity"`
+}
+
+func (q *Queries) UpdatePlayerStatusQuantity(ctx context.Context, arg UpdatePlayerStatusQuantityParams) (PlayerStatus, error) {
+	row := q.db.QueryRow(ctx, updatePlayerStatusQuantity, arg.PlayerID, arg.StatusID, arg.Quantity)
+	var i PlayerStatus
+	err := row.Scan(&i.PlayerID, &i.StatusID, &i.Quantity)
+	return i, err
+}
+
+const upsertPlayerStatusJoin = `-- name: UpsertPlayerStatusJoin :exec
+INSERT INTO player_status (player_id, status_id, quantity) VALUES ($1, $2, $3)
+ON CONFLICT (player_id, status_id)
+DO UPDATE SET quantity = player_status.quantity + EXCLUDED.quantity
+`
+
+type UpsertPlayerStatusJoinParams struct {
+	PlayerID int64 `json:"player_id"`
+	StatusID int32 `json:"status_id"`
+	Quantity int32 `json:"quantity"`
+}
+
+func (q *Queries) UpsertPlayerStatusJoin(ctx context.Context, arg UpsertPlayerStatusJoinParams) error {
+	_, err := q.db.Exec(ctx, upsertPlayerStatusJoin, arg.PlayerID, arg.StatusID, arg.Quantity)
+	return err
 }

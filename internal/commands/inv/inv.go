@@ -32,6 +32,12 @@ func (i *Inv) Options() []*discordgo.ApplicationCommandOption {
 		i.coinCommandArgBuilder(),
 		i.immunityCommandArgBuilder(),
 		i.itemCommandArgBuilder(),
+		i.roleCommandArgBuilder(),
+		i.deathCommandArgBuilder(),
+		i.alignmentCommandArgBuilder(),
+		i.luckCommandArgBuilder(),
+		i.statusCommandArgBuilder(),
+		i.perkCommandArgBuilder(),
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "create",
@@ -52,9 +58,18 @@ func (i *Inv) Options() []*discordgo.ApplicationCommandOption {
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "get",
-			Description: "Get player's inventory",
+			Description: "Get player's inventory. (If you're a player use '/inv me' instead.)",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.UserCommandArg(true),
+				discord.BoolCommandArg("show", "Show the requested inventory (Will display player view)", false),
+			},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "me",
+			Description: "Get your inventory (this will default be whispered/hidden for you)",
+			Options: []*discordgo.ApplicationCommandOption{
+				discord.BoolCommandArg("show", "Show Inventory message (can only be shown in your confessional channel)", false),
 			},
 		},
 	}
@@ -66,10 +81,18 @@ func (i *Inv) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "create", Run: i.create},
 		ken.SubCommandHandler{Name: "delete", Run: i.delete},
 		ken.SubCommandHandler{Name: "get", Run: i.get},
+		ken.SubCommandHandler{Name: "me", Run: i.me},
 		i.abilityCommandGroupBuilder(),
 		i.coinCommandGroupBuilder(),
 		i.immunityCommandGroupBuilder(),
 		i.itemCommandGroupBuilder(),
+		i.roleCommandGroupBuilder(),
+		i.deathCommandGroupBuilder(),
+		i.alignmentCommandGroupBuilder(),
+		i.alignmentCommandGroupBuilder(),
+		i.luckCommandGroupBuilder(),
+		i.statusCommandGroupBuilder(),
+		i.perkCommandGroupBuilder(),
 		// ken.SubCommandGroup{Name: "immunity", SubHandler: []ken.CommandHandler{
 		// 	ken.SubCommandHandler{Name: "add", Run: i.addImmunity},
 		// 	ken.SubCommandHandler{Name: "remove", Run: i.removeImmunity},

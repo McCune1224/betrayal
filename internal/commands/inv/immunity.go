@@ -30,7 +30,7 @@ func (i *Inv) immunityCommandArgBuilder() *discordgo.ApplicationCommandOption {
 				Name:        "add",
 				Description: "Add immunity",
 				Options: []*discordgo.ApplicationCommandOption{
-					discord.StringCommandArg("immunity", "Immunity to add", true),
+					discord.StatusCommandArg("immunity", "Immunity to add", true),
 					discord.UserCommandArg(false),
 				},
 			},
@@ -39,7 +39,7 @@ func (i *Inv) immunityCommandArgBuilder() *discordgo.ApplicationCommandOption {
 				Name:        "remove",
 				Description: "Remove immunity",
 				Options: []*discordgo.ApplicationCommandOption{
-					discord.StringCommandArg("immunity", "Immunity to remove", true),
+					discord.StatusCommandArg("immunity", "Immunity to remove", true),
 					discord.UserCommandArg(false),
 				},
 			},
@@ -63,7 +63,7 @@ func (i *Inv) addImmunity(ctx ken.SubCommandContext) (err error) {
 	defer h.UpdateInventoryMessage(ctx.GetSession())
 	immunityArg := ctx.Options().GetByName("immunity").StringValue()
 	q := models.New(i.dbPool)
-	existingImmunities, _ := q.ListPlayerImmunity(context.Background(), h.GetPlayer().ID)
+	existingImmunities, _ := q.ListPlayerImmunity(context.Background(), h.SyncPlayer().ID)
 	if len(existingImmunities) > 0 {
 		for _, immunity := range existingImmunities {
 			if immunity.Name == immunityArg {
@@ -77,7 +77,7 @@ func (i *Inv) addImmunity(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "failed to add immunity")
 	}
 	_, err = q.CreatePlayerImmunityJoin(context.Background(), models.CreatePlayerImmunityJoinParams{
-		PlayerID: h.GetPlayer().ID,
+		PlayerID: h.SyncPlayer().ID,
 		StatusID: immunity.ID,
 	})
 	if err != nil {
@@ -109,7 +109,7 @@ func (i *Inv) removeImmunity(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.AlexError(ctx, "failed to find immunity")
 	}
-	existingImmunities, _ := q.ListPlayerImmunity(context.Background(), h.GetPlayer().ID)
+	existingImmunities, _ := q.ListPlayerImmunity(context.Background(), h.SyncPlayer().ID)
 	target := &models.Status{}
 	if len(existingImmunities) > 0 {
 		for _, immunity := range existingImmunities {
@@ -123,7 +123,7 @@ func (i *Inv) removeImmunity(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Immunity not found", fmt.Sprintf("Unable to find immunity %s", immunityArg))
 	}
 	err = q.DeletePlayerImmunity(context.Background(), models.DeletePlayerImmunityParams{
-		PlayerID: h.GetPlayer().ID,
+		PlayerID: h.SyncPlayer().ID,
 		StatusID: target.ID,
 	})
 	if err != nil {

@@ -430,3 +430,28 @@ func (q *Queries) UpdatePlayerLuck(ctx context.Context, arg UpdatePlayerLuckPara
 	)
 	return i, err
 }
+
+const updatePlayerRole = `-- name: UpdatePlayerRole :one
+UPDATE player SET role_id = $2 WHERE id = $1 RETURNING id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment
+`
+
+type UpdatePlayerRoleParams struct {
+	ID     int64       `json:"id"`
+	RoleID pgtype.Int4 `json:"role_id"`
+}
+
+func (q *Queries) UpdatePlayerRole(ctx context.Context, arg UpdatePlayerRoleParams) (Player, error) {
+	row := q.db.QueryRow(ctx, updatePlayerRole, arg.ID, arg.RoleID)
+	var i Player
+	err := row.Scan(
+		&i.ID,
+		&i.RoleID,
+		&i.Alive,
+		&i.Coins,
+		&i.CoinBonus,
+		&i.Luck,
+		&i.ItemLimit,
+		&i.Alignment,
+	)
+	return i, err
+}

@@ -57,12 +57,19 @@ func NewInventoryHandler(ctx ken.SubCommandContext, db *pgxpool.Pool) (*Inventor
 	return handler, nil
 }
 
+// WARNING: This is a one off hack. Need to manually create this instead of using the NewInventoryHandler
+// as this breaks the two checks for inventory authorization but is still *technically* correct
+func Jank(player models.Player, pool *pgxpool.Pool) *InventoryHandler {
+	return &InventoryHandler{pool: pool, player: player}
+}
+
 func (ih *InventoryHandler) FetchInventory() (*PlayerInventory, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	query := models.New(ih.pool)
 
+	ih.SyncPlayer()
 	abilityChan := make(chan []models.ListPlayerAbilityInventoryRow, 1)
 	perksChan := make(chan []models.PerkInfo, 1)
 	itemCh := make(chan []models.ListPlayerItemInventoryRow, 1)
@@ -120,7 +127,8 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 		Inline: true,
 	}
 
-	coinStr := fmt.Sprintf("%d", inv.Coins) + " [" + fmt.Sprintf("%d", inv.CoinBonus.Exp) + "%]"
+	coinBonusStr, _ := util.NumericToString(inv.CoinBonus)
+	coinStr := fmt.Sprintf("%d [%s%% bonus]", inv.Coins, coinBonusStr[:len(coinBonusStr)-1])
 	coinField := &discordgo.MessageEmbedField{
 		Name:   fmt.Sprintf("%s Coins", discord.EmojiCoins),
 		Value:  coinStr,
@@ -152,18 +160,6 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 		Inline: true,
 	}
 
-	// aaSts := []string{}
-	// for _, ab := range inv.Abilities {
-	// 	if ab.AnyAbility {
-	// 		aaSts = append(aaSts, fmt.Sprintf("[%d] %s", ab.Quantity, ab.Name))
-	// 	}
-	// }
-	// anyAbilitiesField := &discordgo.MessageEmbedField{
-	// 	Name:   fmt.Sprintf("%s Any Abilities", discord.EmojiAnyAbility),
-	// 	Value:  strings.Join(aaSts, "\n"),
-	// 	Inline: true,
-	// }
-
 	itemsSts := []string{}
 	itemQuantity := int32(0)
 	for _, item := range inv.Items {
@@ -177,13 +173,13 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 		Inline: true,
 	}
 
-	statuesSts := []string{}
+	statusStrs := []string{}
 	for _, status := range inv.Statuses {
-		statuesSts = append(statuesSts, status.Name)
+		statusStrs = append(statusStrs, fmt.Sprintf("%s [%d]", status.Name, status.Quantity))
 	}
 	statusesField := &discordgo.MessageEmbedField{
 		Name:   fmt.Sprintf("%s Statuses", discord.EmojiStatus),
-		Value:  strings.Join(statuesSts, "\n"),
+		Value:  strings.Join(statusStrs, "\n"),
 		Inline: true,
 	}
 
@@ -196,12 +192,6 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 		Value:  strings.Join(immusSts, "\n"),
 		Inline: true,
 	}
-
-	// effectsField := &discordgo.MessageEmbedField{
-	// 	Name:   fmt.Sprintf("%s Effects", discord.EmojiEffect),
-	// 	Value:  strings.Join(inv.Effects, "\n"),
-	// 	Inline: true,
-	// }
 
 	isAlive := ""
 	if inv.Player.Alive {
@@ -286,6 +276,11 @@ func (ih *InventoryHandler) UpdateInventoryMessage(sesh *discordgo.Session) (err
 	return nil
 }
 
+// Will check to see if the caller is authorized based off the following:
+//  1. If the caller is in a player's confessional channel and is either:
+//     1a. The owner of the inventory
+//     1b. Has a whitelisted admin role AND is in the owners's confessional channel
+//  2. If the caller is an admin and is in a whitelisted channel
 func (ih *InventoryHandler) InventoryAuthorized(ctx ken.SubCommandContext) (bool, error) {
 	event := ctx.GetEvent()
 	invokeChannelID := event.ChannelID
@@ -323,8 +318,15 @@ func (ih *InventoryHandler) InventoryAuthorized(ctx ken.SubCommandContext) (bool
 	return true, nil
 }
 
-func (ih *InventoryHandler) GetPlayer() models.Player {
+// Get player but will fetch from DB first to ensure accurate data
+func (ih *InventoryHandler) SyncPlayer() models.Player {
 	query := models.New(ih.pool)
 	newPlayer, _ := query.GetPlayer(context.Background(), ih.player.ID)
+	ih.player = newPlayer
 	return newPlayer
+}
+
+// Pull local / current cached player
+func (ih *InventoryHandler) GetPlayer() models.Player {
+	return ih.player
 }
