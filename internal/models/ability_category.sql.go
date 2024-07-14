@@ -22,3 +22,30 @@ func (q *Queries) CreateAbilityCategoryJoin(ctx context.Context, arg CreateAbili
 	_, err := q.db.Exec(ctx, createAbilityCategoryJoin, arg.AbilityID, arg.CategoryID)
 	return err
 }
+
+const listAbilityCategoryNames = `-- name: ListAbilityCategoryNames :many
+select category.name
+from ability_category
+inner join category on ability_category.category_id = category.id
+where ability_category.ability_id = $1
+`
+
+func (q *Queries) ListAbilityCategoryNames(ctx context.Context, abilityID int32) ([]string, error) {
+	rows, err := q.db.Query(ctx, listAbilityCategoryNames, abilityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

@@ -17,6 +17,8 @@ order by levenshtein(name, $1) asc
 limit 1
 ;
 
+
+
 -- name: ListItem :many
 select *
 from item
@@ -29,4 +31,7 @@ INSERT INTO item (name, description, rarity, cost) VALUES ($1, $2, $3, $4) RETUR
 delete from item
 where id = $1
 ;
+
+
+
 

@@ -23,6 +23,37 @@ func (q *Queries) CreateRolePerkJoin(ctx context.Context, arg CreateRolePerkJoin
 	return err
 }
 
+const listAssociatedRolesForPerk = `-- name: ListAssociatedRolesForPerk :many
+select role.id, role.name, role.description, role.alignment from role_perk 
+inner join role on role.id = role_perk.role_id
+where role_perk.perk_id = $1
+`
+
+func (q *Queries) ListAssociatedRolesForPerk(ctx context.Context, perkID int32) ([]Role, error) {
+	rows, err := q.db.Query(ctx, listAssociatedRolesForPerk, perkID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Role
+	for rows.Next() {
+		var i Role
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Alignment,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRolePerkForRole = `-- name: ListRolePerkForRole :many
 select perk_info.id, perk_info.name, perk_info.description from role_perk
 inner join perk_info on role_perk.perk_id = perk_info.id

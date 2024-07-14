@@ -15,6 +15,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/mccune1224/betrayal/internal/commands/help"
 	"github.com/mccune1224/betrayal/internal/commands/inv"
+	"github.com/mccune1224/betrayal/internal/commands/view"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
@@ -123,7 +124,7 @@ func main() {
 		// new(inventory.Inventory),
 		// new(roll.Roll),
 		// new(commands.ActionFunnel),
-		// new(view.View),
+		new(view.View),
 		// new(commands.List),
 		// new(commands.Buy),
 		// new(commands.Insult),

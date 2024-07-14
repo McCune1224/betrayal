@@ -23,6 +23,37 @@ func (q *Queries) CreateRoleAbilityJoin(ctx context.Context, arg CreateRoleAbili
 	return err
 }
 
+const listAssociatedRolesForAbility = `-- name: ListAssociatedRolesForAbility :many
+select role.id, role.name, role.description, role.alignment from role_ability 
+inner join role on role.id = role_ability.role_id
+where role_ability.ability_id = $1
+`
+
+func (q *Queries) ListAssociatedRolesForAbility(ctx context.Context, abilityID int32) ([]Role, error) {
+	rows, err := q.db.Query(ctx, listAssociatedRolesForAbility, abilityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Role
+	for rows.Next() {
+		var i Role
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Alignment,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRoleAbilityForRole = `-- name: ListRoleAbilityForRole :many
 select ability_info.id, ability_info.name, ability_info.description, ability_info.default_charges, ability_info.any_ability, ability_info.rarity from role_ability
 inner join ability_info on role_ability.ability_id = ability_info.id

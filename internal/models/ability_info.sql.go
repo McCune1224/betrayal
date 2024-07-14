@@ -112,6 +112,28 @@ func (q *Queries) GetAbilityInfoByName(ctx context.Context, name string) (Abilit
 	return i, err
 }
 
+const getAnyAbilityByFuzzy = `-- name: GetAnyAbilityByFuzzy :one
+select id, name, description, default_charges, any_ability, rarity
+from ability_info
+where ability_info.any_ability = true
+order by levenshtein(name, $1) asc
+limit 1
+`
+
+func (q *Queries) GetAnyAbilityByFuzzy(ctx context.Context, levenshtein interface{}) (AbilityInfo, error) {
+	row := q.db.QueryRow(ctx, getAnyAbilityByFuzzy, levenshtein)
+	var i AbilityInfo
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.DefaultCharges,
+		&i.AnyAbility,
+		&i.Rarity,
+	)
+	return i, err
+}
+
 const listAbilityInfo = `-- name: ListAbilityInfo :many
 select id, name, description, default_charges, any_ability, rarity
 from ability_info

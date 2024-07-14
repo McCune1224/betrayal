@@ -8,3 +8,9 @@ inner join ability_info on role_ability.ability_id = ability_info.id
 where role_ability.role_id = $1;
 ;
 
+
+-- name: ListAssociatedRolesForAbility :many
+select role.* from role_ability 
+inner join role on role.id = role_ability.role_id
+where role_ability.ability_id = $1
+;

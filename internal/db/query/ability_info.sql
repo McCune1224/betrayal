@@ -17,6 +17,14 @@ order by levenshtein(name, $1) asc
 limit 1
 ;
 
+-- name: GetAnyAbilityByFuzzy :one
+select *
+from ability_info
+where ability_info.any_ability = true
+order by levenshtein(name, $1) asc
+limit 1
+;
+
 -- name: ListAbilityInfo :many
 select *
 from ability_info
