@@ -106,6 +106,27 @@ func (q *Queries) GetItemByName(ctx context.Context, name string) (Item, error) 
 	return i, err
 }
 
+const getRandomItemByRarity = `-- name: GetRandomItemByRarity :one
+select id, name, description, rarity, cost
+from item
+where rarity = $1
+order by random()
+limit 1
+`
+
+func (q *Queries) GetRandomItemByRarity(ctx context.Context, rarity Rarity) (Item, error) {
+	row := q.db.QueryRow(ctx, getRandomItemByRarity, rarity)
+	var i Item
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Rarity,
+		&i.Cost,
+	)
+	return i, err
+}
+
 const listItem = `-- name: ListItem :many
 select id, name, description, rarity, cost
 from item

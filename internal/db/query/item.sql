@@ -18,7 +18,6 @@ limit 1
 ;
 
 
-
 -- name: ListItem :many
 select *
 from item
@@ -32,6 +31,11 @@ delete from item
 where id = $1
 ;
 
-
-
+-- name: GetRandomItemByRarity :one
+select *
+from item
+where rarity = $1
+order by random()
+limit 1
+;
 

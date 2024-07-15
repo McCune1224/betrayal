@@ -91,7 +91,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 	abilityNames := make([]string, len(abilitiesResult.data))
 	for i, ability := range abilitiesResult.data {
 		chargeNumber := ""
-		if ability.DefaultCharges == -1 {
+		if ability.DefaultCharges == 999999 {
 			chargeNumber = "∞"
 		} else {
 			chargeNumber = fmt.Sprintf("%d", ability.DefaultCharges)

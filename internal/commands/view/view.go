@@ -527,7 +527,7 @@ func (v *View) roleEmbed(role models.Role) (*discordgo.MessageEmbed, error) {
 		fStr := "%s [%d] - %s"
 		dbcategories, _ := q.ListAbilityCategoryNames(dbCtx, ability.ID)
 		categories := strings.Join(dbcategories, ", ")
-		if ability.DefaultCharges == -1 {
+		if ability.DefaultCharges == 999999 {
 			// title = fmt.Sprintf("%s [%s]", ability.Name, infinity)
 			title = fmt.Sprintf("%s [%s] - %s", ability.Name, infinity, categories)
 		} else {
