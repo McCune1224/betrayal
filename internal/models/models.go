@@ -108,12 +108,13 @@ type AbilityCategory struct {
 }
 
 type AbilityInfo struct {
-	ID             int32  `json:"id"`
-	Name           string `json:"name"`
-	Description    string `json:"description"`
-	DefaultCharges int32  `json:"default_charges"`
-	AnyAbility     bool   `json:"any_ability"`
-	Rarity         Rarity `json:"rarity"`
+	ID             int32       `json:"id"`
+	Name           string      `json:"name"`
+	Description    string      `json:"description"`
+	DefaultCharges int32       `json:"default_charges"`
+	AnyAbility     bool        `json:"any_ability"`
+	RoleSpecificID pgtype.Int4 `json:"role_specific_id"`
+	Rarity         Rarity      `json:"rarity"`
 }
 
 type AdminChannel struct {

@@ -10,7 +10,7 @@ import (
 )
 
 const createAbilityInfo = `-- name: CreateAbilityInfo :one
-INSERT INTO ability_info (name, description, default_charges, any_ability, rarity) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, description, default_charges, any_ability, rarity
+INSERT INTO ability_info (name, description, default_charges, any_ability, rarity) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, description, default_charges, any_ability, role_specific_id, rarity
 `
 
 type CreateAbilityInfoParams struct {
@@ -36,6 +36,7 @@ func (q *Queries) CreateAbilityInfo(ctx context.Context, arg CreateAbilityInfoPa
 		&i.Description,
 		&i.DefaultCharges,
 		&i.AnyAbility,
+		&i.RoleSpecificID,
 		&i.Rarity,
 	)
 	return i, err
@@ -52,7 +53,7 @@ func (q *Queries) DeleteAbilityInfo(ctx context.Context, id int32) error {
 }
 
 const getAbilityInfo = `-- name: GetAbilityInfo :one
-select id, name, description, default_charges, any_ability, rarity
+select id, name, description, default_charges, any_ability, role_specific_id, rarity
 from ability_info
 where id = $1
 `
@@ -66,13 +67,14 @@ func (q *Queries) GetAbilityInfo(ctx context.Context, id int32) (AbilityInfo, er
 		&i.Description,
 		&i.DefaultCharges,
 		&i.AnyAbility,
+		&i.RoleSpecificID,
 		&i.Rarity,
 	)
 	return i, err
 }
 
 const getAbilityInfoByFuzzy = `-- name: GetAbilityInfoByFuzzy :one
-select id, name, description, default_charges, any_ability, rarity
+select id, name, description, default_charges, any_ability, role_specific_id, rarity
 from ability_info
 order by levenshtein(name, $1) asc
 limit 1
@@ -87,13 +89,14 @@ func (q *Queries) GetAbilityInfoByFuzzy(ctx context.Context, levenshtein interfa
 		&i.Description,
 		&i.DefaultCharges,
 		&i.AnyAbility,
+		&i.RoleSpecificID,
 		&i.Rarity,
 	)
 	return i, err
 }
 
 const getAbilityInfoByName = `-- name: GetAbilityInfoByName :one
-select id, name, description, default_charges, any_ability, rarity
+select id, name, description, default_charges, any_ability, role_specific_id, rarity
 from ability_info
 where name = $1
 `
@@ -107,13 +110,14 @@ func (q *Queries) GetAbilityInfoByName(ctx context.Context, name string) (Abilit
 		&i.Description,
 		&i.DefaultCharges,
 		&i.AnyAbility,
+		&i.RoleSpecificID,
 		&i.Rarity,
 	)
 	return i, err
 }
 
 const getAnyAbilityByFuzzy = `-- name: GetAnyAbilityByFuzzy :one
-select id, name, description, default_charges, any_ability, rarity
+select id, name, description, default_charges, any_ability, role_specific_id, rarity
 from ability_info
 where ability_info.any_ability = true
 order by levenshtein(name, $1) asc
@@ -129,13 +133,14 @@ func (q *Queries) GetAnyAbilityByFuzzy(ctx context.Context, levenshtein interfac
 		&i.Description,
 		&i.DefaultCharges,
 		&i.AnyAbility,
+		&i.RoleSpecificID,
 		&i.Rarity,
 	)
 	return i, err
 }
 
 const listAbilityInfo = `-- name: ListAbilityInfo :many
-select id, name, description, default_charges, any_ability, rarity
+select id, name, description, default_charges, any_ability, role_specific_id, rarity
 from ability_info
 `
 
@@ -154,6 +159,7 @@ func (q *Queries) ListAbilityInfo(ctx context.Context) ([]AbilityInfo, error) {
 			&i.Description,
 			&i.DefaultCharges,
 			&i.AnyAbility,
+			&i.RoleSpecificID,
 			&i.Rarity,
 		); err != nil {
 			return nil, err

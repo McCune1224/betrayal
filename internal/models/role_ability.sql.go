@@ -24,7 +24,8 @@ func (q *Queries) CreateRoleAbilityJoin(ctx context.Context, arg CreateRoleAbili
 }
 
 const listAssociatedRolesForAbility = `-- name: ListAssociatedRolesForAbility :many
-select role.id, role.name, role.description, role.alignment from role_ability 
+select role.id, role.name, role.description, role.alignment
+from role_ability
 inner join role on role.id = role_ability.role_id
 where role_ability.ability_id = $1
 `
@@ -55,7 +56,8 @@ func (q *Queries) ListAssociatedRolesForAbility(ctx context.Context, abilityID i
 }
 
 const listRoleAbilityForRole = `-- name: ListRoleAbilityForRole :many
-select ability_info.id, ability_info.name, ability_info.description, ability_info.default_charges, ability_info.any_ability, ability_info.rarity from role_ability
+select ability_info.id, ability_info.name, ability_info.description, ability_info.default_charges, ability_info.any_ability, ability_info.role_specific_id, ability_info.rarity
+from role_ability
 inner join ability_info on role_ability.ability_id = ability_info.id
 where role_ability.role_id = $1
 `
@@ -75,6 +77,7 @@ func (q *Queries) ListRoleAbilityForRole(ctx context.Context, roleID int32) ([]A
 			&i.Description,
 			&i.DefaultCharges,
 			&i.AnyAbility,
+			&i.RoleSpecificID,
 			&i.Rarity,
 		); err != nil {
 			return nil, err

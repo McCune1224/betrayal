@@ -4,5 +4,7 @@ CREATE TABLE IF NOT EXISTS ability_info (
   description TEXT NOT NULL,
   default_charges INTEGER NOT NULL,
   any_ability BOOLEAN NOT NULL,
+  role_specific_id INT REFERENCES role(id) on delete cascade,
   rarity rarity NOT NULL
 );
+

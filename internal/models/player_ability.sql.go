@@ -7,6 +7,8 @@ package models
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createPlayerAbilityJoin = `-- name: CreatePlayerAbilityJoin :one
@@ -42,7 +44,7 @@ func (q *Queries) DeletePlayerAbility(ctx context.Context, arg DeletePlayerAbili
 }
 
 const listPlayerAbility = `-- name: ListPlayerAbility :many
-select ability_info.id, ability_info.name, ability_info.description, ability_info.default_charges, ability_info.any_ability, ability_info.rarity
+select ability_info.id, ability_info.name, ability_info.description, ability_info.default_charges, ability_info.any_ability, ability_info.role_specific_id, ability_info.rarity
 from player_ability
 inner join ability_info on player_ability.ability_id = ability_info.id
 where player_ability.player_id = $1
@@ -63,6 +65,7 @@ func (q *Queries) ListPlayerAbility(ctx context.Context, playerID int64) ([]Abil
 			&i.Description,
 			&i.DefaultCharges,
 			&i.AnyAbility,
+			&i.RoleSpecificID,
 			&i.Rarity,
 		); err != nil {
 			return nil, err
@@ -76,20 +79,21 @@ func (q *Queries) ListPlayerAbility(ctx context.Context, playerID int64) ([]Abil
 }
 
 const listPlayerAbilityInventory = `-- name: ListPlayerAbilityInventory :many
-select ability_info.id, ability_info.name, ability_info.description, ability_info.default_charges, ability_info.any_ability, ability_info.rarity, player_ability.quantity
+select ability_info.id, ability_info.name, ability_info.description, ability_info.default_charges, ability_info.any_ability, ability_info.role_specific_id, ability_info.rarity, player_ability.quantity
 from player_ability
 inner join ability_info on player_ability.ability_id = ability_info.id
 where player_ability.player_id = $1
 `
 
 type ListPlayerAbilityInventoryRow struct {
-	ID             int32  `json:"id"`
-	Name           string `json:"name"`
-	Description    string `json:"description"`
-	DefaultCharges int32  `json:"default_charges"`
-	AnyAbility     bool   `json:"any_ability"`
-	Rarity         Rarity `json:"rarity"`
-	Quantity       int32  `json:"quantity"`
+	ID             int32       `json:"id"`
+	Name           string      `json:"name"`
+	Description    string      `json:"description"`
+	DefaultCharges int32       `json:"default_charges"`
+	AnyAbility     bool        `json:"any_ability"`
+	RoleSpecificID pgtype.Int4 `json:"role_specific_id"`
+	Rarity         Rarity      `json:"rarity"`
+	Quantity       int32       `json:"quantity"`
 }
 
 func (q *Queries) ListPlayerAbilityInventory(ctx context.Context, playerID int64) ([]ListPlayerAbilityInventoryRow, error) {
@@ -107,6 +111,7 @@ func (q *Queries) ListPlayerAbilityInventory(ctx context.Context, playerID int64
 			&i.Description,
 			&i.DefaultCharges,
 			&i.AnyAbility,
+			&i.RoleSpecificID,
 			&i.Rarity,
 			&i.Quantity,
 		); err != nil {

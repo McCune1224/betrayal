@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/csv"
 	"errors"
-	"flag"
+	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,11 +21,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/mccune1224/betrayal/internal/models"
 	"github.com/mccune1224/betrayal/internal/util"
-)
-
-// Flags for CLI app
-var (
-	fileName = flag.String("file", "", "File to read from")
 )
 
 type config struct {
@@ -41,7 +39,6 @@ type csvBuilder struct{}
 
 // Really just here pull in json data and populate the databse with it.
 func main() {
-	flag.Parse()
 	// if *file == "" {
 	// 	log.Fatal("file is required")
 	// }
@@ -65,6 +62,89 @@ func main() {
 	}
 	defer db.Close()
 
+	wg := sync.WaitGroup{}
+	wg.Add(4)
+
+	dbCtx := context.Background()
+
+	lazy := []struct {
+		URL       string
+		alignment models.Alignment
+	}{
+		{URL: os.Getenv("GOOD_ROLES_CSV"), alignment: models.AlignmentGOOD},
+		{URL: os.Getenv("EVIL_ROLES_CSV"), alignment: models.AlignmentEVIL},
+		{URL: os.Getenv("NEUTRAL_ROLES_CSV"), alignment: models.AlignmentNEUTRAL},
+	}
+
+	go func() {
+		start := time.Now()
+		csvUrl := lazy[0].URL
+		httpClient := &http.Client{}
+		resp, err := httpClient.Get(csvUrl)
+		if err != nil {
+			panic(err)
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+		SyncRolesCsv(dbCtx, db, strings.NewReader(string(body)), string(lazy[0].alignment))
+		fmt.Println("~~ Good Roles Done %s ~~", time.Since(start))
+		wg.Done()
+	}()
+
+	go func() {
+		start := time.Now()
+		csvUrl := lazy[1].URL
+		httpClient := &http.Client{}
+		resp, err := httpClient.Get(csvUrl)
+		if err != nil {
+			panic(err)
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+		SyncRolesCsv(dbCtx, db, strings.NewReader(string(body)), string(lazy[1].alignment))
+		fmt.Println("~~ Evil Roles Done %s ~~", time.Since(start))
+		wg.Done()
+	}()
+
+	go func() {
+		start := time.Now()
+		csvUrl := lazy[2].URL
+		httpClient := &http.Client{}
+		resp, err := httpClient.Get(csvUrl)
+		if err != nil {
+			panic(err)
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+		SyncRolesCsv(dbCtx, db, strings.NewReader(string(body)), string(lazy[2].alignment))
+		fmt.Println("~~ Neutral Roles Done %s ~~", time.Since(start))
+		wg.Done()
+	}()
+
+	go func() {
+		start := time.Now()
+		item_CSV_URL := os.Getenv("ITEM_CSV")
+		httpClient := &http.Client{}
+		resp, err := httpClient.Get(item_CSV_URL)
+		if err != nil {
+			panic(err)
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			panic(err)
+		}
+		SyncItemsCsv(dbCtx, db, strings.NewReader(string(body)))
+		fmt.Println("~~ Items Done %s ~~", time.Since(start))
+		wg.Done()
+	}()
+
+	wg.Wait()
 	// file, err := os.Open(*fileName)
 	// if err != nil {
 	// 	log.Fatal(err)
@@ -83,12 +163,6 @@ func main() {
 	// }
 	// file.Close()
 
-	file, err := os.Open(*fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	SyncItemsCsv(db, file)
-	file.Close()
 }
 
 type TempCreateAbilityInfoParams struct {
@@ -96,8 +170,8 @@ type TempCreateAbilityInfoParams struct {
 	CategoryNames []string
 }
 
-func SyncRolesCsv(db *pgxpool.Pool, file *os.File, alignment string) error {
-	reader := csv.NewReader(file)
+func SyncRolesCsv(ctx context.Context, db *pgxpool.Pool, r io.Reader, alignment string) error {
+	reader := csv.NewReader(r)
 	chunks := [][][]string{}
 	currChunk := [][]string{}
 	for {
@@ -318,8 +392,8 @@ func parseRoleChunk(chunk [][]string) (models.CreateRoleParams, []TempCreateAbil
 	return roleParams, tempRoleAbilityDetailParams, rolePassiveDetailParams, nil
 }
 
-func SyncItemsCsv(db *pgxpool.Pool, file *os.File) error {
-	reader := csv.NewReader(file)
+func SyncItemsCsv(ctx context.Context, db *pgxpool.Pool, r io.Reader) error {
+	reader := csv.NewReader(r)
 	csv, err := reader.ReadAll()
 	if err != nil {
 		return err
