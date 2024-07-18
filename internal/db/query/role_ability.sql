@@ -18,3 +18,18 @@ inner join role on role.id = role_ability.role_id
 where role_ability.ability_id = $1
 ;
 
+-- name: ListAnyAbilities :many
+select *
+from ability_info
+where ability_info.any_ability = true and ability_info.rarity != 'ROLE_SPECIFIC'
+;
+
+-- name: ListAnyAbilitiesIncludingRoleSpecific :many
+select distinct ability_info.*
+from role_ability
+inner join ability_info on ability_info.id = role_ability.ability_id
+where
+    (ability_info.any_ability = true and ability_info.rarity != 'ROLE_SPECIFIC')
+    or (role_ability.role_id = $1 and ability_info.any_ability = true)
+;
+

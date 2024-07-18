@@ -23,6 +23,77 @@ func (q *Queries) CreateRoleAbilityJoin(ctx context.Context, arg CreateRoleAbili
 	return err
 }
 
+const listAnyAbilities = `-- name: ListAnyAbilities :many
+select id, name, description, default_charges, any_ability, role_specific_id, rarity
+from ability_info
+where ability_info.any_ability = true and ability_info.rarity != 'ROLE_SPECIFIC'
+`
+
+func (q *Queries) ListAnyAbilities(ctx context.Context) ([]AbilityInfo, error) {
+	rows, err := q.db.Query(ctx, listAnyAbilities)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AbilityInfo
+	for rows.Next() {
+		var i AbilityInfo
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.DefaultCharges,
+			&i.AnyAbility,
+			&i.RoleSpecificID,
+			&i.Rarity,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAnyAbilitiesIncludingRoleSpecific = `-- name: ListAnyAbilitiesIncludingRoleSpecific :many
+select distinct ability_info.id, ability_info.name, ability_info.description, ability_info.default_charges, ability_info.any_ability, ability_info.role_specific_id, ability_info.rarity
+from role_ability
+inner join ability_info on ability_info.id = role_ability.ability_id
+where
+    (ability_info.any_ability = true and ability_info.rarity != 'ROLE_SPECIFIC')
+    or (role_ability.role_id = $1 and ability_info.any_ability = true)
+`
+
+func (q *Queries) ListAnyAbilitiesIncludingRoleSpecific(ctx context.Context, roleID int32) ([]AbilityInfo, error) {
+	rows, err := q.db.Query(ctx, listAnyAbilitiesIncludingRoleSpecific, roleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AbilityInfo
+	for rows.Next() {
+		var i AbilityInfo
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.DefaultCharges,
+			&i.AnyAbility,
+			&i.RoleSpecificID,
+			&i.Rarity,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAssociatedRolesForAbility = `-- name: ListAssociatedRolesForAbility :many
 select role.id, role.name, role.description, role.alignment
 from role_ability
