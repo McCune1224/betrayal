@@ -110,12 +110,20 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.ErrorMessage(ctx, "Failed to create player", "Unable to create player in database")
 	}
+
+	num, err := util.Numeric(0.0)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to create player")
+	}
+
 	player, err := query.CreatePlayer(bgCtx,
 		models.CreatePlayerParams{
 			ID:        int64(discordID),
 			RoleID:    pgtype.Int4{Int32: roleResult.data.ID, Valid: true},
 			Alive:     true,
 			Coins:     defaultCoins,
+			CoinBonus: num,
 			Luck:      defaultLuck,
 			Alignment: roleResult.data.Alignment,
 		},

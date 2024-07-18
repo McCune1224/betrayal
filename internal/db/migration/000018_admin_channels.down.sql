@@ -1,2 +1,2 @@
-DROP TABLE IF EXISTS admin_channel;
+DROP TABLE IF EXISTS admin_channel CASCADE;
 

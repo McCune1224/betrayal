@@ -128,6 +128,9 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 	}
 
 	coinBonusStr, _ := util.NumericToString(inv.CoinBonus)
+	if coinBonusStr == "" {
+		coinBonusStr = "0"
+	}
 	coinStr := fmt.Sprintf("%d [%s%% bonus]", inv.Coins, coinBonusStr[:len(coinBonusStr)-1])
 	coinField := &discordgo.MessageEmbedField{
 		Name:   fmt.Sprintf("%s Coins", discord.EmojiCoins),
@@ -136,7 +139,12 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 	}
 	abSts := []string{}
 	for _, ab := range inv.Abilities {
-		str := fmt.Sprintf("[%d] %s", ab.Quantity, ab.Name)
+		str := ""
+		if ab.Quantity == 999999 {
+			str = fmt.Sprintf("[%s] %s", "∞", ab.Name)
+		} else {
+			str = fmt.Sprintf("[%d] %s", ab.Quantity, ab.Name)
+		}
 		if ab.AnyAbility {
 			abSts = append(abSts, str+" (AA)")
 		} else {

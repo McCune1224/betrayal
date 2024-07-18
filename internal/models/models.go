@@ -212,3 +212,7 @@ type Status struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
+
+type VoteChannel struct {
+	ChannelID string `json:"channel_id"`
+}

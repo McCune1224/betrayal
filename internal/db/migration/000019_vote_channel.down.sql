@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS vote_channel CASCADE;
+
