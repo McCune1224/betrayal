@@ -117,6 +117,10 @@ type AbilityInfo struct {
 	Rarity         Rarity      `json:"rarity"`
 }
 
+type ActionChannel struct {
+	ChannelID string `json:"channel_id"`
+}
+
 type AdminChannel struct {
 	ChannelID string `json:"channel_id"`
 }

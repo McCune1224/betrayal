@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
+	"github.com/mccune1224/betrayal/internal/commands/action"
 	"github.com/mccune1224/betrayal/internal/commands/help"
 	"github.com/mccune1224/betrayal/internal/commands/inv"
 	"github.com/mccune1224/betrayal/internal/commands/roll"
@@ -125,7 +126,7 @@ func main() {
 	tally := app.RegisterBetrayalCommands(
 		// new(inventory.Inventory),
 		new(roll.Roll),
-		// new(commands.ActionFunnel),
+		new(action.Action),
 		new(view.View),
 		// new(commands.List),
 		// new(commands.Buy),
