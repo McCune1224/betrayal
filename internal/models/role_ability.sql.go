@@ -23,6 +23,82 @@ func (q *Queries) CreateRoleAbilityJoin(ctx context.Context, arg CreateRoleAbili
 	return err
 }
 
+const getRandomAnyAbilityByMinimumRarity = `-- name: GetRandomAnyAbilityByMinimumRarity :one
+select id, name, description, default_charges, any_ability, role_specific_id, rarity
+from ability_info
+where
+    ability_info.any_ability = true
+    and ability_info.rarity >= $1
+    and ability_info.rarity != 'ROLE_SPECIFIC'
+`
+
+func (q *Queries) GetRandomAnyAbilityByMinimumRarity(ctx context.Context, rarity Rarity) (AbilityInfo, error) {
+	row := q.db.QueryRow(ctx, getRandomAnyAbilityByMinimumRarity, rarity)
+	var i AbilityInfo
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.DefaultCharges,
+		&i.AnyAbility,
+		&i.RoleSpecificID,
+		&i.Rarity,
+	)
+	return i, err
+}
+
+const getRandomAnyAbilityByRarity = `-- name: GetRandomAnyAbilityByRarity :one
+select id, name, description, default_charges, any_ability, role_specific_id, rarity
+from ability_info
+where ability_info.any_ability = true and ability_info.rarity == $1
+`
+
+func (q *Queries) GetRandomAnyAbilityByRarity(ctx context.Context, rarity Rarity) (AbilityInfo, error) {
+	row := q.db.QueryRow(ctx, getRandomAnyAbilityByRarity, rarity)
+	var i AbilityInfo
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.DefaultCharges,
+		&i.AnyAbility,
+		&i.RoleSpecificID,
+		&i.Rarity,
+	)
+	return i, err
+}
+
+const getRandomAnyAbilityIncludingRoleSpecific = `-- name: GetRandomAnyAbilityIncludingRoleSpecific :one
+select ability_info.id, ability_info.name, ability_info.description, ability_info.default_charges, ability_info.any_ability, ability_info.role_specific_id, ability_info.rarity
+from role_ability
+inner join ability_info on ability_info.id = role_ability.ability_id
+where
+    (ability_info.any_ability = true and ability_info.rarity = $1)
+    or (role_ability.role_id = $2 and ability_info.any_ability = true)
+order by random()
+limit 1
+`
+
+type GetRandomAnyAbilityIncludingRoleSpecificParams struct {
+	Rarity Rarity `json:"rarity"`
+	RoleID int32  `json:"role_id"`
+}
+
+func (q *Queries) GetRandomAnyAbilityIncludingRoleSpecific(ctx context.Context, arg GetRandomAnyAbilityIncludingRoleSpecificParams) (AbilityInfo, error) {
+	row := q.db.QueryRow(ctx, getRandomAnyAbilityIncludingRoleSpecific, arg.Rarity, arg.RoleID)
+	var i AbilityInfo
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.DefaultCharges,
+		&i.AnyAbility,
+		&i.RoleSpecificID,
+		&i.Rarity,
+	)
+	return i, err
+}
+
 const listAnyAbilities = `-- name: ListAnyAbilities :many
 select id, name, description, default_charges, any_ability, role_specific_id, rarity
 from ability_info

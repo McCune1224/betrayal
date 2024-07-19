@@ -33,3 +33,31 @@ where
     or (role_ability.role_id = $1 and ability_info.any_ability = true)
 ;
 
+
+-- name: GetRandomAnyAbilityIncludingRoleSpecific :one
+select ability_info.*
+from role_ability
+inner join ability_info on ability_info.id = role_ability.ability_id
+where
+    (ability_info.any_ability = true and ability_info.rarity = $1)
+    or (role_ability.role_id = $2 and ability_info.any_ability = true)
+order by random()
+limit 1
+;
+
+
+-- name: GetRandomAnyAbilityByRarity :one
+select *
+from ability_info
+where ability_info.any_ability = true and ability_info.rarity == $1
+;
+
+-- name: GetRandomAnyAbilityByMinimumRarity :one
+select *
+from ability_info
+where
+    ability_info.any_ability = true
+    and ability_info.rarity >= $1
+    and ability_info.rarity != 'ROLE_SPECIFIC'
+;
+

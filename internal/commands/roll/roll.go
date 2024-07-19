@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"slices"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -93,7 +92,6 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 					Choices:     targetOpts,
 				},
 				discord.IntCommandArg("luck", "level to roll for", true),
-				discord.UserCommandArg(true),
 			},
 		},
 		{
@@ -143,11 +141,11 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 func (r *Roll) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "manual", Run: r.luckManual},
-		ken.SubCommandHandler{Name: "rarity", Run: r.rollByMinimumRarity},
+		// ken.SubCommandHandler{Name: "rarity", Run: r.rollByMinimumRarity},
 		// ken.SubCommandHandler{Name: "table", Run: r.luckTable},
-		// ken.SubCommandHandler{Name: "care_package", Run: r.luckCarePackage},
-		// ken.SubCommandHandler{Name: "item_rain", Run: r.luckItemRain},
-		// ken.SubCommandHandler{Name: "power_drop", Run: r.luckPowerDrop},
+		ken.SubCommandHandler{Name: "care_package", Run: r.luckCarePackage},
+		ken.SubCommandHandler{Name: "item_rain", Run: r.luckItemRain},
+		ken.SubCommandHandler{Name: "power_drop", Run: r.luckPowerDrop},
 		ken.SubCommandHandler{Name: "player", Run: r.player},
 	)
 }
@@ -161,11 +159,6 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.NotAdminError(ctx)
 	}
-
-	// handler, err := inventory.NewInventoryHandler(ctx, r.dbPool)
-	// if err != nil {
-	// 	return discord.ErrorMessage(ctx, "Failed to find inventory.", "If not in confessional, please specify a user")
-	// }
 
 	opts := ctx.Options()
 	target := opts.GetByName("target").StringValue()
@@ -184,25 +177,26 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 		}
 
 		return ctx.RespondEmbed(&discordgo.MessageEmbed{
-			Title:       fmt.Sprintf("Got Item %s (%s)", item.Name, rarity),
+			Title:       fmt.Sprintf("Got Item %s", item.Name),
 			Description: item.Description,
+			Footer: &discordgo.MessageEmbedFooter{
+				Text: string(item.Rarity),
+			},
+		})
+	} else {
+		aa, err := q.GetRandomAnyAbilityByRarity(dbCtx, rarity)
+		if err != nil {
+			log.Println(err)
+			return discord.AlexError(ctx, "")
+		}
+		return ctx.RespondEmbed(&discordgo.MessageEmbed{
+			Title:       fmt.Sprintf("Got Ability %s", aa.Name),
+			Description: aa.Description,
+			Footer: &discordgo.MessageEmbedFooter{
+				Text: string(aa.Rarity),
+			},
 		})
 	}
-
-	// if target == "aa" {
-	// 	ability, err := r.getRandomAnyAbility(handler.GetInventory().RoleName, rarity)
-	// 	if err != nil {
-	// 		log.Println(err)
-	// 		return discord.AlexError(ctx, "Failed to get random ability")
-	// 	}
-	//
-	// 	return ctx.RespondEmbed(&discordgo.MessageEmbed{
-	// 		Title:       fmt.Sprintf("Got Ability %s (%s)", ability.Name, rarity),
-	// 		Description: ability.Description,
-	// 	})
-	// }
-
-	return discord.ErrorMessage(ctx, "Failed to get category", "Alex is a bad programmer")
 }
 
 func (r *Roll) luckTable(ctx ken.SubCommandContext) (err error) {
@@ -257,85 +251,58 @@ func (*Roll) Version() string {
 	return "1.0.0"
 }
 
-// func (r *Roll) getRandomAnyAbility(role string, rarity string) (*data.AnyAbility, error) {
-// 	// lil saftey net to prevent infinite recursion (hopefully)
-// 	ab, err := r.models.Abilities.GetRandomAnyAbilityByRarity(rarity)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if ab.RoleSpecific != "" && !strings.EqualFold(ab.RoleSpecific, role) {
-// 		return r.getRandomAnyAbility(role, rarity)
+// func (r *Roll) rollByMinimumRarity(ctx ken.SubCommandContext) (err error) {
+// 	if err := ctx.Defer(); err != nil {
+// 		log.Println(err)
+// 		return err
 // 	}
 //
-// 	return ab, nil
+// 	level := ctx.Options().GetByName("luck").IntValue()
+// 	minimumRarity := models.Rarity(ctx.Options().GetByName("min_rarity").StringValue())
+// 	target := ctx.Options().GetByName("target").StringValue()
+//
+// 	// q := models.New(r.dbPool)
+// 	// dbCtx := context.Background()
+// 	// userInv, err := inventory.NewInventoryHandler(ctx, r.dbPool)
+// 	// if err != nil {
+// 	// 	return discord.ErrorMessage(ctx, "Failed to get user inventory", err.Error())
+// 	// }
+//
+// 	start := slices.Index(rarityPriorities, minimumRarity)
+// 	rarityOptions := rarityPriorities[start:]
+// 	rarity := rollAtRarity(float64(level), rarityOptions)
+//
+// 	if target == "item" {
+// 		item, err := r.getRandomItem(rarity)
+// 		if err != nil {
+// 			log.Println(err)
+// 			return discord.AlexError(ctx, "Failed to get random item")
+// 		}
+// 		return ctx.RespondEmbed(&discordgo.MessageEmbed{
+// 			Title:       fmt.Sprintf("Got Item %s (%s)", item.Name, rarity),
+// 			Description: item.Description,
+// 			Footer: &discordgo.MessageEmbedFooter{
+// 				Text: fmt.Sprintf("%s Note, this will not auto add to an inventory.", discord.EmojiWarning),
+// 			},
+// 		})
+// 	} else {
+// 		// FIXME: This is broken
+// 		ability, err := q.
+// 		if err != nil {
+// 			log.Println(err)
+// 			return discord.AlexError(ctx, "Failed to get random ability")
+// 		}
+// 		return ctx.RespondEmbed(&discordgo.MessageEmbed{
+// 			Title:       fmt.Sprintf("Got Ability %s (%s)", ability.Name, rarity),
+// 			Description: ability.Description,
+//
+// 			Footer: &discordgo.MessageEmbedFooter{
+// 				Text: fmt.Sprintf("%s Note, this will not auto add to an inventory.", discord.EmojiWarning),
+// 			},
+// 		})
+// 	}
+// 	return discord.ErrorMessage(ctx, "Failed to get category", "Alex is a bad programmer")
 // }
-
-// Will roll for random item excluding uniques
-func (r *Roll) getRandomItem(rarity models.Rarity) (models.Item, error) {
-	q := models.New(r.dbPool)
-	dbCtx := context.Background()
-	item, err := q.GetRandomItemByRarity(dbCtx, rarity)
-	if err != nil {
-		log.Println(err)
-		return models.Item{}, err
-	}
-	return item, nil
-}
-
-func (r *Roll) rollByMinimumRarity(ctx ken.SubCommandContext) (err error) {
-	if err := ctx.Defer(); err != nil {
-		log.Println(err)
-		return err
-	}
-
-	level := ctx.Options().GetByName("luck").IntValue()
-	minimumRarity := models.Rarity(ctx.Options().GetByName("min_rarity").StringValue())
-	target := ctx.Options().GetByName("target").StringValue()
-
-	// q := models.New(r.dbPool)
-	// dbCtx := context.Background()
-	// userInv, err := inventory.NewInventoryHandler(ctx, r.dbPool)
-	// if err != nil {
-	// 	return discord.ErrorMessage(ctx, "Failed to get user inventory", err.Error())
-	// }
-
-	start := slices.Index(rarityPriorities, minimumRarity)
-
-	rarityOptions := rarityPriorities[start:]
-
-	rarity := rollAtRarity(float64(level), rarityOptions)
-
-	if target == "item" {
-		item, err := r.getRandomItem(rarity)
-		if err != nil {
-			log.Println(err)
-			return discord.AlexError(ctx, "Failed to get random item")
-		}
-		return ctx.RespondEmbed(&discordgo.MessageEmbed{
-			Title:       fmt.Sprintf("Got Item %s (%s)", item.Name, rarity),
-			Description: item.Description,
-			Footer: &discordgo.MessageEmbedFooter{
-				Text: fmt.Sprintf("%s Note, this will not auto add to an inventory.", discord.EmojiWarning),
-			},
-		})
-	} else {
-		// FIXME: This is broken
-		// ability, err := r.getRandomAnyAbility(userInv.GetInventory().RoleName, rarity)
-		// if err != nil {
-		// 	log.Println(err)
-		// 	return discord.AlexError(ctx, "Failed to get random ability")
-		// }
-		// return ctx.RespondEmbed(&discordgo.MessageEmbed{
-		// 	Title:       fmt.Sprintf("Got Ability %s (%s)", ability.Name, rarity),
-		// 	Description: ability.Description,
-		//
-		// 	Footer: &discordgo.MessageEmbedFooter{
-		// 		Text: fmt.Sprintf("%s Note, this will not auto add to an inventory.", discord.EmojiWarning),
-		// 	},
-		// })
-	}
-	return discord.ErrorMessage(ctx, "Failed to get category", "Alex is a bad programmer")
-}
 
 func (r *Roll) player(ctx ken.SubCommandContext) (err error) {
 	playerA := ctx.Options().GetByName("target_a").UserValue(ctx)
