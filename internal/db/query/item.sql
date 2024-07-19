@@ -39,3 +39,11 @@ order by random()
 limit 1
 ;
 
+-- name: GetRandomItemByMinimumRarity :one
+select *
+from item
+where rarity >= $1 and rarity != 'UNIQUE'
+order by random()
+limit 1
+;
+
