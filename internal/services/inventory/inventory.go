@@ -31,7 +31,7 @@ type InventoryHandler struct {
 // In order for this to work 1 of 2 things must happen:
 // 1. This command is called within the player's confessional by an admin
 // 2. This command is called within a whitelisted channel and explictly asks for the player's inventory
-func NewInventoryHandler(ctx ken.SubCommandContext, db *pgxpool.Pool) (*InventoryHandler, error) {
+func NewInventoryHandler(ctx ken.Context, db *pgxpool.Pool) (*InventoryHandler, error) {
 	handler := &InventoryHandler{pool: db}
 	query := models.New(db)
 	playerID := int64(0)

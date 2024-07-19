@@ -14,11 +14,12 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
 	"github.com/mccune1224/betrayal/internal/commands/action"
+	"github.com/mccune1224/betrayal/internal/commands/buy"
+	"github.com/mccune1224/betrayal/internal/commands/channels"
 	"github.com/mccune1224/betrayal/internal/commands/help"
 	"github.com/mccune1224/betrayal/internal/commands/inv"
 	"github.com/mccune1224/betrayal/internal/commands/roll"
 	"github.com/mccune1224/betrayal/internal/commands/view"
-	"github.com/mccune1224/betrayal/internal/commands/vote"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
@@ -124,21 +125,20 @@ func main() {
 	app.betrayalManager.Unregister()
 
 	tally := app.RegisterBetrayalCommands(
-		// new(inventory.Inventory),
+		new(inv.Inv),
 		new(roll.Roll),
 		new(action.Action),
 		new(view.View),
-		// new(commands.List),
-		// new(commands.Buy),
-		// new(commands.Insult),
-		// new(commands.Ping),
-		new(vote.Vote),
+		new(buy.Buy),
+		new(channels.Channel),
+		new(help.Help),
+		// new(vote.Vote),
 		// new(commands.Kill),
 		// new(commands.Revive),
 		// new(commands.Setup),
-		// new(commands.Alliance),
-		new(help.Help),
-		new(inv.Inv),
+		// new(commands.Insult),
+		// new(commands.Ping),
+		// new(commands.List),
 	)
 
 	app.betrayalManager.Session().AddHandler(logHandler)

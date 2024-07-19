@@ -21,10 +21,6 @@ func (h *Help) adminOverview(ctx ken.SubCommandContext) (err error) {
 				Value: "`/inv` (short for inventory) command allows you to manage a player's inventory within their confessional channel or within a whiltelisted channel. Use it to /help admin inventory`.",
 			},
 			{
-				Name:  "Alliance",
-				Value: "`/alliance admin` assists with approving/declining player requests to create alliances as well as accept a pending invite for an alliance. use `/help admin alliance` for more information.",
-			},
-			{
 				Name:  "Roll",
 				Value: "`/roll` allows you to roll game events as well as items/abilities on the fly. use `/help admin roll` for more information.",
 			},
@@ -54,17 +50,7 @@ func (h *Help) adminOverview(ctx ken.SubCommandContext) (err error) {
 				Style:    discordgo.SecondaryButton,
 			}, func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
-				ctx.RespondEmbed(adminAllianceEmbed())
-				return true
-			}, clearAll)
-
-			b.Add(discordgo.Button{
-				CustomID: "a-alliance-help",
-				Label:    "Alliance",
-				Style:    discordgo.SecondaryButton,
-			}, func(ctx ken.ComponentContext) bool {
-				ctx.SetEphemeral(true)
-				ctx.RespondEmbed(adminAllianceEmbed())
+				ctx.RespondEmbed(adminInventoryEmbed())
 				return true
 			}, clearAll)
 
@@ -129,14 +115,6 @@ func (h *Help) adminInventory(ctx ken.SubCommandContext) (err error) {
 	}
 
 	return ctx.RespondEmbed(adminInventoryEmbed())
-}
-
-func (h *Help) adminAlliance(ctx ken.SubCommandContext) (err error) {
-	if err = ctx.Defer(); err != nil {
-		log.Println(err)
-		return err
-	}
-	return ctx.RespondEmbed(adminAllianceEmbed())
 }
 
 func (h *Help) adminBuy(ctx ken.SubCommandContext) (err error) {

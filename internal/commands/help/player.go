@@ -15,15 +15,11 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 
 	msg := &discordgo.MessageEmbed{
 		Title:       "Player Commands Overview",
-		Description: "Lexibot is your one stop shop to help with multiple betrayal game components. It will help keep track of your inventory, interact with alliances, allow you to request doing votes and actions, and quickly fetch game information. Click a button below or do `/help player [topic]` to learn more.",
+		Description: "Lexibot is your one stop shop to help with multiple betrayal game components. It will help keep track of your inventory, allow you to request doing votes and actions, and quickly fetch game information. Click a button below or do `/help player [topic]` to learn more.",
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:  "Action",
 				Value: "`/action` will request an action for processing. Any ability, item, etc should be done through this command. use `/help player action` for more information.",
-			},
-			{
-				Name:  "Alliance",
-				Value: "`/alliance` allows you request creating, joining, and leaving alliances. For more information, use `/help player alliance`.",
 			},
 			{
 				Name:  "Inventory",
@@ -67,15 +63,6 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 			}, func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerActionHelpEmbed())
-				return true
-			}, clearAll)
-			b.Add(discordgo.Button{
-				CustomID: "p-alliance-help",
-				Style:    discordgo.SecondaryButton,
-				Label:    "Alliance",
-			}, func(ctx ken.ComponentContext) bool {
-				ctx.SetEphemeral(true)
-				ctx.RespondEmbed(playerAllianceHelpEmbed())
 				return true
 			}, clearAll)
 		}, clearAll)
@@ -126,14 +113,6 @@ func (*Help) playerAction(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	return ctx.RespondEmbed(playerActionHelpEmbed())
-}
-
-func (h *Help) playerAlliance(ctx ken.SubCommandContext) (err error) {
-	if err := ctx.Defer(); err != nil {
-		log.Println(err)
-		return err
-	}
-	return ctx.RespondEmbed(playerAllianceHelpEmbed())
 }
 
 func (h *Help) playerInventory(ctx ken.SubCommandContext) (err error) {
