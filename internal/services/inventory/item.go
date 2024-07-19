@@ -1,35 +1,58 @@
 package inventory
 
 import (
-	"errors"
-	"strings"
+	"context"
 
-	"github.com/mccune1224/betrayal/internal/util"
+	"github.com/mccune1224/betrayal/internal/models"
 )
 
-var ErrItemNotFound = errors.New("item not found")
-
-func (ih *InventoryHandler) AddItem(name string) (string, error) {
-	item, err := ih.m.Items.GetByFuzzy(name)
+func (ih *InventoryHandler) AddItem(itemName string, quantity int32) (*models.Item, error) {
+	query := models.New(ih.pool)
+	item, err := query.GetItemByFuzzy(context.Background(), itemName)
 	if err != nil {
-		return "", err
+		return nil, err
+	}
+	err = query.UpsertPlayerItemJoin(context.TODO(), models.UpsertPlayerItemJoinParams{
+		PlayerID: ih.player.ID,
+		ItemID:   item.ID,
+		Quantity: quantity,
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	ih.i.Items = append(ih.i.Items, item.Name)
-	err = ih.m.Inventories.UpdateItems(ih.i)
-	if err != nil {
-		return "", err
-	}
-	return item.Name, nil
+	return &item, nil
 }
 
-func (ih *InventoryHandler) RemoveItem(item string) (string, error) {
-	best, _ := util.FuzzyFind(item, ih.i.Items)
-	for k, v := range ih.i.Items {
-		if strings.EqualFold(v, best) {
-			ih.i.Items = append(ih.i.Items[:k], ih.i.Items[k+1:]...)
-			return best, ih.m.Inventories.UpdateItems(ih.i)
+func (ih *InventoryHandler) RemoveItem(itemName string, quantity int32) (*models.Item, error) {
+	query := models.New(ih.pool)
+	item, err := query.GetItemByFuzzy(context.Background(), itemName)
+	if err != nil {
+		return nil, err
+	}
+	items, err := query.ListPlayerItemInventory(context.Background(), ih.player.ID)
+	if err != nil {
+		return nil, err
+	}
+	for _, i := range items {
+		if i.ID == item.ID {
+			if i.Quantity-quantity <= 0 {
+				err = query.DeletePlayerItem(context.Background(), models.DeletePlayerItemParams{
+					PlayerID: ih.player.ID,
+					ItemID:   item.ID,
+				})
+			} else {
+				_, err = query.UpdatePlayerItemQuantity(context.Background(), models.UpdatePlayerItemQuantityParams{
+					PlayerID: ih.player.ID,
+					ItemID:   item.ID,
+					Quantity: i.Quantity - 1,
+				})
+			}
+			break
 		}
 	}
-	return "", ErrItemNotFound
+	if err != nil {
+		return nil, err
+	}
+	return &item, err
 }

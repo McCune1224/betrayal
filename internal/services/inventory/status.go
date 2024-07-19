@@ -1,50 +1,59 @@
 package inventory
 
 import (
-	"errors"
-	"log"
-	"slices"
-	"strings"
+	"context"
 
-	"github.com/mccune1224/betrayal/internal/util"
+	"github.com/mccune1224/betrayal/internal/models"
 )
 
-var (
-	ErrStatusAlreadyExists = errors.New("status already exists")
-	ErrStatusNotFound      = errors.New("status not found")
-)
-
-func (ih *InventoryHandler) AddStatus(name string) (string, error) {
-	best, err := ih.m.Statuses.GetByFuzzy(name)
+func (ih *InventoryHandler) AddStatus(statusName string, quantity int32) (*models.Status, error) {
+	query := models.New(ih.pool)
+	status, err := query.GetStatusByFuzzy(context.Background(), statusName)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	for _, s := range ih.i.Statuses {
-		if strings.EqualFold(best.Name, s) {
-			return "", ErrStatusAlreadyExists
-		}
-	}
-	ih.i.Statuses = append(ih.i.Statuses, best.Name)
-	err = ih.m.Inventories.UpdateStatuses(ih.i)
-
+	err = query.UpsertPlayerStatusJoin(context.TODO(), models.UpsertPlayerStatusJoinParams{
+		PlayerID: ih.player.ID,
+		StatusID: status.ID,
+		Quantity: quantity,
+	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return best.Name, nil
+
+	return &status, nil
+
 }
 
-func (ih *InventoryHandler) RemoveStatus(name string) (string, error) {
-	best, _ := util.FuzzyFind(name, ih.i.Statuses)
-	i := slices.Index(ih.i.Statuses, best)
-	if i == -1 {
-		return "", ErrStatusNotFound
-	}
-	removed := ih.i.Statuses[i]
-	ih.i.Statuses = append(ih.i.Statuses[:i], ih.i.Statuses[i+1:]...)
-	err := ih.m.Inventories.UpdateStatuses(ih.i)
+func (ih *InventoryHandler) RemoveStatus(statusName string, quantity int32) (*models.Status, error) {
+	query := models.New(ih.pool)
+	status, err := query.GetStatusByFuzzy(context.Background(), statusName)
 	if err != nil {
-		log.Println(err)
-		return "", err
+		return nil, err
 	}
-  return removed, nil
+	items, err := query.ListPlayerItemInventory(context.Background(), ih.player.ID)
+	if err != nil {
+		return nil, err
+	}
+	for _, i := range items {
+		if i.ID == status.ID {
+			if i.Quantity-quantity <= 0 {
+				err = query.DeletePlayerStatus(context.Background(), models.DeletePlayerStatusParams{
+					PlayerID: ih.player.ID,
+					StatusID: status.ID,
+				})
+			} else {
+				_, err = query.UpdatePlayerStatusQuantity(context.Background(), models.UpdatePlayerStatusQuantityParams{
+					PlayerID: ih.player.ID,
+					StatusID: status.ID,
+					Quantity: i.Quantity - 1,
+				})
+			}
+			break
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &status, err
 }

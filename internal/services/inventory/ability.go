@@ -1,117 +1,85 @@
 package inventory
 
 import (
+	"context"
 	"errors"
-	"fmt"
-	"slices"
-	"strings"
+	"log"
 
-	"github.com/mccune1224/betrayal/internal/util"
-	"github.com/mccune1224/betrayal/pkg/data"
+	"github.com/mccune1224/betrayal/internal/models"
 )
 
-var ErrAbilityNotFound = errors.New("ability not found")
-
-// InventoryAbility is a type alias for the name of an ability
-// Follows the format of "Ability Name [Charges]"
-type AbilityString string
-
-func (as *AbilityString) GetName() string {
-	return strings.Split(string(*as), " [")[0]
-}
-
-func (as *AbilityString) GetCharges() int {
-	charge := strings.Split(string(*as), " [")[1]
-	charge = strings.TrimSuffix(charge, "]")
-	var charges int
-	fmt.Sscanf(charge, "%d", &charges)
-	return charges
-}
-
-// Returns a new InventoryAbility with the given name
-func (as *AbilityString) SetName(name string) AbilityString {
-	return AbilityString(fmt.Sprintf("%s [%d]", name, as.GetCharges()))
-}
-
-// Returns a new InventoryAbility with the given charge
-func (aas *AbilityString) SetCharges(charge int) AbilityString {
-	return AbilityString(fmt.Sprintf("%s [%d]", aas.GetName(), charge))
-}
-
-// Build Inventory Item from Ability
-func NewAbilityStringFromAA(ab *data.AnyAbility, chargeOpt ...int) *AbilityString {
-	charge := 1
-	if len(chargeOpt) > 0 {
-		charge = chargeOpt[0]
-	}
-	newString := fmt.Sprintf("%s [%d]", ab.Name, charge)
-	ia := AbilityString(newString)
-	return &ia
-}
-
-func NewAbilityStringFromAbility(ab *data.Ability, chargeOpt ...int) *AbilityString {
-	charge := ab.Charges
-	if len(chargeOpt) > 0 {
-		charge = chargeOpt[0]
-	}
-	newString := fmt.Sprintf("%s [%d]", ab.Name, charge)
-	ia := AbilityString(newString)
-	return &ia
-}
-
-func (ih *InventoryHandler) AddAbility(abilityName string, chargeOpt ...int) (AbilityString, error) {
-	best, err := ih.m.Abilities.GetByFuzzy(abilityName)
+func (ih *InventoryHandler) AddAbility(abilityName string, quantity int32) (*models.AbilityInfo, error) {
+	query := models.New(ih.pool)
+	ability, err := query.GetAbilityInfoByFuzzy(context.Background(), abilityName)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+	currentAbilityIds, _ := query.ListPlayerAbilityJoin(context.Background(), ih.player.ID)
 
-	charge := best.Charges
-	if len(chargeOpt) > 0 {
-		charge = chargeOpt[0]
-	}
-
-	for i, ab := range ih.i.Abilities {
-		abs := AbilityString(ab)
-		if strings.EqualFold(abs.GetName(), best.Name) {
-			ih.i.Abilities[i] = string(abs.SetCharges(abs.GetCharges() + charge))
-			err := ih.m.Inventories.UpdateAbilities(ih.i)
-			if err != nil {
-				return "", err
-			}
+	for _, abilityId := range currentAbilityIds {
+		if ability.ID == abilityId.AbilityID {
+			return nil, errors.New("ability already added")
 		}
 	}
 
-	ih.i.Abilities = append(ih.i.Abilities, string(*NewAbilityStringFromAbility(best, charge)))
-	err = ih.m.Inventories.UpdateAbilities(ih.i)
-	if err != nil {
-		return "", err
+	if quantity == 0 {
+		quantity = ability.DefaultCharges
 	}
 
-	return AbilityString(ih.i.Abilities[len(ih.i.Abilities)-1]), nil
+	_, err = query.CreatePlayerAbilityJoin(context.Background(), models.CreatePlayerAbilityJoinParams{
+		PlayerID:  ih.player.ID,
+		AbilityID: ability.ID,
+		Quantity:  quantity,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &ability, nil
 }
 
-func (ih *InventoryHandler) RemoveAbility(abilityName string) (string, error) {
-	best, _ := util.FuzzyFind(abilityName, ih.i.Abilities)
-	i := slices.Index(ih.i.Abilities, best)
-	if i == -1 {
-		return "", ErrAbilityNotFound
-	}
-	removed := AbilityString(ih.i.Abilities[i])
-	ih.i.Abilities = append(ih.i.Abilities[:i], ih.i.Abilities[i+1:]...)
-	err := ih.m.Inventories.UpdateAbilities(ih.i)
+func (ih *InventoryHandler) RemoveAbility(abilityName string) (*models.AbilityInfo, error) {
+	query := models.New(ih.pool)
+	ability, err := query.GetAbilityInfoByFuzzy(context.Background(), abilityName)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(removed), nil
+	err = query.DeletePlayerAbility(context.Background(), models.DeletePlayerAbilityParams{
+		PlayerID:  ih.player.ID,
+		AbilityID: ability.ID,
+	})
+	return &ability, err
 }
 
-func (ih *InventoryHandler) SetAbilityCharges(abilityName string, charge int) error {
-	best, _ := util.FuzzyFind(abilityName, ih.i.Abilities)
-	bestIaas := AbilityString(best)
-	i := slices.Index(ih.i.Abilities, best)
-	if i == -1 {
-		return ErrAbilityNotFound
+func (ih *InventoryHandler) UpdateAbility(abilityName string, quantity int) (*models.AbilityInfo, error) {
+	query := models.New(ih.pool)
+	ability, err := query.GetAbilityInfoByFuzzy(context.Background(), abilityName)
+	if err != nil {
+		return nil, err
 	}
-	ih.i.Abilities[i] = fmt.Sprintf("%s [%d]", bestIaas.GetName(), charge)
-	return ih.m.Inventories.UpdateAbilities(ih.i)
+
+	currentAbilityList, _ := query.ListPlayerAbilityJoin(context.Background(), ih.player.ID)
+	log.Println(currentAbilityList)
+	targetAbility := &models.PlayerAbility{}
+	for _, abJoin := range currentAbilityList {
+		if ability.ID == abJoin.AbilityID {
+			targetAbility = &abJoin
+		}
+	}
+	if targetAbility == nil {
+		return nil, errors.New("ability not found")
+	}
+	if quantity < 0 {
+		quantity = 0
+	}
+	_, err = query.UpdatePlayerAbilityQuantity(context.Background(), models.UpdatePlayerAbilityQuantityParams{
+		Quantity:  int32(quantity),
+		PlayerID:  ih.player.ID,
+		AbilityID: ability.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &ability, nil
 }

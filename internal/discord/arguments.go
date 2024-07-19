@@ -16,6 +16,38 @@ func UserCommandArg(required bool) *discordgo.ApplicationCommandOption {
 	}
 }
 
+func StatusCommandArg(name, description string, required bool) *discordgo.ApplicationCommandOption {
+	// WARNING: HAHAHHAHAHAHAHAHAHA IM SO SORRY
+	statuses := []string{
+		"Cursed",
+		"Death Cursed",
+		"Frozen",
+		"Paralyzed",
+		"Burned",
+		"Empowered",
+		"Drunk",
+		"Restrained",
+		"Disabled",
+		"Blackmailed",
+		"Despaired",
+		"Madness",
+		"Lucky",
+		"Unlucky",
+	}
+	choices := []*discordgo.ApplicationCommandOptionChoice{}
+	for _, status := range statuses {
+		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{Name: status, Value: status})
+	}
+
+	return &discordgo.ApplicationCommandOption{
+		Type:        discordgo.ApplicationCommandOptionString,
+		Name:        name,
+		Description: description,
+		Required:    required,
+		Choices:     choices,
+	}
+}
+
 func StringCommandArg(
 	name string,
 	description string,

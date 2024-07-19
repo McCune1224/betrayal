@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -9,18 +10,17 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/joho/godotenv/autoload"
 	_ "github.com/lib/pq"
-	"github.com/mccune1224/betrayal/internal/commands"
+	"github.com/mccune1224/betrayal/internal/commands/action"
 	"github.com/mccune1224/betrayal/internal/commands/help"
-	"github.com/mccune1224/betrayal/internal/commands/inventory"
+	"github.com/mccune1224/betrayal/internal/commands/inv"
 	"github.com/mccune1224/betrayal/internal/commands/roll"
 	"github.com/mccune1224/betrayal/internal/commands/view"
+	"github.com/mccune1224/betrayal/internal/commands/vote"
 	"github.com/mccune1224/betrayal/internal/discord"
-	"github.com/mccune1224/betrayal/internal/scheduler"
 	"github.com/mccune1224/betrayal/internal/util"
-	"github.com/mccune1224/betrayal/pkg/data"
 	"github.com/zekrotja/ken"
 	"github.com/zekrotja/ken/state"
 )
@@ -39,8 +39,8 @@ type config struct {
 
 // Global app struct
 type app struct {
-	models          data.Models
-	scheduler       scheduler.BetrayalScheduler
+	dbPool *pgxpool.Pool
+	// scheduler       scheduler.BetrayalScheduler
 	betrayalManager *ken.Ken
 	conifg          config
 }
@@ -49,14 +49,15 @@ type app struct {
 // (AKA basically every command)
 type BetrayalCommand interface {
 	ken.Command
-	Initialize(data.Models, *scheduler.BetrayalScheduler)
+	Initialize(*pgxpool.Pool)
 }
 
 // Wrapper for ken.RegisterBetrayalCommands for inserting DB access
 func (a *app) RegisterBetrayalCommands(commands ...BetrayalCommand) int {
 	tally := 0
 	for _, command := range commands {
-		command.Initialize(a.models, &a.scheduler)
+		// command.Initialize(a.dbPool, &a.scheduler)
+		command.Initialize(a.dbPool)
 		err := a.betrayalManager.RegisterCommands(command)
 		if err != nil {
 			log.Fatal(err)
@@ -84,20 +85,14 @@ func main() {
 		log.Fatal("error opening connection,", err)
 	}
 
-	// Connect to DB
-	db, err := sqlx.Connect("postgres", cfg.database.dsn)
-	if err != nil {
-		log.Fatal("error opening database,", err)
-	}
-	dbModels := data.NewModels(db)
-
-	botScheduler := scheduler.NewScheduler(dbModels)
-
+	// botScheduler := scheduler.NewScheduler(dbPools)
 	// Create central app struct and attach ken framework to it
+
+	pools, err := pgxpool.New(context.Background(), cfg.database.dsn)
+
 	app := &app{
-		conifg:    cfg,
-		models:    dbModels,
-		scheduler: *botScheduler,
+		conifg: cfg,
+		dbPool: pools,
 	}
 	km, err := ken.New(bot, ken.Options{
 		State: state.NewInternal(),
@@ -105,7 +100,7 @@ func main() {
 			Default: discord.ColorThemeOrange,
 			Error:   discord.ColorThemeRuby,
 		},
-		DisableCommandInfoCache: false,
+		DisableCommandInfoCache: true,
 		OnSystemError: func(ctx string, err error, args ...interface{}) {
 			log.Printf("[STM] {%s} - %s\n", ctx, err.Error())
 		},
@@ -129,20 +124,21 @@ func main() {
 	app.betrayalManager.Unregister()
 
 	tally := app.RegisterBetrayalCommands(
-		new(inventory.Inventory),
+		// new(inventory.Inventory),
 		new(roll.Roll),
-		new(commands.ActionFunnel),
+		new(action.Action),
 		new(view.View),
-		new(commands.List),
-		new(commands.Buy),
-		new(commands.Insult),
-		new(commands.Ping),
-		new(commands.Vote),
-		new(commands.Kill),
-		new(commands.Revive),
-		new(commands.Setup),
-		new(commands.Alliance),
+		// new(commands.List),
+		// new(commands.Buy),
+		// new(commands.Insult),
+		// new(commands.Ping),
+		new(vote.Vote),
+		// new(commands.Kill),
+		// new(commands.Revive),
+		// new(commands.Setup),
+		// new(commands.Alliance),
 		new(help.Help),
+		new(inv.Inv),
 	)
 
 	app.betrayalManager.Session().AddHandler(logHandler)
@@ -162,8 +158,8 @@ func main() {
 
 	// start the scheduler
 
-	app.scheduler.QueueScheduleJobs(app.betrayalManager.Session())
-	app.scheduler.Start()
+	// app.scheduler.QueueScheduleJobs(app.betrayalManager.Session())
+	// app.scheduler.Start()
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)

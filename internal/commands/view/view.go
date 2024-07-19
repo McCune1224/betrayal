@@ -1,27 +1,26 @@
 package view
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mccune1224/betrayal/internal/discord"
-	"github.com/mccune1224/betrayal/internal/scheduler"
-	"github.com/mccune1224/betrayal/pkg/data"
+	"github.com/mccune1224/betrayal/internal/models"
 	"github.com/zekrotja/ken"
 )
 
 const infinity = "∞"
 
 type View struct {
-	models    data.Models
-	scheduler *scheduler.BetrayalScheduler
+	dbPool *pgxpool.Pool
 }
 
-func (v *View) Initialize(models data.Models, scheduler *scheduler.BetrayalScheduler) {
-	v.models = models
-	v.scheduler = scheduler
+func (v *View) Initialize(pool *pgxpool.Pool) {
+	v.dbPool = pool
 }
 
 var _ ken.SlashCommand = (*View)(nil)
@@ -39,12 +38,13 @@ func (*View) Name() string {
 // Options implements ken.SlashCommand.
 func (v *View) Options() []*discordgo.ApplicationCommandOption {
 	statusChoices := []*discordgo.ApplicationCommandOptionChoice{}
-	statuses, err := v.models.Statuses.GetAll()
+	q := models.New(v.dbPool)
+	dbCtx := context.Background()
+	statuses, err := q.ListStatus(dbCtx)
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
-
 	for _, status := range statuses {
 		statusChoices = append(statusChoices, &discordgo.ApplicationCommandOptionChoice{
 			Name:  status.Name,
@@ -131,7 +131,10 @@ func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
 	if strings.ToLower(nameArg) == "ferrari" {
 		return ctx.RespondEmbed(generateFerrariRole())
 	}
-	role, err := v.models.Roles.GetByFuzzy(nameArg)
+
+	q := models.New(v.dbPool)
+	dbCtx := context.Background()
+	role, err := q.GetRoleByFuzzy(dbCtx, nameArg)
 	if err != nil {
 		ctx.RespondError(
 			fmt.Sprintf("Unable to find Role: %s", nameArg),
@@ -161,9 +164,11 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
+	q := models.New(v.dbPool)
+	dbCtx := context.Background()
 	nameArg := ctx.Options().GetByName("name").StringValue()
 	// ability, err := v.models.Abilities.GetByFuzzy(nameArg)
-	ability, err := v.models.Abilities.GetByName(nameArg)
+	ability, err := q.GetAbilityInfoByFuzzy(dbCtx, nameArg)
 	if err != nil {
 		discord.ErrorMessage(ctx,
 			"Error Finding Ability",
@@ -172,7 +177,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 
-	associatedRoles, err := v.models.Roles.GetAllByAbilityID(ability.ID)
+	associatedRoles, err := q.ListAssociatedRolesForAbility(dbCtx, ability.ID)
 	if err != nil {
 		log.Println(err)
 		return discord.ErrorMessage(ctx,
@@ -180,33 +185,29 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 			fmt.Sprintf("Unable to find Associated Role for Ability: %s", nameArg))
 	}
 
+	dbcategories, _ := q.ListAbilityCategoryNames(dbCtx, ability.ID)
 	abilityEmbed := &discordgo.MessageEmbed{
 		Title:       ability.Name,
 		Description: ability.Description,
 		Color:       determineColor(ability.Rarity),
+		// FIXME: Categories need to be queried/overhauled
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Categories",
-				Value:  strings.Join(ability.Categories, ", "),
+				Value:  strings.Join(dbcategories, ", "),
 				Inline: true,
 			},
 		},
 	}
-	aa, _ := v.models.Abilities.GetAnyAbilityByName(ability.Name)
-	if aa != nil {
-		msg := ""
-		if aa.RoleSpecific != "" {
-			msg = fmt.Sprintf("Role Specific AA - %s", aa.RoleSpecific)
-		} else {
-			msg = fmt.Sprintf("%s AA", aa.Rarity)
-		}
-		abilityEmbed.Footer = &discordgo.MessageEmbedFooter{
-			Text: msg,
-		}
+	aa, _ := q.GetAnyAbilityByFuzzy(dbCtx, ability.Name)
+	msg := ""
+	if aa.Rarity == models.RarityROLESPECIFIC {
+		msg = fmt.Sprintf("Role Specific AA")
 	} else {
-		abilityEmbed.Footer = &discordgo.MessageEmbedFooter{
-			Text: "Only base ability, not an AA",
-		}
+		msg = fmt.Sprintf("%s AA", aa.Rarity)
+	}
+	abilityEmbed.Footer = &discordgo.MessageEmbedFooter{
+		Text: msg,
 	}
 
 	b := ctx.FollowUpEmbed(abilityEmbed)
@@ -221,7 +222,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 				}, func(ctx ken.ComponentContext) bool {
 					roleName := strings.Split(ctx.GetData().CustomID, "-")[0]
 					// We know for sure role exists here so ignore error
-					role, _ := v.models.Roles.GetByFuzzy(roleName)
+					role, _ := q.GetRoleByFuzzy(dbCtx, roleName)
 					roleEmbed, err := v.roleEmbed(role)
 					if err != nil {
 						log.Println(err)
@@ -246,8 +247,11 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
 		return err
 	}
+	dbCtx := context.Background()
+	q := models.New(v.dbPool)
+
 	nameArg := ctx.Options().GetByName("name").StringValue()
-	perk, err := v.models.Perks.GetByName(nameArg)
+	perk, err := q.GetPerkInfoByFuzzy(dbCtx, nameArg)
 	if err != nil {
 		ctx.RespondError("Unable to find Perk",
 			fmt.Sprintf("Unable to find Perk: %s", nameArg),
@@ -255,7 +259,7 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 
-	associatedRoles, err := v.models.Roles.GetAllByPerkID(perk)
+	associatedRoles, err := q.ListAssociatedRolesForPerk(dbCtx, perk.ID)
 	if err != nil {
 		log.Println(err)
 		discord.ErrorMessage(ctx,
@@ -281,7 +285,7 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 				}, func(ctx ken.ComponentContext) bool {
 					roleName := strings.Split(ctx.GetData().CustomID, "-")[0]
 					// We know for sure role exists here so ignore error
-					role, _ := v.models.Roles.GetByFuzzy(roleName)
+					role, _ := q.GetRoleByFuzzy(dbCtx, roleName)
 					roleEmbed, err := v.roleEmbed(role)
 					if err != nil {
 						log.Println(err)
@@ -304,7 +308,9 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 
 func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
 	data := ctx.Options().GetByName("name").StringValue()
-	item, err := v.models.Items.GetByName(data)
+	dbCtx := context.Background()
+	q := models.New(v.dbPool)
+	item, err := q.GetItemByFuzzy(dbCtx, data)
 	if err != nil {
 		discord.ErrorMessage(ctx,
 			"Unable to find Item",
@@ -332,7 +338,7 @@ func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
 		},
 		{
 			Name:   "Rarity",
-			Value:  item.Rarity,
+			Value:  string(item.Rarity),
 			Inline: true,
 		},
 	}
@@ -363,7 +369,9 @@ func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
 
 func (v *View) viewStatus(ctx ken.SubCommandContext) (err error) {
 	statusName := ctx.Options().GetByName("name").StringValue()
-	status, err := v.models.Statuses.GetByName(statusName)
+	q := models.New(v.dbPool)
+	dbCtx := context.Background()
+	status, err := q.GetStatusByFuzzy(dbCtx, statusName)
 	if err != nil {
 		return err
 	}
@@ -409,22 +417,21 @@ func (*View) Version() string {
 	return "1.0.0"
 }
 
-func determineColor(rarity string) int {
-	rarity = strings.ToUpper(rarity)
+func determineColor(rarity models.Rarity) int {
 	switch rarity {
-	case "COMMON":
+	case models.RarityCOMMON:
 		return discord.ColorItemCommon
-	case "UNCOMMON":
+	case models.RarityUNCOMMON:
 		return discord.ColorItemUncommon
-	case "RARE":
+	case models.RarityRARE:
 		return discord.ColorItemRare
-	case "EPIC":
+	case models.RarityEPIC:
 		return discord.ColorItemEpic
-	case "LEGENDARY":
+	case models.RarityLEGENDARY:
 		return discord.ColorItemLegendary
-	case "MYTHICAL":
+	case models.RarityMYTHICAL:
 		return discord.ColorItemMythical
-	case "UNIQUE":
+	case models.RarityUNIQUE:
 		return discord.ColorItemUnique
 
 	default:
@@ -432,7 +439,7 @@ func determineColor(rarity string) int {
 	}
 }
 
-func zingyCase(ctx ken.SubCommandContext, zingy *data.Item) (err error) {
+func zingyCase(ctx ken.SubCommandContext, zingy models.Item) (err error) {
 	if err := ctx.Defer(); err != nil {
 		log.Println(err)
 		return err
@@ -483,4 +490,245 @@ func zingyCase(ctx ken.SubCommandContext, zingy *data.Item) (err error) {
 	})
 
 	return b.Send().Error
+}
+
+// Helper to build the embed for a role
+// Will pull abilities and perks from the database
+func (v *View) roleEmbed(role models.Role) (*discordgo.MessageEmbed, error) {
+	color := 0x000000
+	switch role.Alignment {
+	case models.AlignmentGOOD:
+		color = discord.ColorThemeGreen
+	case models.AlignmentEVIL:
+		color = discord.ColorThemeRed
+	case models.AlignmentNEUTRAL:
+		color = discord.ColorThemeYellow
+	}
+	q := models.New(v.dbPool)
+	dbCtx := context.Background()
+	abilities, err := q.ListRoleAbilityForRole(dbCtx, role.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	perks, err := q.ListRolePerkForRole(dbCtx, role.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	var embededAbilitiesFields []*discordgo.MessageEmbedField
+	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
+		Name:   "\n\n" + discord.Underline("Abilities") + "\n",
+		Value:  "",
+		Inline: false,
+	})
+	for _, ability := range abilities {
+		title := ability.Name
+		fStr := "%s [%d] - %s"
+		dbcategories, _ := q.ListAbilityCategoryNames(dbCtx, ability.ID)
+		categories := strings.Join(dbcategories, ", ")
+		if ability.DefaultCharges == 999999 {
+			// title = fmt.Sprintf("%s [%s]", ability.Name, infinity)
+			title = fmt.Sprintf("%s [%s] - %s", ability.Name, infinity, categories)
+		} else {
+			title = fmt.Sprintf(fStr, ability.Name, ability.DefaultCharges, categories)
+			// title = fmt.Sprintf(fStr, ability.Name, ability.DefaultCharges)
+		}
+		embededAbilitiesFields = append(
+			embededAbilitiesFields,
+			&discordgo.MessageEmbedField{
+				Name:   title,
+				Value:  ability.Description,
+				Inline: false,
+			},
+		)
+	}
+	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
+		Name:  "\n\n",
+		Value: "\n",
+	})
+
+	var embededPerksFields []*discordgo.MessageEmbedField
+	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
+		Name:   discord.Underline("Perks"),
+		Value:  "",
+		Inline: false,
+	})
+
+	for _, perk := range perks {
+		embededPerksFields = append(
+			embededPerksFields,
+			&discordgo.MessageEmbedField{
+				Name:   perk.Name,
+				Value:  perk.Description + "\n",
+				Inline: false,
+			},
+		)
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Title:       role.Name,
+		Description: role.Description,
+		Color:       color,
+		Fields:      append(embededAbilitiesFields, embededPerksFields...),
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: "Alignment: " + string(role.Alignment),
+		},
+	}
+	return embed, nil
+}
+
+// Given three options, return the two that are not the given role
+func missing(role string) []string {
+	options := []string{"Nephilim", "Nephilim - Offensive", "Nephilim - Defensive"}
+	missing := []string{}
+	for _, option := range options {
+		if option != role {
+			missing = append(missing, option)
+		}
+	}
+	return missing
+}
+
+// Outlier role that has stances to it (aka 3 roles in one).
+// Really just need to attach button components to this to pull up the other two roles
+func (v *View) generateNephRole(ctx ken.Context, role models.Role) (err error) {
+	base, err := v.roleEmbed(role)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, fmt.Sprintf("Failed to generate embeded message for role %s", role.Name))
+	}
+
+	missing := missing(role.Name)
+	firstMissing := missing[0]
+	secondMissing := missing[1]
+	q := models.New(v.dbPool)
+	dbCtx := context.Background()
+
+	firstMissingRole, err := q.GetRoleByFuzzy(dbCtx, firstMissing)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, fmt.Sprintf("Failed to generate embeded message for role %s", firstMissing))
+	}
+
+	secondMissingRole, err := q.GetRoleByName(dbCtx, secondMissing)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, fmt.Sprintf("Failed to generate embeded message for role %s", secondMissing))
+	}
+
+	missingRoles := []models.Role{firstMissingRole, secondMissingRole}
+
+	b := ctx.FollowUpEmbed(base)
+	b.AddComponents(func(cb *ken.ComponentBuilder) {
+		cb.AddActionsRow(func(b ken.ComponentAssembler) {
+			b.Add(discordgo.Button{
+				CustomID: missingRoles[0].Name,
+				Style:    discordgo.PrimaryButton,
+				Label:    missingRoles[0].Name,
+			}, func(ctx ken.ComponentContext) bool {
+				roleEmbed, err := v.roleEmbed(missingRoles[0])
+				if err != nil {
+					ctx.RespondMessage("Idek neph is stupid to format lol xd")
+					return true
+				}
+				ctx.SetEphemeral(true)
+				ctx.RespondEmbed(roleEmbed)
+				return true
+			}, false)
+			b.Add(discordgo.Button{
+				CustomID: missingRoles[1].Name,
+				Style:    discordgo.PrimaryButton,
+				Label:    missingRoles[1].Name,
+			}, func(ctx ken.ComponentContext) bool {
+				roleEmbed, err := v.roleEmbed(missingRoles[1])
+				if err != nil {
+					ctx.RespondMessage("Idek neph is stupid to format lol xd")
+					return true
+				}
+				ctx.SetEphemeral(true)
+				ctx.RespondEmbed(roleEmbed)
+				return true
+			}, false)
+		}, false).Condition(func(cctx ken.ComponentContext) bool {
+			return true
+		})
+	})
+
+	fum := b.Send()
+	return fum.Error
+}
+
+// Joke role
+func generateFerrariRole() *discordgo.MessageEmbed {
+	// -EVIL
+	// Ferrari
+	// We are checking...
+	//
+	// Abilities:
+	// Perfect Strategy (x3) - Roll a d10, if 2-10, you crash into the wall. If you roll a 1, you can still play the game.
+	//
+	// Ignore Race Engineer (x1) - Explicitly ignore your engineer and strategist and attempt to win the race. If you are not the most voted at the next elimination, gain immunity for the one following it. If you are the most voted, both you and the other Ferrari driver will be perma-dead and cannot be revived.
+	//
+	// Perks:
+	// Tifosi tears - You are despaired in game as well as irl, this cannot be cured.
+	//
+	// Forced Contract - At game start, another player will be informed they are Ferrari's second driver. They will likely despise you for this as they have no real benefits, and only pain associated with this.
+	//
+	// Mattia's curse - You will be told special information once per day phase from the hosts, this information will either be unhelpful or a lie.
+	var embededAbilitiesFields []*discordgo.MessageEmbedField
+	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
+		Name:   "\n\n" + discord.Underline("Abilities") + "\n",
+		Value:  "",
+		Inline: false,
+	})
+	// Im too tired for this shit
+	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
+		Name:   "Perfect Strategy [3]",
+		Value:  "Roll a d10, if 2-10, you crash into the wall. If you roll a 1, you can still play the game.",
+		Inline: false,
+	})
+	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
+		Name:   "Ignore Race Engineer [1]",
+		Value:  "Explicitly ignore your engineer and strategist and attempt to win the race. If you are not the most voted at the next elimination, gain immunity for the one following it. If you are the most voted, both you and the other Ferrari driver will be perma-dead and cannot be revived.",
+		Inline: false,
+	})
+	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
+		Name:  "\n\n",
+		Value: "\n",
+	})
+
+	var embededPerksFields []*discordgo.MessageEmbedField
+	embededAbilitiesFields = append(embededAbilitiesFields, &discordgo.MessageEmbedField{
+		Name:   discord.Underline("Perks"),
+		Value:  "",
+		Inline: false,
+	})
+
+	embededPerksFields = append(embededPerksFields, &discordgo.MessageEmbedField{
+		Name:   "Tifosi tears",
+		Value:  "You are despaired in game as well as irl, this cannot be cured.",
+		Inline: false,
+	})
+	embededPerksFields = append(embededPerksFields, &discordgo.MessageEmbedField{
+		Name:   "Forced Contract",
+		Value:  "At game start, another player will be informed they are Ferrari's second driver. They will likely despise you for this as they have no real benefits, and only pain associated with this.",
+		Inline: false,
+	})
+	embededPerksFields = append(embededPerksFields, &discordgo.MessageEmbedField{
+		Name:   "Mattia's curse",
+		Value:  "You will be told special information once per day phase from the hosts, this information will either be unhelpful or a lie.",
+		Inline: false,
+	})
+
+	embed := &discordgo.MessageEmbed{
+		Title:       "Ferrari",
+		Description: "We are checking...",
+		Color:       discord.ColorThemeRed,
+		Fields:      append(embededAbilitiesFields, embededPerksFields...),
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: fmt.Sprintf("Alignment: EVIL    %s not actual role...%s.", discord.EmojiError, discord.EmojiError),
+		},
+	}
+	return embed
 }

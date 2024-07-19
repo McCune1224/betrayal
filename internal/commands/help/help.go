@@ -2,19 +2,16 @@ package help
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/mccune1224/betrayal/internal/scheduler"
-	"github.com/mccune1224/betrayal/pkg/data"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/zekrotja/ken"
 )
 
 type Help struct {
-	models    data.Models
-	scheduler *scheduler.BetrayalScheduler
+	dbPool *pgxpool.Pool
 }
 
-func (h *Help) Initialize(models data.Models, scheduler *scheduler.BetrayalScheduler) {
-	h.models = models
-	h.scheduler = scheduler
+func (h *Help) Initialize(pool *pgxpool.Pool) {
+	h.dbPool = pool
 }
 
 var _ ken.SlashCommand = (*Help)(nil)
