@@ -96,6 +96,37 @@ func (q *Queries) GetRoleByName(ctx context.Context, name string) (Role, error) 
 	return i, err
 }
 
+const listRolesByName = `-- name: ListRolesByName :many
+select id, name, description, alignment
+from role
+where name = any($1::text[])
+`
+
+func (q *Queries) ListRolesByName(ctx context.Context, dollar_1 []string) ([]Role, error) {
+	rows, err := q.db.Query(ctx, listRolesByName, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Role
+	for rows.Next() {
+		var i Role
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Alignment,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listrole = `-- name: Listrole :many
 select id, name, description, alignment
 from role

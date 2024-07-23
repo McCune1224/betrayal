@@ -58,7 +58,7 @@ func (i *Inv) Options() []*discordgo.ApplicationCommandOption {
 		{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "get",
-			Description: "Get player's inventory. (If you're a player use '/inv me' instead.)",
+			Description: "Admin Get player's inventory. (If you're a player use '/inv me' instead.)",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.UserCommandArg(true),
 				discord.BoolCommandArg("show", "Show the requested inventory (Will display player view)", false),

@@ -16,10 +16,13 @@ import (
 	"github.com/mccune1224/betrayal/internal/commands/action"
 	"github.com/mccune1224/betrayal/internal/commands/buy"
 	"github.com/mccune1224/betrayal/internal/commands/channels"
+	"github.com/mccune1224/betrayal/internal/commands/echo"
 	"github.com/mccune1224/betrayal/internal/commands/help"
 	"github.com/mccune1224/betrayal/internal/commands/inv"
 	"github.com/mccune1224/betrayal/internal/commands/roll"
+	"github.com/mccune1224/betrayal/internal/commands/setup"
 	"github.com/mccune1224/betrayal/internal/commands/view"
+	"github.com/mccune1224/betrayal/internal/commands/vote"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
@@ -132,10 +135,11 @@ func main() {
 		new(buy.Buy),
 		new(channels.Channel),
 		new(help.Help),
-		// new(vote.Vote),
+		new(vote.Vote),
+		new(setup.Setup),
+		new(echo.Echo),
 		// new(commands.Kill),
 		// new(commands.Revive),
-		// new(commands.Setup),
 		// new(commands.Insult),
 		// new(commands.Ping),
 		// new(commands.List),

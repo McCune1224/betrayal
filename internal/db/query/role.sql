@@ -10,6 +10,12 @@ from role
 where name = $1
 ;
 
+-- name: ListRolesByName :many
+select *
+from role
+where name = any($1::text[])
+;
+
 -- name: GetRoleByFuzzy :one
 select *
 from role
