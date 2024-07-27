@@ -49,6 +49,7 @@ func (c *Channel) Options() []*discordgo.ApplicationCommandOption {
 		},
 		c.adminCommandArgBuilder(),
 		c.voteCommandArgBuilder(),
+		c.actionCommandArgBuilder(),
 	}
 }
 
@@ -57,6 +58,7 @@ func (c *Channel) Run(ctx ken.Context) (err error) {
 	return ctx.HandleSubCommands(
 		c.voteCommandGroupBuilder(),
 		c.adminCommandGroupBuilder(),
+		c.actionCommandGroupBuilder(),
 		ken.SubCommandHandler{Name: "confessionals", Run: c.viewConfessionals},
 	)
 }

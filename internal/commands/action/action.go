@@ -168,7 +168,7 @@ func (a *Action) request(ctx ken.SubCommandContext) (err error) {
 	}
 
 	actionLog := fmt.Sprintf(
-		"%s - %s - %s",
+		"%s || %s || %s",
 		guildMember.Nick,
 		reqArg,
 		humanReqTime,

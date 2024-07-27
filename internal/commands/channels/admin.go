@@ -37,9 +37,6 @@ func (c *Channel) adminCommandArgBuilder() *discordgo.ApplicationCommandOption {
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Name:        "list",
 				Description: "list the current admin channel",
-				Options: []*discordgo.ApplicationCommandOption{
-					discord.UserCommandArg(false),
-				},
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
