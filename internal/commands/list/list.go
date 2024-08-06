@@ -2,6 +2,7 @@ package list
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strings"
 
@@ -32,11 +33,11 @@ var (
 )
 
 type List struct {
-	dbPoll *pgxpool.Pool
+	dbPool *pgxpool.Pool
 }
 
 func (l *List) Initialize(pool *pgxpool.Pool) {
-	l.dbPoll = pool
+	l.dbPool = pool
 }
 
 var _ ken.SlashCommand = (*List)(nil)
@@ -95,7 +96,7 @@ func (l *List) listStatuses(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	q := models.New(l.dbPoll)
+	q := models.New(l.dbPool)
 	statuses, err := q.ListStatus(context.Background())
 	if err != nil {
 		log.Println(err)
@@ -142,7 +143,20 @@ func (l *List) listItems(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	return discord.AlexError(ctx, "not implemented")
+	q := models.New(l.dbPool)
+	items, err := q.ListItem(context.Background())
+	fields := []*discordgo.MessageEmbedField{}
+	for _, i := range items {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   fmt.Sprintf("%s (%s) $%d", i.Name, string(i.Rarity), i.Cost),
+			Inline: true,
+		})
+	}
+	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+		Title:       "Items",
+		Description: "All items in the game",
+		Fields:      fields,
+	})
 }
 
 func (l *List) listActiveRoles(ctx ken.SubCommandContext) (err error) {

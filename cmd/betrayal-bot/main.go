@@ -144,7 +144,6 @@ func main() {
 		// new(commands.Revive),
 		// new(commands.Insult),
 		// new(commands.Ping),
-		//
 	)
 
 	app.betrayalManager.Session().AddHandler(logHandler)
