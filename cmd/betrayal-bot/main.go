@@ -19,6 +19,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/commands/echo"
 	"github.com/mccune1224/betrayal/internal/commands/help"
 	"github.com/mccune1224/betrayal/internal/commands/inv"
+	"github.com/mccune1224/betrayal/internal/commands/list"
 	"github.com/mccune1224/betrayal/internal/commands/roll"
 	"github.com/mccune1224/betrayal/internal/commands/setup"
 	"github.com/mccune1224/betrayal/internal/commands/view"
@@ -138,11 +139,12 @@ func main() {
 		new(vote.Vote),
 		new(setup.Setup),
 		new(echo.Echo),
+		new(list.List),
 		// new(commands.Kill),
 		// new(commands.Revive),
 		// new(commands.Insult),
 		// new(commands.Ping),
-		// new(commands.List),
+		//
 	)
 
 	app.betrayalManager.Session().AddHandler(logHandler)
