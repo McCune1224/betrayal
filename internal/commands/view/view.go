@@ -201,10 +201,14 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 	}
 	aa, _ := q.GetAnyAbilityByFuzzy(dbCtx, ability.Name)
 	msg := ""
-	if aa.Rarity == models.RarityROLESPECIFIC {
-		msg = fmt.Sprintf("Role Specific AA")
+	if aa.AnyAbility {
+		if aa.Rarity == models.RarityROLESPECIFIC {
+			msg = fmt.Sprintf("Role Specific AA")
+		} else {
+			msg = fmt.Sprintf("%s AA", aa.Rarity)
+		}
 	} else {
-		msg = fmt.Sprintf("%s AA", aa.Rarity)
+		msg = fmt.Sprintf("Role Specific Ability. (not AA)")
 	}
 	abilityEmbed.Footer = &discordgo.MessageEmbedFooter{
 		Text: msg,
