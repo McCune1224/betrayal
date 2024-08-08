@@ -183,6 +183,11 @@ type PlayerItem struct {
 	Quantity int32 `json:"quantity"`
 }
 
+type PlayerLifeboard struct {
+	ChannelID string `json:"channel_id"`
+	MessageID string `json:"message_id"`
+}
+
 type PlayerPerk struct {
 	PlayerID int64 `json:"player_id"`
 	PerkID   int32 `json:"perk_id"`

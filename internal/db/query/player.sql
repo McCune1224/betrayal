@@ -9,6 +9,11 @@ select *
 from player
 ;
 
+-- name: ListPlayerLifeboard :many
+select id, alive
+from player
+;
+
 -- name: CreatePlayer :one
 INSERT INTO player (id, role_id, alive, coins, coin_bonus, luck, alignment) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
 

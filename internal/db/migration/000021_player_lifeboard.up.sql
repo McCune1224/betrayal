@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS player_lifeboard (
+  channel_id VARCHAR(255) NOT NULL UNIQUE,
+  message_id VARCHAR(255) NOT NULL UNIQUE
+)
+

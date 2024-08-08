@@ -165,6 +165,36 @@ func (q *Queries) ListPlayer(ctx context.Context) ([]Player, error) {
 	return items, nil
 }
 
+const listPlayerLifeboard = `-- name: ListPlayerLifeboard :many
+select id, alive
+from player
+`
+
+type ListPlayerLifeboardRow struct {
+	ID    int64 `json:"id"`
+	Alive bool  `json:"alive"`
+}
+
+func (q *Queries) ListPlayerLifeboard(ctx context.Context) ([]ListPlayerLifeboardRow, error) {
+	rows, err := q.db.Query(ctx, listPlayerLifeboard)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPlayerLifeboardRow
+	for rows.Next() {
+		var i ListPlayerLifeboardRow
+		if err := rows.Scan(&i.ID, &i.Alive); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const playerFoo = `-- name: PlayerFoo :one
 select
     player.id,
