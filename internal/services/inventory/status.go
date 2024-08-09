@@ -31,11 +31,11 @@ func (ih *InventoryHandler) RemoveStatus(statusName string, quantity int32) (*mo
 	if err != nil {
 		return nil, err
 	}
-	items, err := query.ListPlayerItemInventory(context.Background(), ih.player.ID)
+	statuses, err := query.ListPlayerStatusInventory(context.Background(), ih.player.ID)
 	if err != nil {
 		return nil, err
 	}
-	for _, i := range items {
+	for _, i := range statuses {
 		if i.ID == status.ID {
 			if i.Quantity-quantity <= 0 {
 				err = query.DeletePlayerStatus(context.Background(), models.DeletePlayerStatusParams{

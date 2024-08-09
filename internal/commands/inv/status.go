@@ -107,7 +107,7 @@ func (i *Inv) removeStatus(ctx ken.SubCommandContext) (err error) {
 	h.RemoveStatus(statusNameArg, int32(quantity))
 	if err != nil {
 		log.Println(err)
-		return discord.AlexError(ctx, "")
+		return discord.AlexError(ctx, "Failed to remove status")
 	}
 
 	return discord.SuccessfulMessage(ctx, "Status Removed", fmt.Sprintf("Removed %s Status", statusNameArg))
