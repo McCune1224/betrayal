@@ -83,9 +83,10 @@ const (
 	ColorItemUnique    = 0xffa500
 )
 
-// ID of bot owner
 const (
-	McKusaID       = "206268866714796032"
+	// ID of bot owner
+	McKusaID = "206268866714796032"
+	// Guild / Server ID of Betrayal
 	BetraylGuildID = "1096058997477490861"
 )
 
