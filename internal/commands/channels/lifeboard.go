@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -53,28 +55,10 @@ func (c *Channel) setLifeboardChannel(ctx ken.SubCommandContext) (err error) {
 		q.DeletePlayerLifeboard(dbCtx)
 	}
 
-	aliveTally := 0
-	fields := []*discordgo.MessageEmbedField{}
-	for i := range playerStatuses {
-		if playerStatuses[i].Alive {
-			aliveTally++
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name: fmt.Sprintf("%s - %s", discord.MentionUser(util.Itoa64(playerStatuses[i].ID)), discord.EmojiAlive),
-			})
-		} else {
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name: fmt.Sprintf("%s - %s", discord.MentionUser(util.Itoa64(playerStatuses[i].ID)), discord.EmojiDead),
-			})
-		}
-	}
-
-	msg := &discordgo.MessageEmbed{
-		Title:       "Current Player Status Board",
-		Description: fmt.Sprintf("%d/%d players alive", aliveTally, len(playerStatuses)),
-		Fields:      fields,
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: "Last updated: " + util.GetEstTimeStamp(),
-		},
+	msg, err := UserLifeboardMessageBuilder(ctx.GetSession(), playerStatuses)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to build user lifeboard message")
 	}
 
 	sentMsg, err := ctx.GetSession().ChannelMessageSendEmbed(targetChannel.ID, msg)
@@ -99,4 +83,53 @@ func (c *Channel) setLifeboardChannel(ctx ken.SubCommandContext) (err error) {
 	}
 
 	return discord.SuccessfulMessage(ctx, "Lifeboard Channel Set", fmt.Sprintf("Lifeboard set in %s", targetChannel.Mention()))
+}
+
+func UserLifeboardMessageBuilder(sesh *discordgo.Session, playerStatuses []models.ListPlayerLifeboardRow) (*discordgo.MessageEmbed, error) {
+	aliveTally := 0
+	fields := []*discordgo.MessageEmbedField{}
+
+	// temporary struct so that I can sort by alive status as well as by Nick
+	type MemberAlive struct {
+		Member *discordgo.Member
+		Alive  bool
+	}
+	activePlayers := []MemberAlive{}
+	for _, s := range playerStatuses {
+		dgMember, _ := sesh.GuildMember(discord.BetraylGuildID, util.Itoa64(s.ID))
+		activePlayers = append(activePlayers, MemberAlive{dgMember, s.Alive})
+	}
+
+	// should be sorted by alive status first, then by nick
+	sort.Slice(activePlayers, func(i, j int) bool {
+		if activePlayers[i].Alive == activePlayers[j].Alive {
+			l := strings.ToLower(activePlayers[i].Member.DisplayName())
+			r := strings.ToLower(activePlayers[j].Member.DisplayName())
+			return l < r
+		}
+		return activePlayers[i].Alive
+	})
+
+	for i := range activePlayers {
+		name := activePlayers[i].Member.DisplayName()
+		if activePlayers[i].Alive {
+			aliveTally++
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name: fmt.Sprintf("%s %s", discord.EmojiAlive, name),
+			})
+		} else {
+			fields = append(fields, &discordgo.MessageEmbedField{
+				Name: fmt.Sprintf("%s %s", discord.EmojiDead, name),
+			})
+		}
+	}
+	msg := &discordgo.MessageEmbed{
+		Title:       "Player Status Board",
+		Description: fmt.Sprintf("%d/%d players alive", aliveTally, len(playerStatuses)),
+		Fields:      fields,
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: "Last updated: " + util.GetEstTimeStamp() + " (EST)",
+		},
+	}
+	return msg, nil
 }

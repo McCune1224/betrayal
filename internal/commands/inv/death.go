@@ -2,15 +2,14 @@ package inv
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"math/rand"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/mccune1224/betrayal/internal/commands/channels"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/models"
 	"github.com/mccune1224/betrayal/internal/services/inventory"
-	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
 
@@ -50,11 +49,17 @@ func (i *Inv) deathCommandArgBuilder() *discordgo.ApplicationCommandOption {
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Name:        "alive",
 				Description: "set the player to alive",
+				Options: []*discordgo.ApplicationCommandOption{
+					discord.UserCommandArg(false),
+				},
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Name:        "dead",
 				Description: "set the player to dead",
+				Options: []*discordgo.ApplicationCommandOption{
+					discord.UserCommandArg(false),
+				},
 			},
 		},
 	}
@@ -94,28 +99,12 @@ func (i *Inv) setAlive(ctx ken.SubCommandContext) (err error) {
 	}
 
 	playerLifeStatuses, _ := q.ListPlayerLifeboard(context.Background())
-	aliveTally := 0
-	fields := []*discordgo.MessageEmbedField{}
-	for i := range playerLifeStatuses {
-		if playerLifeStatuses[i].Alive {
-			aliveTally++
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name: fmt.Sprintf("%s - %s", discord.MentionUser(util.Itoa64(playerLifeStatuses[i].ID)), discord.EmojiAlive),
-			})
-		} else {
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name: fmt.Sprintf("%s - %s", discord.MentionUser(util.Itoa64(playerLifeStatuses[i].ID)), discord.EmojiDead),
-			})
-		}
+	msg, err := channels.UserLifeboardMessageBuilder(ctx.GetSession(), playerLifeStatuses)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to build user lifeboard message")
 	}
-	msg := &discordgo.MessageEmbed{
-		Title:       "Current Player Status Board",
-		Description: fmt.Sprintf("%d/%d players alive", aliveTally, len(playerLifeStatuses)),
-		Fields:      fields,
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: "Last updated: " + util.GetEstTimeStamp(),
-		},
-	}
+
 	ctx.GetSession().ChannelMessageEditEmbed(lifeboard.ChannelID, lifeboard.MessageID, msg)
 
 	return discord.SuccessfulMessage(ctx, "Player Alive", "Player is now alive\n"+getRandomItem(playerSetAliveMessages))
@@ -155,29 +144,12 @@ func (i *Inv) setDead(ctx ken.SubCommandContext) (err error) {
 	}
 
 	playerLifeStatuses, _ := q.ListPlayerLifeboard(context.Background())
-	aliveTally := 0
-	fields := []*discordgo.MessageEmbedField{}
-	for i := range playerLifeStatuses {
-		if playerLifeStatuses[i].Alive {
-			aliveTally++
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name: fmt.Sprintf("%s - %s", discord.MentionUser(util.Itoa64(playerLifeStatuses[i].ID)), discord.EmojiAlive),
-			})
-		} else {
-			fields = append(fields, &discordgo.MessageEmbedField{
-				Name: fmt.Sprintf("%s - %s", discord.MentionUser(util.Itoa64(playerLifeStatuses[i].ID)), discord.EmojiDead),
-			})
-		}
+	msg, err := channels.UserLifeboardMessageBuilder(ctx.GetSession(), playerLifeStatuses)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to build user lifeboard message")
 	}
-	msg := &discordgo.MessageEmbed{
-		Title:       "Current Player Status Board",
-		Description: fmt.Sprintf("%d/%d players alive", aliveTally, len(playerLifeStatuses)),
-		Fields:      fields,
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: "Last updated: " + util.GetEstTimeStamp(),
-		},
-	}
-	ctx.GetSession().ChannelMessageEditEmbed(lifeboard.ChannelID, lifeboard.MessageID, msg)
 
+	ctx.GetSession().ChannelMessageEditEmbed(lifeboard.ChannelID, lifeboard.MessageID, msg)
 	return discord.SuccessfulMessage(ctx, "Player Dead", "Player is now dead\n"+getRandomItem(playerSetDeadMessages))
 }
