@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS player_note (
+  player_id BIGINT NOT NULL REFERENCES player(id) ON DELETE CASCADE,
+  note_id SERIAL NOT NULL,
+  position INT NOT NULL,
+  info TEXT NOT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (player_id, note_id)
+)
+

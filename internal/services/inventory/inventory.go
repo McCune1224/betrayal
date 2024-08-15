@@ -21,6 +21,7 @@ type PlayerInventory struct {
 	Perks      []models.PerkInfo                      `json:"perks"`
 	Immunities []models.Status                        `json:"immunities"`
 	Statuses   []models.ListPlayerStatusInventoryRow  `json:"statuses"`
+	Notes      []models.PlayerNote                    `json:"notes"`
 }
 
 type InventoryHandler struct {
@@ -76,6 +77,7 @@ func (ih *InventoryHandler) FetchInventory() (*PlayerInventory, error) {
 	statusChan := make(chan []models.ListPlayerStatusInventoryRow, 1)
 	immunityChan := make(chan []models.Status, 1)
 	roleChan := make(chan models.Role, 1)
+	notesChan := make(chan []models.PlayerNote, 1)
 
 	go util.DbTask(ctx, roleChan, func() (models.Role, error) {
 		return query.GetRole(ctx, ih.player.RoleID.Int32)
@@ -101,6 +103,10 @@ func (ih *InventoryHandler) FetchInventory() (*PlayerInventory, error) {
 		return query.ListPlayerImmunity(ctx, ih.player.ID)
 	})
 
+	go util.DbTask(ctx, notesChan, func() ([]models.PlayerNote, error) {
+		return query.ListPlayerNote(ctx, ih.player.ID)
+	})
+
 	inv := &PlayerInventory{Player: ih.player}
 	inv.Role = <-roleChan
 	inv.Abilities = <-abilityChan
@@ -108,6 +114,7 @@ func (ih *InventoryHandler) FetchInventory() (*PlayerInventory, error) {
 	inv.Immunities = <-immunityChan
 	inv.Statuses = <-statusChan
 	inv.Perks = <-perksChan
+	inv.Notes = <-notesChan
 	return inv, nil
 }
 
@@ -244,16 +251,16 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 			Inline: true,
 		})
 
-		// noteListString := ""
-		// for i, note := range inv.Notes {
-		// 	noteListString += fmt.Sprintf("%d. %s\n", i+1, note)
-		// }
+		noteListString := ""
+		for _, note := range inv.Notes {
+			noteListString += fmt.Sprintf("%d. %s %s\n", note.Position, note.Info, discord.AbsoluteTimestamp(note.UpdatedAt.Time.Unix()))
+		}
 
-		// embd.Fields = append(embd.Fields, &discordgo.MessageEmbedField{
-		// 	Name:   fmt.Sprintf("%s Notes", discord.EmojiNote),
-		// 	Value:  noteListString,
-		// 	Inline: false,
-		// })
+		embd.Fields = append(embd.Fields, &discordgo.MessageEmbedField{
+			Name:   fmt.Sprintf("%s Notes", discord.EmojiNote),
+			Value:  noteListString,
+			Inline: false,
+		})
 
 		embd.Color = discord.ColorThemeAmethyst
 

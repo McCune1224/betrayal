@@ -51,7 +51,7 @@ func (ih *InventoryHandler) RemoveAbility(abilityName string) (*models.AbilityIn
 	return &ability, err
 }
 
-func (ih *InventoryHandler) UpdateAbility(abilityName string, quantity int) (*models.AbilityInfo, error) {
+func (ih *InventoryHandler) UpdateAbility(abilityName string, quantity int32) (*models.AbilityInfo, error) {
 	query := models.New(ih.pool)
 	ability, err := query.GetAbilityInfoByFuzzy(context.Background(), abilityName)
 	if err != nil {

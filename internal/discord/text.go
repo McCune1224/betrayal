@@ -122,6 +122,14 @@ func Indent(s string) string {
 	return "> " + s
 }
 
+func RelativeTimestamp(unixTimestamp int64) string {
+	return fmt.Sprintf("<t:%d:R>", unixTimestamp)
+}
+
+func AbsoluteTimestamp(unixTimestamp int64) string {
+	return fmt.Sprintf("<t:%d>", unixTimestamp)
+}
+
 // Temporary prefix for debugging commands.
 const DebugCmd = ""
 

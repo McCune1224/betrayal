@@ -188,6 +188,14 @@ type PlayerLifeboard struct {
 	MessageID string `json:"message_id"`
 }
 
+type PlayerNote struct {
+	PlayerID  int64            `json:"player_id"`
+	NoteID    int32            `json:"note_id"`
+	Position  int32            `json:"position"`
+	Info      string           `json:"info"`
+	UpdatedAt pgtype.Timestamp `json:"updated_at"`
+}
+
 type PlayerPerk struct {
 	PlayerID int64 `json:"player_id"`
 	PerkID   int32 `json:"perk_id"`
