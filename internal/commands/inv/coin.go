@@ -11,7 +11,7 @@ import (
 )
 
 func (i *Inv) coinCommandGroupBuilder() ken.SubCommandGroup {
-	return ken.SubCommandGroup{Name: "coin", SubHandler: []ken.CommandHandler{
+	return ken.SubCommandGroup{Name: "coins", SubHandler: []ken.CommandHandler{
 		ken.SubCommandHandler{Name: "add", Run: i.addCoin},
 		ken.SubCommandHandler{Name: "remove", Run: i.deleteCoin},
 		ken.SubCommandHandler{Name: "set", Run: i.setCoin},
@@ -22,7 +22,7 @@ func (i *Inv) coinCommandGroupBuilder() ken.SubCommandGroup {
 func (i *Inv) coinCommandArgBuilder() *discordgo.ApplicationCommandOption {
 	return &discordgo.ApplicationCommandOption{
 		Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
-		Name:        "coin",
+		Name:        "coins",
 		Description: "create/update/delete an coin in an inventory",
 		Options: []*discordgo.ApplicationCommandOption{
 			{

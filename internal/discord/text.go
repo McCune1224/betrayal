@@ -130,6 +130,10 @@ func AbsoluteTimestamp(unixTimestamp int64) string {
 	return fmt.Sprintf("<t:%d>", unixTimestamp)
 }
 
+func MessageURL(ref *discordgo.MessageReference) string {
+	return fmt.Sprintf("https://discord.com/channels/%s/%s/%s", BetraylGuildID, ref.ChannelID, ref.MessageID)
+}
+
 // Temporary prefix for debugging commands.
 const DebugCmd = ""
 

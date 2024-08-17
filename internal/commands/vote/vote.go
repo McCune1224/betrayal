@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -113,30 +114,46 @@ func (v *Vote) batch(ctx ken.SubCommandContext) (err error) {
 		}
 	}
 
-	voteMsg := fmt.Sprintf("%s voted for", ctx.User().Username)
+	voteLogText := fmt.Sprintf("%s voted for", ctx.User().Username)
 	for _, user := range users {
-		voteMsg += fmt.Sprintf(" %s", user.Username)
+		voteLogText += fmt.Sprintf(" %s", user.Username)
 	}
 
-	q := models.New(v.dbPool)
-	dbCtx := context.Background()
-
-	voteChannel, err := q.GetVoteChannel(dbCtx)
-	if err != nil {
-		log.Println(err)
-		return discord.ErrorMessage(ctx, "Vote location not set", "Please have admin set a vote location using /vote location")
-	}
 	sesh := ctx.GetSession()
-	_, err = sesh.ChannelMessageSend(voteChannel, discord.Code(voteMsg))
-	if err != nil {
-		return discord.AlexError(ctx, "Failed to send vote message")
-	}
+	event := ctx.GetEvent()
 
 	votedFor := ""
 	for _, user := range users {
 		votedFor += fmt.Sprintf("%s ", discord.MentionUser(user.ID))
 	}
-	return discord.SuccessfulMessage(ctx, "Vote Sent for Processing.", fmt.Sprintf("Voted for %s", votedFor))
+
+	successfullMsg := discordgo.MessageEmbed{
+		Title:       fmt.Sprintf("%s %s %s", discord.EmojiSuccess, "Vote Sent for Processing", discord.EmojiSuccess),
+		Description: fmt.Sprintf("Voted for %s", votedFor),
+		Color:       discord.ColorThemeGreen,
+	}
+
+	q := models.New(v.dbPool)
+	dbCtx := context.Background()
+	voteChannelID, err := q.GetVoteChannel(dbCtx)
+	if err != nil {
+		log.Println(err)
+		return discord.ErrorMessage(ctx, "Vote location not set", "Please have admin set a vote location using /vote location")
+	}
+
+	confSuccMsg, err := sesh.ChannelMessageSendEmbed(event.ChannelID, &successfullMsg)
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to send vote message")
+	}
+
+	_, err = sesh.ChannelMessageSend(voteChannelID, discord.Code(voteLogText)+"\n"+discord.AbsoluteTimestamp(time.Now().Unix())+" "+discord.MessageURL(confSuccMsg.Reference()))
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to send vote message")
+	}
+
+	return ctx.RespondMessage(".")
 }
 
 func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
@@ -144,7 +161,7 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	voteUser := ctx.Options().GetByName("user").UserValue(ctx)
+	targetVoteUser := ctx.Options().GetByName("user").UserValue(ctx)
 	voteContext, ok := ctx.Options().GetByNameOptional("context")
 
 	q := models.New(v.dbPool)
@@ -156,12 +173,12 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "You are not a player", "You must be a player to vote")
 	}
 
-	voteMsg := ""
+	voteLogMsg := ""
 	if ok {
 		voteContext := voteContext.StringValue()
-		voteMsg = fmt.Sprintf("%s voted for %s with context: %s", ctx.User().Username, voteUser.Username, voteContext)
+		voteLogMsg = fmt.Sprintf("%s voted for %s with context: %s", ctx.User().Username, targetVoteUser.Username, voteContext)
 	} else {
-		voteMsg = fmt.Sprintf("%s voted for %s", ctx.User().Username, voteUser.Username)
+		voteLogMsg = fmt.Sprintf("%s voted for %s", ctx.User().Username, targetVoteUser.Username)
 	}
 
 	voteChannel, err := q.GetVoteChannel(dbCtx)
@@ -170,12 +187,27 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Vote location not set", "Please have admin set a vote location using /vote location")
 	}
 	sesh := ctx.GetSession()
-	_, err = sesh.ChannelMessageSend(voteChannel, discord.Code(voteMsg))
+	event := ctx.GetEvent()
+
+	successfullMsg := discordgo.MessageEmbed{
+		Title:       fmt.Sprintf("%s %s %s", discord.EmojiSuccess, "Vote Sent for Processing", discord.EmojiSuccess),
+		Description: fmt.Sprintf("Voted for %s", discord.MentionUser(targetVoteUser.ID)),
+		Color:       discord.ColorThemeGreen,
+	}
+
+	confSuccMsg, err := sesh.ChannelMessageSendEmbed(event.ChannelID, &successfullMsg)
 	if err != nil {
+		log.Println(err)
 		return discord.AlexError(ctx, "Failed to send vote message")
 	}
 
-	return discord.SuccessfulMessage(ctx, "Vote Sent for Processing.", fmt.Sprintf("Voted for %s", discord.MentionUser(voteUser.ID)))
+	_, err = sesh.ChannelMessageSend(voteChannel, discord.Code(voteLogMsg)+"\n"+discord.AbsoluteTimestamp(time.Now().Unix())+" "+discord.MessageURL(confSuccMsg.Reference()))
+	if err != nil {
+		log.Println(err)
+		return discord.AlexError(ctx, "Failed to send vote message")
+	}
+
+	return ctx.RespondMessage(".")
 }
 
 func (v *Vote) location(ctx ken.SubCommandContext) (err error) {
