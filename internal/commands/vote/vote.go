@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -105,32 +104,34 @@ func (v *Vote) batch(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 
-	users := []*discordgo.User{ctx.Options().GetByName("user").UserValue(ctx)}
+	sesh := ctx.GetSession()
+	event := ctx.GetEvent()
+
+	firstTarget, _ := sesh.GuildMember(discord.BetraylGuildID, ctx.Options().GetByName("user").UserValue(ctx).ID)
+	votedMembers := []*discordgo.Member{firstTarget}
 
 	for i := 2; i <= 5; i++ {
 		user, ok := ctx.Options().GetByNameOptional(fmt.Sprintf("user%d", i))
 		if ok {
-			users = append(users, user.UserValue(ctx))
+			nextMember, _ := sesh.GuildMember(discord.BetraylGuildID, user.UserValue(ctx).ID)
+			votedMembers = append(votedMembers, nextMember)
 		}
 	}
 
 	voteLogText := fmt.Sprintf("%s voted for", ctx.User().Username)
-	for _, user := range users {
-		voteLogText += fmt.Sprintf(" %s", user.Username)
+	for _, member := range votedMembers {
+		voteLogText += fmt.Sprintf(" %s", member.DisplayName())
 	}
 
-	sesh := ctx.GetSession()
-	event := ctx.GetEvent()
-
 	votedFor := ""
-	for _, user := range users {
-		votedFor += fmt.Sprintf("%s ", discord.MentionUser(user.ID))
+	for _, member := range votedMembers {
+		votedFor += fmt.Sprintf("%s ", discord.MentionUser(member.User.ID))
 	}
 
 	successfullMsg := discordgo.MessageEmbed{
-		Title:       fmt.Sprintf("%s %s %s", discord.EmojiSuccess, "Vote Sent for Processing", discord.EmojiSuccess),
+		Title:       "Vote Sent for Processing",
 		Description: fmt.Sprintf("Voted for %s", votedFor),
-		Color:       discord.ColorThemeGreen,
+		Color:       discord.ColorThemeYellow,
 	}
 
 	q := models.New(v.dbPool)
@@ -141,13 +142,14 @@ func (v *Vote) batch(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Vote location not set", "Please have admin set a vote location using /vote location")
 	}
 
-	confSuccMsg, err := sesh.ChannelMessageSendEmbed(event.ChannelID, &successfullMsg)
+	_, err = sesh.ChannelMessageSendEmbed(event.ChannelID, &successfullMsg)
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, "Failed to send vote message")
 	}
 
-	_, err = sesh.ChannelMessageSend(voteChannelID, discord.Code(voteLogText)+"\n"+discord.AbsoluteTimestamp(time.Now().Unix())+" "+discord.MessageURL(confSuccMsg.Reference()))
+	// _, err = sesh.ChannelMessageSend(voteChannelID, discord.Code(voteLogText)+"\n"+discord.AbsoluteTimestamp(time.Now().Unix())+" "+discord.MessageURL(confSuccMsg.Reference()))
+	_, err = sesh.ChannelMessageSend(voteChannelID, discord.Code(voteLogText))
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, "Failed to send vote message")
@@ -161,7 +163,11 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return err
 	}
-	targetVoteUser := ctx.Options().GetByName("user").UserValue(ctx)
+
+	sesh := ctx.GetSession()
+	event := ctx.GetEvent()
+
+	targetVoteUser, _ := sesh.GuildMember(discord.BetraylGuildID, ctx.Options().GetByName("user").UserValue(ctx).ID)
 	voteContext, ok := ctx.Options().GetByNameOptional("context")
 
 	q := models.New(v.dbPool)
@@ -176,9 +182,9 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 	voteLogMsg := ""
 	if ok {
 		voteContext := voteContext.StringValue()
-		voteLogMsg = fmt.Sprintf("%s voted for %s with context: %s", ctx.User().Username, targetVoteUser.Username, voteContext)
+		voteLogMsg = fmt.Sprintf("%s voted for %s with context: %s", event.Member.DisplayName(), targetVoteUser.DisplayName(), voteContext)
 	} else {
-		voteLogMsg = fmt.Sprintf("%s voted for %s", ctx.User().Username, targetVoteUser.Username)
+		voteLogMsg = fmt.Sprintf("%s voted for %s", event.Member.DisplayName(), targetVoteUser.DisplayName())
 	}
 
 	voteChannel, err := q.GetVoteChannel(dbCtx)
@@ -186,22 +192,21 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.ErrorMessage(ctx, "Vote location not set", "Please have admin set a vote location using /vote location")
 	}
-	sesh := ctx.GetSession()
-	event := ctx.GetEvent()
 
 	successfullMsg := discordgo.MessageEmbed{
-		Title:       fmt.Sprintf("%s %s %s", discord.EmojiSuccess, "Vote Sent for Processing", discord.EmojiSuccess),
-		Description: fmt.Sprintf("Voted for %s", discord.MentionUser(targetVoteUser.ID)),
-		Color:       discord.ColorThemeGreen,
+		Title:       "Vote Sent for Processing",
+		Description: fmt.Sprintf("Voted for %s", discord.MentionUser(targetVoteUser.User.ID)),
+		Color:       discord.ColorThemeYellow,
 	}
 
-	confSuccMsg, err := sesh.ChannelMessageSendEmbed(event.ChannelID, &successfullMsg)
+	_, err = sesh.ChannelMessageSendEmbed(event.ChannelID, &successfullMsg)
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, "Failed to send vote message")
 	}
 
-	_, err = sesh.ChannelMessageSend(voteChannel, discord.Code(voteLogMsg)+"\n"+discord.AbsoluteTimestamp(time.Now().Unix())+" "+discord.MessageURL(confSuccMsg.Reference()))
+	// _, err = sesh.ChannelMessageSend(voteChannel, discord.Code(voteLogMsg)+"\n"+discord.AbsoluteTimestamp(time.Now().Unix())+" "+discord.MessageURL(confSuccMsg.Reference()))
+	_, err = sesh.ChannelMessageSend(voteChannel, discord.Code(voteLogMsg))
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, "Failed to send vote message")

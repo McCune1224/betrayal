@@ -181,7 +181,7 @@ func SuccessfulMessage(ctx ken.Context,
 			Flags: 0,
 			Embeds: []*discordgo.MessageEmbed{
 				{
-					Title:       fmt.Sprintf("%s %s %s", EmojiSuccess, title, EmojiSuccess),
+					Title:       title,
 					Description: message,
 					Color:       ColorThemeGreen,
 					Footer:      &discordgo.MessageEmbedFooter{Text: footMsg},
@@ -203,7 +203,7 @@ func SilentSuccessfulMessage(ctx ken.Context,
 			Flags: discordgo.MessageFlagsEphemeral,
 			Embeds: []*discordgo.MessageEmbed{
 				{
-					Title:       fmt.Sprintf("%s %s %s", EmojiSuccess, title, EmojiSuccess),
+					Title:       title,
 					Description: message,
 					Color:       ColorThemeGreen,
 				},
