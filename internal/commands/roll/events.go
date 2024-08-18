@@ -136,8 +136,10 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 					log.Println(err)
 					return true
 				}
-				discord.SuccessfulMessage(sctx, fmt.Sprintf("Item Rain Sent to %s", discord.MentionChannel(util.Itoa64(playerChan.ChannelID))),
-					fmt.Sprintf("Approved by %s", ctx.User().Username))
+				// discord.SuccessfulMessage(sctx, fmt.Sprintf("Item Rain Sent to %s", discord.MentionChannel(util.Itoa64(playerChan.ChannelID))),
+				// 	fmt.Sprintf("Approved by %s", ctx.User().Username))
+				embdRain.Title = fmt.Sprintf("Item Rain Sent to %s (approved by %s)", discord.MentionChannel(util.Itoa64(playerChan.ChannelID)), ctx.User().Username)
+				sctx.RespondEmbed(embdRain)
 				return true
 			}, true)
 			b.Add(discordgo.Button{
@@ -258,9 +260,10 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 					discord.ErrorMessage(sctx, "Failed to send message", "Could not find user confessional")
 					return true
 				}
-
-				discord.SuccessfulMessage(sctx, fmt.Sprintf("Power Drop Sent to %s", discord.MentionChannel(util.Itoa64(confChan.ChannelID))),
-					fmt.Sprintf("Approved by %s", ctx.User().Username))
+				// discord.SuccessfulMessage(sctx, fmt.Sprintf("Power Drop Sent to %s", discord.MentionChannel(util.Itoa64(confChan.ChannelID))),
+				// 	fmt.Sprintf("Approved by %s", ctx.User().Username))
+				embedPowerDrop.Title = fmt.Sprintf("Power Drop Sent to %s (approved by %s)", discord.MentionChannel(util.Itoa64(confChan.ChannelID)), ctx.User().Username)
+				sctx.RespondEmbed(embedPowerDrop)
 				return true
 			}, true)
 			b.Add(discordgo.Button{
@@ -387,9 +390,10 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 					discord.ErrorMessage(sctx, "Failed to send message", "Could not find user confessional")
 					return true
 				}
-
-				discord.SuccessfulMessage(sctx, fmt.Sprintf("Care Package Sent to %s", discord.MentionChannel(util.Itoa64(confChan.ChannelID))),
-					fmt.Sprintf("Approved by %s", ctx.User().Username))
+				// discord.SuccessfulMessage(sctx, fmt.Sprintf("Care Package Sent to %s", discord.MentionChannel(util.Itoa64(confChan.ChannelID))),
+				// 	fmt.Sprintf("Approved by %s", ctx.User().Username))
+				embedCarePackage.Title = fmt.Sprintf("Care Package Sent to %s (approved by %s)", discord.MentionChannel(util.Itoa64(confChan.ChannelID)), ctx.User().Username)
+				sctx.RespondEmbed(embedCarePackage)
 				return true
 			}, true)
 			b.Add(discordgo.Button{
