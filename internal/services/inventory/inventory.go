@@ -270,7 +270,8 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(inv *PlayerInventory, host boo
 	// 	Value:  fmt.Sprintf("Last updated: %s", discord.SmallText(discord.AbsoluteTimestamp(time.Now().Unix()))),
 	// 	Inline: true,
 	// })
-	embd.Timestamp = time.Now().String()
+	// time.Now().String() as ISO8601
+	embd.Timestamp = time.Now().UTC().Format(time.RFC3339)
 	return embd
 }
 
