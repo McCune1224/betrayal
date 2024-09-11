@@ -375,7 +375,7 @@ func parseRoleChunk(chunk [][]string) (models.CreateRoleParams, []TempCreateAbil
 	roleParams.Description = chunk[1][2]
 
 	abParseIndex := 3
-	for chunk[abParseIndex][1] != "Perks:" {
+	for chunk[abParseIndex][1] != "Passives:" {
 		ab, err := parseAbility(chunk[abParseIndex])
 		if err != nil {
 			return roleParams, tempRoleAbilityDetailParams, rolePassiveDetailParams, err

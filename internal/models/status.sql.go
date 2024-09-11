@@ -10,7 +10,7 @@ import (
 )
 
 const createStatus = `-- name: CreateStatus :one
-INSERT INTO status (name, description) VALUES ($1, $2) RETURNING id, name, description
+INSERT INTO status (name, description) VALUES ($1, $2) RETURNING id, name, description, hour_duration
 `
 
 type CreateStatusParams struct {
@@ -21,7 +21,12 @@ type CreateStatusParams struct {
 func (q *Queries) CreateStatus(ctx context.Context, arg CreateStatusParams) (Status, error) {
 	row := q.db.QueryRow(ctx, createStatus, arg.Name, arg.Description)
 	var i Status
-	err := row.Scan(&i.ID, &i.Name, &i.Description)
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.HourDuration,
+	)
 	return i, err
 }
 
@@ -36,7 +41,7 @@ func (q *Queries) DeleteStatus(ctx context.Context, id int32) error {
 }
 
 const getStatusByFuzzy = `-- name: GetStatusByFuzzy :one
-select id, name, description
+select id, name, description, hour_duration
 from status
 order by levenshtein(name, $1) asc
 limit 1
@@ -45,12 +50,17 @@ limit 1
 func (q *Queries) GetStatusByFuzzy(ctx context.Context, levenshtein interface{}) (Status, error) {
 	row := q.db.QueryRow(ctx, getStatusByFuzzy, levenshtein)
 	var i Status
-	err := row.Scan(&i.ID, &i.Name, &i.Description)
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.HourDuration,
+	)
 	return i, err
 }
 
 const getStatusByName = `-- name: GetStatusByName :one
-select id, name, description
+select id, name, description, hour_duration
 from status
 where name = $1
 `
@@ -58,12 +68,17 @@ where name = $1
 func (q *Queries) GetStatusByName(ctx context.Context, name string) (Status, error) {
 	row := q.db.QueryRow(ctx, getStatusByName, name)
 	var i Status
-	err := row.Scan(&i.ID, &i.Name, &i.Description)
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.HourDuration,
+	)
 	return i, err
 }
 
 const listStatus = `-- name: ListStatus :many
-select id, name, description
+select id, name, description, hour_duration
 from status
 `
 
@@ -76,7 +91,12 @@ func (q *Queries) ListStatus(ctx context.Context) ([]Status, error) {
 	var items []Status
 	for rows.Next() {
 		var i Status
-		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.HourDuration,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

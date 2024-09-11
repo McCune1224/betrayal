@@ -186,6 +186,9 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 	}
 
 	dbcategories, _ := q.ListAbilityCategoryNames(dbCtx, ability.ID)
+	for i := range dbcategories {
+		dbcategories[i] = strings.ToLower(dbcategories[i])
+	}
 	abilityEmbed := &discordgo.MessageEmbed{
 		Title:       ability.Name,
 		Description: ability.Description,
@@ -194,7 +197,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "Categories",
-				Value:  strings.Join(dbcategories, ", "),
+				Value:  strings.Join(dbcategories, " ○ "),
 				Inline: true,
 			},
 		},
@@ -531,7 +534,10 @@ func (v *View) roleEmbed(role models.Role) (*discordgo.MessageEmbed, error) {
 		title := ability.Name
 		fStr := "%s [%d] - %s"
 		dbcategories, _ := q.ListAbilityCategoryNames(dbCtx, ability.ID)
-		categories := strings.Join(dbcategories, ", ")
+		for i := range dbcategories {
+			dbcategories[i] = strings.ToLower(dbcategories[i])
+		}
+		categories := strings.Join(dbcategories, " ○ ")
 		if ability.DefaultCharges == 999999 {
 			// title = fmt.Sprintf("%s [%s]", ability.Name, infinity)
 			title = fmt.Sprintf("%s [%s] - %s", ability.Name, infinity, categories)

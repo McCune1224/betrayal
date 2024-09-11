@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -123,13 +124,12 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 	host bool,
 ) *discordgo.MessageEmbed {
 	roleField := &discordgo.MessageEmbedField{
-		Name:   "Role",
+		Name:   fmt.Sprintf("%s Role", discord.EmojiRole),
 		Value:  inv.Role.Name,
 		Inline: true,
 	}
-	alignmentEmoji := discord.EmojiAlignment
 	alignmentField := &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("%s Alignment", alignmentEmoji),
+		Name:   fmt.Sprintf("%s Alignment", discord.EmojiAlignment),
 		Value:  string(inv.Player.Alignment),
 		Inline: true,
 	}
@@ -190,7 +190,12 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 
 	statusStrs := []string{}
 	for _, status := range inv.Statuses {
-		statusStrs = append(statusStrs, fmt.Sprintf("%s [%d]", status.Name, status.Quantity))
+		if status.HourDuration != 0 {
+			expirationDate := status.CreatedAt.Time.Unix() + int64(status.HourDuration*60*60)
+			statusStrs = append(statusStrs, fmt.Sprintf("%s [%d] (Expires %s)", status.Name, status.Quantity, discord.AbsoluteTimestamp(expirationDate)))
+		} else {
+			statusStrs = append(statusStrs, fmt.Sprintf("%s [%d]", status.Name, status.Quantity))
+		}
 	}
 	statusesField := &discordgo.MessageEmbedField{
 		Name:   fmt.Sprintf("%s Statuses", discord.EmojiStatus),
@@ -215,7 +220,7 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 		isAlive = fmt.Sprintf("%s Dead", discord.EmojiDead)
 	}
 
-	deadField := &discordgo.MessageEmbedField{
+	isDeadField := &discordgo.MessageEmbedField{
 		Name:   isAlive,
 		Inline: true,
 	}
@@ -227,20 +232,17 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 			alignmentField,
 			coinField,
 			abilitiesField,
-			// anyAbilitiesField,
 			perksField,
 			itemsField,
-			statusesField,
+			isDeadField,
 			immunitiesField,
-			// effectsField,
-			deadField,
+			statusesField,
 		},
 		Color: discord.ColorThemeDiamond,
 	}
 
-	humanReqTime := util.GetEstTimeStamp()
 	embd.Footer = &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Last updated: %s", humanReqTime),
+		Text: fmt.Sprintf("Last updated: %s", discord.AbsoluteTimestamp(time.Now().Unix())),
 	}
 
 	if host {

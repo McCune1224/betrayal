@@ -7,10 +7,12 @@ package models
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createPlayerStatusJoin = `-- name: CreatePlayerStatusJoin :one
-INSERT INTO player_status (player_id, status_id) VALUES ($1, $2) RETURNING player_id, status_id, quantity
+INSERT INTO player_status (player_id, status_id) VALUES ($1, $2) RETURNING player_id, status_id, quantity, created_at
 `
 
 type CreatePlayerStatusJoinParams struct {
@@ -21,7 +23,12 @@ type CreatePlayerStatusJoinParams struct {
 func (q *Queries) CreatePlayerStatusJoin(ctx context.Context, arg CreatePlayerStatusJoinParams) (PlayerStatus, error) {
 	row := q.db.QueryRow(ctx, createPlayerStatusJoin, arg.PlayerID, arg.StatusID)
 	var i PlayerStatus
-	err := row.Scan(&i.PlayerID, &i.StatusID, &i.Quantity)
+	err := row.Scan(
+		&i.PlayerID,
+		&i.StatusID,
+		&i.Quantity,
+		&i.CreatedAt,
+	)
 	return i, err
 }
 
@@ -41,22 +48,36 @@ func (q *Queries) DeletePlayerStatus(ctx context.Context, arg DeletePlayerStatus
 }
 
 const listPlayerStatus = `-- name: ListPlayerStatus :many
-select status.id, status.name, status.description
+select status.id, status.name, status.description, status.hour_duration, player_status.created_at
 from player_status
 inner join status on player_status.status_id = status.id
 where player_status.player_id = $1
 `
 
-func (q *Queries) ListPlayerStatus(ctx context.Context, playerID int64) ([]Status, error) {
+type ListPlayerStatusRow struct {
+	ID           int32            `json:"id"`
+	Name         string           `json:"name"`
+	Description  string           `json:"description"`
+	HourDuration int32            `json:"hour_duration"`
+	CreatedAt    pgtype.Timestamp `json:"created_at"`
+}
+
+func (q *Queries) ListPlayerStatus(ctx context.Context, playerID int64) ([]ListPlayerStatusRow, error) {
 	rows, err := q.db.Query(ctx, listPlayerStatus, playerID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Status
+	var items []ListPlayerStatusRow
 	for rows.Next() {
-		var i Status
-		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
+		var i ListPlayerStatusRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.HourDuration,
+			&i.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -68,17 +89,19 @@ func (q *Queries) ListPlayerStatus(ctx context.Context, playerID int64) ([]Statu
 }
 
 const listPlayerStatusInventory = `-- name: ListPlayerStatusInventory :many
-select status.id, status.name, status.description, player_status.quantity
+select status.id, status.name, status.description, status.hour_duration, player_status.quantity, player_status.created_at
 from player_status
 inner join status on player_status.status_id = status.id
 where player_status.player_id = $1
 `
 
 type ListPlayerStatusInventoryRow struct {
-	ID          int32  `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Quantity    int32  `json:"quantity"`
+	ID           int32            `json:"id"`
+	Name         string           `json:"name"`
+	Description  string           `json:"description"`
+	HourDuration int32            `json:"hour_duration"`
+	Quantity     int32            `json:"quantity"`
+	CreatedAt    pgtype.Timestamp `json:"created_at"`
 }
 
 func (q *Queries) ListPlayerStatusInventory(ctx context.Context, playerID int64) ([]ListPlayerStatusInventoryRow, error) {
@@ -94,7 +117,9 @@ func (q *Queries) ListPlayerStatusInventory(ctx context.Context, playerID int64)
 			&i.ID,
 			&i.Name,
 			&i.Description,
+			&i.HourDuration,
 			&i.Quantity,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -107,7 +132,7 @@ func (q *Queries) ListPlayerStatusInventory(ctx context.Context, playerID int64)
 }
 
 const updatePlayerStatusQuantity = `-- name: UpdatePlayerStatusQuantity :one
-UPDATE player_status SET quantity = $3 WHERE player_id = $1 AND status_id = $2 RETURNING player_id, status_id, quantity
+UPDATE player_status SET quantity = $3 WHERE player_id = $1 AND status_id = $2 RETURNING player_id, status_id, quantity, created_at
 `
 
 type UpdatePlayerStatusQuantityParams struct {
@@ -119,7 +144,12 @@ type UpdatePlayerStatusQuantityParams struct {
 func (q *Queries) UpdatePlayerStatusQuantity(ctx context.Context, arg UpdatePlayerStatusQuantityParams) (PlayerStatus, error) {
 	row := q.db.QueryRow(ctx, updatePlayerStatusQuantity, arg.PlayerID, arg.StatusID, arg.Quantity)
 	var i PlayerStatus
-	err := row.Scan(&i.PlayerID, &i.StatusID, &i.Quantity)
+	err := row.Scan(
+		&i.PlayerID,
+		&i.StatusID,
+		&i.Quantity,
+		&i.CreatedAt,
+	)
 	return i, err
 }
 

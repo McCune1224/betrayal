@@ -26,6 +26,7 @@ const (
 const (
 	EmojiInventory = Emoji("🎒")
 	EmojiAlignment = Emoji("⚖️")
+	EmojiRole      = Emoji("🎭")
 	// EmojiAbility    = Emoji("💪")
 	EmojiAbility = Emoji("🔮")
 	// EmojiPerk       = Emoji("➕")

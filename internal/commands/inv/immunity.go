@@ -32,6 +32,7 @@ func (i *Inv) immunityCommandArgBuilder() *discordgo.ApplicationCommandOption {
 				Options: []*discordgo.ApplicationCommandOption{
 					discord.StatusCommandArg("immunity", "Immunity to add", true),
 					discord.UserCommandArg(false),
+					discord.BoolCommandArg("one_time", "One Time Immunity", false),
 				},
 			},
 			{
@@ -62,6 +63,11 @@ func (i *Inv) addImmunity(ctx ken.SubCommandContext) (err error) {
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
 	immunityArg := ctx.Options().GetByName("immunity").StringValue()
+	isOneTime := false
+	if oneTimeArg, ok := ctx.Options().GetByNameOptional("one_time"); ok {
+		isOneTime = oneTimeArg.BoolValue()
+	}
+
 	q := models.New(i.dbPool)
 	existingImmunities, _ := q.ListPlayerImmunity(context.Background(), h.SyncPlayer().ID)
 	if len(existingImmunities) > 0 {
@@ -76,9 +82,10 @@ func (i *Inv) addImmunity(ctx ken.SubCommandContext) (err error) {
 		log.Println(err)
 		return discord.AlexError(ctx, "failed to add immunity")
 	}
-	_, err = q.CreatePlayerImmunityJoin(context.Background(), models.CreatePlayerImmunityJoinParams{
+	_, err = q.CreateOneTimePlayerImmunityJoin(context.Background(), models.CreateOneTimePlayerImmunityJoinParams{
 		PlayerID: h.SyncPlayer().ID,
 		StatusID: immunity.ID,
+		OneTime:  isOneTime,
 	})
 	if err != nil {
 		log.Println(err)

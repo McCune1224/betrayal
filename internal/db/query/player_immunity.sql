@@ -1,6 +1,9 @@
 -- name: CreatePlayerImmunityJoin :one
 INSERT INTO player_immunity (player_id, status_id) VALUES ($1, $2) RETURNING *;
 
+-- name: CreateOneTimePlayerImmunityJoin :one
+INSERT INTO player_immunity (player_id, status_id, one_time) VALUES ($1, $2, $3) RETURNING *;
+
 -- name: ListPlayerImmunity :many
 select status.*
 from player_immunity

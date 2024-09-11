@@ -175,6 +175,7 @@ type PlayerConfessional struct {
 type PlayerImmunity struct {
 	PlayerID int64 `json:"player_id"`
 	StatusID int32 `json:"status_id"`
+	OneTime  bool  `json:"one_time"`
 }
 
 type PlayerItem struct {
@@ -202,9 +203,10 @@ type PlayerPerk struct {
 }
 
 type PlayerStatus struct {
-	PlayerID int64 `json:"player_id"`
-	StatusID int32 `json:"status_id"`
-	Quantity int32 `json:"quantity"`
+	PlayerID  int64            `json:"player_id"`
+	StatusID  int32            `json:"status_id"`
+	Quantity  int32            `json:"quantity"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
 }
 
 type Role struct {
@@ -225,9 +227,10 @@ type RolePerk struct {
 }
 
 type Status struct {
-	ID          int32  `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID           int32  `json:"id"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	HourDuration int32  `json:"hour_duration"`
 }
 
 type VoteChannel struct {
