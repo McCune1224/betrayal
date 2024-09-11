@@ -5,7 +5,7 @@ INSERT INTO player_immunity (player_id, status_id) VALUES ($1, $2) RETURNING *;
 INSERT INTO player_immunity (player_id, status_id, one_time) VALUES ($1, $2, $3) RETURNING *;
 
 -- name: ListPlayerImmunity :many
-select status.*
+select status.*, player_immunity.one_time
 from player_immunity
 inner join status on status.id = player_immunity.status_id
 where player_immunity.player_id = $1

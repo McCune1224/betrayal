@@ -20,7 +20,7 @@ type PlayerInventory struct {
 	Items      []models.ListPlayerItemInventoryRow    `json:"items"`
 	Abilities  []models.ListPlayerAbilityInventoryRow `json:"abilities"`
 	Perks      []models.PerkInfo                      `json:"perks"`
-	Immunities []models.Status                        `json:"immunities"`
+	Immunities []models.ListPlayerImmunityRow         `json:"immunities"`
 	Statuses   []models.ListPlayerStatusInventoryRow  `json:"statuses"`
 	Notes      []models.PlayerNote                    `json:"notes"`
 }
@@ -76,7 +76,7 @@ func (ih *InventoryHandler) FetchInventory() (*PlayerInventory, error) {
 	perksChan := make(chan []models.PerkInfo, 1)
 	itemCh := make(chan []models.ListPlayerItemInventoryRow, 1)
 	statusChan := make(chan []models.ListPlayerStatusInventoryRow, 1)
-	immunityChan := make(chan []models.Status, 1)
+	immunityChan := make(chan []models.ListPlayerImmunityRow, 1)
 	roleChan := make(chan models.Role, 1)
 	notesChan := make(chan []models.PlayerNote, 1)
 
@@ -100,7 +100,7 @@ func (ih *InventoryHandler) FetchInventory() (*PlayerInventory, error) {
 		return query.ListPlayerStatusInventory(ctx, ih.player.ID)
 	})
 
-	go util.DbTask(ctx, immunityChan, func() ([]models.Status, error) {
+	go util.DbTask(ctx, immunityChan, func() ([]models.ListPlayerImmunityRow, error) {
 		return query.ListPlayerImmunity(ctx, ih.player.ID)
 	})
 
@@ -119,10 +119,7 @@ func (ih *InventoryHandler) FetchInventory() (*PlayerInventory, error) {
 	return inv, nil
 }
 
-func (ih *InventoryHandler) InventoryEmbedBuilder(
-	inv *PlayerInventory,
-	host bool,
-) *discordgo.MessageEmbed {
+func (ih *InventoryHandler) InventoryEmbedBuilder(inv *PlayerInventory, host bool) *discordgo.MessageEmbed {
 	roleField := &discordgo.MessageEmbedField{
 		Name:   fmt.Sprintf("%s Role", discord.EmojiRole),
 		Value:  inv.Role.Name,
@@ -205,7 +202,11 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 
 	immusSts := []string{}
 	for _, immu := range inv.Immunities {
-		immusSts = append(immusSts, immu.Name)
+		if immu.OneTime {
+			immusSts = append(immusSts, fmt.Sprintf("%s (One Time)", immu.Name))
+		} else {
+			immusSts = append(immusSts, immu.Name)
+		}
 	}
 	immunitiesField := &discordgo.MessageEmbedField{
 		Name:   fmt.Sprintf("%s Immunities", discord.EmojiImmunity),
@@ -241,10 +242,6 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 		Color: discord.ColorThemeDiamond,
 	}
 
-	embd.Footer = &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Last updated: %s", discord.AbsoluteTimestamp(time.Now().Unix())),
-	}
-
 	if host {
 
 		embd.Fields = append(embd.Fields, &discordgo.MessageEmbedField{
@@ -268,6 +265,12 @@ func (ih *InventoryHandler) InventoryEmbedBuilder(
 
 	}
 
+	// embd.Fields = append(embd.Fields, &discordgo.MessageEmbedField{
+	// 	Name:   "",
+	// 	Value:  fmt.Sprintf("Last updated: %s", discord.SmallText(discord.AbsoluteTimestamp(time.Now().Unix()))),
+	// 	Inline: true,
+	// })
+	embd.Timestamp = time.Now().String()
 	return embd
 }
 

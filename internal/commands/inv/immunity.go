@@ -117,7 +117,7 @@ func (i *Inv) removeImmunity(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "failed to find immunity")
 	}
 	existingImmunities, _ := q.ListPlayerImmunity(context.Background(), h.SyncPlayer().ID)
-	target := &models.Status{}
+	target := &models.ListPlayerImmunityRow{}
 	if len(existingImmunities) > 0 {
 		for _, immunity := range existingImmunities {
 			if targetImmunity.ID == immunity.ID {

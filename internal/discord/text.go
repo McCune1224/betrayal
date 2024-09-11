@@ -123,6 +123,10 @@ func Indent(s string) string {
 	return "> " + s
 }
 
+func SmallText(s string) string {
+	return "#- " + s
+}
+
 func RelativeTimestamp(unixTimestamp int64) string {
 	return fmt.Sprintf("<t:%d:R>", unixTimestamp)
 }

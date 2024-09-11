@@ -22,7 +22,7 @@ func (its *InventoryTestSuite) TestChannel() {
 	abilityChan := make(chan []models.ListPlayerAbilityInventoryRow, 1)
 	itemCh := make(chan []models.ListPlayerItemInventoryRow, 1)
 	statusChan := make(chan []models.ListPlayerStatusRow, 1)
-	immunityChan := make(chan []models.Status, 1)
+	immunityChan := make(chan []models.ListPlayerImmunityRow, 1)
 
 	now := time.Now()
 	go dbTask(ctx, abilityChan, func() ([]models.ListPlayerAbilityInventoryRow, error) {
@@ -37,7 +37,7 @@ func (its *InventoryTestSuite) TestChannel() {
 		return query.ListPlayerStatus(ctx, player.ID)
 	})
 
-	go dbTask(ctx, immunityChan, func() ([]models.Status, error) {
+	go dbTask(ctx, immunityChan, func() ([]models.ListPlayerImmunityRow, error) {
 		return query.ListPlayerImmunity(ctx, player.ID)
 	})
 
