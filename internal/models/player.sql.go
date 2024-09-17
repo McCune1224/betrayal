@@ -131,6 +131,37 @@ func (q *Queries) GetPlayerInventory(ctx context.Context, id int64) (GetPlayerIn
 	return i, err
 }
 
+const listAllPlayerNotes = `-- name: ListAllPlayerNotes :many
+select player_id, note_id, position, info, updated_at
+from player_note
+`
+
+func (q *Queries) ListAllPlayerNotes(ctx context.Context) ([]PlayerNote, error) {
+	rows, err := q.db.Query(ctx, listAllPlayerNotes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PlayerNote
+	for rows.Next() {
+		var i PlayerNote
+		if err := rows.Scan(
+			&i.PlayerID,
+			&i.NoteID,
+			&i.Position,
+			&i.Info,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPlayer = `-- name: ListPlayer :many
 select id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment
 from player

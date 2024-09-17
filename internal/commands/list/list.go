@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/models"
+	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
 
@@ -78,6 +79,11 @@ func (*List) Options() []*discordgo.ApplicationCommandOption {
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Description: "List of all statuses",
 		},
+		{
+			Name:        "notes",
+			Description: "(Admin Only) List all current player notes",
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+		},
 	}
 }
 
@@ -88,6 +94,7 @@ func (l *List) Run(ctx ken.Context) (err error) {
 		ken.SubCommandHandler{Name: "active_roles", Run: l.listActiveRoles},
 		ken.SubCommandHandler{Name: "events", Run: l.listEvents},
 		ken.SubCommandHandler{Name: "statuses", Run: l.listStatuses},
+		ken.SubCommandHandler{Name: "notes", Run: l.listNotes},
 	)
 }
 
@@ -188,6 +195,50 @@ func (l *List) listActiveRoles(ctx ken.SubCommandContext) (err error) {
 	}
 
 	return ctx.RespondEmbed(listEmbed)
+}
+
+func (l *List) listNotes(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
+		return discord.NotAdminError(ctx)
+	}
+	q := models.New(l.dbPool)
+	players, err := q.ListPlayer(context.Background())
+	if err != nil {
+		return discord.AlexError(ctx, "Failed to get players")
+	}
+	allNotes, err := q.ListAllPlayerNotes(context.Background())
+	if err != nil {
+		return discord.AlexError(ctx, "Failed to get notes")
+	}
+	groupedNotes := make(map[int64][]models.PlayerNote)
+	for _, note := range allNotes {
+		groupedNotes[note.PlayerID] = append(groupedNotes[note.PlayerID], note)
+	}
+	fields := []*discordgo.MessageEmbedField{}
+	for playerID, notes := range groupedNotes {
+		fieldName := ""
+		for _, player := range players {
+			if player.ID == playerID {
+				discordPlayer, _ := ctx.GetSession().GuildMember(discord.BetraylGuildID, util.Itoa64(player.ID))
+				fieldName = discordPlayer.DisplayName()
+				break
+			}
+		}
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   fmt.Sprintf("%s (%d)", discord.Bold(fieldName), len(notes)),
+			Value:  fmt.Sprintf("%s", discord.Code(notes[0].Info)),
+			Inline: false,
+		})
+	}
+	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+		Title:       "Notes",
+		Description: "All notes for the game",
+		Fields:      fields,
+	})
 }
 
 // Version implements ken.SlashCommand.

@@ -110,3 +110,9 @@ where player.id = $1
 group by player.id
 ;
 
+
+-- name: ListAllPlayerNotes :many
+select player_id, note_id, position, info, updated_at
+from player_note
+;
+

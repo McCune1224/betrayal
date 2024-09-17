@@ -79,7 +79,11 @@ func (i *Inv) addStatus(ctx ken.SubCommandContext) (err error) {
 	immunities, err := q.ListPlayerImmunity(context.Background(), h.GetPlayer().ID)
 	for _, immunity := range immunities {
 		if immunity.Name == status.Name {
-			warningMsg = fmt.Sprintf("%s The player is immune to %s. If this is okay, consider removing immunity and if not the status. %s", discord.EmojiWarning, status.Name, discord.EmojiWarning)
+			if immunity.OneTime {
+				warningMsg = fmt.Sprintf("%s The player has one time immunity for %s. Consider removing the immunity.", discord.EmojiWarning, status.Name)
+			} else {
+				warningMsg = fmt.Sprintf("%s The player is immune to %s. If this is okay, consider removing immunity and if not the status. %s", discord.EmojiWarning, status.Name, discord.EmojiWarning)
+			}
 		}
 	}
 
