@@ -1,6 +1,8 @@
 module github.com/mccune1224/betrayal
 
-go 1.21
+go 1.22
+
+toolchain go1.22.6
 
 require (
 	github.com/bwmarrin/discordgo v0.28.1
@@ -22,6 +24,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/rs/xid v1.5.0 // indirect
 	github.com/zekrotja/dgrs v0.5.7 // indirect
 	github.com/zekrotja/safepool v1.1.0 // indirect

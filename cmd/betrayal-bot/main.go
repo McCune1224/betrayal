@@ -169,7 +169,6 @@ func main() {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
-
 	if err := app.betrayalManager.Session().Close(); err != nil {
 		log.Fatal("error closing connection,", err)
 	}
@@ -240,4 +239,5 @@ func formatOption(s *discordgo.Session, o *discordgo.ApplicationCommandInteracti
 	case discordgo.ApplicationCommandOptionMentionable:
 		return ""
 	}
+	// new info
 }
