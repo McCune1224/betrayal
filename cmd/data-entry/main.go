@@ -51,7 +51,7 @@ func main() {
 		logger: logger,
 	}
 
-	cfg.database.dsn = os.Getenv("DATABASE_URL")
+	cfg.database.dsn = os.Getenv("DATABASE_POOLER_URL")
 	if cfg.database.dsn == "" {
 		app.logger.Fatal("DATABASE_URL is required")
 	}

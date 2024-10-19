@@ -78,7 +78,7 @@ func main() {
 	cfg.discord.botToken = os.Getenv("DISCORD_BOT_TOKEN")
 	cfg.discord.clientID = os.Getenv("DISCORD_CLIENT_ID")
 	cfg.discord.clientSecret = os.Getenv("DISCORD_CLIENT_SECRET")
-	cfg.database.dsn = os.Getenv("DATABASE_URL")
+	cfg.database.dsn = os.Getenv("DATABASE_POOLER_URL")
 
 	// Spin up Bot and give it admin permissions
 	bot, err := discordgo.New("Bot " + cfg.discord.botToken)
