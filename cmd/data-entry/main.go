@@ -53,7 +53,7 @@ func main() {
 
 	cfg.database.dsn = os.Getenv("DATABASE_POOLER_URL")
 	if cfg.database.dsn == "" {
-		app.logger.Fatal("DATABASE_URL is required")
+		app.logger.Fatal("DATABASE_POOLER_URL is required")
 	}
 
 	db, err := pgxpool.New(context.Background(), cfg.database.dsn)

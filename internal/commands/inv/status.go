@@ -68,25 +68,37 @@ func (i *Inv) addStatus(ctx ken.SubCommandContext) (err error) {
 	if quantityArg, ok := ctx.Options().GetByNameOptional("quantity"); ok {
 		quantity = int(quantityArg.IntValue())
 	}
+
+	q := models.New(i.dbPool)
+	warningMsg := ""
+	currentStatuses, _ := q.ListPlayerStatus(context.Background(), h.GetPlayer().ID)
+	for _, status := range currentStatuses {
+		if status.Name == "Lucky" {
+			warningMsg += fmt.Sprintf("%s the player has Lucky status, consider adding now that a new status has been added. %s\n", discord.EmojiWarning, discord.EmojiWarning)
+			break
+		}
+		if status.Name == "Unlucky" {
+			warningMsg += fmt.Sprintf("%s the player has Unlucky status, consider adding now that a new status has been added. %s\n", discord.EmojiWarning, discord.EmojiWarning)
+			break
+		}
+	}
+
 	status, err := h.AddStatus(statusNameArg, int32(quantity))
 	if err != nil {
 		log.Println(err)
 		return discord.AlexError(ctx, "")
 	}
 
-	warningMsg := ""
-	q := models.New(i.dbPool)
 	immunities, err := q.ListPlayerImmunity(context.Background(), h.GetPlayer().ID)
 	for _, immunity := range immunities {
 		if immunity.Name == status.Name {
 			if immunity.OneTime {
-				warningMsg = fmt.Sprintf("%s The player has one time immunity for %s. Consider removing the immunity.", discord.EmojiWarning, status.Name)
+				warningMsg = fmt.Sprintf("%s The player has one time immunity for %s. Consider removing the immunity.%s\n", discord.EmojiWarning, status.Name, discord.EmojiWarning)
 			} else {
-				warningMsg = fmt.Sprintf("%s The player is immune to %s. If this is okay, consider removing immunity and if not the status. %s", discord.EmojiWarning, status.Name, discord.EmojiWarning)
+				warningMsg = fmt.Sprintf("%s The player is immune to %s. If this is okay, consider removing immunity and if not the status. %s\n", discord.EmojiWarning, status.Name, discord.EmojiWarning)
 			}
 		}
 	}
-
 	return discord.SuccessfulMessage(ctx, "Status Added", fmt.Sprintf("Added status %s", status.Name), warningMsg)
 }
 func (i *Inv) removeStatus(ctx ken.SubCommandContext) (err error) {
