@@ -105,7 +105,7 @@ func main() {
 			Default: discord.ColorThemeOrange,
 			Error:   discord.ColorThemeRuby,
 		},
-		DisableCommandInfoCache: false,
+		DisableCommandInfoCache: true,
 		OnSystemError: func(ctx string, err error, args ...interface{}) {
 			log.Printf("[STM] {%s} - %s\n", ctx, err.Error())
 		},

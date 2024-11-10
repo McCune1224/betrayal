@@ -58,6 +58,7 @@ func (v *View) Options() []*discordgo.ApplicationCommandOption {
 			Description: "View a role",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.StringCommandArg("name", "Name of the role", true),
+				discord.BoolCommandArg("hidden", "Whisper the message / make ephemeral.", false),
 			},
 		},
 		{
@@ -66,6 +67,7 @@ func (v *View) Options() []*discordgo.ApplicationCommandOption {
 			Description: "View an ability",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.StringCommandArg("name", "Name of the role", true),
+				discord.BoolCommandArg("hidden", "Whisper the message / make ephemeral.", false),
 			},
 		},
 		{
@@ -74,6 +76,7 @@ func (v *View) Options() []*discordgo.ApplicationCommandOption {
 			Description: "View a perk",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.StringCommandArg("name", "Name of the role", true),
+				discord.BoolCommandArg("hidden", "Whisper the message / make ephemeral.", false),
 			},
 		},
 		{
@@ -82,6 +85,7 @@ func (v *View) Options() []*discordgo.ApplicationCommandOption {
 			Description: "View an item",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.StringCommandArg("name", "Name of the role", true),
+				discord.BoolCommandArg("hidden", "Whisper the message / make ephemeral.", false),
 			},
 		},
 		{
@@ -96,6 +100,7 @@ func (v *View) Options() []*discordgo.ApplicationCommandOption {
 					Required:    true,
 					Choices:     statusChoices,
 				},
+				discord.BoolCommandArg("hidden", "Whisper the message / make ephemeral.", false),
 			},
 		},
 		{
@@ -121,6 +126,12 @@ func (v *View) Run(ctx ken.Context) (err error) {
 }
 
 func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
+	whisper := false
+	if hidden, ok := ctx.Options().GetByNameOptional("hidden"); ok {
+		whisper = hidden.BoolValue()
+	}
+	ctx.SetEphemeral(whisper)
+
 	if err = ctx.Defer(); err != nil {
 		log.Println(err)
 		return err
@@ -160,6 +171,11 @@ func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
 }
 
 func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
+	whisper := false
+	if hidden, ok := ctx.Options().GetByNameOptional("hidden"); ok {
+		whisper = hidden.BoolValue()
+	}
+	ctx.SetEphemeral(whisper)
 	if err = ctx.Defer(); err != nil {
 		log.Println(err)
 		return err
@@ -252,6 +268,11 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 }
 
 func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
+	whisper := false
+	if hidden, ok := ctx.Options().GetByNameOptional("hidden"); ok {
+		whisper = hidden.BoolValue()
+	}
+	ctx.SetEphemeral(whisper)
 	if err = ctx.Defer(); err != nil {
 		return err
 	}
@@ -315,6 +336,11 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 }
 
 func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
+	whisper := false
+	if hidden, ok := ctx.Options().GetByNameOptional("hidden"); ok {
+		whisper = hidden.BoolValue()
+	}
+	ctx.SetEphemeral(whisper)
 	data := ctx.Options().GetByName("name").StringValue()
 	dbCtx := context.Background()
 	q := models.New(v.dbPool)
@@ -376,6 +402,11 @@ func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
 }
 
 func (v *View) viewStatus(ctx ken.SubCommandContext) (err error) {
+	whisper := false
+	if hidden, ok := ctx.Options().GetByNameOptional("hidden"); ok {
+		whisper = hidden.BoolValue()
+	}
+	ctx.SetEphemeral(whisper)
 	statusName := ctx.Options().GetByName("name").StringValue()
 	q := models.New(v.dbPool)
 	dbCtx := context.Background()
