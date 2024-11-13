@@ -17,7 +17,7 @@ import (
 var (
 	DummyGoodRoles    = []string{"Agent", "Analyst", "Biker", "Cerberus", "Detective", "Fisherman", "Gunman", "Hero", "Hydra", "Judge", "Knight", "The Major", "Medium", "Nurse", "Seraph", "Terminal", "Time Traveler", "Undercover", "Wizard", "Yeti"}
 	DummyNeutralRoles = []string{"Amalgamation", "Backstabber", "Bard", "Bomber", "Cheater", "Entertainer", "Empress", "Ghost", "Goliath", "Incubus", "Magician", "Masochist", "Mercenary", "Mimic", "Pathologist", "Siren", "Sidekick", "Succubus", "Villager", "Wanderer"}
-	DummyEvilRoles    = []string{"Anarchist", "Arsonist", "Bartender", "Consort", "Director", "Doll", "Forsaken Angel", "Gatekeeper", "Hacker", "Highwayman", "Hunter", "Jester", "Overlord", "Parasite", "Phantom", "Psychotherapist", "Revenant", "Slaughterer", "Threatener", "Witchdoctor"}
+	DummyEvilRoles    = []string{"Anarchist", "Arsonist", "Bartender", "Consort", "Juggernaut", "Doll", "Forsaken Angel", "Gatekeeper", "Hacker", "Highwayman", "Hunter", "Jester", "Overlord", "Parasite", "Phantom", "Psychotherapist", "Revenant", "Slaughterer", "Threatener", "Witchdoctor"}
 
 	GameEvents = []string{
 		"Care Package - Game Start - Each player starts off with a care package which contains 1 item and 1 Any Ability.",
