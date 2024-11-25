@@ -118,12 +118,6 @@ func (a *Action) request(ctx ken.SubCommandContext) (err error) {
 	}
 	event := ctx.GetEvent()
 
-	messageId := event.Message.ID
-	channelId := event.ChannelID
-	guildId := event.GuildID
-
-	url := fmt.Sprintf("https://discord.com/channels/%s/%s/%s", guildId, channelId, messageId)
-
 	inventory, err := inventory.NewInventoryHandler(ctx, a.dbPool)
 	if err != nil && err.Error() == "no rows in result set" {
 		log.Println(err)
@@ -183,7 +177,7 @@ func (a *Action) request(ctx ken.SubCommandContext) (err error) {
 	// maybe will do something else with this but code block gives nice formatting
 	// similar to that of what a logger would be...
 
-	actionLog = fmt.Sprintf("%s %s", url, discord.Code(actionLog))
+	actionLog = discord.Code(actionLog)
 	_, err = ctx.GetSession().ChannelMessageSend(actionChannel, actionLog)
 	if err != nil {
 		log.Println(err)
