@@ -89,7 +89,7 @@ func main() {
 			panic(err)
 		}
 		SyncRolesCsv(dbCtx, db, strings.NewReader(string(body)), string(lazy[0].alignment))
-		fmt.Println("~~ Good Roles Done %s ~~", time.Since(start))
+		fmt.Printf("~~ Good Roles Done %s ~~\n", time.Since(start))
 		wg.Done()
 	}()
 
@@ -106,7 +106,7 @@ func main() {
 			panic(err)
 		}
 		SyncRolesCsv(dbCtx, db, strings.NewReader(string(body)), string(lazy[1].alignment))
-		fmt.Println("~~ Evil Roles Done %s ~~", time.Since(start))
+		fmt.Printf("~~ Evil Roles Done %s ~~\n", time.Since(start))
 		wg.Done()
 	}()
 
@@ -123,7 +123,7 @@ func main() {
 			panic(err)
 		}
 		SyncRolesCsv(dbCtx, db, strings.NewReader(string(body)), string(lazy[2].alignment))
-		fmt.Println("~~ Neutral Roles Done %s ~~", time.Since(start))
+		fmt.Printf("~~ Neutral Roles Done %s ~~\n", time.Since(start))
 		wg.Done()
 	}()
 
@@ -140,7 +140,7 @@ func main() {
 			panic(err)
 		}
 		SyncItemsCsv(dbCtx, db, strings.NewReader(string(body)))
-		fmt.Println("~~ Items Done %s ~~", time.Since(start))
+		fmt.Printf("~~ Items Done %s ~~\n", time.Since(start))
 		wg.Done()
 	}()
 
