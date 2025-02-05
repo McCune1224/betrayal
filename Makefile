@@ -18,7 +18,7 @@ migrate-down:
 
 migrate-sync:
 	migrate -database $(shell cat .env | grep DATABASE_POOLER_URL | cut -d '=' -f2) -path internal/db/migration down && migrate -database $(shell cat .env | grep DATABASE_POOLER_URL | cut -d '=' -f2) -path internal/db/migration up
-	&& go run/.cmd/data-entry/main.go
+	
 
 mock-migrate-up:
 	migrate -database $(shell cat .env | grep MOCK_DATABASE | cut -d '=' -f2) -path internal/db/migration up

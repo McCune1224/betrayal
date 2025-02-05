@@ -94,7 +94,7 @@ func playerListHelpEmbed() *discordgo.MessageEmbed {
 func playerVoteHelpEmbed() *discordgo.MessageEmbed {
 	msg := &discordgo.MessageEmbed{
 		Title:       "Vote",
-		Description: "**TLDR: Just use `/vote player [target]`.** Vote is a command that allows you to vote on who to eliminate for today's vote. You can choose to vote for one or many players depending on if you have an ability or item that allows you to do so.",
+		Description: "**TLDR: Just use `/vote player [target]` or `/vote batch [target1], [target2]...`**.Vote is a command that allows you to vote on who to eliminate for today's vote. You can choose to vote for one or many players depending on if you have an ability or item that allows you to do so.",
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Value: "`/vote player [target]` to vote on a player. For example, `/vote player Greg` will vote for Greg.",

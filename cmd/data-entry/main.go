@@ -76,6 +76,7 @@ func main() {
 		{URL: os.Getenv("NEUTRAL_ROLES_CSV"), alignment: models.AlignmentNEUTRAL},
 	}
 
+	app.logger.Printf("Parsing Google Docs Sheet for data")
 	go func() {
 		start := time.Now()
 		csvUrl := lazy[0].URL

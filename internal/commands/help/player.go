@@ -15,7 +15,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 
 	msg := &discordgo.MessageEmbed{
 		Title:       "Player Commands Overview",
-		Description: "Lexibot is your one stop shop to help with multiple betrayal game components. It will help keep track of your inventory, allow you to request doing votes and actions, and quickly fetch game information. Click a button below or do `/help player [topic]` to learn more.",
+		Description: "Beatrice is your one stop shop to help with multiple betrayal game components. It will help keep track of your inventory, allow you to request doing votes and actions, and quickly fetch game information. Click a button below or do `/help player [topic]` to learn more.",
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:  "Action",
