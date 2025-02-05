@@ -218,8 +218,11 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 			},
 		},
 	}
-	aa, _ := q.GetAbilityInfoByFuzzy(dbCtx, ability.Name)
-	log.Println(aa.Name, aa.Rarity, aa.AnyAbility)
+	aa, err := q.GetAbilityInfoByFuzzy(dbCtx, ability.Name)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 	msg := ""
 	if aa.AnyAbility {
 		if aa.Rarity == models.RarityROLESPECIFIC {
