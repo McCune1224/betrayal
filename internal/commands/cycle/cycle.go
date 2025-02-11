@@ -268,17 +268,17 @@ func (c *Cycle) incrementCycle() (models.GameCycle, error) {
 func formatCycleMessage(updatedCycle models.GameCycle) string {
 	// Handle elimination cycle
 	if updatedCycle.IsElimination {
-		return fmt.Sprintf("`=== END OF DAY %d, START OF ELIMINATION %d ===`",
+		return fmt.Sprintf("# === END OF DAY %d ===\n# === START OF ELIMINATION %d ===",
 			updatedCycle.Day, updatedCycle.Day)
 	}
 
 	// Handle day 0 transition
 	if updatedCycle.Day-1 == 0 {
-		return fmt.Sprintf("`=== END OF DAY 0, START OF DAY %d ===`",
+		return fmt.Sprintf("# === END OF DAY 0 ===\n# === START OF DAY %d ===",
 			updatedCycle.Day)
 	}
 
 	// Handle regular elimination to day transition
-	return fmt.Sprintf("`=== END OF ELIMINATION %d, START OF DAY %d ===`",
+	return fmt.Sprintf("# === END OF ELIMINATION %d ===\n# === START OF DAY %d ===",
 		updatedCycle.Day-1, updatedCycle.Day)
 }
