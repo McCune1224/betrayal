@@ -16,6 +16,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/commands/action"
 	"github.com/mccune1224/betrayal/internal/commands/buy"
 	"github.com/mccune1224/betrayal/internal/commands/channels"
+	"github.com/mccune1224/betrayal/internal/commands/cycle"
 	"github.com/mccune1224/betrayal/internal/commands/echo"
 	"github.com/mccune1224/betrayal/internal/commands/help"
 	"github.com/mccune1224/betrayal/internal/commands/inv"
@@ -140,6 +141,7 @@ func main() {
 		new(setup.Setup),
 		new(echo.Echo),
 		new(list.List),
+		new(cycle.Cycle),
 		// new(commands.Kill),
 		// new(commands.Revive),
 		// new(commands.Insult),
