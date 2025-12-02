@@ -44,3 +44,36 @@ func WrapKenHandler(handler func(*ken.Ctx) error) func(*ken.Ctx) error {
 		return handler(ctx)
 	}
 }
+
+// RecoverKenComponent catches panics in Ken component handlers and sends error to Discord
+func RecoverKenComponent(ctx ken.ComponentContext) {
+	if r := recover(); r != nil {
+		// For components, we need to extract logger info manually since ComponentContext
+		// doesn't inherit from ken.Context fully
+		logger := defaultLogger
+
+		// Add user info from event if available
+		if ctx != nil && ctx.GetEvent() != nil && ctx.GetEvent().Member != nil && ctx.GetEvent().Member.User != nil {
+			logger = logger.With().
+				Str("user", ctx.GetEvent().Member.User.Username).
+				Str("user_id", ctx.GetEvent().Member.User.ID).
+				Logger()
+		}
+
+		logger.Error().
+			Any("panic", r).
+			Bytes("stack", debug.Stack()).
+			Msg("Component handler panicked")
+
+		// Try to send error message to Discord
+		_ = ctx.RespondError("A fatal error occurred in the component handler", "Error")
+	}
+}
+
+// WrapKenComponent wraps a Ken component handler with panic recovery
+func WrapKenComponent(handler func(ken.ComponentContext) bool) func(ken.ComponentContext) bool {
+	return func(ctx ken.ComponentContext) bool {
+		defer RecoverKenComponent(ctx)
+		return handler(ctx)
+	}
+}

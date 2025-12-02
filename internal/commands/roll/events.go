@@ -99,7 +99,7 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 				Style:    discordgo.SuccessButton,
 				CustomID: "confirm-item-rain",
 				Label:    "Confirm",
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				// rare occurance where inbetween this accepting if the inventory is updated the item list is not updated
 				// so re-process the current item list and add the new items
 				currInv, err := inventory.NewInventoryHandler(sctx, r.dbPool)
@@ -141,18 +141,18 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 				embdRain.Title = fmt.Sprintf("Item Rain Sent to %s (approved by %s)", discord.MentionChannel(util.Itoa64(playerChan.ChannelID)), ctx.User().Username)
 				sctx.RespondEmbed(embdRain)
 				return true
-			}, true)
+			}), true)
 			b.Add(discordgo.Button{
 				Style:    discordgo.DangerButton,
 				CustomID: "decline-item-rain",
 				Label:    "Decline",
 			},
-				func(ctx ken.ComponentContext) bool {
+				logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 					playerChan, _ := q.GetPlayerConfessional(dbCtx, player.ID)
 					discord.SuccessfulMessage(sctx, fmt.Sprintf("Declined Item Rain for %s", discord.MentionChannel(util.Itoa64(playerChan.ChannelID))),
 						fmt.Sprintf("Declined by %s", ctx.User().Username))
 					return true
-				}, true)
+				}), true)
 		}, true).
 			Condition(func(cctx ken.ComponentContext) bool {
 				return true
@@ -229,7 +229,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 				Style:    discordgo.SuccessButton,
 				CustomID: "confirm-power-drop",
 				Label:    "Confirm",
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				// rare occurance where inbetween this accepting if the inventory is updated the item list is not updated
 				// so re-process the current item list and add the new items
 				if err != nil {
@@ -265,16 +265,16 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 				embedPowerDrop.Title = fmt.Sprintf("Power Drop Sent to %s (approved by %s)", discord.MentionChannel(util.Itoa64(confChan.ChannelID)), ctx.User().Username)
 				sctx.RespondEmbed(embedPowerDrop)
 				return true
-			}, true)
+			}), true)
 			b.Add(discordgo.Button{
 				Style:    discordgo.DangerButton,
 				CustomID: "decline-power-drop",
 				Label:    "Decline",
 			},
-				func(ctx ken.ComponentContext) bool {
+				logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 					discord.SuccessfulMessage(sctx, fmt.Sprintf("Declined Power Drop for %s", discord.MentionChannel(util.Itoa64(confChan.ChannelID))), fmt.Sprintf("Declined by %s", ctx.User().Username))
 					return true
-				}, true)
+				}), true)
 		}, true).
 			Condition(func(cctx ken.ComponentContext) bool {
 				return true
@@ -358,7 +358,7 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 				Style:    discordgo.SuccessButton,
 				CustomID: "confirm-care-package",
 				Label:    "Confirm",
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				// rare occurance where inbetween this accepting if the inventory is updated the item list is not updated
 				// so re-process the current item list and add the new items
 				currInv, err := inventory.NewInventoryHandler(sctx, r.dbPool)
@@ -395,16 +395,16 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 				embedCarePackage.Title = fmt.Sprintf("Care Package Sent to %s (approved by %s)", discord.MentionChannel(util.Itoa64(confChan.ChannelID)), ctx.User().Username)
 				sctx.RespondEmbed(embedCarePackage)
 				return true
-			}, true)
+			}), true)
 			b.Add(discordgo.Button{
 				Style:    discordgo.DangerButton,
 				CustomID: "decline-care-package",
 				Label:    "Decline",
 			},
-				func(ctx ken.ComponentContext) bool {
+				logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 					discord.SuccessfulMessage(sctx, fmt.Sprintf("Declined Power Drop for %s", discord.MentionChannel(util.Itoa64(confChan.ChannelID))), fmt.Sprintf("Declined by %s", ctx.User().Username))
 					return true
-				}, true)
+				}), true)
 		}, true).
 			Condition(func(cctx ken.ComponentContext) bool {
 				return true

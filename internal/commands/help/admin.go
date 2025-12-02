@@ -60,41 +60,41 @@ func (h *Help) adminOverview(ctx ken.SubCommandContext) (err error) {
 				CustomID: "a-inventory-help",
 				Label:    "Inventory",
 				Style:    discordgo.SecondaryButton,
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(adminInventoryEmbed())
 				return true
-			}, clearAll)
+			}), clearAll)
 
 			b.Add(discordgo.Button{
 				CustomID: "a-alliance-help",
 				Label:    "Alliance",
 				Style:    discordgo.SecondaryButton,
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(adminAllianceEmbed())
 				return true
-			}, clearAll)
+			}), clearAll)
 
 			b.Add(discordgo.Button{
 				CustomID: "a-channels-help",
 				Label:    "Channels",
 				Style:    discordgo.SecondaryButton,
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(adminChannelsEmbed())
 				return true
-			}, clearAll)
+			}), clearAll)
 
 			b.Add(discordgo.Button{
 				CustomID: "a-cycle-help",
 				Label:    "Cycle",
 				Style:    discordgo.SecondaryButton,
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(adminCycleEmbed())
 				return true
-			}, clearAll)
+			}), clearAll)
 
 		}, clearAll)
 	})
@@ -106,41 +106,41 @@ func (h *Help) adminOverview(ctx ken.SubCommandContext) (err error) {
 				CustomID: "a-roll-help",
 				Label:    "Roll",
 				Style:    discordgo.SecondaryButton,
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(adminRollEmbed())
 				return true
-			}, clearAll)
+			}), clearAll)
 
 			b.Add(discordgo.Button{
 				CustomID: "a-buy-help",
 				Label:    "Buy",
 				Style:    discordgo.SecondaryButton,
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(adminBuyEmbed())
 				return true
-			}, clearAll)
+			}), clearAll)
 
 			b.Add(discordgo.Button{
 				CustomID: "a-kill-help",
 				Label:    "Kill/Revive",
 				Style:    discordgo.SecondaryButton,
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(adminKillEmebd())
 				return true
-			}, clearAll)
+			}), clearAll)
 
 			b.Add(discordgo.Button{
 				CustomID: "a-setup-help",
 				Label:    "Setup",
 				Style:    discordgo.SecondaryButton,
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(adminSetupEmbed())
 				return true
-			}, clearAll)
+			}), clearAll)
 
 		}, clearAll)
 	})

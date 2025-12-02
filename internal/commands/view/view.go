@@ -247,7 +247,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 					CustomID: fmt.Sprintf("%s-%s", associatedRole.Name, ability.Name),
 					Style:    discordgo.PrimaryButton,
 					Label:    associatedRole.Name,
-				}, func(ctx ken.ComponentContext) bool {
+				}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 					roleName := strings.Split(ctx.GetData().CustomID, "-")[0]
 					// We know for sure role exists here so ignore error
 					role, _ := q.GetRoleByFuzzy(dbCtx, roleName)
@@ -260,7 +260,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 					ctx.SetEphemeral(true)
 					ctx.RespondEmbed(roleEmbed)
 					return true
-				}, false)
+				}), false)
 			}
 		}, false).Condition(func(cctx ken.ComponentContext) bool {
 			return true
@@ -314,7 +314,7 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 					CustomID: fmt.Sprintf("%s-%s", associatedRole.Name, perk.Name),
 					Style:    discordgo.PrimaryButton,
 					Label:    associatedRole.Name,
-				}, func(ctx ken.ComponentContext) bool {
+				}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 					roleName := strings.Split(ctx.GetData().CustomID, "-")[0]
 					// We know for sure role exists here so ignore error
 					role, _ := q.GetRoleByFuzzy(dbCtx, roleName)
@@ -327,7 +327,7 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 					ctx.SetEphemeral(true)
 					ctx.RespondEmbed(roleEmbed)
 					return true
-				}, false)
+				}), false)
 			}
 		}, false).Condition(func(cctx ken.ComponentContext) bool {
 			return true
@@ -520,11 +520,11 @@ func zingyCase(ctx ken.SubCommandContext, zingy models.Item) (err error) {
 				CustomID: "outcomes",
 				Style:    discordgo.PrimaryButton,
 				Label:    "Roll Outcomes",
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(secondaryMsg)
 				return true
-			}, false)
+			}), false)
 		}, false).Condition(func(cctx ken.ComponentContext) bool {
 			return true
 		})
@@ -670,7 +670,7 @@ func (v *View) generateNephRole(ctx ken.Context, role models.Role) (err error) {
 				CustomID: missingRoles[0].Name,
 				Style:    discordgo.PrimaryButton,
 				Label:    missingRoles[0].Name,
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				roleEmbed, err := v.roleEmbed(missingRoles[0])
 				if err != nil {
 					ctx.RespondMessage("Idek neph is stupid to format lol xd")
@@ -679,12 +679,12 @@ func (v *View) generateNephRole(ctx ken.Context, role models.Role) (err error) {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(roleEmbed)
 				return true
-			}, false)
+			}), false)
 			b.Add(discordgo.Button{
 				CustomID: missingRoles[1].Name,
 				Style:    discordgo.PrimaryButton,
 				Label:    missingRoles[1].Name,
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				roleEmbed, err := v.roleEmbed(missingRoles[1])
 				if err != nil {
 					ctx.RespondMessage("Idek neph is stupid to format lol xd")
@@ -693,7 +693,7 @@ func (v *View) generateNephRole(ctx ken.Context, role models.Role) (err error) {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(roleEmbed)
 				return true
-			}, false)
+			}), false)
 		}, false).Condition(func(cctx ken.ComponentContext) bool {
 			return true
 		})

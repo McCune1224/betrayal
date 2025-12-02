@@ -51,20 +51,20 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				CustomID: "p-inventory-help",
 				Label:    "Inventory",
 				Style:    discordgo.SecondaryButton,
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerInventoryHelpEmbed())
 				return true
-			}, clearAll)
+			}), clearAll)
 			b.Add(discordgo.Button{
 				CustomID: "p-action-help",
 				Style:    discordgo.SecondaryButton,
 				Label:    "Action",
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerActionHelpEmbed())
 				return true
-			}, clearAll)
+			}), clearAll)
 		}, clearAll)
 	})
 
@@ -74,29 +74,29 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				CustomID: "p-view-help",
 				Style:    discordgo.SecondaryButton,
 				Label:    "View",
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerViewHelpEmbed())
 				return true
-			}, clearAll2)
+			}), clearAll2)
 			b.Add(discordgo.Button{
 				CustomID: "p-list-help",
 				Style:    discordgo.SecondaryButton,
 				Label:    "List",
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerListHelpEmbed())
 				return true
-			}, clearAll2)
+			}), clearAll2)
 			b.Add(discordgo.Button{
 				CustomID: "p-vote-help",
 				Style:    discordgo.SecondaryButton,
 				Label:    "Vote",
-			}, func(ctx ken.ComponentContext) bool {
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerVoteHelpEmbed())
 				return true
-			}, clearAll2)
+			}), clearAll2)
 		}, clearAll2)
 	})
 

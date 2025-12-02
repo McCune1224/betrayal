@@ -84,6 +84,12 @@ func archiveAndCleanLogs(pool *pgxpool.Pool, logger zerolog.Logger, cfg Retentio
 		Time("cutoff_time", cutoffTime).
 		Msg("Old logs deleted from database")
 
+	// Also clean up old audit records
+	if err := CleanupAuditTrail(ctx, pool, logger); err != nil {
+		logger.Error().Err(err).Msg("Failed to cleanup audit trail")
+		// Don't return error here - log cleanup should not block audit cleanup
+	}
+
 	return nil
 }
 
@@ -184,6 +190,30 @@ func exportLogsToCSV(ctx context.Context, pool *pgxpool.Pool, logger zerolog.Log
 		Str("archive_file", archiveFile).
 		Int("row_count", rowCount).
 		Msg("Logs exported to CSV")
+
+	return nil
+}
+
+// CleanupAuditTrail removes command audit records older than the retention period (365 days)
+// This is called daily as part of the retention worker
+func CleanupAuditTrail(ctx context.Context, pool *pgxpool.Pool, logger zerolog.Logger) error {
+	cutoffDate := time.Now().AddDate(-1, 0, 0) // 365 days ago
+
+	result, err := pool.Exec(ctx,
+		"DELETE FROM command_audit WHERE timestamp < $1",
+		cutoffDate,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to delete old audit records: %w", err)
+	}
+
+	rowsDeleted := result.RowsAffected()
+	if rowsDeleted > 0 {
+		logger.Info().
+			Int64("rows_deleted", rowsDeleted).
+			Time("cutoff_date", cutoffDate).
+			Msg("Audit trail cleanup completed")
+	}
 
 	return nil
 }
