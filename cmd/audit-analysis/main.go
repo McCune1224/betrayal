@@ -12,6 +12,18 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
+// ANSI color codes for terminal output
+const (
+	colorReset   = "\033[0m"
+	colorBold    = "\033[1m"
+	colorRed     = "\033[31m"
+	colorGreen   = "\033[32m"
+	colorYellow  = "\033[33m"
+	colorBlue    = "\033[34m"
+	colorMagenta = "\033[35m"
+	colorCyan    = "\033[36m"
+)
+
 // auditQuery represents different types of audit queries
 type auditQuery struct {
 	name        string
@@ -22,42 +34,42 @@ type auditQuery struct {
 var availableQueries = map[string]auditQuery{
 	"stats": {
 		name:        "stats",
-		description: "Show audit trail statistics",
+		description: "Show audit trail statistics and health overview",
 		run:         queryStats,
 	},
 	"top-commands": {
 		name:        "top-commands",
-		description: "Show top executed commands",
+		description: "Show most frequently executed commands",
 		run:         queryTopCommands,
 	},
 	"top-users": {
 		name:        "top-users",
-		description: "Show top command executers",
+		description: "Show most active users by command count",
 		run:         queryTopUsers,
 	},
 	"failures": {
 		name:        "failures",
-		description: "Show failed commands",
+		description: "Show failed command executions with error details",
 		run:         queryFailures,
 	},
 	"user-activity": {
 		name:        "user-activity",
-		description: "Show activity for a specific user",
+		description: "Show detailed activity timeline for a specific user",
 		run:         queryUserActivity,
 	},
 	"command-history": {
 		name:        "command-history",
-		description: "Show history for a specific command",
+		description: "Show execution history for a specific command",
 		run:         queryCommandHistory,
 	},
 	"audit-by-date": {
 		name:        "audit-by-date",
-		description: "Show audit records from a specific date",
+		description: "Show all audit records from a specific date",
 		run:         queryAuditByDate,
 	},
 	"slow-commands": {
 		name:        "slow-commands",
-		description: "Show slowest executing commands",
+		description: "Show slowest commands by average execution time",
 		run:         querySlowCommands,
 	},
 }
@@ -68,55 +80,103 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Check for help flag
+	if os.Args[1] == "-h" || os.Args[1] == "--help" || os.Args[1] == "help" {
+		printUsage()
+		os.Exit(0)
+	}
+
 	// Create database pool
 	dsn := os.Getenv("DATABASE_POOLER_URL")
 	if dsn == "" {
-		fmt.Fprintf(os.Stderr, "Error: DATABASE_POOLER_URL environment variable not set\n")
+		printError("DATABASE_POOLER_URL environment variable not set")
+		fmt.Fprintf(os.Stderr, "\nSet it with: export DATABASE_POOLER_URL='postgresql://user:pass@host:port/db'\n")
 		os.Exit(1)
 	}
 
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating database pool: %v\n", err)
+		printError("Failed to create database connection pool")
+		fmt.Fprintf(os.Stderr, "Details: %v\n", err)
 		os.Exit(1)
 	}
 	defer pool.Close()
 
 	// Check database connection
 	if err := pool.Ping(context.Background()); err != nil {
-		fmt.Fprintf(os.Stderr, "Error connecting to database: %v\n", err)
+		printError("Failed to connect to database")
+		fmt.Fprintf(os.Stderr, "Details: %v\n", err)
 		os.Exit(1)
 	}
 
 	queryType := os.Args[1]
 	query, exists := availableQueries[queryType]
 	if !exists {
-		fmt.Fprintf(os.Stderr, "Error: Unknown query type '%s'\n", queryType)
-		printUsage()
+		printError(fmt.Sprintf("Unknown query type: %s", queryType))
+		fmt.Fprintf(os.Stderr, "\nRun '%s help' to see available commands\n", os.Args[0])
 		os.Exit(1)
 	}
 
+	fmt.Printf("%s▶ Executing audit query:%s %s\n", colorCyan, colorReset, colorBold+queryType+colorReset)
+	fmt.Println(string(make([]byte, 60))) // visual separator
+
 	if err := query.run(pool, os.Args[2:]); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		printError(fmt.Sprintf("Query failed: %v", err))
 		os.Exit(1)
 	}
+
+	fmt.Println(string(make([]byte, 60))) // visual separator
+	fmt.Printf("%s✓ Query completed successfully%s\n", colorGreen, colorReset)
 }
 
 func printUsage() {
-	fmt.Println("Betrayal Audit Analysis Tool")
-	fmt.Println("\nUsage: betrayal-audit <query-type> [options]\n")
-	fmt.Println("Available queries:")
+	fmt.Printf("%s╔════════════════════════════════════════════════════════╗%s\n", colorBlue, colorReset)
+	fmt.Printf("%s║          Betrayal Audit Analysis Tool                 ║%s\n", colorBlue, colorReset)
+	fmt.Printf("%s║        Query and analyze command audit trails         ║%s\n", colorBlue, colorReset)
+	fmt.Printf("%s╚════════════════════════════════════════════════════════╝%s\n\n", colorBlue, colorReset)
 
+	fmt.Printf("%sUsage:%s\n", colorBold, colorReset)
+	fmt.Printf("  %s <query-type> [options]\n\n", os.Args[0])
+
+	fmt.Printf("%sAvailable Queries:%s\n", colorBold, colorReset)
 	for _, query := range availableQueries {
-		fmt.Printf("  %-20s %s\n", query.name, query.description)
+		fmt.Printf("  %s%-18s%s  %s\n", colorGreen, query.name, colorReset, query.description)
 	}
 
-	fmt.Println("\nExamples:")
-	fmt.Println("  betrayal-audit stats")
-	fmt.Println("  betrayal-audit top-commands --limit 10")
-	fmt.Println("  betrayal-audit user-activity --user-id 123456789")
-	fmt.Println("  betrayal-audit command-history --command /setup")
-	fmt.Println("  betrayal-audit failures --hours 24")
+	fmt.Printf("\n%sExamples:%s\n", colorBold, colorReset)
+	fmt.Printf("  %s stats%s\n", colorCyan, colorReset)
+	fmt.Printf("  %s top-commands --limit 15%s\n", colorCyan, colorReset)
+	fmt.Printf("  %s failures --hours 24%s\n", colorCyan, colorReset)
+	fmt.Printf("  %s user-activity --user-id 123456789%s\n", colorCyan, colorReset)
+	fmt.Printf("  %s command-history --command /setup%s\n", colorCyan, colorReset)
+	fmt.Printf("  %s slow-commands --limit 10%s\n\n", colorCyan, colorReset)
+
+	fmt.Printf("%sFlags:%s\n", colorBold, colorReset)
+	fmt.Printf("  --limit N        Number of results to show (default varies by query)\n")
+	fmt.Printf("  --user-id ID     Discord user ID for user-activity query\n")
+	fmt.Printf("  --command CMD    Command name for command-history query\n")
+	fmt.Printf("  --date DATE      Date in YYYY-MM-DD format (default: today)\n")
+	fmt.Printf("  --hours N        Look back N hours for failures query\n\n")
+
+	fmt.Printf("%sEnvironment:%s\n", colorBold, colorReset)
+	fmt.Printf("  DATABASE_POOLER_URL  PostgreSQL connection string (required)\n\n")
+}
+
+func printError(msg string) {
+	fmt.Fprintf(os.Stderr, "%s✗ Error:%s %s\n", colorRed, colorReset, msg)
+}
+
+func printSuccess(msg string) {
+	fmt.Printf("%s✓ %s%s\n", colorGreen, msg, colorReset)
+}
+
+func printInfo(msg string) {
+	fmt.Printf("%sℹ %s%s\n", colorCyan, msg, colorReset)
+}
+
+func printSection(title string) {
+	fmt.Printf("\n%s%s%s\n", colorBold+colorMagenta, title, colorReset)
+	fmt.Println(string(make([]byte, len(title))))
 }
 
 // queryStats shows overall audit statistics
@@ -129,56 +189,85 @@ func queryStats(pool *pgxpool.Pool, args []string) error {
 		Today    int64
 		Failures int64
 		AvgTime  float64
+		MaxTime  int32
 	}
 
 	var s stats
 
+	printInfo("Querying database for audit statistics...")
+
 	// Total commands
 	err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM command_audit").Scan(&s.Total)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get total commands: %w", err)
 	}
 
 	// Commands today
 	err = pool.QueryRow(ctx,
 		"SELECT COUNT(*) FROM command_audit WHERE DATE(timestamp) = CURRENT_DATE").Scan(&s.Today)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get today's commands: %w", err)
 	}
 
 	// Failed commands
 	err = pool.QueryRow(ctx,
 		"SELECT COUNT(*) FROM command_audit WHERE status = 'error'").Scan(&s.Failures)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get failed commands: %w", err)
 	}
 
 	// Average execution time
 	err = pool.QueryRow(ctx,
-		"SELECT COALESCE(AVG(execution_time_ms), 0) FROM command_audit").Scan(&s.AvgTime)
+		"SELECT COALESCE(AVG(execution_time_ms), 0), COALESCE(MAX(execution_time_ms), 0) FROM command_audit").Scan(&s.AvgTime, &s.MaxTime)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get execution times: %w", err)
 	}
 
-	fmt.Printf("Audit Trail Statistics\n")
-	fmt.Printf("=======================\n")
-	fmt.Printf("Total Commands:      %d\n", s.Total)
-	fmt.Printf("Commands Today:      %d\n", s.Today)
-	fmt.Printf("Failed Commands:     %d\n", s.Failures)
-	fmt.Printf("Average Exec Time:   %.2f ms\n", s.AvgTime)
-	fmt.Printf("Failure Rate:        %.2f%%\n", float64(s.Failures)/float64(s.Total)*100)
+	printSection("📊 Audit Trail Statistics")
 
+	failureRate := 0.0
+	if s.Total > 0 {
+		failureRate = (float64(s.Failures) / float64(s.Total)) * 100
+	}
+
+	// Color code the health status
+	healthStatus := fmt.Sprintf("%s✓ HEALTHY%s", colorGreen, colorReset)
+	if failureRate > 5 {
+		healthStatus = fmt.Sprintf("%s⚠ WARNING%s", colorYellow, colorReset)
+	}
+	if failureRate > 10 {
+		healthStatus = fmt.Sprintf("%s✗ CRITICAL%s", colorRed, colorReset)
+	}
+
+	fmt.Printf("  System Health:     %s\n", healthStatus)
+	fmt.Printf("  Total Commands:    %s%d%s\n", colorBold, s.Total, colorReset)
+	fmt.Printf("  Commands Today:    %s%d%s\n", colorBold, s.Today, colorReset)
+	fmt.Printf("  Failed Commands:   %s%d%s\n", colorBold, s.Failures, colorReset)
+
+	failureRateColor := colorGreen
+	if failureRate > 5 {
+		failureRateColor = colorYellow
+	}
+	fmt.Printf("  Failure Rate:      %s%.2f%%%s\n", failureRateColor, failureRate, colorReset)
+	fmt.Printf("  Avg Exec Time:     %s%.2f ms%s\n", colorBold, s.AvgTime, colorReset)
+	fmt.Printf("  Max Exec Time:     %s%d ms%s\n", colorBold, s.MaxTime, colorReset)
+
+	printSuccess("Statistics retrieved successfully")
 	return nil
 }
 
 // queryTopCommands shows most frequently used commands
 func queryTopCommands(pool *pgxpool.Pool, args []string) error {
-	fs := flag.NewFlagSet("top-commands", flag.ExitOnError)
+	fs := flag.NewFlagSet("top-commands", flag.ContinueOnError)
 	limit := fs.Int("limit", 10, "Number of commands to show")
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	printInfo(fmt.Sprintf("Fetching top %d commands by execution count...", *limit))
 
 	rows, err := pool.Query(ctx, `
 		SELECT command_name, COUNT(*) as count, 
@@ -190,16 +279,17 @@ func queryTopCommands(pool *pgxpool.Pool, args []string) error {
 		LIMIT $1
 	`, *limit)
 	if err != nil {
-		return err
+		return fmt.Errorf("query failed: %w", err)
 	}
 	defer rows.Close()
 
-	fmt.Println("Top Commands")
-	fmt.Println("============")
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "Command\tCount\tFailures\tAvg Time (ms)")
-	fmt.Fprintln(w, "-------\t-----\t--------\t-------------")
+	printSection("🏆 Top Commands")
 
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.AlignRight)
+	fmt.Fprintf(w, "  %sCommand%s\t%sCount%s\t%sFailures%s\t%sAvg Time (ms)%s\n", colorBold, colorReset, colorBold, colorReset, colorBold, colorReset, colorBold, colorReset)
+	fmt.Fprintf(w, "  %s────────────────%s\t%s─────%s\t%s────────%s\t%s──────────────%s\n", colorCyan, colorReset, colorCyan, colorReset, colorCyan, colorReset, colorCyan, colorReset)
+
+	rowCount := 0
 	for rows.Next() {
 		var cmd string
 		var count, failures int64
@@ -209,21 +299,27 @@ func queryTopCommands(pool *pgxpool.Pool, args []string) error {
 			return err
 		}
 
-		fmt.Fprintf(w, "%s\t%d\t%d\t%.2f\n", cmd, count, failures, avgTime)
+		rowCount++
+		fmt.Fprintf(w, "  %d. %s\t%d\t%d\t%.2f\n", rowCount, cmd, count, failures, avgTime)
 	}
 
 	w.Flush()
+	printSuccess(fmt.Sprintf("Retrieved %d commands", rowCount))
 	return rows.Err()
 }
 
 // queryTopUsers shows users who executed the most commands
 func queryTopUsers(pool *pgxpool.Pool, args []string) error {
-	fs := flag.NewFlagSet("top-users", flag.ExitOnError)
+	fs := flag.NewFlagSet("top-users", flag.ContinueOnError)
 	limit := fs.Int("limit", 10, "Number of users to show")
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	printInfo(fmt.Sprintf("Fetching top %d users by command count...", *limit))
 
 	rows, err := pool.Query(ctx, `
 		SELECT username, user_id, COUNT(*) as count
@@ -233,16 +329,17 @@ func queryTopUsers(pool *pgxpool.Pool, args []string) error {
 		LIMIT $1
 	`, *limit)
 	if err != nil {
-		return err
+		return fmt.Errorf("query failed: %w", err)
 	}
 	defer rows.Close()
 
-	fmt.Println("Top Users")
-	fmt.Println("=========")
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "Username\tUserID\tCount")
-	fmt.Fprintln(w, "--------\t------\t-----")
+	printSection("👥 Top Users")
 
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.AlignRight)
+	fmt.Fprintf(w, "  %sUsername%s\t%sUserID%s\t%sCommand Count%s\n", colorBold, colorReset, colorBold, colorReset, colorBold, colorReset)
+	fmt.Fprintf(w, "  %s────────────────%s\t%s──────────────────%s\t%s──────────────%s\n", colorCyan, colorReset, colorCyan, colorReset, colorCyan, colorReset)
+
+	rowCount := 0
 	for rows.Next() {
 		var username, userID string
 		var count int64
@@ -251,22 +348,28 @@ func queryTopUsers(pool *pgxpool.Pool, args []string) error {
 			return err
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%d\n", username, userID, count)
+		rowCount++
+		fmt.Fprintf(w, "  %d. %s\t%s\t%d\n", rowCount, username, userID, count)
 	}
 
 	w.Flush()
+	printSuccess(fmt.Sprintf("Retrieved %d users", rowCount))
 	return rows.Err()
 }
 
 // queryFailures shows failed command executions
 func queryFailures(pool *pgxpool.Pool, args []string) error {
-	fs := flag.NewFlagSet("failures", flag.ExitOnError)
+	fs := flag.NewFlagSet("failures", flag.ContinueOnError)
 	hours := fs.Int("hours", 24, "Look back N hours")
 	limit := fs.Int("limit", 20, "Number of failures to show")
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	printInfo(fmt.Sprintf("Fetching failed commands from last %d hours (limit %d)...", *hours, *limit))
 
 	rows, err := pool.Query(ctx, `
 		SELECT timestamp, command_name, username, error_message
@@ -276,16 +379,17 @@ func queryFailures(pool *pgxpool.Pool, args []string) error {
 		LIMIT $2
 	`, *hours, *limit)
 	if err != nil {
-		return err
+		return fmt.Errorf("query failed: %w", err)
 	}
 	defer rows.Close()
 
-	fmt.Printf("Failed Commands (Last %d Hours)\n", *hours)
-	fmt.Println("================================")
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "Time\tCommand\tUser\tError")
-	fmt.Fprintln(w, "----\t-------\t----\t-----")
+	printSection(fmt.Sprintf("❌ Failed Commands (Last %d Hours)", *hours))
 
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	fmt.Fprintf(w, "  %sTime%s\t%sCommand%s\t%sUser%s\t%sError%s\n", colorBold, colorReset, colorBold, colorReset, colorBold, colorReset, colorBold, colorReset)
+	fmt.Fprintf(w, "  %s──────────────%s\t%s──────────%s\t%s────────────%s\t%s──────────────────────────────%s\n", colorRed, colorReset, colorRed, colorReset, colorRed, colorReset, colorRed, colorReset)
+
+	rowCount := 0
 	for rows.Next() {
 		var timestamp time.Time
 		var command, user string
@@ -295,26 +399,35 @@ func queryFailures(pool *pgxpool.Pool, args []string) error {
 			return err
 		}
 
-		err := ""
+		rowCount++
+		errText := ""
 		if errMsg != nil {
-			err = *errMsg
+			errText = *errMsg
+			if len(errText) > 30 {
+				errText = errText[:30] + "..."
+			}
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
-			timestamp.Format("15:04:05"),
-			command, user, err)
+		fmt.Fprintf(w, "  %s%s%s\t%s%s%s\t%s%s%s\t%s\n",
+			colorYellow, timestamp.Format("15:04:05"), colorReset,
+			colorBold, command, colorReset,
+			colorBold, user, colorReset,
+			errText)
 	}
 
 	w.Flush()
+	printSuccess(fmt.Sprintf("Retrieved %d failed commands", rowCount))
 	return rows.Err()
 }
 
 // queryUserActivity shows activity for a specific user
 func queryUserActivity(pool *pgxpool.Pool, args []string) error {
-	fs := flag.NewFlagSet("user-activity", flag.ExitOnError)
+	fs := flag.NewFlagSet("user-activity", flag.ContinueOnError)
 	userID := fs.String("user-id", "", "User ID to query")
 	limit := fs.Int("limit", 50, "Number of records to show")
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
 
 	if *userID == "" {
 		return fmt.Errorf("--user-id flag is required")
@@ -322,6 +435,8 @@ func queryUserActivity(pool *pgxpool.Pool, args []string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	printInfo(fmt.Sprintf("Fetching activity for user %s (last %d records)...", *userID, *limit))
 
 	rows, err := pool.Query(ctx, `
 		SELECT timestamp, command_name, status, execution_time_ms
@@ -331,16 +446,17 @@ func queryUserActivity(pool *pgxpool.Pool, args []string) error {
 		LIMIT $2
 	`, *userID, *limit)
 	if err != nil {
-		return err
+		return fmt.Errorf("query failed: %w", err)
 	}
 	defer rows.Close()
 
-	fmt.Printf("Activity for User: %s\n", *userID)
-	fmt.Println("====================")
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "Time\tCommand\tStatus\tExec Time (ms)")
-	fmt.Fprintln(w, "----\t-------\t------\t--------------")
+	printSection(fmt.Sprintf("📋 Activity for User: %s", *userID))
 
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	fmt.Fprintf(w, "  %sTime%s\t%sCommand%s\t%sStatus%s\t%sExec Time (ms)%s\n", colorBold, colorReset, colorBold, colorReset, colorBold, colorReset, colorBold, colorReset)
+	fmt.Fprintf(w, "  %s──────────────%s\t%s──────────%s\t%s────────%s\t%s──────────────%s\n", colorCyan, colorReset, colorCyan, colorReset, colorCyan, colorReset, colorCyan, colorReset)
+
+	rowCount := 0
 	for rows.Next() {
 		var timestamp time.Time
 		var command, status string
@@ -350,21 +466,32 @@ func queryUserActivity(pool *pgxpool.Pool, args []string) error {
 			return err
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%s\t%d\n",
-			timestamp.Format("15:04:05"),
-			command, status, execTime)
+		rowCount++
+		statusColor := colorGreen
+		if status == "error" {
+			statusColor = colorRed
+		}
+
+		fmt.Fprintf(w, "  %s%s%s\t%s%s%s\t%s%s%s\t%d\n",
+			colorCyan, timestamp.Format("15:04:05"), colorReset,
+			colorBold, command, colorReset,
+			statusColor, status, colorReset,
+			execTime)
 	}
 
 	w.Flush()
+	printSuccess(fmt.Sprintf("Retrieved %d activity records", rowCount))
 	return rows.Err()
 }
 
 // queryCommandHistory shows history for a specific command
 func queryCommandHistory(pool *pgxpool.Pool, args []string) error {
-	fs := flag.NewFlagSet("command-history", flag.ExitOnError)
+	fs := flag.NewFlagSet("command-history", flag.ContinueOnError)
 	command := fs.String("command", "", "Command name to query")
 	limit := fs.Int("limit", 50, "Number of records to show")
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
 
 	if *command == "" {
 		return fmt.Errorf("--command flag is required")
@@ -372,6 +499,8 @@ func queryCommandHistory(pool *pgxpool.Pool, args []string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	printInfo(fmt.Sprintf("Fetching history for command %s (last %d executions)...", *command, *limit))
 
 	rows, err := pool.Query(ctx, `
 		SELECT timestamp, username, status, execution_time_ms
@@ -381,16 +510,17 @@ func queryCommandHistory(pool *pgxpool.Pool, args []string) error {
 		LIMIT $2
 	`, *command, *limit)
 	if err != nil {
-		return err
+		return fmt.Errorf("query failed: %w", err)
 	}
 	defer rows.Close()
 
-	fmt.Printf("History for Command: %s\n", *command)
-	fmt.Println("======================")
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "Time\tUser\tStatus\tExec Time (ms)")
-	fmt.Fprintln(w, "----\t----\t------\t--------------")
+	printSection(fmt.Sprintf("⏱ History for Command: %s", *command))
 
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	fmt.Fprintf(w, "  %sTime%s\t%sUser%s\t%sStatus%s\t%sExec Time (ms)%s\n", colorBold, colorReset, colorBold, colorReset, colorBold, colorReset, colorBold, colorReset)
+	fmt.Fprintf(w, "  %s──────────────%s\t%s────────────────%s\t%s────────%s\t%s──────────────%s\n", colorCyan, colorReset, colorCyan, colorReset, colorCyan, colorReset, colorCyan, colorReset)
+
+	rowCount := 0
 	for rows.Next() {
 		var timestamp time.Time
 		var user, status string
@@ -400,23 +530,36 @@ func queryCommandHistory(pool *pgxpool.Pool, args []string) error {
 			return err
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%s\t%d\n",
-			timestamp.Format("15:04:05"),
-			user, status, execTime)
+		rowCount++
+		statusColor := colorGreen
+		if status == "error" {
+			statusColor = colorRed
+		}
+
+		fmt.Fprintf(w, "  %s%s%s\t%s%s%s\t%s%s%s\t%d\n",
+			colorCyan, timestamp.Format("15:04:05"), colorReset,
+			colorBold, user, colorReset,
+			statusColor, status, colorReset,
+			execTime)
 	}
 
 	w.Flush()
+	printSuccess(fmt.Sprintf("Retrieved %d execution records", rowCount))
 	return rows.Err()
 }
 
 // queryAuditByDate shows audit records from a specific date
 func queryAuditByDate(pool *pgxpool.Pool, args []string) error {
-	fs := flag.NewFlagSet("audit-by-date", flag.ExitOnError)
+	fs := flag.NewFlagSet("audit-by-date", flag.ContinueOnError)
 	date := fs.String("date", time.Now().Format("2006-01-02"), "Date to query (YYYY-MM-DD)")
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	printInfo(fmt.Sprintf("Fetching audit records for %s...", *date))
 
 	rows, err := pool.Query(ctx, `
 		SELECT timestamp, command_name, username, status
@@ -425,16 +568,17 @@ func queryAuditByDate(pool *pgxpool.Pool, args []string) error {
 		ORDER BY timestamp DESC
 	`, *date)
 	if err != nil {
-		return err
+		return fmt.Errorf("query failed: %w", err)
 	}
 	defer rows.Close()
 
-	fmt.Printf("Audit Records for %s\n", *date)
-	fmt.Println("=====================")
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "Time\tCommand\tUser\tStatus")
-	fmt.Fprintln(w, "----\t-------\t----\t------")
+	printSection(fmt.Sprintf("📅 Audit Records for %s", *date))
 
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	fmt.Fprintf(w, "  %sTime%s\t%sCommand%s\t%sUser%s\t%sStatus%s\n", colorBold, colorReset, colorBold, colorReset, colorBold, colorReset, colorBold, colorReset)
+	fmt.Fprintf(w, "  %s──────────────%s\t%s──────────%s\t%s────────────────%s\t%s────────%s\n", colorCyan, colorReset, colorCyan, colorReset, colorCyan, colorReset, colorCyan, colorReset)
+
+	rowCount := 0
 	for rows.Next() {
 		var timestamp time.Time
 		var command, user, status string
@@ -443,23 +587,36 @@ func queryAuditByDate(pool *pgxpool.Pool, args []string) error {
 			return err
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
-			timestamp.Format("15:04:05"),
-			command, user, status)
+		rowCount++
+		statusColor := colorGreen
+		if status == "error" {
+			statusColor = colorRed
+		}
+
+		fmt.Fprintf(w, "  %s%s%s\t%s%s%s\t%s%s%s\t%s%s%s\n",
+			colorCyan, timestamp.Format("15:04:05"), colorReset,
+			colorBold, command, colorReset,
+			colorBold, user, colorReset,
+			statusColor, status, colorReset)
 	}
 
 	w.Flush()
+	printSuccess(fmt.Sprintf("Retrieved %d records for %s", rowCount, *date))
 	return rows.Err()
 }
 
 // querySlowCommands shows the slowest executing commands
 func querySlowCommands(pool *pgxpool.Pool, args []string) error {
-	fs := flag.NewFlagSet("slow-commands", flag.ExitOnError)
+	fs := flag.NewFlagSet("slow-commands", flag.ContinueOnError)
 	limit := fs.Int("limit", 10, "Number of commands to show")
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	printInfo(fmt.Sprintf("Fetching %d slowest commands by average execution time...", *limit))
 
 	rows, err := pool.Query(ctx, `
 		SELECT command_name, MAX(execution_time_ms) as max_time, 
@@ -470,16 +627,17 @@ func querySlowCommands(pool *pgxpool.Pool, args []string) error {
 		LIMIT $1
 	`, *limit)
 	if err != nil {
-		return err
+		return fmt.Errorf("query failed: %w", err)
 	}
 	defer rows.Close()
 
-	fmt.Println("Slowest Commands")
-	fmt.Println("================")
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "Command\tMax Time (ms)\tAvg Time (ms)\tCount")
-	fmt.Fprintln(w, "-------\t-----------\t-----------\t-----")
+	printSection("🐢 Slowest Commands")
 
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', tabwriter.AlignRight)
+	fmt.Fprintf(w, "  %sCommand%s\t%sMax (ms)%s\t%sAvg (ms)%s\t%sCount%s\n", colorBold, colorReset, colorBold, colorReset, colorBold, colorReset, colorBold, colorReset)
+	fmt.Fprintf(w, "  %s────────────────%s\t%s─────────%s\t%s─────────%s\t%s─────%s\n", colorYellow, colorReset, colorYellow, colorReset, colorYellow, colorReset, colorYellow, colorReset)
+
+	rowCount := 0
 	for rows.Next() {
 		var command string
 		var maxTime, avgTime int64
@@ -489,9 +647,20 @@ func querySlowCommands(pool *pgxpool.Pool, args []string) error {
 			return err
 		}
 
-		fmt.Fprintf(w, "%s\t%d\t%d\t%d\n", command, maxTime, avgTime, count)
+		rowCount++
+		// Color code slow commands
+		timeColor := colorGreen
+		if avgTime > 500 {
+			timeColor = colorYellow
+		}
+		if avgTime > 1000 {
+			timeColor = colorRed
+		}
+
+		fmt.Fprintf(w, "  %d. %s\t%s%d%s\t%s%d%s\t%d\n", rowCount, command, timeColor, maxTime, colorReset, timeColor, avgTime, colorReset, count)
 	}
 
 	w.Flush()
+	printSuccess(fmt.Sprintf("Retrieved %d commands", rowCount))
 	return rows.Err()
 }
