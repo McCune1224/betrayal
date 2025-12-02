@@ -3,7 +3,7 @@ package channels
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/mccune1224/betrayal/internal/logger"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -56,6 +56,8 @@ func (c *Channel) Options() []*discordgo.ApplicationCommandOption {
 
 // Run implements ken.SlashCommand.
 func (c *Channel) Run(ctx ken.Context) (err error) {
+	defer logger.RecoverWithLog(*logger.Get())
+
 	return ctx.HandleSubCommands(
 		c.voteCommandGroupBuilder(),
 		c.adminCommandGroupBuilder(),
@@ -71,7 +73,7 @@ func (c *Channel) viewConfessionals(ctx ken.SubCommandContext) (err error) {
 
 	currentConfessionals, err := q.ListPlayerConfessional(dbCtx)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "")
 	}
 

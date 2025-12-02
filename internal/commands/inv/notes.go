@@ -1,9 +1,9 @@
 package inv
 
 import (
+	"github.com/mccune1224/betrayal/internal/logger"
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -69,7 +69,7 @@ func (i *Inv) notesCommandArgBuilder() *discordgo.ApplicationCommandOption {
 
 func (i *Inv) addNote(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -77,14 +77,14 @@ func (i *Inv) addNote(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
 	noteArg := ctx.Options().GetByName("note").StringValue()
 	h.CreatePlayerNote(h.GetPlayer().ID, noteArg)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to add note")
 	}
 
@@ -93,7 +93,7 @@ func (i *Inv) addNote(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inv) listNote(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -101,7 +101,7 @@ func (i *Inv) listNote(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -110,7 +110,7 @@ func (i *Inv) listNote(ctx ken.SubCommandContext) (err error) {
 
 	playerNotes, err := q.ListPlayerNote(dbCtx, h.GetPlayer().ID)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to get player notes")
 	}
 
@@ -130,7 +130,7 @@ func (i *Inv) listNote(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inv) removeNote(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -138,14 +138,14 @@ func (i *Inv) removeNote(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
 	positionArg := ctx.Options().GetByName("position").IntValue()
 	h.DeletePlayerNote(h.GetPlayer().ID, int(positionArg))
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to remove note")
 	}
 
@@ -154,7 +154,7 @@ func (i *Inv) removeNote(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inv) updateNote(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -162,7 +162,7 @@ func (i *Inv) updateNote(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -170,7 +170,7 @@ func (i *Inv) updateNote(ctx ken.SubCommandContext) (err error) {
 	positionArg := ctx.Options().GetByName("position").IntValue()
 	h.UpdatePlayerNote(h.GetPlayer().ID, int(positionArg), noteArg)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to update note")
 	}
 

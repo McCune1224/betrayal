@@ -4,6 +4,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"github.com/zekrotja/ken"
 )
 
@@ -78,6 +79,8 @@ func (i *Inv) Options() []*discordgo.ApplicationCommandOption {
 
 // Run implements ken.SlashCommand.
 func (i *Inv) Run(ctx ken.Context) (err error) {
+	defer logger.RecoverWithLog(*logger.Get())
+
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "create", Run: i.create},
 		ken.SubCommandHandler{Name: "delete", Run: i.delete},

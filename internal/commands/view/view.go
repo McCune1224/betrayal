@@ -3,7 +3,7 @@ package view
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -42,7 +42,7 @@ func (v *View) Options() []*discordgo.ApplicationCommandOption {
 	dbCtx := context.Background()
 	statuses, err := q.ListStatus(dbCtx)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return nil
 	}
 	for _, status := range statuses {
@@ -114,6 +114,8 @@ func (v *View) Options() []*discordgo.ApplicationCommandOption {
 // Run implements ken.SlashCommand.
 
 func (v *View) Run(ctx ken.Context) (err error) {
+	defer logger.RecoverWithLog(*logger.Get())
+
 	err = ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "role", Run: v.viewRole},
 		ken.SubCommandHandler{Name: "ability", Run: v.viewAbility},
@@ -133,7 +135,7 @@ func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
 	ctx.SetEphemeral(whisper)
 
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 
@@ -160,7 +162,7 @@ func (v *View) viewRole(ctx ken.SubCommandContext) (err error) {
 
 	roleEmbed, err := v.roleEmbed(role)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(ctx,
 			"Failed to Get Full Role Details",
 			"Was not able to pull abilities and perk details for view.",
@@ -177,7 +179,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 	}
 	ctx.SetEphemeral(whisper)
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	q := models.New(v.dbPool)
@@ -186,16 +188,15 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 	// ability, err := v.models.Abilities.GetByFuzzy(nameArg)
 	ability, err := q.GetAbilityInfoByFuzzy(dbCtx, nameArg)
 	if err != nil {
-		discord.ErrorMessage(ctx,
+		return discord.ErrorMessage(ctx,
 			"Error Finding Ability",
 			fmt.Sprintf("Unable to find Ability: %s", nameArg),
 		)
-		return err
 	}
 
 	associatedRoles, err := q.ListAssociatedRolesForAbility(dbCtx, ability.ID)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(ctx,
 			"Error Finding Role",
 			fmt.Sprintf("Unable to find Associated Role for Ability: %s", nameArg))
@@ -220,7 +221,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 	}
 	aa, err := q.GetAbilityInfoByFuzzy(dbCtx, ability.Name)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	msg := ""
@@ -252,7 +253,7 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 					role, _ := q.GetRoleByFuzzy(dbCtx, roleName)
 					roleEmbed, err := v.roleEmbed(role)
 					if err != nil {
-						log.Println(err)
+						logger.Get().Error().Err(err).Msg("operation failed")
 						ctx.RespondError("Failed to Get Full Role Details", "Was not able to pull abilities and perk details for view.")
 					}
 
@@ -293,11 +294,10 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 
 	associatedRoles, err := q.ListAssociatedRolesForPerk(dbCtx, perk.ID)
 	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(ctx,
+		logger.Get().Error().Err(err).Msg("operation failed")
+		return discord.ErrorMessage(ctx,
 			"Error Finding Role",
 			fmt.Sprintf("Unable to find Associated Role for Ability: %s", nameArg))
-		return err
 	}
 
 	perkEmbed := &discordgo.MessageEmbed{
@@ -320,7 +320,7 @@ func (v *View) viewPerk(ctx ken.SubCommandContext) (err error) {
 					role, _ := q.GetRoleByFuzzy(dbCtx, roleName)
 					roleEmbed, err := v.roleEmbed(role)
 					if err != nil {
-						log.Println(err)
+						logger.Get().Error().Err(err).Msg("operation failed")
 						ctx.RespondError("Failed to Get Full Role Details", "Was not able to pull abilities and perk details for view.")
 					}
 
@@ -349,11 +349,10 @@ func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
 	q := models.New(v.dbPool)
 	item, err := q.GetItemByFuzzy(dbCtx, data)
 	if err != nil {
-		discord.ErrorMessage(ctx,
+		return discord.ErrorMessage(ctx,
 			"Unable to find Item",
 			fmt.Sprintf("Unable to find Item: %s", data),
 		)
-		return err
 	}
 
 	itemCostStr := ""
@@ -483,7 +482,7 @@ func determineColor(rarity models.Rarity) int {
 
 func zingyCase(ctx ken.SubCommandContext, zingy models.Item) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	// attach zingy image to embed
@@ -640,7 +639,7 @@ func missing(role string) []string {
 func (v *View) generateNephRole(ctx ken.Context, role models.Role) (err error) {
 	base, err := v.roleEmbed(role)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, fmt.Sprintf("Failed to generate embeded message for role %s", role.Name))
 	}
 
@@ -652,13 +651,13 @@ func (v *View) generateNephRole(ctx ken.Context, role models.Role) (err error) {
 
 	firstMissingRole, err := q.GetRoleByFuzzy(dbCtx, firstMissing)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, fmt.Sprintf("Failed to generate embeded message for role %s", firstMissing))
 	}
 
 	secondMissingRole, err := q.GetRoleByName(dbCtx, secondMissing)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, fmt.Sprintf("Failed to generate embeded message for role %s", secondMissing))
 	}
 

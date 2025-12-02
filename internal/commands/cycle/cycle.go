@@ -3,7 +3,7 @@ package cycle
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"strconv"
 
 	"github.com/bwmarrin/discordgo"
@@ -75,6 +75,8 @@ func (c *Cycle) Version() string {
 
 // Run implements ken.SlashCommand.
 func (c *Cycle) Run(ctx ken.Context) (err error) {
+	defer logger.RecoverWithLog(*logger.Get())
+
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "next", Run: c.next},
 		ken.SubCommandHandler{Name: "set", Run: c.set},
@@ -83,14 +85,14 @@ func (c *Cycle) Run(ctx ken.Context) (err error) {
 
 func (c *Cycle) current(ctx ken.SubCommandContext) error {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	q := models.New(c.dbPool)
 	dbCtx := context.Background()
 	currCycle, err := q.GetCycle(dbCtx)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Unable to get current game cycle")
 	}
 
@@ -110,7 +112,7 @@ func (c *Cycle) current(ctx ken.SubCommandContext) error {
 
 func (c *Cycle) set(ctx ken.SubCommandContext) error {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -120,14 +122,14 @@ func (c *Cycle) set(ctx ken.SubCommandContext) error {
 	phaseNumberOpt := ctx.Options().GetByName("number").IntValue()
 	channels, err := c.getCycleChannelIDs(ctx.GetSession(), ctx.GetEvent())
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to get channels for cycle messages")
 	}
 	q := models.New(c.dbPool)
 	dbCtx := context.Background()
 	currCycle, err := q.GetCycle(dbCtx)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to get current cycle")
 	}
 	isElimination := phaseNameOpt == "Elimination"
@@ -138,14 +140,14 @@ func (c *Cycle) set(ctx ken.SubCommandContext) error {
 	})
 
 	if err != nil {
-		log.Println(err)
-		discord.AlexError(ctx, "Failed to set cycle")
+		logger.Get().Error().Err(err).Msg("operation failed")
+		return discord.AlexError(ctx, "Failed to set cycle")
 	}
 
 	for _, channelID := range channels {
 		_, err := ctx.GetSession().ChannelMessageSend(channelID, formatCycleMessage(updatedCycle))
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			return discord.AlexError(ctx, err.Error())
 		}
 	}
@@ -160,7 +162,7 @@ type confessionalChannelDetails struct {
 
 func (c *Cycle) next(ctx ken.SubCommandContext) error {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -170,13 +172,13 @@ func (c *Cycle) next(ctx ken.SubCommandContext) error {
 	sesh := ctx.GetSession()
 	channelIDSendList, err := c.getCycleChannelIDs(sesh, ctx.GetEvent())
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to get channels for cycle update messages")
 	}
 
 	updatedCycle, err := c.incrementCycle()
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to update game cycle")
 	}
 
@@ -185,7 +187,7 @@ func (c *Cycle) next(ctx ken.SubCommandContext) error {
 	for _, channelID := range channelIDSendList {
 		_, err := sesh.ChannelMessageSend(channelID, msg)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			return discord.AlexError(ctx, err.Error())
 		}
 	}

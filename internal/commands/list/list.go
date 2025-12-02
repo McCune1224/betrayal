@@ -3,7 +3,7 @@ package list
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -89,6 +89,8 @@ func (*List) Options() []*discordgo.ApplicationCommandOption {
 
 // Run implements ken.SlashCommand.
 func (l *List) Run(ctx ken.Context) (err error) {
+	defer logger.RecoverWithLog(*logger.Get())
+
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "items", Run: l.listItems},
 		ken.SubCommandHandler{Name: "active_roles", Run: l.listActiveRoles},
@@ -100,14 +102,14 @@ func (l *List) Run(ctx ken.Context) (err error) {
 
 func (l *List) listStatuses(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	q := models.New(l.dbPool)
 	statuses, err := q.ListStatus(context.Background())
 	if err != nil {
-		log.Println(err)
-		discord.AlexError(ctx, "failed to get statuses")
+		logger.Get().Error().Err(err).Msg("operation failed")
+		return discord.AlexError(ctx, "failed to get statuses")
 	}
 	fields := []*discordgo.MessageEmbedField{}
 	for _, s := range statuses {
@@ -125,7 +127,7 @@ func (l *List) listStatuses(ctx ken.SubCommandContext) (err error) {
 
 func (l *List) listEvents(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	fields := []*discordgo.MessageEmbedField{}
@@ -147,7 +149,7 @@ func (l *List) listEvents(ctx ken.SubCommandContext) (err error) {
 
 func (l *List) listItems(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	q := models.New(l.dbPool)
@@ -168,7 +170,7 @@ func (l *List) listItems(ctx ken.SubCommandContext) (err error) {
 
 func (l *List) listActiveRoles(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	fields := []*discordgo.MessageEmbedField{
@@ -199,7 +201,7 @@ func (l *List) listActiveRoles(ctx ken.SubCommandContext) (err error) {
 
 func (l *List) listNotes(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {

@@ -1,9 +1,9 @@
 package inv
 
 import (
+	"github.com/mccune1224/betrayal/internal/logger"
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -58,7 +58,7 @@ func (i *Inv) luckCommandArgBuilder() *discordgo.ApplicationCommandOption {
 
 func (i *Inv) addLuck(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -66,7 +66,7 @@ func (i *Inv) addLuck(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -78,7 +78,7 @@ func (i *Inv) addLuck(ctx ken.SubCommandContext) (err error) {
 		Luck: h.GetPlayer().Luck + int32(luckArg),
 	})
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to add luck")
 	}
 
@@ -87,7 +87,7 @@ func (i *Inv) addLuck(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inv) removeLuck(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -95,7 +95,7 @@ func (i *Inv) removeLuck(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -112,7 +112,7 @@ func (i *Inv) removeLuck(ctx ken.SubCommandContext) (err error) {
 		Luck: diff,
 	})
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to remove luck")
 	}
 
@@ -121,7 +121,7 @@ func (i *Inv) removeLuck(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inv) setLuck(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -129,7 +129,7 @@ func (i *Inv) setLuck(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -141,7 +141,7 @@ func (i *Inv) setLuck(ctx ken.SubCommandContext) (err error) {
 		Luck: int32(luckArg),
 	})
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "")
 	}
 

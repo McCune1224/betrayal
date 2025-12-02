@@ -3,7 +3,7 @@ package buy
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -44,8 +44,10 @@ func (*Buy) Options() []*discordgo.ApplicationCommandOption {
 
 // Run implements ken.SlashCommand.
 func (b *Buy) Run(ctx ken.Context) (err error) {
+	defer logger.RecoverWithLog(*logger.Get())
+
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	event := ctx.GetEvent()
@@ -62,7 +64,7 @@ func (b *Buy) Run(ctx ken.Context) (err error) {
 
 	inventory, err := inventory.NewInventoryHandler(ctx, b.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(
 			ctx,
 			"Unable to find Inventory",
@@ -82,7 +84,7 @@ func (b *Buy) Run(ctx ken.Context) (err error) {
 
 	item, err := q.GetItemByFuzzy(dbCtx, ctx.Options().GetByName("item").StringValue())
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Unable to find Item")
 	}
 
@@ -103,7 +105,7 @@ func (b *Buy) Run(ctx ken.Context) (err error) {
 	}
 	_, err = inventory.AddItem(item.Name, 1)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to update Inventory with item")
 	}
 
@@ -112,7 +114,7 @@ func (b *Buy) Run(ctx ken.Context) (err error) {
 		Coins: player.Coins - item.Cost,
 	})
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to update player coins")
 	}
 	return discord.SuccessfulMessage(ctx, fmt.Sprintf("You bought %s", item.Name), fmt.Sprintf("%d -> %d", player.Coins+item.Cost, player.Coins))

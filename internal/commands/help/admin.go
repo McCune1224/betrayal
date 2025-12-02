@@ -1,7 +1,7 @@
 package help
 
 import (
-	"log"
+	"github.com/mccune1224/betrayal/internal/logger"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/zekrotja/ken"
@@ -9,7 +9,7 @@ import (
 
 func (h *Help) adminOverview(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	msg := &discordgo.MessageEmbed{
@@ -152,7 +152,7 @@ func (h *Help) adminOverview(ctx ken.SubCommandContext) (err error) {
 
 func (h *Help) adminInventory(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 
@@ -161,7 +161,7 @@ func (h *Help) adminInventory(ctx ken.SubCommandContext) (err error) {
 
 func (h *Help) adminBuy(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	return ctx.RespondEmbed(adminBuyEmbed())
@@ -169,7 +169,7 @@ func (h *Help) adminBuy(ctx ken.SubCommandContext) (err error) {
 
 func (h *Help) adminKill(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	return ctx.RespondEmbed(adminKillEmebd())
@@ -177,7 +177,7 @@ func (h *Help) adminKill(ctx ken.SubCommandContext) (err error) {
 
 func (h *Help) adminRoll(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	return ctx.RespondEmbed(adminRollEmbed())
@@ -185,7 +185,7 @@ func (h *Help) adminRoll(ctx ken.SubCommandContext) (err error) {
 
 func (h *Help) adminSetup(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	return ctx.RespondEmbed(adminSetupEmbed())
@@ -193,7 +193,7 @@ func (h *Help) adminSetup(ctx ken.SubCommandContext) (err error) {
 
 func (h *Help) adminAlliance(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	return ctx.RespondEmbed(adminAllianceEmbed())
@@ -201,7 +201,7 @@ func (h *Help) adminAlliance(ctx ken.SubCommandContext) (err error) {
 
 func (h *Help) adminChannels(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	return ctx.RespondEmbed(adminChannelsEmbed())
@@ -209,7 +209,7 @@ func (h *Help) adminChannels(ctx ken.SubCommandContext) (err error) {
 
 func (h *Help) adminCycle(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	return ctx.RespondEmbed(adminCycleEmbed())

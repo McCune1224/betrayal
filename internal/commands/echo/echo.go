@@ -2,7 +2,7 @@ package echo
 
 import (
 	"fmt"
-	"log"
+	"github.com/mccune1224/betrayal/internal/logger"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -57,6 +57,8 @@ func (e *Echo) Options() []*discordgo.ApplicationCommandOption {
 
 // Run implements ken.SlashCommand.
 func (e *Echo) Run(ctx ken.Context) (err error) {
+	defer logger.RecoverWithLog(*logger.Get())
+
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "message", Run: e.message},
 		ken.SubCommandHandler{Name: "embed", Run: e.embed},
@@ -70,14 +72,14 @@ func (e *Echo) Version() string {
 
 func (e *Echo) message(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	targetChannel := ctx.Options().GetByName("channel").ChannelValue(ctx)
 	text := ctx.Options().GetByName("text").StringValue()
 	_, err = ctx.GetSession().ChannelMessageSend(targetChannel.ID, text)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	return discord.SuccessfulMessage(ctx, "Message Sent", fmt.Sprintf("Sent message to %s", targetChannel.Mention()))
@@ -85,7 +87,7 @@ func (e *Echo) message(ctx ken.SubCommandContext) (err error) {
 
 func (e *Echo) embed(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 
@@ -97,8 +99,8 @@ func (e *Echo) embed(ctx ken.SubCommandContext) (err error) {
 	})
 	_, err = ctx.GetSession().ChannelMessageSendEmbed(targetChannel.ID, &msg)
 	if err != nil {
-		log.Println(err)
-		discord.AlexError(ctx, "Failed to send message")
+		logger.Get().Error().Err(err).Msg("operation failed")
+		return discord.AlexError(ctx, "Failed to send message")
 	}
 	return discord.SuccessfulMessage(ctx, "Message Sent", fmt.Sprintf("Sent message to %s", targetChannel.Mention()))
 }

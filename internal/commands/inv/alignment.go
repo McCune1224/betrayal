@@ -1,9 +1,9 @@
 package inv
 
 import (
+	"github.com/mccune1224/betrayal/internal/logger"
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -48,7 +48,7 @@ func (i *Inv) alignmentCommandArgBuilder() *discordgo.ApplicationCommandOption {
 
 func (i *Inv) setAlignment(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -56,7 +56,7 @@ func (i *Inv) setAlignment(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -68,7 +68,7 @@ func (i *Inv) setAlignment(ctx ken.SubCommandContext) (err error) {
 		Alignment: models.Alignment(alignment),
 	})
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "")
 	}
 	return discord.SuccessfulMessage(ctx, "Alignment Set", fmt.Sprintf("Set alignment to %s", alignment))

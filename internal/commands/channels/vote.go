@@ -1,9 +1,9 @@
 package channels
 
 import (
+	"github.com/mccune1224/betrayal/internal/logger"
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -43,7 +43,7 @@ func (c *Channel) voteCommandArgBuilder() *discordgo.ApplicationCommandOption {
 
 func (c *Channel) updateVoteChannel(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -59,7 +59,7 @@ func (c *Channel) updateVoteChannel(ctx ken.SubCommandContext) (err error) {
 
 func (c *(Channel)) viewVoteChannel(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -70,7 +70,7 @@ func (c *(Channel)) viewVoteChannel(ctx ken.SubCommandContext) (err error) {
 
 	voteChannel, err := q.GetVoteChannel(dbCtx)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(ctx, "Failed to get vote channel", "Unable to find vote channel")
 	}
 

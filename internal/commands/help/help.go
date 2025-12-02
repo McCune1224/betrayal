@@ -3,6 +3,7 @@ package help
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"github.com/zekrotja/ken"
 )
 
@@ -129,6 +130,8 @@ func (*Help) Options() []*discordgo.ApplicationCommandOption {
 
 // Run implements ken.SlashCommand.
 func (h *Help) Run(ctx ken.Context) (err error) {
+	defer logger.RecoverWithLog(*logger.Get())
+
 	return ctx.HandleSubCommands(
 		ken.SubCommandGroup{Name: "player", SubHandler: []ken.CommandHandler{
 			ken.SubCommandHandler{Name: "overview", Run: h.playerOverview},

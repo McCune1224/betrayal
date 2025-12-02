@@ -1,9 +1,9 @@
 package channels
 
 import (
+	"github.com/mccune1224/betrayal/internal/logger"
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -44,7 +44,7 @@ func (c *Channel) actionCommandArgBuilder() *discordgo.ApplicationCommandOption 
 
 func (c *Channel) viewActionChannel(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -56,7 +56,7 @@ func (c *Channel) viewActionChannel(ctx ken.SubCommandContext) (err error) {
 
 	actionChannel, err := q.GetActionChannel(dbCtx)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Unable to find Action Channel")
 	}
 
@@ -68,7 +68,7 @@ func (c *Channel) viewActionChannel(ctx ken.SubCommandContext) (err error) {
 
 func (c *Channel) updateActionChannel(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -81,7 +81,7 @@ func (c *Channel) updateActionChannel(ctx ken.SubCommandContext) (err error) {
 
 	err = q.UpsertActionChannel(dbCtx, newChannel.ID)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "")
 	}
 	return discord.SuccessfulMessage(ctx, "Action Channel Updated", fmt.Sprintf("Admin channel updated to %s", newChannel.Mention()))

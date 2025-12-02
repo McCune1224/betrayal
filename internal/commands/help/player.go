@@ -1,7 +1,7 @@
 package help
 
 import (
-	"log"
+	"github.com/mccune1224/betrayal/internal/logger"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/zekrotja/ken"
@@ -9,7 +9,7 @@ import (
 
 func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 
@@ -102,14 +102,14 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 
 	fum := b.Send()
 	if err := fum.Error; err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 	}
 	return fum.Error
 }
 
 func (*Help) playerAction(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	return ctx.RespondEmbed(playerActionHelpEmbed())
@@ -117,7 +117,7 @@ func (*Help) playerAction(ctx ken.SubCommandContext) (err error) {
 
 func (h *Help) playerInventory(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	return ctx.RespondEmbed(playerInventoryHelpEmbed())
@@ -125,7 +125,7 @@ func (h *Help) playerInventory(ctx ken.SubCommandContext) (err error) {
 
 func (h *Help) playerList(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	return ctx.RespondEmbed(playerListHelpEmbed())
@@ -133,7 +133,7 @@ func (h *Help) playerList(ctx ken.SubCommandContext) (err error) {
 
 func (h *Help) playerView(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	return ctx.RespondEmbed(playerViewHelpEmbed())
@@ -141,7 +141,7 @@ func (h *Help) playerView(ctx ken.SubCommandContext) (err error) {
 
 func (*Help) playerVote(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	return ctx.RespondEmbed(playerVoteHelpEmbed())

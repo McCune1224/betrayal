@@ -3,7 +3,7 @@ package roll
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"math/rand"
 
 	"github.com/bwmarrin/discordgo"
@@ -16,7 +16,7 @@ import (
 
 func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -42,7 +42,7 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 		rollRarity := RollRarityLevel(float64(luckLevel), rand.Float64())
 		item, err := q.GetRandomItemByRarity(dbCtx, rollRarity)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			return discord.AlexError(ctx, "Failed to get random item")
 		}
 		newItems = append(newItems, item)
@@ -104,13 +104,13 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 				// so re-process the current item list and add the new items
 				currInv, err := inventory.NewInventoryHandler(sctx, r.dbPool)
 				if err != nil {
-					log.Println(err)
+					logger.Get().Error().Err(err).Msg("operation failed")
 					return true
 				}
 				for _, item := range newItems {
 					_, err = currInv.AddItem(item.Name, 1)
 					if err != nil {
-						log.Println(err)
+						logger.Get().Error().Err(err).Msg("operation failed")
 						return true
 					}
 				}
@@ -133,7 +133,7 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 				embdRain.Footer = &discordgo.MessageEmbedFooter{Text: newFooterMessage}
 				_, err = ctx.GetSession().ChannelMessageSendEmbed(util.Itoa64(playerChan.ChannelID), embdRain)
 				if err != nil {
-					log.Println(err)
+					logger.Get().Error().Err(err).Msg("operation failed")
 					return true
 				}
 				// discord.SuccessfulMessage(sctx, fmt.Sprintf("Item Rain Sent to %s", discord.MentionChannel(util.Itoa64(playerChan.ChannelID))),
@@ -165,7 +165,7 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 
 func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 
@@ -197,7 +197,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 		RoleID: player.RoleID.Int32,
 	})
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(
 			ctx,
 			"Failed to get random any ability",
@@ -233,7 +233,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 				// rare occurance where inbetween this accepting if the inventory is updated the item list is not updated
 				// so re-process the current item list and add the new items
 				if err != nil {
-					log.Println(err)
+					logger.Get().Error().Err(err).Msg("operation failed")
 					return true
 				}
 				_, err = currInv.AddAbility(aa.Name, 1)
@@ -241,8 +241,8 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 					if err.Error() == "ability already added" {
 						currInv.UpdateAbility(aa.Name, 1)
 					} else {
-						log.Println(err)
-						discord.AlexError(sctx, "Failed to send message")
+						logger.Get().Error().Err(err).Msg("operation failed")
+						// Don't respond here, will respond at the end
 						return true
 					}
 				}
@@ -250,14 +250,14 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 				currInv.UpdateInventoryMessage(sctx.GetSession())
 				_, err = ctx.GetSession().ChannelMessageSendEmbed(util.Itoa64(confChan.ChannelID), embedPowerDrop)
 				if err != nil {
-					log.Println(err)
-					discord.AlexError(sctx, "Failed to send message")
+					logger.Get().Error().Err(err).Msg("operation failed")
+					// Don't respond here, will respond at the end
 					return true
 				}
 				_, err = ctx.GetSession().ChannelMessageSendEmbed(ctx.GetEvent().ChannelID, embedPowerDrop)
 				if err != nil {
-					log.Println(err)
-					discord.ErrorMessage(sctx, "Failed to send message", "Could not find user confessional")
+					logger.Get().Error().Err(err).Msg("operation failed")
+					logger.Get().Error().Msg("Failed to send message: Could not find user confessional")
 					return true
 				}
 				// discord.SuccessfulMessage(sctx, fmt.Sprintf("Power Drop Sent to %s", discord.MentionChannel(util.Itoa64(confChan.ChannelID))),
@@ -285,7 +285,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 }
 func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 
@@ -320,13 +320,13 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 
 	item, err := q.GetRandomItemByRarity(dbCtx, iRoll)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(ctx, "Failed to get Random Item", "Alex is a bad programmer")
 	}
 
 	err = inv.UpdateInventoryMessage(ctx.GetSession())
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		discord.SuccessfulMessage(ctx, "Failed to update inventory message", "Alex is a bad programmer")
 	}
 
@@ -363,7 +363,7 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 				// so re-process the current item list and add the new items
 				currInv, err := inventory.NewInventoryHandler(sctx, r.dbPool)
 				if err != nil {
-					log.Println(err)
+					logger.Get().Error().Err(err).Msg("operation failed")
 					return true
 				}
 				_, err = currInv.AddAbility(aa.Name, 1)
@@ -371,14 +371,14 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 					if err.Error() == "ability already added" {
 						currInv.UpdateAbility(aa.Name, 1)
 					} else {
-						log.Println(err)
+						logger.Get().Error().Err(err).Msg("operation failed")
 						return true
 					}
 				}
 				_, err = currInv.AddItem(item.Name, 1)
 				if err != nil {
-					log.Println(err)
-					discord.AlexError(sctx, "Failed to update items")
+					logger.Get().Error().Err(err).Msg("operation failed")
+					// Don't respond here, will respond at the end
 					return true
 				}
 
@@ -386,8 +386,8 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 
 				_, err = ctx.GetSession().ChannelMessageSendEmbed(util.Itoa64(confChan.ChannelID), embedCarePackage)
 				if err != nil {
-					log.Println(err)
-					discord.ErrorMessage(sctx, "Failed to send message", "Could not find user confessional")
+					logger.Get().Error().Err(err).Msg("operation failed")
+					// Don't respond here, will respond at the end
 					return true
 				}
 				// discord.SuccessfulMessage(sctx, fmt.Sprintf("Care Package Sent to %s", discord.MentionChannel(util.Itoa64(confChan.ChannelID))),

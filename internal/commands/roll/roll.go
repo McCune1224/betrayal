@@ -3,7 +3,7 @@ package roll
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"math/rand"
 	"slices"
 
@@ -141,6 +141,8 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 
 // Run implements ken.SlashCommand.
 func (r *Roll) Run(ctx ken.Context) (err error) {
+	defer logger.RecoverWithLog(*logger.Get())
+
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "manual", Run: r.luckManual},
 		ken.SubCommandHandler{Name: "rarity", Run: r.rollByMinimumRarity},
@@ -154,7 +156,7 @@ func (r *Roll) Run(ctx ken.Context) (err error) {
 
 func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 
@@ -174,7 +176,7 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 	if target == "item" {
 		item, err := q.GetRandomItemByRarity(dbCtx, rarity)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			return discord.AlexError(ctx, "Failed to get random item")
 		}
 
@@ -188,7 +190,7 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 	} else {
 		aa, err := q.GetRandomAnyAbilityByRarity(dbCtx, rarity)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			return discord.AlexError(ctx, "")
 		}
 		return ctx.RespondEmbed(&discordgo.MessageEmbed{
@@ -255,7 +257,7 @@ func (*Roll) Version() string {
 
 func (r *Roll) rollByMinimumRarity(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 
@@ -277,7 +279,7 @@ func (r *Roll) rollByMinimumRarity(ctx ken.SubCommandContext) (err error) {
 	if target == "item" {
 		item, err := q.GetRandomItemByMinimumRarity(dbCtx, rarity)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			return discord.AlexError(ctx, "Failed to get random item")
 		}
 		return ctx.RespondEmbed(&discordgo.MessageEmbed{
@@ -291,7 +293,7 @@ func (r *Roll) rollByMinimumRarity(ctx ken.SubCommandContext) (err error) {
 		// FIXME: This is broken
 		ability, err := q.GetRandomAnyAbilityByMinimumRarity(dbCtx, rarity)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			return discord.AlexError(ctx, "Failed to get random ability")
 		}
 		return ctx.RespondEmbed(&discordgo.MessageEmbed{

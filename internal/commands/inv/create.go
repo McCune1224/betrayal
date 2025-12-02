@@ -3,7 +3,7 @@ package inv
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"strconv"
 	"strings"
 
@@ -25,7 +25,7 @@ const (
 
 func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -57,8 +57,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 
 	roleResult := <-roleCh
 	if roleResult.err != nil {
-		discord.ErrorMessage(ctx, "Failed to get Role", fmt.Sprintf("Cannot find role %s", roleArg))
-		return roleResult.err
+		return discord.ErrorMessage(ctx, "Failed to get Role", fmt.Sprintf("Cannot find role %s", roleArg))
 	}
 
 	role := roleResult.data
@@ -78,14 +77,12 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 
 	abilitiesResult := <-abilitiesCh
 	if abilitiesResult.err != nil {
-		discord.ErrorMessage(ctx, "Failed to get Role Abilities", abilitiesResult.err.Error())
-		return abilitiesResult.err
+		return discord.ErrorMessage(ctx, "Failed to get Role Abilities", abilitiesResult.err.Error())
 	}
 
 	perksResult := <-perksCh
 	if perksResult.err != nil {
-		discord.ErrorMessage(ctx, "Failed to get Role Perks", perksResult.err.Error())
-		return perksResult.err
+		return discord.ErrorMessage(ctx, "Failed to get Role Perks", perksResult.err.Error())
 	}
 
 	abilityNames := make([]string, len(abilitiesResult.data))
@@ -107,13 +104,13 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 	//1. Create the player
 	discordID, err := util.Atoi64(playerArg.ID)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(ctx, "Failed to create player", "Unable to create player in database")
 	}
 
 	num, err := util.Numeric(0.0)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to create player")
 	}
 
@@ -129,7 +126,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		},
 	)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(ctx, "Failed to create player", "Unable to create player in database")
 	}
 
@@ -143,7 +140,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 			Quantity:  ability.DefaultCharges,
 		})
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create player ability", "Unable to create player ability in database")
 		}
@@ -157,7 +154,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 			PerkID:   perk.ID,
 		})
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create player perk", "Unable to create player perk in database")
 		}
@@ -178,7 +175,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Frozen", "Burned"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -188,7 +185,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Blackmailed", "Disabled", "Despaired"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -199,7 +196,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 			ItemLimit: 8,
 		})
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to update item limit", "Unable to update item limit in database")
 		}
@@ -208,7 +205,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Madness"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -217,7 +214,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Death Cursed", "Frozen", "Paralyzed", "Burned", "Empowered", "Drunk", "Restrained", "Disabled", "Blackmailed", "Despaired", "Madness", "Unlucky"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -226,7 +223,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Death Cursed", "Frozen", "Paralyzed", "Burned", "Empowered", "Drunk", "Restrained", "Disabled", "Blackmailed", "Despaired", "Madness", "Unlucky"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -235,7 +232,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Frozen", "Paralyzed", "Burned", "Cursed"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -244,7 +241,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Frozen"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -254,7 +251,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Paralyzed", "Frozen", "Burned", "Despaired", "Blackmailed", "Drunk"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -263,14 +260,14 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Unlucky"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
 		statuses := []string{"Lucky"}
 		err = mapStatuses(query, player, statuses, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -279,14 +276,14 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		statuses := []string{"Lucky"}
 		err := mapImmunities(query, player, statuses, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
 		immunities := []string{"Unlucky"}
 		err = mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -295,7 +292,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Lucky"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -304,7 +301,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Blackmail"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -315,7 +312,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Burned"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -323,7 +320,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Curse"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -331,7 +328,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Despaired", "Blackmailed", "Drunk"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -339,7 +336,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Restrained", "Paralyzed", "Frozen"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -347,7 +344,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Disabled", "Blackmailed"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -355,7 +352,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Madness"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -363,7 +360,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		immunities := []string{"Despaired", "Paralyzed"}
 		err := mapImmunities(query, player, immunities, statusMap)
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
 		}
@@ -373,7 +370,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 			ItemLimit: 6,
 		})
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
 			return discord.ErrorMessage(ctx, "Failed to update item limit", "Unable to update item limit in database")
 		}
@@ -390,14 +387,12 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 	})
 	if err != nil {
 		query.DeletePlayer(bgCtx, player.ID)
-		discord.ErrorMessage(ctx, "Failed to send message", err.Error())
-		ctx.GetSession().ChannelMessageDelete(channelID, pinMsg.ID)
-		return err
+		return discord.ErrorMessage(ctx, "Failed to send message", err.Error())
 	}
 	_, err = ctx.GetSession().ChannelMessageEditEmbed(channelID, pinMsg.ID, embd)
 	if err != nil {
 		query.DeletePlayer(bgCtx, player.ID)
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		ctx.GetSession().ChannelMessageDelete(channelID, pinMsg.ID)
 		return discord.ErrorMessage(ctx, "Failed to edit inventory message", fmt.Sprintf("Could not send to channel %s", discord.MentionChannel(channelID)))
 	}
@@ -410,21 +405,21 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		PinMessageID: iPinMessageID,
 	})
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		query.DeletePlayer(bgCtx, player.ID)
 		ctx.GetSession().ChannelMessageDelete(channelID, pinMsg.ID)
 		return discord.ErrorMessage(ctx, "Failed to update inventory", fmt.Sprintf("Unable to update inventory for %s", playerArg.Username))
 	}
 	err = ctx.GetSession().ChannelMessagePin(channelID, pinMsg.ID)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		query.DeletePlayer(bgCtx, player.ID)
 		return discord.ErrorMessage(ctx, "Failed to pin inventory message", fmt.Sprintf("Unable to pin inventory message for %s", playerArg.Username))
 	}
 
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -434,7 +429,7 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 
 func (i Inv) delete(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -449,30 +444,26 @@ func (i Inv) delete(ctx ken.SubCommandContext) (err error) {
 	pId, _ := util.Atoi64(playerArg.ID)
 	player, err := query.GetPlayer(bgCtx, int64(pId))
 	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(ctx, "Failed to get player", fmt.Sprintf("Unable to get player %s", playerArg.Username))
-		return err
+		logger.Get().Error().Err(err).Msg("operation failed")
+		return discord.ErrorMessage(ctx, "Failed to get player", fmt.Sprintf("Unable to get player %s", playerArg.Username))
 	}
 
 	playerConf, err := query.GetPlayerConfessional(bgCtx, player.ID)
 	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(ctx, "Failed to get player confessional", fmt.Sprintf("Unable to get player confessional for %s", playerArg.Username))
-		return err
+		logger.Get().Error().Err(err).Msg("operation failed")
+		return discord.ErrorMessage(ctx, "Failed to get player confessional", fmt.Sprintf("Unable to get player confessional for %s", playerArg.Username))
 	}
 
 	err = ctx.GetSession().ChannelMessageDelete(util.Itoa64(playerConf.ChannelID), strconv.Itoa(int(playerConf.PinMessageID)))
 	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(ctx, "Failed to delete message", fmt.Sprintf("Unable to delete message for %s", playerArg.Username))
-		return err
+		logger.Get().Error().Err(err).Msg("operation failed")
+		return discord.ErrorMessage(ctx, "Failed to delete message", fmt.Sprintf("Unable to delete message for %s", playerArg.Username))
 	}
 
 	err = query.DeletePlayer(bgCtx, player.ID)
 	if err != nil {
-		log.Println(err)
-		discord.ErrorMessage(ctx, "Failed to delete player", fmt.Sprintf("Unable to delete player %s", playerArg.Username))
-		return err
+		logger.Get().Error().Err(err).Msg("operation failed")
+		return discord.ErrorMessage(ctx, "Failed to delete player", fmt.Sprintf("Unable to delete player %s", playerArg.Username))
 	}
 
 	return discord.SuccessfulMessage(ctx, "Deleted Player Inventory", fmt.Sprintf("Deleted inventory for %s", playerArg.Username))
@@ -485,7 +476,7 @@ func mapImmunities(query *models.Queries, player models.Player, immunities []str
 			StatusID: statusMap[immunity],
 		})
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			return err
 		}
 	}
@@ -499,7 +490,7 @@ func mapStatuses(query *models.Queries, player models.Player, statuses []string,
 			StatusID: statusMap[status],
 		})
 		if err != nil {
-			log.Println(err)
+			logger.Get().Error().Err(err).Msg("operation failed")
 			return err
 		}
 	}

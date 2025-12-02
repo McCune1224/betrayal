@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -26,7 +27,9 @@ import (
 	"github.com/mccune1224/betrayal/internal/commands/view"
 	"github.com/mccune1224/betrayal/internal/commands/vote"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"github.com/mccune1224/betrayal/internal/util"
+	"github.com/rs/zerolog"
 	"github.com/zekrotja/ken"
 	"github.com/zekrotja/ken/state"
 )
@@ -45,10 +48,10 @@ type config struct {
 
 // Global app struct
 type app struct {
-	dbPool *pgxpool.Pool
-	// scheduler       scheduler.BetrayalScheduler
+	dbPool          *pgxpool.Pool
 	betrayalManager *ken.Ken
 	conifg          config
+	logger          zerolog.Logger
 }
 
 // Wrapper for Ken.Command that needs DB access
@@ -75,6 +78,17 @@ func (a *app) RegisterBetrayalCommands(commands ...BetrayalCommand) int {
 }
 
 func main() {
+	// Initialize logger
+	env := os.Getenv("ENVIRONMENT")
+	if env == "" {
+		env = "local"
+	}
+	appLogger, err := logger.Init(logger.Config{Environment: env})
+	if err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	defer logger.Close()
+
 	var cfg config
 	cfg.discord.botToken = os.Getenv("DISCORD_BOT_TOKEN")
 	cfg.discord.clientID = os.Getenv("DISCORD_CLIENT_ID")
@@ -84,22 +98,29 @@ func main() {
 	// Spin up Bot and give it admin permissions
 	bot, err := discordgo.New("Bot " + cfg.discord.botToken)
 	if err != nil {
-		log.Fatal("error creating Discord session,", err)
+		appLogger.Fatal().Err(err).Msg("Error creating Discord session")
 	}
 	bot.Identify.Intents = discordgo.PermissionAdministrator
-	if err != nil {
-		log.Fatal("error opening connection,", err)
-	}
 
-	// botScheduler := scheduler.NewScheduler(dbPools)
-	// Create central app struct and attach ken framework to it
-
+	// Create database pool
 	pools, err := pgxpool.New(context.Background(), cfg.database.dsn)
+	if err != nil {
+		appLogger.Fatal().Err(err).Msg("Failed to create database connection pool")
+	}
+	defer pools.Close()
 
-	app := &app{
+	// Create app instance
+	application := &app{
 		conifg: cfg,
 		dbPool: pools,
+		logger: appLogger,
 	}
+
+	// Initialize audit writer
+	logger.InitAuditWriter(pools, env)
+	defer logger.CloseAuditWriter()
+
+	// Create Ken instance with logger integration
 	km, err := ken.New(bot, ken.Options{
 		State: state.NewInternal(),
 		EmbedColors: ken.EmbedColors{
@@ -107,29 +128,50 @@ func main() {
 			Error:   discord.ColorThemeRuby,
 		},
 		DisableCommandInfoCache: true,
-		OnSystemError: func(ctx string, err error, args ...interface{}) {
-			log.Printf("[STM] {%s} - %s\n", ctx, err.Error())
+		OnSystemError: func(ctx string, errMsg error, args ...any) {
+			appLogger.Error().
+				Str("context", ctx).
+				Err(errMsg).
+				Any("args", args).
+				Msg("System error")
 		},
-		OnCommandError: func(err error, ctx *ken.Ctx) {
-			// get the command name, options and args
-			// TODO: Make this show full argument details like logHandler?
+		OnCommandError: func(errMsg error, ctx *ken.Ctx) {
+			logger.InjectKenContext(ctx)
+			cmdLogger := logger.FromKenContext(ctx)
+
 			cmdArg := processOptions(bot, ctx.GetEvent().ApplicationCommandData().Options)
-			log.Printf("[CMD] %s - %s : %s\n", cmdArg, ctx.GetEvent().Member.User.Username, err.Error())
+			cmdLogger.Error().
+				Err(errMsg).
+				Str("options", cmdArg).
+				Msg("Command execution failed")
+
+			// Log to audit for failed commands
+			auditWriter := logger.GetAuditWriter()
+			if auditWriter != nil && ctx.GetEvent().Member != nil && ctx.GetEvent().Member.User != nil {
+				audit := logger.CreateAuditFromContext(ctx, bot, time.Now())
+				audit.Status = "error"
+				errorMsg := errMsg.Error()
+				audit.ErrorMessage = &errorMsg
+				audit.ExecutionTimeMs = 0 // Unknown for error case
+				auditWriter.LogCommand(audit)
+			}
 		},
-		// Not really doing events but keeping this in just in case...
-		OnEventError: func(context string, err error) {
-			log.Printf("[EVT] %s : %s\n", context, err.Error())
+		OnEventError: func(context string, errMsg error) {
+			appLogger.Error().
+				Str("event_context", context).
+				Err(errMsg).
+				Msg("Event error")
 		},
 	})
-	app.betrayalManager = km
+	application.betrayalManager = km
 	if err != nil {
-		log.Fatal(err)
+		appLogger.Fatal().Err(err).Msg("Failed to initialize Ken framework")
 	}
 
 	// Call unregister twice to remove any lingering commands from previous runs
-	app.betrayalManager.Unregister()
+	application.betrayalManager.Unregister()
 
-	tally := app.RegisterBetrayalCommands(
+	tally := application.RegisterBetrayalCommands(
 		new(inv.Inv),
 		new(roll.Roll),
 		new(action.Action),
@@ -142,37 +184,37 @@ func main() {
 		new(echo.Echo),
 		new(list.List),
 		new(cycle.Cycle),
-		// new(commands.Kill),
-		// new(commands.Revive),
-		// new(commands.Insult),
-		// new(commands.Ping),
 	)
 
-	app.betrayalManager.Session().AddHandler(logHandler)
-	defer app.betrayalManager.Unregister()
+	application.betrayalManager.Session().AddHandler(logHandler)
+	application.betrayalManager.Session().AddHandler(auditHandler)
+	defer application.betrayalManager.Unregister()
 
 	err = bot.Open()
 	if err != nil {
-		log.Fatal("error opening connection,", err)
+		appLogger.Fatal().Err(err).Msg("Error opening Discord connection")
 	}
 	defer bot.Close()
 
-	log.Printf(
-		"%s is now running with %d commands. Press CTRL-C to exit.\n",
-		bot.State.User.Username,
-		tally,
-	)
+	appLogger.Info().
+		Str("bot_name", bot.State.User.Username).
+		Int("command_count", tally).
+		Msg("Bot initialized and running")
 
-	// start the scheduler
+	// Start log retention worker (90 day retention with archival)
+	logger.StartRetentionWorker(pools, appLogger, logger.RetentionConfig{
+		RetentionDays: 90,
+		ArchiveDir:    "./logs_archive",
+	})
 
-	// app.scheduler.QueueScheduleJobs(app.betrayalManager.Session())
-	// app.scheduler.Start()
-
+	// Wait for shutdown signal
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
-	if err := app.betrayalManager.Session().Close(); err != nil {
-		log.Fatal("error closing connection,", err)
+
+	appLogger.Info().Msg("Shutdown signal received, closing connections")
+	if err := application.betrayalManager.Session().Close(); err != nil {
+		appLogger.Error().Err(err).Msg("Error closing Discord connection")
 	}
 }
 
@@ -189,10 +231,11 @@ func logHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	msg := processOptions(s, options)
 
 	logOutput := fmt.Sprintf("%s - /%s %s - %s", i.Member.User.Username, i.ApplicationCommandData().Name, msg, util.GetEstTimeStamp())
-	log.Println("[CMD] - " + logOutput)
+
+	// Log to Discord channel
 	_, err := s.ChannelMessageSend(testLoggerID, discord.Code(logOutput))
 	if err != nil {
-		log.Println(err)
+		log.Printf("[CMD] Log send failed: %v", err)
 	}
 }
 
@@ -242,4 +285,48 @@ func formatOption(s *discordgo.Session, o *discordgo.ApplicationCommandInteracti
 		return ""
 	}
 	// new info
+}
+
+// auditHandler logs all successful slash commands to the database for audit trail
+func auditHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if i.Type != discordgo.InteractionApplicationCommand {
+		return
+	}
+
+	// Only log successful command executions (those without errors are handled after completion)
+	// This handler catches the interaction before processing
+	auditWriter := logger.GetAuditWriter()
+	if auditWriter == nil || i.Member == nil || i.Member.User == nil {
+		return
+	}
+
+	cmdData := i.ApplicationCommandData()
+	arguments := logger.ExtractCommandArguments(s, cmdData.Options)
+
+	userRoles := i.Member.Roles
+	isAdmin := false
+	for _, roleID := range userRoles {
+		for _, adminRole := range discord.AdminRoles {
+			if roleID == adminRole {
+				isAdmin = true
+				break
+			}
+		}
+	}
+
+	audit := logger.CommandAudit{
+		CorrelationID:    logger.GenerateCorrelationID().String(),
+		CommandName:      cmdData.Name,
+		UserID:           i.Member.User.ID,
+		Username:         i.Member.User.Username,
+		UserRoles:        userRoles,
+		GuildID:          i.GuildID,
+		ChannelID:        i.ChannelID,
+		IsAdmin:          isAdmin,
+		CommandArguments: arguments,
+		Status:           "success",
+		ExecutionTimeMs:  0, // Will be updated if we can track it
+	}
+
+	auditWriter.LogCommand(audit)
 }

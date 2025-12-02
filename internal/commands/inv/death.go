@@ -1,8 +1,8 @@
 package inv
 
 import (
+	"github.com/mccune1224/betrayal/internal/logger"
 	"context"
-	"log"
 	"math/rand"
 
 	"github.com/bwmarrin/discordgo"
@@ -67,7 +67,7 @@ func (i *Inv) deathCommandArgBuilder() *discordgo.ApplicationCommandOption {
 
 func (i *Inv) setAlive(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -75,7 +75,7 @@ func (i *Inv) setAlive(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -88,20 +88,20 @@ func (i *Inv) setAlive(ctx ken.SubCommandContext) (err error) {
 		Alive: true,
 	})
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to set player alive")
 	}
 
 	lifeboard, err := q.GetPlayerLifeboard(context.Background())
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to get player lifeboard")
 	}
 
 	playerLifeStatuses, _ := q.ListPlayerLifeboard(context.Background())
 	msg, err := channels.UserLifeboardMessageBuilder(ctx.GetSession(), playerLifeStatuses)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to build user lifeboard message")
 	}
 
@@ -112,7 +112,7 @@ func (i *Inv) setAlive(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inv) setDead(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -120,7 +120,7 @@ func (i *Inv) setDead(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -133,20 +133,20 @@ func (i *Inv) setDead(ctx ken.SubCommandContext) (err error) {
 		Alive: false,
 	})
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to set player dead")
 	}
 
 	lifeboard, err := q.GetPlayerLifeboard(context.Background())
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to get player lifeboard")
 	}
 
 	playerLifeStatuses, _ := q.ListPlayerLifeboard(context.Background())
 	msg, err := channels.UserLifeboardMessageBuilder(ctx.GetSession(), playerLifeStatuses)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to build user lifeboard message")
 	}
 

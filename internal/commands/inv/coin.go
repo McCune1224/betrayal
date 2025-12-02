@@ -1,8 +1,8 @@
 package inv
 
 import (
+	"github.com/mccune1224/betrayal/internal/logger"
 	"fmt"
-	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -67,7 +67,7 @@ func (i *Inv) coinCommandArgBuilder() *discordgo.ApplicationCommandOption {
 
 func (i *Inv) addCoin(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -75,14 +75,14 @@ func (i *Inv) addCoin(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
 	coinsArg := ctx.Options().GetByName("coin").IntValue()
 	err = h.AddCoin(int32(coinsArg))
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to add coins")
 	}
 	player := h.SyncPlayer()
@@ -90,7 +90,7 @@ func (i *Inv) addCoin(ctx ken.SubCommandContext) (err error) {
 }
 func (i *Inv) deleteCoin(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -98,14 +98,14 @@ func (i *Inv) deleteCoin(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
 	coinsArg := ctx.Options().GetByName("coin").IntValue()
 	err = h.RemoveCoin(int32(coinsArg))
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to remove coins")
 	}
 
@@ -115,7 +115,7 @@ func (i *Inv) deleteCoin(ctx ken.SubCommandContext) (err error) {
 func (i *Inv) setCoin(ctx ken.SubCommandContext) (err error) {
 
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -123,7 +123,7 @@ func (i *Inv) setCoin(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -131,7 +131,7 @@ func (i *Inv) setCoin(ctx ken.SubCommandContext) (err error) {
 	previousCoins := h.SyncPlayer().Coins
 	err = h.SetCoin(int32(coinsArg))
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to set coins")
 	}
 	player := h.SyncPlayer()
@@ -140,7 +140,7 @@ func (i *Inv) setCoin(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inv) setBonus(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -148,14 +148,14 @@ func (i *Inv) setBonus(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
 	bonusArg := ctx.Options().GetByName("bonus").StringValue()
 	err = h.UpdateCoinBonus(bonusArg)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "")
 	}
 	return discord.SuccessfulMessage(ctx, "Coin Bonus Updated", fmt.Sprintf("Updated coin bonus to %s", bonusArg))

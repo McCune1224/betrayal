@@ -3,7 +3,7 @@ package vote
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/mccune1224/betrayal/internal/logger"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -91,6 +91,8 @@ func (*Vote) Options() []*discordgo.ApplicationCommandOption {
 
 // Run implements ken.SlashCommand.
 func (v *Vote) Run(ctx ken.Context) (err error) {
+	defer logger.RecoverWithLog(*logger.Get())
+
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "batch", Run: v.batch},
 		ken.SubCommandHandler{Name: "player", Run: v.player},
@@ -100,7 +102,7 @@ func (v *Vote) Run(ctx ken.Context) (err error) {
 
 func (v *Vote) batch(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 
@@ -138,20 +140,20 @@ func (v *Vote) batch(ctx ken.SubCommandContext) (err error) {
 	dbCtx := context.Background()
 	voteChannelID, err := q.GetVoteChannel(dbCtx)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(ctx, "Vote location not set", "Please have admin set a vote location using /vote location")
 	}
 
 	_, err = sesh.ChannelMessageSendEmbed(event.ChannelID, &successfullMsg)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to send vote message")
 	}
 
 	// _, err = sesh.ChannelMessageSend(voteChannelID, discord.Code(voteLogText)+"\n"+discord.AbsoluteTimestamp(time.Now().Unix())+" "+discord.MessageURL(confSuccMsg.Reference()))
 	_, err = sesh.ChannelMessageSend(voteChannelID, discord.Code(voteLogText))
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to send vote message")
 	}
 
@@ -160,7 +162,7 @@ func (v *Vote) batch(ctx ken.SubCommandContext) (err error) {
 
 func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 
@@ -189,7 +191,7 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 
 	voteChannel, err := q.GetVoteChannel(dbCtx)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(ctx, "Vote location not set", "Please have admin set a vote location using /vote location")
 	}
 
@@ -201,14 +203,14 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 
 	_, err = sesh.ChannelMessageSendEmbed(event.ChannelID, &successfullMsg)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to send vote message")
 	}
 
 	// _, err = sesh.ChannelMessageSend(voteChannel, discord.Code(voteLogMsg)+"\n"+discord.AbsoluteTimestamp(time.Now().Unix())+" "+discord.MessageURL(confSuccMsg.Reference()))
 	_, err = sesh.ChannelMessageSend(voteChannel, discord.Code(voteLogMsg))
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to send vote message")
 	}
 
@@ -217,7 +219,7 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 
 func (v *Vote) location(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -230,7 +232,7 @@ func (v *Vote) location(ctx ken.SubCommandContext) (err error) {
 
 	err = q.UpsertVoteChannel(dbCtx, targetChannel.ID)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to set vote location")
 	}
 	return discord.SuccessfulMessage(ctx, "Successfully set vote location", fmt.Sprintf("Vote location set to %s", targetChannel.Mention()))

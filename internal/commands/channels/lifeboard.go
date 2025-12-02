@@ -1,9 +1,9 @@
 package channels
 
 import (
+	"github.com/mccune1224/betrayal/internal/logger"
 	"context"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 
@@ -45,7 +45,7 @@ func (c *Channel) setLifeboardChannel(ctx ken.SubCommandContext) (err error) {
 	dbCtx := context.Background()
 	playerStatuses, err := q.ListPlayerLifeboard(dbCtx)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to get player statuses")
 	}
 
@@ -57,19 +57,19 @@ func (c *Channel) setLifeboardChannel(ctx ken.SubCommandContext) (err error) {
 
 	msg, err := UserLifeboardMessageBuilder(ctx.GetSession(), playerStatuses)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to build user lifeboard message")
 	}
 
 	sentMsg, err := ctx.GetSession().ChannelMessageSendEmbed(targetChannel.ID, msg)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to send status message")
 	}
 
 	err = ctx.GetSession().ChannelMessagePin(targetChannel.ID, sentMsg.ID)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to pin status message")
 	}
 
@@ -78,7 +78,7 @@ func (c *Channel) setLifeboardChannel(ctx ken.SubCommandContext) (err error) {
 		MessageID: sentMsg.ID,
 	})
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to create player lifeboard")
 	}
 

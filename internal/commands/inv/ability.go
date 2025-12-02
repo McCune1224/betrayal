@@ -1,8 +1,8 @@
 package inv
 
 import (
+	"github.com/mccune1224/betrayal/internal/logger"
 	"fmt"
-	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -59,7 +59,7 @@ func (i *Inv) abilityCommandArgBuilder() *discordgo.ApplicationCommandOption {
 
 func (i *Inv) addAbility(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -67,7 +67,7 @@ func (i *Inv) addAbility(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -83,13 +83,13 @@ func (i *Inv) addAbility(ctx ken.SubCommandContext) (err error) {
 		if err.Error() == "ability already added" {
 			ability, err := h.UpdateAbility(abilityNameArg, quantity)
 			if err != nil {
-				log.Println(err)
+				logger.Get().Error().Err(err).Msg("operation failed")
 				return discord.AlexError(ctx, "failed to add ability")
 			}
 			return discord.SuccessfulMessage(ctx, "Ability Updated", fmt.Sprintf("Ability %s updated", ability.Name))
 		}
 
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to add ability")
 	}
 	return discord.SuccessfulMessage(ctx, "Ability Added", fmt.Sprintf("Added ability %s", ability.Name))
@@ -104,7 +104,7 @@ func (i *Inv) deleteAbility(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -112,7 +112,7 @@ func (i *Inv) deleteAbility(ctx ken.SubCommandContext) (err error) {
 	abilityNameArg := ctx.Options().GetByName("ability").StringValue()
 	ability, err := h.RemoveAbility(abilityNameArg)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to remove ability")
 	}
 	return discord.SuccessfulMessage(ctx, "Ability Removed", fmt.Sprintf("Removed ability %s", ability.Name))
@@ -120,7 +120,7 @@ func (i *Inv) deleteAbility(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inv) setAbility(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -128,7 +128,7 @@ func (i *Inv) setAbility(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -137,7 +137,7 @@ func (i *Inv) setAbility(ctx ken.SubCommandContext) (err error) {
 	quantityArg := int(ctx.Options().GetByName("quantity").IntValue())
 	ability, err := h.UpdateAbility(abilityNameArg, int32(quantityArg))
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to remove ability")
 	}
 	return discord.SuccessfulMessage(ctx, "Ability Updated Charges", fmt.Sprintf("ability %s set to %d", ability.Name, quantityArg))

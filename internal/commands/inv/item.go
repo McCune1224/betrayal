@@ -1,9 +1,9 @@
 package inv
 
 import (
+	"github.com/mccune1224/betrayal/internal/logger"
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -61,7 +61,7 @@ func (i *Inv) itemCommandArgBuilder() *discordgo.ApplicationCommandOption {
 
 func (i *Inv) addItem(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -69,7 +69,7 @@ func (i *Inv) addItem(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -81,7 +81,7 @@ func (i *Inv) addItem(ctx ken.SubCommandContext) (err error) {
 
 	item, err := h.AddItem(itemNameArg, quantity)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to add item")
 	}
 
@@ -96,7 +96,7 @@ func (i *Inv) addItem(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inv) deleteItem(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -104,7 +104,7 @@ func (i *Inv) deleteItem(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -116,7 +116,7 @@ func (i *Inv) deleteItem(ctx ken.SubCommandContext) (err error) {
 	}
 	item, err := h.RemoveItem(itemNameArg, quantity)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to remove item")
 	}
 
@@ -125,7 +125,7 @@ func (i *Inv) deleteItem(ctx ken.SubCommandContext) (err error) {
 
 func (i *Inv) setLimit(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -133,7 +133,7 @@ func (i *Inv) setLimit(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -146,7 +146,7 @@ func (i *Inv) setLimit(ctx ken.SubCommandContext) (err error) {
 		ItemLimit: int32(itemLimitArg),
 	})
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to set item limit")
 	}
 	return discord.SuccessfulMessage(ctx, "Updated item Limit", fmt.Sprintf("Updated item limit to %d", itemLimitArg))

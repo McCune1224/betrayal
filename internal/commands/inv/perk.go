@@ -1,9 +1,9 @@
 package inv
 
 import (
+	"github.com/mccune1224/betrayal/internal/logger"
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -49,7 +49,7 @@ func (i *Inv) perkCommandArgBuilder() *discordgo.ApplicationCommandOption {
 
 func (i *Inv) addPerk(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -57,7 +57,7 @@ func (i *Inv) addPerk(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -66,7 +66,7 @@ func (i *Inv) addPerk(ctx ken.SubCommandContext) (err error) {
 	q := models.New(i.dbPool)
 	perk, err := q.GetPerkInfoByFuzzy(context.Background(), perkNameArg)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "")
 	}
 
@@ -82,7 +82,7 @@ func (i *Inv) addPerk(ctx ken.SubCommandContext) (err error) {
 		PerkID:   perk.ID,
 	})
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "")
 	}
 	return discord.SuccessfulMessage(ctx, "Perk Added", fmt.Sprintf("Added perk %s", perk.Name))
@@ -90,7 +90,7 @@ func (i *Inv) addPerk(ctx ken.SubCommandContext) (err error) {
 }
 func (i *Inv) removePerk(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
@@ -98,7 +98,7 @@ func (i *Inv) removePerk(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
@@ -107,13 +107,13 @@ func (i *Inv) removePerk(ctx ken.SubCommandContext) (err error) {
 	perkNameArg := ctx.Options().GetByName("perk").StringValue()
 	perk, err := q.GetPerkInfoByFuzzy(context.Background(), perkNameArg)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "")
 	}
 
 	playerPerks, err := q.ListPlayerPerk(context.Background(), h.GetPlayer().ID)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "")
 	}
 
@@ -134,7 +134,7 @@ func (i *Inv) removePerk(ctx ken.SubCommandContext) (err error) {
 		PerkID:   perk.ID,
 	})
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "")
 	}
 

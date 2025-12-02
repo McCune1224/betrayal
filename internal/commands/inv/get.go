@@ -3,9 +3,9 @@ package inv
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"github.com/mccune1224/betrayal/internal/models"
 	"github.com/mccune1224/betrayal/internal/services/inventory"
 	"github.com/mccune1224/betrayal/internal/util"
@@ -13,8 +13,10 @@ import (
 )
 
 func (i *Inv) get(ctx ken.SubCommandContext) (err error) {
+	cmdLogger := logger.FromKenContext(ctx)
+
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		cmdLogger.Error().Err(err).Msg("Failed to defer context")
 		return err
 	}
 
@@ -23,13 +25,13 @@ func (i *Inv) get(ctx ken.SubCommandContext) (err error) {
 	}
 	h, err := inventory.NewInventoryHandler(ctx, i.dbPool)
 	if err != nil {
-		log.Println(err)
+		cmdLogger.Error().Err(err).Msg("Failed to create inventory handler")
 		return discord.AlexError(ctx, err.Error())
 	}
 
 	inv, err := h.FetchInventory()
 	if err != nil {
-		log.Println(err)
+		cmdLogger.Error().Err(err).Msg("Failed to fetch player inventory")
 		return discord.AlexError(ctx, "failed to fetch player inv")
 	}
 
@@ -53,8 +55,10 @@ func (i *Inv) get(ctx ken.SubCommandContext) (err error) {
 }
 
 func (i *Inv) me(ctx ken.SubCommandContext) (err error) {
+	cmdLogger := logger.FromKenContext(ctx)
+
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		cmdLogger.Error().Err(err).Msg("Failed to defer context")
 		return err
 	}
 	q := models.New(i.dbPool)
@@ -68,7 +72,7 @@ func (i *Inv) me(ctx ken.SubCommandContext) (err error) {
 	h := inventory.Jank(player, i.dbPool)
 	inv, err := h.FetchInventory()
 	if err != nil {
-		log.Println(err)
+		cmdLogger.Error().Err(err).Msg("Failed to fetch player inventory")
 		return discord.AlexError(ctx, "failed to fetch player inv")
 	}
 

@@ -3,7 +3,7 @@ package action
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/mccune1224/betrayal/internal/logger"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -63,6 +63,8 @@ func (*Action) Options() []*discordgo.ApplicationCommandOption {
 
 // Run implements ken.SlashCommand.
 func (a *Action) Run(ctx ken.Context) (err error) {
+	defer logger.RecoverWithLog(*logger.Get())
+
 	return ctx.HandleSubCommands(
 		ken.SubCommandHandler{Name: "request", Run: a.request},
 		ken.SubCommandHandler{Name: "location", Run: a.location},
@@ -73,7 +75,7 @@ func (a *Action) Run(ctx ken.Context) (err error) {
 
 func (a *Action) location(ctx ken.SubCommandContext) (err error) {
 	if err := ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 
@@ -91,13 +93,13 @@ func (a *Action) location(ctx ken.SubCommandContext) (err error) {
 
 	err = q.WipeActionChannel(dbCtx)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to wipe action channel")
 	}
 
 	err = q.UpsertActionChannel(dbCtx, cID)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to set action channel")
 	}
 
@@ -113,14 +115,14 @@ func (a *Action) location(ctx ken.SubCommandContext) (err error) {
 
 func (a *Action) request(ctx ken.SubCommandContext) (err error) {
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	event := ctx.GetEvent()
 
 	inventory, err := inventory.NewInventoryHandler(ctx, a.dbPool)
 	if err != nil && err.Error() == "no rows in result set" {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(
 			ctx,
 			"Failed to send action request",
@@ -128,7 +130,7 @@ func (a *Action) request(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(ctx,
 			"Unknown error processing action request",
 			"Let Alex know he's a bad programmer.")
@@ -150,7 +152,7 @@ func (a *Action) request(ctx ken.SubCommandContext) (err error) {
 
 	actionChannel, err := q.GetActionChannel(dbCtx)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(ctx, "Error getting action channel",
 			"There was an error getting the action channel. Let Alex know he's a bad programmer.")
 	}
@@ -158,7 +160,7 @@ func (a *Action) request(ctx ken.SubCommandContext) (err error) {
 	guildMember, err := ctx.GetSession().
 		GuildMember(event.GuildID, event.Member.User.ID)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(ctx, "Error getting guild member",
 			"There was an error getting the guild member. Let Alex know he's a bad programmer.")
 	}
@@ -180,7 +182,7 @@ func (a *Action) request(ctx ken.SubCommandContext) (err error) {
 	actionLog = discord.Code(actionLog)
 	_, err = ctx.GetSession().ChannelMessageSend(actionChannel, actionLog)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(
 			ctx,
 			"Error sending action request",

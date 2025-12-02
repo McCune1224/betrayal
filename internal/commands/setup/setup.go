@@ -3,7 +3,7 @@ package setup
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"math/rand"
 
 	"github.com/bwmarrin/discordgo"
@@ -66,9 +66,11 @@ func (*Setup) Options() []*discordgo.ApplicationCommandOption {
 
 // Run implements ken.SlashCommand.
 func (s *Setup) Run(ctx ken.Context) (err error) {
+	defer logger.RecoverWithLog(*logger.Get())
+
 	// This will prob take more than 3 seconds to run
 	if err = ctx.Defer(); err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
 	// generate role pool
@@ -76,15 +78,27 @@ func (s *Setup) Run(ctx ken.Context) (err error) {
 
 	rolePool, err := generateRoleSelectPool(s.dbPool)
 	if err != nil {
-		log.Println(err)
+		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "failed to generate role pool")
 	}
+
 	playerCount := int(ctx.Options().GetByName("player_count").IntValue())
+
+	// Validate player count against available roles
+	if playerCount > len(rolePool) {
+		return discord.ErrorMessage(ctx, "Invalid Player Count",
+			fmt.Sprintf("Player count (%d) cannot exceed available roles (%d)", playerCount, len(rolePool)))
+	}
 
 	// Default grab all deceptionists from server if not specified
 	decepCount := 0
 	if decepArg, ok := ctx.Options().GetByNameOptional("decept_count"); ok {
 		decepCount = int(decepArg.IntValue())
+		// Validate deceptionist count
+		if decepCount > len(rolePool) {
+			return discord.ErrorMessage(ctx, "Invalid Deceptionist Count",
+				fmt.Sprintf("Deceptionist count (%d) cannot exceed available roles (%d)", decepCount, len(rolePool)))
+		}
 	} else {
 		decepts := getDeceptionist(ctx.GetSession(), ctx.GetEvent().GuildID)
 		decepCount = len(decepts)
