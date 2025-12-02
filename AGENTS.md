@@ -34,3 +34,7 @@
 **Comments**: Use `//` for single-line, document public functions/types. Include TODOs for incomplete features.
 
 **Package Structure**: Command handlers in `internal/commands/{name}/`, services in `internal/services/`, database layer in `internal/models/` and `internal/db/`
+
+## Git & Build Management
+
+**Binaries**: DO NOT commit binary files to git (e.g., `audit-analysis`, `data-entry`, `betrayal-bot`). Binaries waste repository space and should never be version controlled. Users should build binaries locally with `go build ./cmd/{tool-name}` or use `make` targets. If binaries appear in `git status`, do NOT stage or commit them - delete them locally with `rm {binary-name}`.
