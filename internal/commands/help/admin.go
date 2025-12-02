@@ -14,27 +14,39 @@ func (h *Help) adminOverview(ctx ken.SubCommandContext) (err error) {
 	}
 	msg := &discordgo.MessageEmbed{
 		Title:       "Admin Commands Overview",
-		Description: "All Admin based commands. Helps ",
+		Description: "Comprehensive guide to all admin commands for managing the game.",
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:  "Inventory",
-				Value: "`/inv` (short for inventory) command allows you to manage a player's inventory within their confessional channel or within a whiltelisted channel. Use it to /help admin inventory`.",
+				Value: "`/inv` command allows you to manage a player's inventory within their confessional channel or within a whitelisted channel. Use `/help admin inventory` for more details.",
+			},
+			{
+				Name:  "Alliance",
+				Value: "`/alliance admin` handles approval of alliance creation, invites, and management. Use `/help admin alliance` for more information.",
+			},
+			{
+				Name:  "Channels",
+				Value: "`/channel` manages game infrastructure like admin channels, vote channels, action channels, and lifeboards. Use `/help admin channels` for setup details.",
+			},
+			{
+				Name:  "Cycle",
+				Value: "`/cycle` controls game phases and progression through Day/Elimination cycles. Use `/help admin cycle` for phase management.",
 			},
 			{
 				Name:  "Roll",
-				Value: "`/roll` allows you to roll game events as well as items/abilities on the fly. use `/help admin roll` for more information.",
+				Value: "`/roll` allows you to roll game events, items, and abilities on the fly. Use `/help admin roll` for more information.",
 			},
 			{
 				Name:  "Buy",
-				Value: "`/buy` allows you to buy an item on behalf of a player. use `/help admin buy` for more information.",
+				Value: "`/buy` allows you to purchase items on behalf of a player. Use `/help admin buy` for more information.",
 			},
 			{
 				Name:  "Kill/Revive",
-				Value: "`/kill` and `/revive` allows you to kill and revive players. use `/help admin kill` for more information.",
+				Value: "`/kill` and `/revive` manage player death states and status boards. Use `/help admin kill` for more information.",
 			},
 			{
 				Name:  "Setup",
-				Value: "`/setup` assists with determining roles for game creation. use `/help admin setup` for more information.",
+				Value: "`/setup` assists with generating role lists for game creation. Use `/help admin setup` for more information.",
 			},
 		},
 	}
@@ -55,12 +67,32 @@ func (h *Help) adminOverview(ctx ken.SubCommandContext) (err error) {
 			}, clearAll)
 
 			b.Add(discordgo.Button{
-				CustomID: "a-roll-help",
-				Label:    "Roll",
+				CustomID: "a-alliance-help",
+				Label:    "Alliance",
 				Style:    discordgo.SecondaryButton,
 			}, func(ctx ken.ComponentContext) bool {
 				ctx.SetEphemeral(true)
-				ctx.RespondEmbed(adminRollEmbed())
+				ctx.RespondEmbed(adminAllianceEmbed())
+				return true
+			}, clearAll)
+
+			b.Add(discordgo.Button{
+				CustomID: "a-channels-help",
+				Label:    "Channels",
+				Style:    discordgo.SecondaryButton,
+			}, func(ctx ken.ComponentContext) bool {
+				ctx.SetEphemeral(true)
+				ctx.RespondEmbed(adminChannelsEmbed())
+				return true
+			}, clearAll)
+
+			b.Add(discordgo.Button{
+				CustomID: "a-cycle-help",
+				Label:    "Cycle",
+				Style:    discordgo.SecondaryButton,
+			}, func(ctx ken.ComponentContext) bool {
+				ctx.SetEphemeral(true)
+				ctx.RespondEmbed(adminCycleEmbed())
 				return true
 			}, clearAll)
 
@@ -69,6 +101,16 @@ func (h *Help) adminOverview(ctx ken.SubCommandContext) (err error) {
 
 	b.AddComponents(func(cb *ken.ComponentBuilder) {
 		cb.AddActionsRow(func(b ken.ComponentAssembler) {
+
+			b.Add(discordgo.Button{
+				CustomID: "a-roll-help",
+				Label:    "Roll",
+				Style:    discordgo.SecondaryButton,
+			}, func(ctx ken.ComponentContext) bool {
+				ctx.SetEphemeral(true)
+				ctx.RespondEmbed(adminRollEmbed())
+				return true
+			}, clearAll)
 
 			b.Add(discordgo.Button{
 				CustomID: "a-buy-help",
@@ -147,4 +189,28 @@ func (h *Help) adminSetup(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	return ctx.RespondEmbed(adminSetupEmbed())
+}
+
+func (h *Help) adminAlliance(ctx ken.SubCommandContext) (err error) {
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	return ctx.RespondEmbed(adminAllianceEmbed())
+}
+
+func (h *Help) adminChannels(ctx ken.SubCommandContext) (err error) {
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	return ctx.RespondEmbed(adminChannelsEmbed())
+}
+
+func (h *Help) adminCycle(ctx ken.SubCommandContext) (err error) {
+	if err = ctx.Defer(); err != nil {
+		log.Println(err)
+		return err
+	}
+	return ctx.RespondEmbed(adminCycleEmbed())
 }

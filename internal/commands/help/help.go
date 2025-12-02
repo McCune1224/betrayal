@@ -112,6 +112,16 @@ func (*Help) Options() []*discordgo.ApplicationCommandOption {
 					Name:        "setup",
 					Description: "how to use setup commands",
 				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "channels",
+					Description: "how to configure and manage game channels",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "cycle",
+					Description: "how to manage game phases and cycles",
+				},
 			},
 		},
 	}
@@ -131,10 +141,13 @@ func (h *Help) Run(ctx ken.Context) (err error) {
 		ken.SubCommandGroup{Name: "admin", SubHandler: []ken.CommandHandler{
 			ken.SubCommandHandler{Name: "overview", Run: h.adminOverview},
 			ken.SubCommandHandler{Name: "inventory", Run: h.adminInventory},
+			ken.SubCommandHandler{Name: "alliance", Run: h.adminAlliance},
 			ken.SubCommandHandler{Name: "buy", Run: h.adminBuy},
 			ken.SubCommandHandler{Name: "kill", Run: h.adminKill},
 			ken.SubCommandHandler{Name: "roll", Run: h.adminRoll},
 			ken.SubCommandHandler{Name: "setup", Run: h.adminSetup},
+			ken.SubCommandHandler{Name: "channels", Run: h.adminChannels},
+			ken.SubCommandHandler{Name: "cycle", Run: h.adminCycle},
 		}},
 	)
 }
