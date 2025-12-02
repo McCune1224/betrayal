@@ -53,7 +53,7 @@ func (*Search) Options() []*discordgo.ApplicationCommandOption {
 			Description: "Search for abilities by keyword",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.StringCommandArg("keyword", "Search term for abilities", true),
-				discord.BoolCommandArg("include_name", "Search in name and description (default: description only)", false),
+				discord.BoolCommandArg("exclude_title", "Only search descriptions (exclude ability names)", false),
 			},
 		},
 		{
@@ -62,7 +62,7 @@ func (*Search) Options() []*discordgo.ApplicationCommandOption {
 			Description: "Search for items by keyword",
 			Options: []*discordgo.ApplicationCommandOption{
 				discord.StringCommandArg("keyword", "Search term for items", true),
-				discord.BoolCommandArg("include_name", "Search in name and description (default: description only)", false),
+				discord.BoolCommandArg("exclude_title", "Only search descriptions (exclude item names)", false),
 			},
 		},
 	}
@@ -85,9 +85,9 @@ func (s *Search) searchAbility(ctx ken.SubCommandContext) error {
 	}
 
 	keyword := ctx.Options().GetByName("keyword").StringValue()
-	includeName := false
-	if nameOpt, ok := ctx.Options().GetByNameOptional("include_name"); ok {
-		includeName = nameOpt.BoolValue()
+	excludeTitle := false
+	if excludeOpt, ok := ctx.Options().GetByNameOptional("exclude_title"); ok {
+		excludeTitle = excludeOpt.BoolValue()
 	}
 
 	q := models.New(s.dbPool)
@@ -99,10 +99,11 @@ func (s *Search) searchAbility(ctx ken.SubCommandContext) error {
 	var abilities []models.AbilityInfo
 	var err error
 
-	if includeName {
-		abilities, err = q.SearchAbilityByKeyword(context.Background(), searchTerm)
-	} else {
+	// By default search both name and description. If exclude_title is true, search description only
+	if excludeTitle {
 		abilities, err = q.SearchAbilityByDescription(context.Background(), searchTerm)
+	} else {
+		abilities, err = q.SearchAbilityByKeyword(context.Background(), searchTerm)
 	}
 
 	if err != nil {
@@ -165,9 +166,9 @@ func (s *Search) searchItem(ctx ken.SubCommandContext) error {
 	}
 
 	keyword := ctx.Options().GetByName("keyword").StringValue()
-	includeName := false
-	if nameOpt, ok := ctx.Options().GetByNameOptional("include_name"); ok {
-		includeName = nameOpt.BoolValue()
+	excludeTitle := false
+	if excludeOpt, ok := ctx.Options().GetByNameOptional("exclude_title"); ok {
+		excludeTitle = excludeOpt.BoolValue()
 	}
 
 	q := models.New(s.dbPool)
@@ -179,10 +180,11 @@ func (s *Search) searchItem(ctx ken.SubCommandContext) error {
 	var items []models.Item
 	var err error
 
-	if includeName {
-		items, err = q.SearchItemByKeyword(context.Background(), searchTerm)
-	} else {
+	// By default search both name and description. If exclude_title is true, search description only
+	if excludeTitle {
 		items, err = q.SearchItemByDescription(context.Background(), searchTerm)
+	} else {
+		items, err = q.SearchItemByKeyword(context.Background(), searchTerm)
 	}
 
 	if err != nil {

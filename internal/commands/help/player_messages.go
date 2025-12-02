@@ -132,7 +132,7 @@ func playerSearchHelpEmbed() *discordgo.MessageEmbed {
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:  "Ability Search",
-				Value: "`/search ability [keyword]` to search for abilities by keyword. For example, `/search ability fire` will show you all abilities with \"fire\" in the description (or name if you add `include_name: true`). Results are paginated - use the **Next** and **Previous** buttons to browse through results. Each ability shows its rarity, default charges, and which role(s) have that ability, helping you gauge its power level and make strategic deductions.",
+				Value: "`/search ability [keyword]` to search for abilities by keyword in both name and description. For example, `/search ability fire` will show you all abilities with \"fire\" in the name or description. Results are paginated - use the **Next** and **Previous** buttons to browse through results. Each ability shows its rarity, default charges, and which role(s) have that ability, helping you gauge its power level and make strategic deductions.",
 			},
 			{
 				Name:  "Understanding Ability Results",
@@ -140,11 +140,11 @@ func playerSearchHelpEmbed() *discordgo.MessageEmbed {
 			},
 			{
 				Name:  "Item Search",
-				Value: "`/search item [keyword]` to search for items by keyword. For example, `/search item shield` will show you all items with \"shield\" in the description. Items display their rarity and cost, which can help you understand the economy and what to look for on the market.",
+				Value: "`/search item [keyword]` to search for items by keyword in both name and description. For example, `/search item relic` will show you all items with \"relic\" in the name or description (like \"Cursed Relic Grenade\"). Items display their rarity and cost, which can help you understand the economy and what to look for on the market.",
 			},
 			{
 				Name:  "Pro Tips",
-				Value: "• By default, searches look in **descriptions only**. Add `include_name: true` to also search in names (e.g., `/search ability heal include_name: true`)\n• Search for broad terms like \"damage\", \"protect\", \"heal\", \"vote\" to discover related abilities and items\n• Ability searches now show which role(s) have that ability, helping you deduce what role a player might be\n• Look for the **\\*** asterisk on ability names - it indicates an any-ability that could be on any role\n• Results are sorted by rarity, with rarest items first",
+				Value: "• By default, both ability and item searches look in **names and descriptions**. Add `exclude_title: true` to search only in descriptions (e.g., `/search ability heal exclude_title: true`)\n• Search for broad terms like \"damage\", \"protect\", \"heal\", \"vote\" to discover related abilities and items\n• Ability searches now show which role(s) have that ability, helping you deduce what role a player might be\n• Look for the **\\*** asterisk on ability names - it indicates an any-ability that could be on any role\n• Results are sorted by rarity, with rarest items first",
 			},
 			{
 				Name:  "Strategic Use",

@@ -154,17 +154,42 @@ func (l *List) listItems(ctx ken.SubCommandContext) (err error) {
 	}
 	q := models.New(l.dbPool)
 	items, err := q.ListItem(context.Background())
-	fields := []*discordgo.MessageEmbedField{}
-	for _, i := range items {
-		fields = append(fields, &discordgo.MessageEmbedField{
-			Name:   fmt.Sprintf("%s (%s) $%d", i.Name, string(i.Rarity), i.Cost),
-			Inline: true,
-		})
+	if err != nil {
+		logger.Get().Error().Err(err).Msg("operation failed")
+		return discord.AlexError(ctx, "Failed to get items")
 	}
-	return ctx.RespondEmbed(&discordgo.MessageEmbed{
+
+	// Create pagination data
+	event := ctx.GetEvent()
+	userID := getUserID(event)
+	paginationID := fmt.Sprintf("list_items_%s", userID)
+
+	itemInterfaces := make([]any, len(items))
+	for i, item := range items {
+		itemInterfaces[i] = item
+	}
+
+	paginationData := &discord.PaginationData{
+		Items:       itemInterfaces,
+		CurrentPage: 0,
+		PageSize:    discord.GetPageSize(),
 		Title:       "Items",
-		Description: "All items in the game",
-		Fields:      fields,
+		Description: fmt.Sprintf("All items in the game (%d total)", len(items)),
+		FormatFunc:  formatItemListField,
+		Color:       discord.ColorThemeGold,
+	}
+
+	discord.StorePaginationState(paginationID, paginationData)
+
+	embed := discord.CreatePaginatedEmbed(paginationData)
+	components := discord.GetPaginationComponents(paginationID, paginationData)
+
+	return ctx.Respond(&discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds:     []*discordgo.MessageEmbed{embed},
+			Components: components,
+		},
 	})
 }
 
@@ -246,4 +271,24 @@ func (l *List) listNotes(ctx ken.SubCommandContext) (err error) {
 // Version implements ken.SlashCommand.
 func (*List) Version() string {
 	return "1.0.0"
+}
+
+// Helper functions
+
+func getUserID(event *discordgo.InteractionCreate) string {
+	if event.Member != nil && event.Member.User != nil {
+		return event.Member.User.ID
+	}
+	if event.User != nil {
+		return event.User.ID
+	}
+	return "unknown"
+}
+
+func formatItemListField(item any) *discordgo.MessageEmbedField {
+	itemData := item.(models.Item)
+	return &discordgo.MessageEmbedField{
+		Name:   fmt.Sprintf("%s (%s) $%d", itemData.Name, string(itemData.Rarity), itemData.Cost),
+		Inline: true,
+	}
 }
