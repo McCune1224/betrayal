@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -27,7 +26,6 @@ import (
 	"github.com/mccune1224/betrayal/internal/commands/setup"
 	"github.com/mccune1224/betrayal/internal/commands/view"
 	"github.com/mccune1224/betrayal/internal/commands/vote"
-	"github.com/mccune1224/betrayal/internal/dashboard"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/logger"
 	"github.com/mccune1224/betrayal/internal/util"
@@ -209,9 +207,6 @@ func main() {
 		ArchiveDir:    "./logs_archive",
 	})
 
-	// Start audit dashboard API server (optional, runs on separate goroutine)
-	go startDashboardServer(pools, appLogger)
-
 	// Wait for shutdown signal
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
@@ -334,21 +329,4 @@ func auditHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	auditWriter.LogCommand(audit)
-}
-
-// startDashboardServer starts the audit dashboard HTTP API server on port 8080
-func startDashboardServer(pools *pgxpool.Pool, appLogger zerolog.Logger) {
-	handler := dashboard.NewHandler(pools)
-	mux := http.NewServeMux()
-	handler.RegisterRoutes(mux)
-
-	server := &http.Server{
-		Addr:    ":8080",
-		Handler: mux,
-	}
-
-	appLogger.Info().Msg("Audit dashboard starting on http://localhost:8080")
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		appLogger.Error().Err(err).Msg("Dashboard server error")
-	}
 }
