@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -23,147 +22,168 @@ import (
 	"github.com/mccune1224/betrayal/internal/util"
 )
 
-type config struct {
-	database struct {
-		dsn string
-	}
+// ANSI color codes for terminal output
+const (
+	colorReset  = "\033[0m"
+	colorBold   = "\033[1m"
+	colorRed    = "\033[31m"
+	colorGreen  = "\033[32m"
+	colorYellow = "\033[33m"
+	colorBlue   = "\033[34m"
+	colorCyan   = "\033[36m"
+)
+
+type DataSyncJob struct {
+	Name      string
+	URL       string
+	Alignment string
+	SyncFunc  func(context.Context, *pgxpool.Pool, io.Reader, string) error
 }
 
-type application struct {
-	config config
-	logger *log.Logger
-	csv    [][]string
+// logInfo prints an info message with cyan color
+func logInfo(format string, args ...interface{}) {
+	fmt.Printf("%sℹ %s%s\n", colorCyan, fmt.Sprintf(format, args...), colorReset)
 }
 
-type csvBuilder struct{}
+// logSuccess prints a success message with green color
+func logSuccess(format string, args ...interface{}) {
+	fmt.Printf("%s✓ %s%s\n", colorGreen, fmt.Sprintf(format, args...), colorReset)
+}
 
-// Really just here pull in json data and populate the databse with it.
+// logError prints an error message with red color
+func logError(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, "%s✗ Error: %s%s\n", colorRed, fmt.Sprintf(format, args...), colorReset)
+}
+
+// logWarning prints a warning message with yellow color
+func logWarning(format string, args ...interface{}) {
+	fmt.Printf("%s⚠ %s%s\n", colorYellow, fmt.Sprintf(format, args...), colorReset)
+}
+
+// logTask prints a task header
+func logTask(title string) {
+	fmt.Printf("\n%s%s%s\n", colorBold+colorBlue, title, colorReset)
+	fmt.Println(strings.Repeat("─", len(title)))
+}
+
+// Syncs roles and items from Google Sheets CSV exports to the database
 func main() {
-	// if *file == "" {
-	// 	log.Fatal("file is required")
-	// }
-	//
-	var cfg config
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	logTask("Betrayal Data Entry Tool - Syncing from Google Sheets")
 
-	app := &application{
-		config: cfg,
-		logger: logger,
+	// Load environment
+	dsn := os.Getenv("DATABASE_POOLER_URL")
+	if dsn == "" {
+		logError("DATABASE_POOLER_URL environment variable not set")
+		fmt.Fprintf(os.Stderr, "Set it with: export DATABASE_POOLER_URL='postgresql://user:pass@host:port/db'\n")
+		os.Exit(1)
 	}
 
-	cfg.database.dsn = os.Getenv("DATABASE_POOLER_URL")
-	if cfg.database.dsn == "" {
-		app.logger.Fatal("DATABASE_POOLER_URL is required")
-	}
-
-	db, err := pgxpool.New(context.Background(), cfg.database.dsn)
+	logInfo("Connecting to database...")
+	db, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
-		log.Fatal("error opening database,", err)
+		logError("Failed to create database pool: %v", err)
+		os.Exit(1)
 	}
 	defer db.Close()
 
+	if err := db.Ping(context.Background()); err != nil {
+		logError("Failed to connect to database: %v", err)
+		os.Exit(1)
+	}
+	logSuccess("Connected to database")
+
+	ctx := context.Background()
 	wg := sync.WaitGroup{}
-	wg.Add(4)
 
-	dbCtx := context.Background()
-
-	lazy := []struct {
-		URL       string
-		alignment models.Alignment
-	}{
-		{URL: os.Getenv("GOOD_ROLES_CSV"), alignment: models.AlignmentGOOD},
-		{URL: os.Getenv("EVIL_ROLES_CSV"), alignment: models.AlignmentEVIL},
-		{URL: os.Getenv("NEUTRAL_ROLES_CSV"), alignment: models.AlignmentNEUTRAL},
+	// Define data sync jobs
+	jobs := []DataSyncJob{
+		{
+			Name:      "Good Roles",
+			URL:       os.Getenv("GOOD_ROLES_CSV"),
+			Alignment: string(models.AlignmentGOOD),
+			SyncFunc:  SyncRolesCsv,
+		},
+		{
+			Name:      "Evil Roles",
+			URL:       os.Getenv("EVIL_ROLES_CSV"),
+			Alignment: string(models.AlignmentEVIL),
+			SyncFunc:  SyncRolesCsv,
+		},
+		{
+			Name:      "Neutral Roles",
+			URL:       os.Getenv("NEUTRAL_ROLES_CSV"),
+			Alignment: string(models.AlignmentNEUTRAL),
+			SyncFunc:  SyncRolesCsv,
+		},
+		{
+			Name:      "Items",
+			URL:       os.Getenv("ITEM_CSV"),
+			Alignment: "",
+			SyncFunc:  SyncItemsCsv,
+		},
 	}
 
-	app.logger.Printf("Parsing Google Docs Sheet for data")
-	go func() {
-		start := time.Now()
-		csvUrl := lazy[0].URL
-		httpClient := &http.Client{}
-		resp, err := httpClient.Get(csvUrl)
-		if err != nil {
-			panic(err)
+	// Validate all URLs are set
+	logInfo("Validating required CSV URLs...")
+	for _, job := range jobs {
+		if job.URL == "" {
+			logWarning("Missing CSV URL for %s - skipping", job.Name)
+			continue
 		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			panic(err)
-		}
-		SyncRolesCsv(dbCtx, db, strings.NewReader(string(body)), string(lazy[0].alignment))
-		fmt.Printf("~~ Good Roles Done %s ~~\n", time.Since(start))
-		wg.Done()
-	}()
+	}
 
-	go func() {
-		start := time.Now()
-		csvUrl := lazy[1].URL
-		httpClient := &http.Client{}
-		resp, err := httpClient.Get(csvUrl)
-		if err != nil {
-			panic(err)
-		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			panic(err)
-		}
-		SyncRolesCsv(dbCtx, db, strings.NewReader(string(body)), string(lazy[1].alignment))
-		fmt.Printf("~~ Evil Roles Done %s ~~\n", time.Since(start))
-		wg.Done()
-	}()
+	// Execute sync jobs in parallel
+	logInfo("Starting data synchronization (parallel execution)...")
+	wg.Add(len(jobs))
 
-	go func() {
-		start := time.Now()
-		csvUrl := lazy[2].URL
-		httpClient := &http.Client{}
-		resp, err := httpClient.Get(csvUrl)
-		if err != nil {
-			panic(err)
-		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			panic(err)
-		}
-		SyncRolesCsv(dbCtx, db, strings.NewReader(string(body)), string(lazy[2].alignment))
-		fmt.Printf("~~ Neutral Roles Done %s ~~\n", time.Since(start))
-		wg.Done()
-	}()
-
-	go func() {
-		start := time.Now()
-		item_CSV_URL := os.Getenv("ITEM_CSV")
-		httpClient := &http.Client{}
-		resp, err := httpClient.Get(item_CSV_URL)
-		if err != nil {
-			panic(err)
-		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			panic(err)
-		}
-		SyncItemsCsv(dbCtx, db, strings.NewReader(string(body)))
-		fmt.Printf("~~ Items Done %s ~~\n", time.Since(start))
-		wg.Done()
-	}()
+	for _, job := range jobs {
+		go executeDataSync(ctx, db, job, &wg)
+	}
 
 	wg.Wait()
-	// file, err := os.Open(*fileName)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// if strings.Contains(file.Name(), "GOOD") {
-	// 	alignment := string(models.AlignmentGOOD)
-	// 	SyncRolesCsv(db, file, alignment)
-	// } else if strings.Contains(file.Name(), "EVIL") {
-	// 	alignment := string(models.AlignmentEVIL)
-	// 	SyncRolesCsv(db, file, alignment)
-	// } else if strings.Contains(file.Name(), "NEUTRAL") {
-	// 	alignment := string(models.AlignmentNEUTRAL)
-	// 	SyncRolesCsv(db, file, alignment)
-	// } else {
-	// 	log.Fatal("Invalid alignment")
-	// }
-	// file.Close()
+	logSuccess("All data synchronization tasks completed!")
+}
 
+// executeDataSync runs a single data sync job with error handling and timing
+func executeDataSync(ctx context.Context, db *pgxpool.Pool, job DataSyncJob, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	if job.URL == "" {
+		logWarning("Skipping %s - no URL provided", job.Name)
+		return
+	}
+
+	start := time.Now()
+	logInfo("Starting sync for %s...", job.Name)
+
+	// Fetch CSV from URL
+	resp, err := http.Get(job.URL)
+	if err != nil {
+		logError("Failed to fetch %s: %v", job.Name, err)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logError("Failed to read response body for %s: %v", job.Name, err)
+		return
+	}
+
+	// Execute sync function
+	alignmentStr := ""
+	if job.Alignment != "" {
+		alignmentStr = string(job.Alignment)
+	}
+
+	err = job.SyncFunc(ctx, db, strings.NewReader(string(body)), alignmentStr)
+	if err != nil {
+		logError("Failed to sync %s: %v", job.Name, err)
+		return
+	}
+
+	duration := time.Since(start)
+	logSuccess("Completed %s in %s", job.Name, duration.String())
 }
 
 type TempCreateAbilityInfoParams struct {
@@ -172,9 +192,11 @@ type TempCreateAbilityInfoParams struct {
 }
 
 func SyncRolesCsv(ctx context.Context, db *pgxpool.Pool, r io.Reader, alignment string) error {
+	logInfo("Parsing CSV data...")
 	reader := csv.NewReader(r)
 	chunks := [][][]string{}
 	currChunk := [][]string{}
+
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
@@ -182,6 +204,7 @@ func SyncRolesCsv(ctx context.Context, db *pgxpool.Pool, r io.Reader, alignment 
 			break
 		}
 		if err != nil {
+			logError("Failed to read CSV: %v", err)
 			return err
 		}
 		if record[1] == "" {
@@ -194,8 +217,11 @@ func SyncRolesCsv(ctx context.Context, db *pgxpool.Pool, r io.Reader, alignment 
 	chunks = chunks[1:]
 
 	if len(chunks) < 1 {
-		return errors.New("No records found")
+		logWarning("No role records found in CSV")
+		return errors.New("no records found")
 	}
+
+	logInfo("Found %d roles to sync", len(chunks))
 
 	type bulkRoleCreate struct {
 		R models.CreateRoleParams
@@ -205,14 +231,15 @@ func SyncRolesCsv(ctx context.Context, db *pgxpool.Pool, r io.Reader, alignment 
 
 	bulkRoleCreateList := []bulkRoleCreate{}
 
-	// TODO: Remove this hardcoded limit after testing
+	// Parse all roles from chunks
 	for i := range chunks {
 		roleParams, roleAbilityDetailParams, rolePassiveDetailParams, err := parseRoleChunk(chunks[i])
 		if err != nil {
-			log.Println("Error Parsing Roles CSV into chunks", err)
+			logError("Failed to parse role chunk %d: %v", i, err)
 			return err
 		}
 
+		// Set alignment
 		switch strings.ToUpper(alignment) {
 		case string(models.AlignmentGOOD):
 			roleParams.Alignment = models.AlignmentGOOD
@@ -221,8 +248,8 @@ func SyncRolesCsv(ctx context.Context, db *pgxpool.Pool, r io.Reader, alignment 
 		case string(models.AlignmentNEUTRAL):
 			roleParams.Alignment = models.AlignmentNEUTRAL
 		default:
-			log.Println(alignment)
-			return errors.New("Invalid alignment")
+			logError("Invalid alignment: %s", alignment)
+			return errors.New("invalid alignment")
 		}
 
 		bulkEntry := bulkRoleCreate{
@@ -235,44 +262,64 @@ func SyncRolesCsv(ctx context.Context, db *pgxpool.Pool, r io.Reader, alignment 
 
 	q := models.New(db)
 
-	// NOTE: Need to create the role first before creating the ability/passive, otherwise the ability/passive will be created with the wrong role_id
-	// hence why this is in its own loop
+	// Create all roles first
+	logInfo("Creating %d roles...", len(bulkRoleCreateList))
 	roleIds := pq.Int32Array{}
-	for _, roleParams := range bulkRoleCreateList {
+	for i, roleParams := range bulkRoleCreateList {
 		r, err := q.CreateRole(context.Background(), roleParams.R)
 		if err != nil {
-			log.Println("Error Creating Role", err)
+			logError("Failed to create role '%s': %v", roleParams.R.Name, err)
 			return err
 		}
 		roleIds = append(roleIds, r.ID)
+		if (i+1)%10 == 0 {
+			logInfo("  Created %d/%d roles", i+1, len(bulkRoleCreateList))
+		}
 	}
+	logSuccess("Created all %d roles", len(roleIds))
 
-	realAbility := models.CreateAbilityInfoParams{}
+	// Create abilities and perks for each role
+	logInfo("Creating abilities and perks...")
+	abilityCount := 0
+	perkCount := 0
+
 	for i, roleParams := range bulkRoleCreateList {
-		for _, a := range roleParams.A {
-			roleID := roleIds[i]
+		roleID := roleIds[i]
 
-			realAbility.Name = a.Name
-			realAbility.Description = a.Description
-			realAbility.DefaultCharges = a.DefaultCharges
-			realAbility.Rarity = a.Rarity
-			realAbility.AnyAbility = a.AnyAbility
+		// Create abilities
+		for _, a := range roleParams.A {
+			realAbility := models.CreateAbilityInfoParams{
+				Name:           a.Name,
+				Description:    a.Description,
+				DefaultCharges: a.DefaultCharges,
+				Rarity:         a.Rarity,
+				AnyAbility:     a.AnyAbility,
+			}
 
 			dbAbility, err := q.CreateAbilityInfo(context.Background(), realAbility)
 
 			if err != nil {
 				if util.ErrorContains(err, pgerrcode.UniqueViolation) {
-					log.Println(a.Name, "already exists")
+					logWarning("Ability '%s' already exists, linking to role", a.Name)
+					// Try to get existing ability
+					dbAbility, err = q.GetAbilityInfoByFuzzy(context.Background(), a.Name)
+					if err != nil {
+						logError("Failed to find existing ability '%s': %v", a.Name, err)
+						continue
+					}
 				} else {
-					log.Println(err, roleParams.R.Name, a.Name)
+					logError("Failed to create ability '%s' for role '%s': %v", a.Name, roleParams.R.Name, err)
 					return err
 				}
 			}
+			abilityCount++
 
+			// Link to categories
 			for _, categoryName := range a.CategoryNames {
 				dbCategory, err := q.GetCategoryByFuzzy(context.Background(), strings.ToUpper(categoryName))
 				if err != nil {
-					log.Println("Error Getting Category ID", categoryName, err)
+					logWarning("Could not find category '%s' for ability '%s'", categoryName, a.Name)
+					continue
 				}
 				q.CreateAbilityCategoryJoin(context.Background(), models.CreateAbilityCategoryJoinParams{
 					AbilityID:  dbAbility.ID,
@@ -280,38 +327,41 @@ func SyncRolesCsv(ctx context.Context, db *pgxpool.Pool, r io.Reader, alignment 
 				})
 			}
 
+			// Link ability to role
 			err = q.CreateRoleAbilityJoin(context.Background(), models.CreateRoleAbilityJoinParams{RoleID: roleID, AbilityID: dbAbility.ID})
 			if err != nil {
-				log.Println(err, roleParams.R.Name, a.Name)
+				logError("Failed to link ability '%s' to role '%s': %v", a.Name, roleParams.R.Name, err)
 				return err
 			}
 		}
 
+		// Create perks
 		for _, p := range roleParams.P {
-			rId := roleIds[i]
 			dbPerk, err := q.CreatePerkInfo(context.Background(), p)
 			if err != nil {
 				if !util.ErrorContains(err, "23505") {
-					log.Println(err, roleParams.R.Name, p.Name)
+					logError("Failed to create perk '%s' for role '%s': %v", p.Name, roleParams.R.Name, err)
 					return err
 				}
-				// Passive already exists, so just grab it here before proceeding
+				// Perk already exists, get it
 				dbPerk, err = q.GetPerkInfoByFuzzy(context.Background(), p.Name)
 				if err != nil {
-					log.Println(err, roleParams.R.Name, p.Name)
+					logError("Failed to find existing perk '%s': %v", p.Name, err)
 					return err
 				}
 			}
-			// insert entry into role_passives_join
-			err = q.CreateRolePerkJoin(context.Background(), models.CreateRolePerkJoinParams{RoleID: rId, PerkID: dbPerk.ID})
+			perkCount++
+
+			// Link perk to role
+			err = q.CreateRolePerkJoin(context.Background(), models.CreateRolePerkJoinParams{RoleID: roleID, PerkID: dbPerk.ID})
 			if err != nil {
-				log.Println(err, roleParams.R.Name, p.Name)
+				logError("Failed to link perk '%s' to role '%s': %v", p.Name, roleParams.R.Name, err)
 				return err
 			}
 		}
-
 	}
 
+	logSuccess("Created %d abilities and %d perks", abilityCount, perkCount)
 	return nil
 }
 
@@ -320,21 +370,23 @@ func parseAbility(row []string) (TempCreateAbilityInfoParams, error) {
 	abilityDetail.Name = row[1]
 	abilityDetail.Description = row[4]
 
+	// Parse charges
 	iCharge := int32(999999)
 	if row[2] != "∞" {
 		charge, err := strconv.Atoi(row[2])
 		if err != nil {
-			log.Println("ERR ON", abilityDetail.Name)
+			logError("Invalid charge count '%s' for ability '%s'", row[2], abilityDetail.Name)
 			return abilityDetail, err
 		}
 		iCharge = int32(charge)
 	}
 
 	abilityDetail.DefaultCharges = iCharge
+
+	// Parse rarity and type
 	switch row[3] {
 	case "*":
 		abilityDetail.AnyAbility = true
-		// abilityDetail.RoleSpecific = roleName
 		switch models.Rarity(strings.TrimSpace(strings.ToUpper(row[6]))) {
 		case models.RarityCOMMON:
 			abilityDetail.Rarity = models.RarityCOMMON
@@ -351,16 +403,13 @@ func parseAbility(row []string) (TempCreateAbilityInfoParams, error) {
 		}
 	case "^":
 		abilityDetail.AnyAbility = true
-		// abilityDetail.RoleSpecific = roleName
 		abilityDetail.Rarity = models.RarityROLESPECIFIC
 	case "":
 		abilityDetail.AnyAbility = false
-		// abilityDetail.RoleSpecific = roleName
 		abilityDetail.Rarity = models.RarityROLESPECIFIC
 	default:
-		log.Printf("---------------- CANNOT PARSE '%s' AS ANY ABILITY DEFAULTING ROLE_SPECIFIC", row[3])
+		logWarning("Unknown ability type '%s', defaulting to ROLE_SPECIFIC", row[3])
 		abilityDetail.AnyAbility = false
-		// abilityDetail.RoleSpecific = roleName
 		abilityDetail.Rarity = models.RarityROLESPECIFIC
 	}
 
@@ -393,22 +442,41 @@ func parseRoleChunk(chunk [][]string) (models.CreateRoleParams, []TempCreateAbil
 	return roleParams, tempRoleAbilityDetailParams, rolePassiveDetailParams, nil
 }
 
-func SyncItemsCsv(ctx context.Context, db *pgxpool.Pool, r io.Reader) error {
+func SyncItemsCsv(ctx context.Context, db *pgxpool.Pool, r io.Reader, _ string) error {
+	logInfo("Parsing CSV data...")
 	reader := csv.NewReader(r)
 	csv, err := reader.ReadAll()
 	if err != nil {
+		logError("Failed to read CSV: %v", err)
 		return err
 	}
+
+	// Skip header rows and count valid items
+	validItems := 0
+	for i := range csv {
+		if i == 0 || i == 1 || len(csv) == i-1 {
+			continue
+		}
+		validItems++
+	}
+
+	logInfo("Found %d items to sync", validItems)
+
+	q := models.New(db)
+	createdCount := 0
+
 	for i, entry := range csv {
+		// Skip header rows
 		if i == 0 || i == 1 || len(csv) == i-1 {
 			continue
 		}
 
 		item := models.CreateItemParams{
-			// Rarity:      entry[1],
 			Name:        entry[2],
 			Description: entry[5],
 		}
+
+		// Parse rarity
 		switch strings.ToUpper(entry[1]) {
 		case "COMMON":
 			item.Rarity = models.RarityCOMMON
@@ -424,44 +492,56 @@ func SyncItemsCsv(ctx context.Context, db *pgxpool.Pool, r io.Reader) error {
 			item.Rarity = models.RarityMYTHICAL
 		case "UNIQUE":
 			item.Rarity = models.RarityUNIQUE
+		default:
+			logWarning("Unknown rarity '%s' for item '%s', skipping", entry[1], item.Name)
+			continue
 		}
 
-		// FIXME: This is stinky and very specific to the item csv, Too Bad!
+		// Parse cost
 		strCost := entry[3]
 		if strCost == "X" {
 			item.Cost = 0
 		} else {
 			cost, err := strconv.ParseInt(strCost, 10, 64)
 			if err != nil {
-				return err
+				logError("Invalid cost '%s' for item '%s': %v", strCost, item.Name, err)
+				continue
 			}
 			item.Cost = int32(cost)
 		}
 
-		categories := entry[4]
-		parsedCategories := strings.Split(categories, "/")
-		for i, category := range parsedCategories {
-			parsedCategories[i] = strings.TrimSpace(category)
-		}
-
-		q := models.New(db)
-
+		// Create item
 		dbItem, err := q.CreateItem(context.Background(), item)
 		if err != nil {
-			log.Println("Error Creating Item", err)
-			return err
+			logError("Failed to create item '%s': %v", item.Name, err)
+			continue
+		}
+		createdCount++
+
+		// Link to categories
+		categories := entry[4]
+		parsedCategories := strings.Split(categories, "/")
+		for j, category := range parsedCategories {
+			parsedCategories[j] = strings.TrimSpace(category)
 		}
 
 		for _, category := range parsedCategories {
 			dbCategory, err := q.GetCategoryByFuzzy(context.Background(), strings.ToUpper(category))
 			if err != nil {
-				log.Println("Error Getting Category ID", category, err)
+				logWarning("Could not find category '%s' for item '%s'", category, item.Name)
+				continue
 			}
 			q.CreateItemCategoryJoin(context.Background(), models.CreateItemCategoryJoinParams{
 				ItemID:     dbItem.ID,
 				CategoryID: dbCategory.ID,
 			})
 		}
+
+		if (createdCount)%10 == 0 {
+			logInfo("  Created %d/%d items", createdCount, validItems)
+		}
 	}
+
+	logSuccess("Created %d items", createdCount)
 	return nil
 }
