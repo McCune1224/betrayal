@@ -159,10 +159,23 @@ type rolePool struct {
 func generateRolePools(roles []models.Role, playerCount, decepCount int) *rolePool {
 	goodRoles, badRoles, neutralRoles := groupRoles(roles)
 	rp := &rolePool{}
+
+	// Cap deceptionist count to available roles in each category
+	maxDeceptions := decepCount
+	if maxDeceptions > len(goodRoles) {
+		maxDeceptions = len(goodRoles)
+	}
+	if maxDeceptions > len(badRoles) {
+		maxDeceptions = len(badRoles)
+	}
+	if maxDeceptions > len(neutralRoles) {
+		maxDeceptions = len(neutralRoles)
+	}
+
 	gPerm := rand.Perm(len(goodRoles))
 	bPerm := rand.Perm(len(badRoles))
 	nPerm := rand.Perm(len(neutralRoles))
-	for i := 0; i < decepCount; i++ {
+	for i := 0; i < maxDeceptions; i++ {
 		rp.deceptionOptions = append(rp.deceptionOptions, []models.Role{goodRoles[gPerm[i]], neutralRoles[nPerm[i]], badRoles[bPerm[i]]})
 	}
 	rPerm := rand.Perm(len(roles))

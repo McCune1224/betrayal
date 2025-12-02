@@ -123,3 +123,34 @@ func playerViewHelpEmbed() *discordgo.MessageEmbed {
 	}
 	return msg
 }
+
+func playerSearchHelpEmbed() *discordgo.MessageEmbed {
+	msg := &discordgo.MessageEmbed{
+		Title:       "Search",
+		Description: "**TLDR: Just use `/search [type] [keyword]`.** Search is a command that allows you to discover what abilities and items are available in the game. This is useful for strategizing and deducing what might be happening in the game based on what effects you see.",
+
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:  "Ability Search",
+				Value: "`/search ability [keyword]` to search for abilities by keyword. For example, `/search ability fire` will show you all abilities with \"fire\" in the description (or name if you add `include_name: true`). Results are paginated - use the **Next** and **Previous** buttons to browse through results. Each ability shows its rarity, default charges, and which role(s) have that ability, helping you gauge its power level and make strategic deductions.",
+			},
+			{
+				Name:  "Understanding Ability Results",
+				Value: "Abilities with a **\\*** next to their name may have been obtained via an **any-ability**. This means they could exist on any role, not just the role-specific ones listed. For a detailed explanation of any-abilities, see: https://discord.com/channels/1096058997477490861/1096400207807271033/1096405318835118270",
+			},
+			{
+				Name:  "Item Search",
+				Value: "`/search item [keyword]` to search for items by keyword. For example, `/search item shield` will show you all items with \"shield\" in the description. Items display their rarity and cost, which can help you understand the economy and what to look for on the market.",
+			},
+			{
+				Name:  "Pro Tips",
+				Value: "• By default, searches look in **descriptions only**. Add `include_name: true` to also search in names (e.g., `/search ability heal include_name: true`)\n• Search for broad terms like \"damage\", \"protect\", \"heal\", \"vote\" to discover related abilities and items\n• Ability searches now show which role(s) have that ability, helping you deduce what role a player might be\n• Look for the **\\*** asterisk on ability names - it indicates an any-ability that could be on any role\n• Results are sorted by rarity, with rarest items first",
+			},
+			{
+				Name:  "Strategic Use",
+				Value: "Use `/search` to gather intel about what's available in the game. By understanding the pool of abilities and items, you can make better deductions about what other players might have. Combined with the role information shown for abilities, you can narrow down which roles are in play. The asterisk helps you identify abilities that blur the line between roles.",
+			},
+		},
+	}
+	return msg
+}

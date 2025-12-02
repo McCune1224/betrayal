@@ -47,3 +47,15 @@ order by random()
 limit 1
 ;
 
+-- name: SearchItemByKeyword :many
+SELECT * FROM item
+WHERE LOWER(name) LIKE LOWER($1) OR LOWER(description) LIKE LOWER($1)
+ORDER BY rarity DESC, name ASC
+;
+
+-- name: SearchItemByDescription :many
+SELECT * FROM item
+WHERE LOWER(description) LIKE LOWER($1)
+ORDER BY rarity DESC, name ASC
+;
+

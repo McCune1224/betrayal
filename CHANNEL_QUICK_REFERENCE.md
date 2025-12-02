@@ -1,81 +1,29 @@
-# Agent Guidelines for Betrayal Bot
+# Betrayal Bot - Channel Configuration Quick Reference
 
-## Build & Run Commands
+## Channel Types at a Glance
 
-- **Run bot**: `make run` or `go run ./cmd/betrayal-bot/main.go`
-- **Run tests**: `go test ./...`
-- **Run single test**: `go test -run TestName ./path/to/package`
-- **Database migrations**: `make migrate-up`, `make migrate-down`, `make migrate-sync`
-- **Mock database**: `make mock-migrate-up`, `make mock-migrate-down`
-
-## Critical Dependencies
-
-**Ken Framework**: https://github.com/zekroTJA/ken - VITAL package for Discord slash command routing and management. All command handlers must implement `ken.Command` interface and be registered via `ken.Ken`.
-
-## Code Style Guidelines
-
-**Language**: Go 1.22+ (see go.mod for exact version)
-
-**Imports**: Organized in three groups separated by blank lines:
-1. Standard library (e.g., `context`, `fmt`, `log`)
-2. External packages (e.g., `github.com/bwmarrin/discordgo`)
-3. Internal packages (e.g., `github.com/mccune1224/betrayal/internal/...`)
-
-**Naming**: PascalCase for types/interfaces, camelCase for functions/variables. Command structs implement `ken.Command` interface.
-
-**Error Handling**: Use `util.ErrorContains(err, msg)` and `util.ErrorNotFound(err)` helpers. Log errors with `log.Printf()` and return descriptive messages to Discord.
-
-**Type Assertions**: Use explicit interface implementations (e.g., `var _ ken.SlashCommand = (*Action)(nil)`)
-
-**Database**: Use `pgx/v5` with connection pools (`*pgxpool.Pool`). Database queries via sqlc in `internal/models/` (SQL-generated Go code).
-
-**Testing**: Use testify suite pattern (`suite.Suite`) with setup in `SetupTest()`. Place tests in `tests/` directory mirroring structure.
-
-**Comments**: Use `//` for single-line, document public functions/types. Include TODOs for incomplete features.
-
-**Package Structure**: Command handlers in `internal/commands/{name}/`, services in `internal/services/`, database layer in `internal/models/` and `internal/db/`
-
-## Task Tracking & Documentation
-
-**Important**: When completing tasks that result in significant structural or organizational changes:
-- Document all folder/file changes (deletions, moves, renames)
-- Document command changes (additions, removals, modifications to subcommands)
-- Update relevant sections in this file if needed
-- Examples of changes worth documenting:
-  - Adding/removing entire command packages
-  - Restructuring database tables or migrations
-  - Moving code between packages
-  - Adding or removing subcommands from slash commands
-  - Creating new service layers or utilities
-
-## Channel Configuration Quick Reference
-
-This section provides quick reference for Discord channel management used throughout the bot.
-
-### Channel Types at a Glance
-
-#### 1. Admin Channels (Multiple)
+### 1. Admin Channels (Multiple)
 - **Purpose**: Whitelist channels for `/inv` command usage outside confessionals
 - **Command**: `/channel admin [add|list|delete] [channel]`
 - **DB Table**: `admin_channel` (channel_id VARCHAR UNIQUE)
 - **File**: `internal/commands/channels/admin.go` (lines 14-114)
 - **Note**: Can have multiple admin channels
 
-#### 2. Vote Channel (Single)
+### 2. Vote Channel (Single)
 - **Purpose**: Funnel channel where players submit votes
 - **Command**: `/channel vote [update|view] [channel]`
 - **DB Table**: `vote_channel` (channel_id VARCHAR UNIQUE)
 - **File**: `internal/commands/channels/vote.go` (lines 14-81)
 - **Note**: Used in `/cycle` broadcasts; UPSERT pattern (replaces on update)
 
-#### 3. Action Channel (Single)
+### 3. Action Channel (Single)
 - **Purpose**: Funnel channel where players submit actions
 - **Command**: `/channel action [update|view] [channel]`
 - **DB Table**: `action_channel` (channel_id VARCHAR UNIQUE)
 - **File**: `internal/commands/channels/action.go` (lines 14-88)
 - **Note**: Used in `/cycle` broadcasts; WIPE+UPSERT pattern
 
-#### 4. Lifeboard (Single)
+### 4. Lifeboard (Single)
 - **Purpose**: Player status board (alive/dead display with sorting)
 - **Command**: `/channel lifeboard set [channel]`
 - **DB Table**: `player_lifeboard` (channel_id, message_id VARCHAR UNIQUE)
@@ -86,7 +34,7 @@ This section provides quick reference for Discord channel management used throug
   - Includes EST timestamp footer
   - Updates existing lifeboard when set again
 
-#### 5. Confessionals (Multiple, 1 per player)
+### 5. Confessionals (Multiple, 1 per player)
 - **Purpose**: Private per-player channels for admin communication
 - **Command**: `/channel confessionals` (view only)
 - **DB Table**: `player_confessional` (player_id, channel_id, pin_message_id)
@@ -95,7 +43,7 @@ This section provides quick reference for Discord channel management used throug
 
 ---
 
-### Configuration Setup Order (Recommended)
+## Configuration Setup Order (Recommended)
 
 1. **Create Confessionals** (per player - outside `/channel` command)
 2. **Set Vote Channel**: `/channel vote update #voting-funnel`
@@ -110,7 +58,7 @@ This section provides quick reference for Discord channel management used throug
 
 ---
 
-### Admin Role Definition
+## Admin Role Definition
 
 **Location**: `internal/discord/role.go` (lines 9-13)
 
@@ -121,7 +69,7 @@ This section provides quick reference for Discord channel management used throug
 
 ---
 
-### Channel Broadcast Flow (Cycle)
+## Channel Broadcast Flow (Cycle)
 
 When `/cycle next` or `/cycle set` is executed:
 
@@ -135,37 +83,37 @@ When `/cycle next` or `/cycle set` is executed:
 
 ---
 
-### Database Operations Quick Reference
+## Database Operations Quick Reference
 
-#### Admin Channels
+### Admin Channels
 ```go
 q.ListAdminChannel(ctx)              // []string
 q.CreateAdminChannel(ctx, channelID) // string
 q.DeleteAdminChannel(ctx, channelID) // error
 ```
 
-#### Vote Channel
+### Vote Channel
 ```go
 q.GetVoteChannel(ctx)            // string
 q.UpsertVoteChannel(ctx, ch)     // error
 q.WipeVoteChannel(ctx)           // error
 ```
 
-#### Action Channel
+### Action Channel
 ```go
 q.GetActionChannel(ctx)          // string
 q.UpsertActionChannel(ctx, ch)   // error
 q.WipeActionChannel(ctx)         // error
 ```
 
-#### Lifeboard
+### Lifeboard
 ```go
 q.CreatePlayerLifeboard(ctx, params)  // PlayerLifeboard
 q.GetPlayerLifeboard(ctx)             // PlayerLifeboard
 q.DeletePlayerLifeboard(ctx)          // error
 ```
 
-#### Confessionals
+### Confessionals
 ```go
 q.ListPlayerConfessional(ctx)                           // []PlayerConfessional
 q.CreatePlayerConfessional(ctx, playerID, chID, msgID) // PlayerConfessional
@@ -176,7 +124,7 @@ q.DeletePlayerConfessional(ctx, playerID)              // error
 
 ---
 
-### Command Auth Pattern
+## Command Auth Pattern
 
 All channel commands check:
 ```go
@@ -192,52 +140,52 @@ if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 
 ---
 
-### Common Issues & Solutions
+## Common Issues & Solutions
 
-#### Issue: Vote/Action channel "not found" errors
+### Issue: Vote/Action channel "not found" errors
 **Solution**: Use `/channel vote view` or `/channel action view` to verify they're set
 
-#### Issue: Confessional not receiving cycle messages
+### Issue: Confessional not receiving cycle messages
 **Solution**: Run `/channel confessionals` to list all; check if missing any
 
-#### Issue: Lifeboard message doesn't update
+### Issue: Lifeboard message doesn't update
 **Solution**: Re-run `/channel lifeboard set #channel` to force update
 
-#### Issue: Admin commands failing
+### Issue: Admin commands failing
 **Solution**: Verify user has "Host", "Co-Host", or "Bot Developer" role
 
 ---
 
-### File Location Reference
+## File Location Reference
 
-#### Commands
+### Commands
 - Main: `internal/commands/channels/channels.go`
 - Admin: `internal/commands/channels/admin.go`
 - Vote: `internal/commands/channels/vote.go`
 - Action: `internal/commands/channels/action.go`
 - Lifeboard: `internal/commands/channels/lifeboard.go`
 
-#### Database Schema
+### Database Schema
 - Admin: `internal/db/migration/000018_admin_channels.up.sql`
 - Vote: `internal/db/migration/000019_vote_channel.up.sql`
 - Action: `internal/db/migration/000020_action_channel.up.sql`
 - Lifeboard: `internal/db/migration/000021_player_lifeboard.up.sql`
 - Confessional: `internal/db/migration/000016_player_confessional.sql.up.sql`
 
-#### Generated Models
+### Generated Models
 - Admin: `internal/models/admin_channel.sql.go`
 - Vote: `internal/models/vote_channel.sql.go`
 - Action: `internal/models/action_channel.sql.go`
 - Lifeboard: `internal/models/player_lifeboard.sql.go`
 - Confessional: `internal/models/player_confessional.sql.go`
 
-#### Help Documentation
+### Help Documentation
 - Admin help: `internal/commands/help/admin.go` (lines 10-216)
 - Help messages: `internal/commands/help/admin_messages.go` (lines 143-172)
 
 ---
 
-### Missing Features (Recommended Additions)
+## Missing Features (Recommended Additions)
 
 1. `/admin health` - Verify all channels exist in Discord
 2. `/admin status` - Show configuration state
@@ -245,7 +193,3 @@ if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 4. Orphaned channel detection
 5. Channel recovery procedures
 6. Error messages when channels are deleted mid-game
-
-## Git & Build Management
-
-**Binaries**: DO NOT commit binary files to git (e.g., `audit-analysis`, `data-entry`, `betrayal-bot`). Binaries waste repository space and should never be version controlled. Users should build binaries locally with `go build ./cmd/{tool-name}` or use `make` targets. If binaries appear in `git status`, do NOT stage or commit them - delete them locally with `rm {binary-name}`.

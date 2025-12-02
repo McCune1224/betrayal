@@ -24,3 +24,15 @@ delete from status
 where id = $1
 ;
 
+-- name: SearchStatusByKeyword :many
+SELECT * FROM status
+WHERE LOWER(name) LIKE LOWER($1) OR LOWER(description) LIKE LOWER($1)
+ORDER BY name ASC
+;
+
+-- name: SearchStatusByDescription :many
+SELECT * FROM status
+WHERE LOWER(description) LIKE LOWER($1)
+ORDER BY name ASC
+;
+

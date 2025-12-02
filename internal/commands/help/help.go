@@ -65,11 +65,11 @@ func (*Help) Options() []*discordgo.ApplicationCommandOption {
 					Name:        "view",
 					Description: "how to use view commands",
 				},
-				// {
-				// 	Type:        discordgo.ApplicationCommandOptionSubCommand,
-				// 	Name:        "list",
-				// 	Description: "how to use list commands",
-				// },
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "search",
+					Description: "how to use search commands",
+				},
 			},
 		},
 
@@ -123,6 +123,11 @@ func (*Help) Options() []*discordgo.ApplicationCommandOption {
 					Name:        "cycle",
 					Description: "how to manage game phases and cycles",
 				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "healthcheck",
+					Description: "how to verify game setup and infrastructure",
+				},
 			},
 		},
 	}
@@ -139,6 +144,7 @@ func (h *Help) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "action", Run: h.playerAction},
 			ken.SubCommandHandler{Name: "vote", Run: h.playerVote},
 			ken.SubCommandHandler{Name: "view", Run: h.playerView},
+			ken.SubCommandHandler{Name: "search", Run: h.playerSearch},
 			// ken.SubCommandHandler{Name: "list", Run: h.playerList},
 		}},
 		ken.SubCommandGroup{Name: "admin", SubHandler: []ken.CommandHandler{
@@ -151,6 +157,7 @@ func (h *Help) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "setup", Run: h.adminSetup},
 			ken.SubCommandHandler{Name: "channels", Run: h.adminChannels},
 			ken.SubCommandHandler{Name: "cycle", Run: h.adminCycle},
+			ken.SubCommandHandler{Name: "healthcheck", Run: h.adminHealthcheck},
 		}},
 	)
 }

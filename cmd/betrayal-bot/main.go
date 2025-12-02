@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -19,10 +20,12 @@ import (
 	"github.com/mccune1224/betrayal/internal/commands/channels"
 	"github.com/mccune1224/betrayal/internal/commands/cycle"
 	"github.com/mccune1224/betrayal/internal/commands/echo"
+	"github.com/mccune1224/betrayal/internal/commands/healthcheck"
 	"github.com/mccune1224/betrayal/internal/commands/help"
 	"github.com/mccune1224/betrayal/internal/commands/inv"
 	"github.com/mccune1224/betrayal/internal/commands/list"
 	"github.com/mccune1224/betrayal/internal/commands/roll"
+	"github.com/mccune1224/betrayal/internal/commands/search"
 	"github.com/mccune1224/betrayal/internal/commands/setup"
 	"github.com/mccune1224/betrayal/internal/commands/view"
 	"github.com/mccune1224/betrayal/internal/commands/vote"
@@ -183,11 +186,14 @@ func main() {
 		new(setup.Setup),
 		new(echo.Echo),
 		new(list.List),
+		new(search.Search),
+		new(healthcheck.Healthcheck),
 		new(cycle.Cycle),
 	)
 
 	application.betrayalManager.Session().AddHandler(logHandler)
 	application.betrayalManager.Session().AddHandler(auditHandler)
+	application.betrayalManager.Session().AddHandler(paginationHandler)
 	defer application.betrayalManager.Unregister()
 
 	err = bot.Open()
@@ -329,4 +335,77 @@ func auditHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	auditWriter.LogCommand(audit)
+}
+
+// paginationHandler handles pagination button interactions for search results
+func paginationHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if i.Type != discordgo.InteractionMessageComponent {
+		return
+	}
+
+	customID := i.MessageComponentData().CustomID
+
+	// Check if this is a pagination button (format: search_type_userid_timestamp:action)
+	if !strings.Contains(customID, "search_") || !strings.Contains(customID, ":") {
+		return
+	}
+
+	parts := strings.Split(customID, ":")
+	if len(parts) != 2 {
+		return
+	}
+
+	paginationID := parts[0]
+	action := parts[1]
+
+	// Get the pagination state
+	paginationData := discord.GetPaginationState(paginationID)
+	if paginationData == nil {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "This pagination session has expired. Please run the search command again.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+		return
+	}
+
+	// Handle button actions
+	switch action {
+	case "prev":
+		if paginationData.CurrentPage > 0 {
+			paginationData.CurrentPage--
+			discord.UpdatePaginationState(paginationID, paginationData)
+		}
+
+	case "next":
+		totalPages := (len(paginationData.Items) + paginationData.PageSize - 1) / paginationData.PageSize
+		if paginationData.CurrentPage < totalPages-1 {
+			paginationData.CurrentPage++
+			discord.UpdatePaginationState(paginationID, paginationData)
+		}
+
+	case "done":
+		discord.DeletePaginationState(paginationID)
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseDeferredMessageUpdate,
+		})
+		// Delete the message
+		s.InteractionResponseDelete(i.Interaction)
+		return
+	}
+
+	// Create updated embed and components
+	embed := discord.CreatePaginatedEmbed(paginationData)
+	components := discord.GetPaginationComponents(paginationID, paginationData)
+
+	// Respond with updated message
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseUpdateMessage,
+		Data: &discordgo.InteractionResponseData{
+			Embeds:     []*discordgo.MessageEmbed{embed},
+			Components: components,
+		},
+	})
 }

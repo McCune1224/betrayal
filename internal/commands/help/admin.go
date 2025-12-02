@@ -48,6 +48,10 @@ func (h *Help) adminOverview(ctx ken.SubCommandContext) (err error) {
 				Name:  "Setup",
 				Value: "`/setup` assists with generating role lists for game creation. Use `/help admin setup` for more information.",
 			},
+			{
+				Name:  "Healthcheck",
+				Value: "`/healthcheck` verifies all game infrastructure is configured and ready before starting. Use `/help admin healthcheck` for verification details.",
+			},
 		},
 	}
 
@@ -142,6 +146,16 @@ func (h *Help) adminOverview(ctx ken.SubCommandContext) (err error) {
 				return true
 			}), clearAll)
 
+			b.Add(discordgo.Button{
+				CustomID: "a-healthcheck-help",
+				Label:    "Healthcheck",
+				Style:    discordgo.SecondaryButton,
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
+				ctx.SetEphemeral(true)
+				ctx.RespondEmbed(adminHealthcheckEmbed())
+				return true
+			}), clearAll)
+
 		}, clearAll)
 	})
 
@@ -213,4 +227,12 @@ func (h *Help) adminCycle(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	return ctx.RespondEmbed(adminCycleEmbed())
+}
+
+func (h *Help) adminHealthcheck(ctx ken.SubCommandContext) (err error) {
+	if err = ctx.Defer(); err != nil {
+		logger.Get().Error().Err(err).Msg("operation failed")
+		return err
+	}
+	return ctx.RespondEmbed(adminHealthcheckEmbed())
 }

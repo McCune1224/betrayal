@@ -129,14 +129,36 @@ func adminKillEmebd() *discordgo.MessageEmbed {
 func adminSetupEmbed() *discordgo.MessageEmbed {
 	msg := &discordgo.MessageEmbed{
 		Title:       "Setup Admin Command",
-		Description: "Setup is a helper command that allows you to determine roles for game creation. This command will walk you through the process of setting up the game. This command follows the flow of `/setup [player count] [deceptionist count] [good count] [evil count]`.",
+		Description: "Setup is a helper command that assists with generating the optimal role distribution for game creation based on player count and team composition.",
 
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Value: "`/setup [player count] `. Help generate the role list pool you'd like for the game. By default it will assume all user's with a deceiptionist role are in the game. But if you'd like to change the value, you can include the additional argument `deceptionist count`.",
+				Name:  "Basic Usage",
+				Value: "`/setup [player_count]` or `/setup [player_count] [decept_count]`\n\nThe command generates a balanced role pool from the available roles. By default, it counts all users with a Deceptionist role in the guild, but you can override this.",
+			},
+			{
+				Name:  "Parameters",
+				Value: "**player_count** (required) - Total number of players participating in the game\n**decept_count** (optional) - Number of Deceptionists to include. If not specified, defaults to all guild members with the Deceptionist role.",
+			},
+			{
+				Name:  "Role Distribution",
+				Value: "The command generates a balanced pool with:\n• **Good roles** - Helpful to the town, work together\n• **Neutral roles** - Neither good nor evil, have own agendas\n• **Evil roles** - Deceptive roles working against the town\n\nDistribution is randomized to ensure variety and prevent predictability.",
+			},
+			{
+				Name:  "Example Workflows",
+				Value: "**Example 1:** `/setup 10` - Generate roles for 10 players using all current Deceptionists\n**Example 2:** `/setup 15 3` - Generate roles for 15 players with exactly 3 Deceptionists\n**Example 3:** `/setup 8 2` - Generate roles for 8 players with 2 Deceptionists",
+			},
+			{
+				Name:  "What You Get",
+				Value: "The command displays:\n• A list of recommended roles for each alignment (Good/Neutral/Evil)\n• Role count breakdown\n• A summary showing the balance of the game\n\nUse this as your basis for assigning players to roles.",
+			},
+			{
+				Name:  "Tips & Best Practices",
+				Value: "• Run this **before** the game starts to determine your role lineup\n• Ensure your Deceptionist count makes sense for your player pool (usually 15-25% of players)\n• The randomization means each run generates different results - run multiple times to find a distribution you like\n• Save the output or screenshot it before assigning roles to players",
 			},
 		},
 	}
+
 	return msg
 }
 
@@ -195,5 +217,38 @@ func adminCycleEmbed() *discordgo.MessageEmbed {
 			},
 		},
 	}
+
+	return msg
+}
+
+func adminHealthcheckEmbed() *discordgo.MessageEmbed {
+	msg := &discordgo.MessageEmbed{
+		Title:       "Healthcheck Admin Command",
+		Description: "Verify your game setup before starting a new game. The healthcheck command displays all configured channels and player status at a glance.",
+
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:  "Basic Usage",
+				Value: "`/healthcheck` - Run this command to see the current state of all required and optional game channels.",
+			},
+			{
+				Name:  "What It Checks",
+				Value: "• **Admin Channels** (required) - Channels for inventory management\n• **Vote Channel** (required) - Channel for vote submissions\n• **Action Channel** (required) - Channel for action submissions\n• **Lifeboard** (optional) - Channel showing player status board\n• **Player Confessionals** (optional) - List of all player confessional channels\n• **Players** - Count of alive and dead players\n• **Game Cycle** - Current phase (Day/Elimination number)",
+			},
+			{
+				Name:  "Status Indicators",
+				Value: "✅ Green checkmarks indicate configured and ready\n⚠️ Warning icons indicate optional features not yet configured\n❌ Red X icons indicate missing required channels (cannot start game)",
+			},
+			{
+				Name:  "When to Run",
+				Value: "Run this command **before starting a new game** to ensure all required channels are configured. All three required channels (Admin, Vote, Action) must be set before you can proceed.",
+			},
+			{
+				Name:  "Setup Instructions",
+				Value: "If channels are missing, use `/channel admin`, `/channel vote`, or `/channel action` to configure them. See `/help admin channels` for detailed setup instructions.",
+			},
+		},
+	}
+
 	return msg
 }

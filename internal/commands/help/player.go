@@ -34,6 +34,10 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				Value: "`/view` allows you to quickly fetch information about the game including details like roles, abilities, perks, items, and more. For more information, use `/help player view`.",
 			},
 			{
+				Name:  "Search",
+				Value: "`/search` allows you to search for abilities, items, and statuses by keyword to help you gather intel and strategize. Discover what's available in the game to better understand what your opponents might have. For more information, use `/help player search`.",
+			},
+			{
 				Name:  "Vote",
 				Value: "`/vote` allows you to vote one or many players. For more information, use `/help player vote`.",
 			},
@@ -97,6 +101,15 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				ctx.RespondEmbed(playerVoteHelpEmbed())
 				return true
 			}), clearAll2)
+			b.Add(discordgo.Button{
+				CustomID: "p-search-help",
+				Style:    discordgo.SecondaryButton,
+				Label:    "Search",
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
+				ctx.SetEphemeral(true)
+				ctx.RespondEmbed(playerSearchHelpEmbed())
+				return true
+			}), clearAll2)
 		}, clearAll2)
 	})
 
@@ -145,4 +158,12 @@ func (*Help) playerVote(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	return ctx.RespondEmbed(playerVoteHelpEmbed())
+}
+
+func (*Help) playerSearch(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		logger.Get().Error().Err(err).Msg("operation failed")
+		return err
+	}
+	return ctx.RespondEmbed(playerSearchHelpEmbed())
 }
