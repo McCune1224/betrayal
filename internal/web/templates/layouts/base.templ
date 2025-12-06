@@ -1,0 +1,114 @@
+package layouts
+
+import "fmt"
+
+templ Base(title string) {
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+		<title>{ title } | Betrayal Admin</title>
+		<link href="/static/css/output.css" rel="stylesheet"/>
+		<script src="/static/js/htmx.min.js"></script>
+		<script>
+			// Toast notification handler
+			document.body.addEventListener('showToast', function(evt) {
+				const toast = document.getElementById('toast');
+				const message = evt.detail.message;
+				const type = evt.detail.type;
+				
+				toast.textContent = message;
+				toast.className = 'fixed top-4 right-4 px-4 py-3 border shadow-lg transition-opacity duration-300 z-50 ' + 
+					(type === 'error' ? 'bg-red-900 border-red-700 text-red-400' : 'bg-green-900 border-green-700 text-green-400');
+				toast.style.opacity = '1';
+				
+				setTimeout(() => {
+					toast.style.opacity = '0';
+				}, 3000);
+			});
+		</script>
+	</head>
+	<body class="bg-black text-amber-500 min-h-screen">
+		<!-- Desktop Nav -->
+		@DesktopNav()
+		
+		<!-- Main Content - padding bottom for mobile nav -->
+		<main class="container mx-auto px-4 py-6 pb-safe md:pb-6 max-w-full overflow-x-hidden">
+			{ children... }
+		</main>
+		
+		<!-- Mobile Bottom Nav -->
+		@MobileNav()
+		
+		<!-- Toast container -->
+		<div id="toast" class="fixed top-4 right-4 px-4 py-3 border opacity-0 transition-opacity duration-300 z-50"></div>
+	</body>
+	</html>
+}
+
+templ DesktopNav() {
+	<nav class="hidden md:block bg-zinc-900 border-b border-amber-700">
+		<div class="container mx-auto px-4">
+			<div class="flex items-center justify-between h-14">
+				<div class="flex items-center space-x-8">
+					<a href="/" class="text-lg font-bold text-amber-400">[BETRAYAL]</a>
+					<div class="flex space-x-1">
+						<a href="/" class="px-3 py-2 text-sm text-zinc-400 hover:text-amber-500 hover:bg-amber-900/20 transition-colors">HOME</a>
+						<a href="/players" class="px-3 py-2 text-sm text-zinc-400 hover:text-amber-500 hover:bg-amber-900/20 transition-colors">PLAYERS</a>
+						<a href="/admin/audit" class="px-3 py-2 text-sm text-zinc-400 hover:text-amber-500 hover:bg-amber-900/20 transition-colors">LOGS</a>
+					</div>
+				</div>
+				<form action="/logout" method="POST">
+					<button type="submit" class="px-3 py-2 text-sm text-zinc-400 hover:text-red-500 transition-colors">
+						LOGOUT
+					</button>
+				</form>
+			</div>
+		</div>
+	</nav>
+}
+
+templ MobileNav() {
+	<nav class="bottom-nav">
+		<a href="/" class="bottom-nav-item">
+			<span class="text-lg mb-1">⌂</span>
+			<span>HOME</span>
+		</a>
+		<a href="/players" class="bottom-nav-item">
+			<span class="text-lg mb-1">◈</span>
+			<span>PLAYERS</span>
+		</a>
+		<a href="/admin/audit" class="bottom-nav-item">
+			<span class="text-lg mb-1">▤</span>
+			<span>LOGS</span>
+		</a>
+		<form action="/logout" method="POST" class="flex-1">
+			<button type="submit" class="bottom-nav-item w-full text-zinc-500 hover:text-red-500">
+				<span class="text-lg mb-1">⏻</span>
+				<span>OUT</span>
+			</button>
+		</form>
+	</nav>
+}
+
+// Simple base without nav for login page
+templ BaseSimple(title string) {
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+		<title>{ title } | Betrayal Admin</title>
+		<link href="/static/css/output.css" rel="stylesheet"/>
+	</head>
+	<body class="bg-black text-amber-500 min-h-screen flex items-center justify-center p-4">
+		{ children... }
+	</body>
+	</html>
+}
+
+// Helper for formatting numbers
+func fmtInt(n int) string {
+	return fmt.Sprintf("%d", n)
+}

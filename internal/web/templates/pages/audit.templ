@@ -1,0 +1,106 @@
+package pages
+
+import (
+	"github.com/mccune1224/betrayal/internal/web/templates/layouts"
+	"time"
+)
+
+type AuditLogEntry struct {
+	ID         int
+	Command    string
+	Username   string
+	UserID     string
+	ChannelID  string
+	ExecutedAt time.Time
+	Status     string
+	ErrorMsg   string
+}
+
+templ AuditLogs(logs []AuditLogEntry) {
+	@layouts.Base("Audit Logs") {
+		<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-6">
+			<h1 class="text-2xl font-bold text-amber-400">AUDIT LOGS</h1>
+			<span class="text-zinc-500 text-sm">LAST 100 COMMANDS</span>
+		</div>
+		
+		<!-- Mobile Card View -->
+		<div class="md:hidden space-y-2">
+			for _, log := range logs {
+				<div class="bg-zinc-900 border border-amber-700/50 p-4">
+					<div class="flex items-center justify-between mb-2">
+						<span class="text-orange-400 font-mono">/{ log.Command }</span>
+						@AuditStatusBadge(log.Status)
+					</div>
+					<div class="flex items-center justify-between text-xs">
+						<span class="text-zinc-500">{ log.Username }</span>
+						<span class="text-zinc-600">{ log.ExecutedAt.Format("15:04:05") }</span>
+					</div>
+					if log.ErrorMsg != "" {
+						<p class="text-red-400 text-xs mt-2 truncate">{ log.ErrorMsg }</p>
+					}
+				</div>
+			}
+			
+			if len(logs) == 0 {
+				<div class="text-center py-8 text-zinc-500">
+					NO AUDIT LOGS FOUND
+				</div>
+			}
+		</div>
+		
+		<!-- Desktop Table View -->
+		<div class="hidden md:block bg-zinc-900 border border-amber-700 overflow-hidden">
+			<div class="overflow-x-auto">
+				<table class="w-full min-w-[600px]">
+					<thead class="bg-zinc-800 border-b border-amber-700">
+						<tr>
+							<th class="px-4 py-3 text-left text-xs text-zinc-400 uppercase">TIME</th>
+							<th class="px-4 py-3 text-left text-xs text-zinc-400 uppercase">COMMAND</th>
+							<th class="px-4 py-3 text-left text-xs text-zinc-400 uppercase">USER</th>
+							<th class="px-4 py-3 text-left text-xs text-zinc-400 uppercase">STATUS</th>
+							<th class="px-4 py-3 text-left text-xs text-zinc-400 uppercase">ERROR</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-zinc-800">
+						for _, log := range logs {
+							<tr class="hover:bg-zinc-800/50">
+								<td class="px-4 py-3 whitespace-nowrap text-sm text-zinc-500">
+									{ log.ExecutedAt.Format("15:04:05") }
+								</td>
+								<td class="px-4 py-3 whitespace-nowrap text-sm text-orange-400 font-mono">
+									/{ log.Command }
+								</td>
+								<td class="px-4 py-3 whitespace-nowrap text-sm text-zinc-400">
+									{ log.Username }
+								</td>
+								<td class="px-4 py-3 whitespace-nowrap text-sm">
+									@AuditStatusBadge(log.Status)
+								</td>
+								<td class="px-4 py-3 text-sm text-red-400 max-w-xs truncate">
+									{ log.ErrorMsg }
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+			
+			if len(logs) == 0 {
+				<div class="text-center py-8 text-zinc-500">
+					NO AUDIT LOGS FOUND
+				</div>
+			}
+		</div>
+	}
+}
+
+templ AuditStatusBadge(status string) {
+	switch status {
+		case "success":
+			<span class="badge-success">OK</span>
+		case "error":
+			<span class="badge-danger">ERR</span>
+		default:
+			<span class="badge-neutral">{ status }</span>
+	}
+}

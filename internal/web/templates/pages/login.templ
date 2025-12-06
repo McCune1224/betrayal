@@ -1,0 +1,41 @@
+package pages
+
+import "github.com/mccune1224/betrayal/internal/web/templates/layouts"
+
+templ Login(errorMsg string) {
+	@layouts.BaseSimple("Login") {
+		<div class="w-full max-w-sm">
+			<div class="bg-zinc-900 p-6 border border-amber-700">
+				<h1 class="text-xl font-bold text-center mb-2 text-amber-400">[BETRAYAL]</h1>
+				<p class="text-center text-zinc-500 text-sm mb-6">ADMIN ACCESS</p>
+				
+				if errorMsg != "" {
+					<div class="bg-red-900/50 border border-red-700 text-red-400 px-4 py-3 mb-4 text-sm">
+						{ errorMsg }
+					</div>
+				}
+				
+				<form action="/login" method="POST">
+					<div class="mb-4">
+						<label for="password" class="block text-sm text-zinc-400 mb-2">
+							PASSWORD
+						</label>
+						<input 
+							type="password" 
+							id="password" 
+							name="password"
+							required
+							class="input"
+							placeholder="Enter password..."
+						/>
+					</div>
+					<button 
+						type="submit"
+						class="btn-primary w-full">
+						LOGIN
+					</button>
+				</form>
+			</div>
+		</div>
+	}
+}

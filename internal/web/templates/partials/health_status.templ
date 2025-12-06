@@ -1,0 +1,57 @@
+package partials
+
+templ HealthStatus(botStatus string, dbStatus string, lastChecked string) {
+	<div class="flex flex-col gap-3">
+		<!-- Bot Status -->
+		<div class="flex items-center justify-between">
+			<span class="text-zinc-400 text-sm">BOT</span>
+			<div class="flex items-center">
+				@StatusIndicator(botStatus)
+			</div>
+		</div>
+		
+		<!-- Database Status -->
+		<div class="flex items-center justify-between">
+			<span class="text-zinc-400 text-sm">DATABASE</span>
+			<div class="flex items-center">
+				@StatusIndicator(dbStatus)
+			</div>
+		</div>
+		
+		<!-- Last Checked -->
+		<div class="text-xs text-zinc-600 mt-2">
+			CHECKED: { lastChecked }
+		</div>
+		
+		<!-- Manual Refresh Button -->
+		<button 
+			hx-get="/health/status"
+			hx-target="#health-status"
+			hx-swap="innerHTML"
+			class="btn-ghost text-sm mt-2">
+			REFRESH
+		</button>
+	</div>
+}
+
+templ StatusIndicator(status string) {
+	switch status {
+		case "online", "ok":
+			<span class="status-online"></span>
+			<span class="text-green-500 text-sm">ONLINE</span>
+		case "degraded":
+			<span class="status-degraded"></span>
+			<span class="text-amber-500 text-sm">DEGRADED</span>
+		default:
+			<span class="status-offline"></span>
+			<span class="text-red-500 text-sm">OFFLINE</span>
+	}
+}
+
+// Compact version for loading state
+templ HealthStatusLoading() {
+	<div class="flex items-center justify-center py-4">
+		<span class="spinner"></span>
+		<span class="ml-2 text-zinc-500 text-sm">CHECKING...</span>
+	</div>
+}

@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+/* Content sources for class detection */
+@source "../../internal/web/templates/**/*.templ";
+@source "../../internal/web/templates/**/*_templ.go";
+
+/* Custom theme - Retro Terminal Amber */
+@theme {
+  /* Override default font to monospace */
+  --font-sans: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  
+  /* Betrayal Bot amber/orange theme */
+  --color-terminal-bg: #0a0a0a;
+  --color-terminal-surface: #141414;
+  --color-terminal-border: #b45309;
+  --color-terminal-text: #f59e0b;
+  --color-terminal-dim: #78716c;
+  --color-terminal-accent: #fb923c;
+}
+
+/* Base styles */
+@layer base {
+  html {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  
+  body {
+    @apply bg-black text-amber-500;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  
+  /* Ensure all text uses monospace */
+  * {
+    font-family: inherit;
+  }
+}
+
+/* Component utilities */
+@layer components {
+  /* Card - no rounded corners */
+  .card {
+    @apply bg-zinc-900 border border-amber-700 p-4;
+  }
+  
+  /* Button primary */
+  .btn-primary {
+    @apply px-4 py-3 min-h-[44px] font-medium border transition-colors;
+    @apply bg-orange-600 border-orange-500 text-black hover:bg-orange-500;
+  }
+  
+  /* Button danger */
+  .btn-danger {
+    @apply px-4 py-3 min-h-[44px] font-medium border transition-colors;
+    @apply bg-red-700 border-red-600 text-white hover:bg-red-600;
+  }
+  
+  /* Button ghost */
+  .btn-ghost {
+    @apply px-4 py-3 min-h-[44px] font-medium border transition-colors;
+    @apply bg-transparent border-amber-700 text-amber-500 hover:bg-amber-900/30;
+  }
+  
+  /* Input - no rounded */
+  .input {
+    @apply w-full px-4 py-3 min-h-[44px] bg-black border border-amber-700 text-amber-500 placeholder-zinc-600;
+    @apply focus:outline-none focus:border-orange-500;
+  }
+  
+  /* Badge variants - no rounded, expanded */
+  .badge-success {
+    @apply inline-flex items-center px-2 py-1 text-xs font-medium border;
+    @apply bg-green-900/50 text-green-400 border-green-700;
+  }
+  
+  .badge-danger {
+    @apply inline-flex items-center px-2 py-1 text-xs font-medium border;
+    @apply bg-red-900/50 text-red-400 border-red-700;
+  }
+  
+  .badge-warning {
+    @apply inline-flex items-center px-2 py-1 text-xs font-medium border;
+    @apply bg-amber-900/50 text-amber-400 border-amber-700;
+  }
+  
+  .badge-neutral {
+    @apply inline-flex items-center px-2 py-1 text-xs font-medium border;
+    @apply bg-zinc-800 text-zinc-400 border-zinc-600;
+  }
+  
+  /* Status indicator dot */
+  .status-online {
+    @apply inline-block w-2 h-2 mr-2 bg-green-500;
+  }
+  
+  .status-degraded {
+    @apply inline-block w-2 h-2 mr-2 bg-amber-500;
+  }
+  
+  .status-offline {
+    @apply inline-block w-2 h-2 mr-2 bg-red-500;
+  }
+  
+  /* Bottom nav for mobile */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-amber-700;
+    @apply flex justify-around items-stretch;
+    @apply md:hidden;
+    /* Safe area for notched phones */
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  .bottom-nav-item {
+    @apply flex-1 flex flex-col items-center justify-center py-3 min-h-[60px];
+    @apply text-xs text-zinc-500 hover:text-amber-500 transition-colors;
+  }
+  
+  .bottom-nav-item.active {
+    @apply text-amber-500 bg-amber-900/20;
+  }
+  
+  /* Table container with overflow */
+  .table-container {
+    @apply overflow-x-auto w-full;
+  }
+  
+  /* Mobile card for list items */
+  .mobile-card {
+    @apply block p-4 border border-amber-700/50 bg-zinc-900 mb-2;
+    @apply active:bg-zinc-800 transition-colors;
+    @apply min-h-[44px];
+  }
+  
+  /* Loading spinner */
+  .spinner {
+    @apply inline-block w-5 h-5 border-2 border-amber-700 border-t-amber-500 animate-spin;
+  }
+}
+
+/* Utility for bottom nav spacing on mobile */
+@layer utilities {
+  .pb-safe {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0));
+  }
+}

@@ -1,0 +1,118 @@
+package pages
+
+import (
+	"github.com/mccune1224/betrayal/internal/web/templates/layouts"
+	"strconv"
+)
+
+type PlayerRow struct {
+	ID        int64
+	Name      string
+	Role      string
+	Alignment string
+	Alive     bool
+	Coins     int
+	Luck      int
+}
+
+templ Players(players []PlayerRow) {
+	@layouts.Base("Players") {
+		<div class="flex justify-between items-center mb-6">
+			<h1 class="text-2xl font-bold text-amber-400">PLAYERS</h1>
+			<span class="text-zinc-500 text-sm">{ strconv.Itoa(len(players)) } TOTAL</span>
+		</div>
+		
+		<!-- Mobile Card View -->
+		<div class="md:hidden space-y-2">
+			for _, p := range players {
+				<a href={ templ.SafeURL("/players/" + strconv.FormatInt(p.ID, 10)) } class="mobile-card flex items-center justify-between">
+					<div class="flex-1 min-w-0">
+						<div class="flex items-center gap-2 mb-1">
+							@StatusBadge(p.Alive)
+							@AlignmentBadge(p.Alignment)
+						</div>
+						<p class="text-amber-500 truncate">{ p.Role }</p>
+						<p class="text-xs text-zinc-600 truncate font-mono">ID: { strconv.FormatInt(p.ID, 10) }</p>
+					</div>
+					<div class="text-right ml-4 shrink-0">
+						<p class="text-yellow-500 text-sm">{ strconv.Itoa(p.Coins) }c</p>
+						<p class="text-purple-400 text-xs">{ strconv.Itoa(p.Luck) }L</p>
+					</div>
+				</a>
+			}
+			
+			if len(players) == 0 {
+				<div class="text-center py-8 text-zinc-500">
+					NO PLAYERS FOUND
+				</div>
+			}
+		</div>
+		
+		<!-- Desktop Table View -->
+		<div class="hidden md:block bg-zinc-900 border border-amber-700 overflow-hidden">
+			<div class="overflow-x-auto">
+				<table class="w-full min-w-[700px]">
+					<thead class="bg-zinc-800 border-b border-amber-700">
+						<tr>
+							<th class="px-4 py-3 text-left text-xs text-zinc-400 uppercase">ID</th>
+							<th class="px-4 py-3 text-left text-xs text-zinc-400 uppercase">ROLE</th>
+							<th class="px-4 py-3 text-left text-xs text-zinc-400 uppercase">ALIGN</th>
+							<th class="px-4 py-3 text-left text-xs text-zinc-400 uppercase">STATUS</th>
+							<th class="px-4 py-3 text-left text-xs text-zinc-400 uppercase">COINS</th>
+							<th class="px-4 py-3 text-left text-xs text-zinc-400 uppercase">LUCK</th>
+							<th class="px-4 py-3 text-left text-xs text-zinc-400 uppercase"></th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-zinc-800">
+						for _, p := range players {
+							<tr class="hover:bg-zinc-800/50">
+								<td class="px-4 py-3 text-sm text-zinc-400 font-mono">{ strconv.FormatInt(p.ID, 10) }</td>
+								<td class="px-4 py-3 text-sm text-amber-500">{ p.Role }</td>
+								<td class="px-4 py-3 text-sm">
+									@AlignmentBadge(p.Alignment)
+								</td>
+								<td class="px-4 py-3 text-sm">
+									@StatusBadge(p.Alive)
+								</td>
+								<td class="px-4 py-3 text-sm text-yellow-500">{ strconv.Itoa(p.Coins) }</td>
+								<td class="px-4 py-3 text-sm text-purple-400">{ strconv.Itoa(p.Luck) }</td>
+								<td class="px-4 py-3 text-sm">
+									<a href={ templ.SafeURL("/players/" + strconv.FormatInt(p.ID, 10)) } class="text-orange-400 hover:text-orange-300">
+										VIEW →
+									</a>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+			
+			if len(players) == 0 {
+				<div class="text-center py-8 text-zinc-500">
+					NO PLAYERS FOUND
+				</div>
+			}
+		</div>
+	}
+}
+
+templ AlignmentBadge(alignment string) {
+	switch alignment {
+		case "GOOD":
+			<span class="badge-success">GOOD</span>
+		case "EVIL":
+			<span class="badge-danger">EVIL</span>
+		case "NEUTRAL":
+			<span class="badge-neutral">NEUTRAL</span>
+		default:
+			<span class="badge-neutral">{ alignment }</span>
+	}
+}
+
+templ StatusBadge(alive bool) {
+	if alive {
+		<span class="badge-success">ALIVE</span>
+	} else {
+		<span class="badge-danger">DEAD</span>
+	}
+}

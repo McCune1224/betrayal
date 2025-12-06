@@ -32,6 +32,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/logger"
 	"github.com/mccune1224/betrayal/internal/util"
+	"github.com/mccune1224/betrayal/internal/web"
 	"github.com/rs/zerolog"
 	"github.com/zekrotja/ken"
 	"github.com/zekrotja/ken/state"
@@ -46,6 +47,16 @@ type config struct {
 	}
 	database struct {
 		dsn string
+	}
+	web struct {
+		port          string
+		adminPassword string
+		sessionSecret string
+		// Railway API
+		railwayToken     string
+		railwayProjectID string
+		railwayServiceID string
+		railwayEnvID     string
 	}
 }
 
@@ -97,6 +108,18 @@ func main() {
 	cfg.discord.clientID = os.Getenv("DISCORD_CLIENT_ID")
 	cfg.discord.clientSecret = os.Getenv("DISCORD_CLIENT_SECRET")
 	cfg.database.dsn = os.Getenv("DATABASE_POOLER_URL")
+
+	// Web admin configuration
+	cfg.web.port = os.Getenv("WEB_PORT")
+	if cfg.web.port == "" {
+		cfg.web.port = "8080"
+	}
+	cfg.web.adminPassword = os.Getenv("ADMIN_PASSWORD")
+	cfg.web.sessionSecret = os.Getenv("SESSION_SECRET")
+	cfg.web.railwayToken = os.Getenv("RAILWAY_API_TOKEN")
+	cfg.web.railwayProjectID = os.Getenv("RAILWAY_BETRAYAL_PROJECT_ID")
+	cfg.web.railwayServiceID = os.Getenv("RAILWAY_BETRAYAL_SERVICE_ID")
+	cfg.web.railwayEnvID = os.Getenv("RAILWAY_BETRAYAL_ENVIRONMENT_ID")
 
 	// Spin up Bot and give it admin permissions
 	bot, err := discordgo.New("Bot " + cfg.discord.botToken)
@@ -213,12 +236,45 @@ func main() {
 		ArchiveDir:    "./logs_archive",
 	})
 
+	// Start web admin server (if password is configured)
+	var webServer *web.Server
+	if cfg.web.adminPassword != "" {
+		webServer = web.New(pools, bot, appLogger, web.Config{
+			Port:             cfg.web.port,
+			AdminPassword:    cfg.web.adminPassword,
+			SessionSecret:    cfg.web.sessionSecret,
+			RailwayToken:     cfg.web.railwayToken,
+			RailwayProjectID: cfg.web.railwayProjectID,
+			RailwayServiceID: cfg.web.railwayServiceID,
+			RailwayEnvID:     cfg.web.railwayEnvID,
+		})
+
+		go func() {
+			if err := webServer.Start(); err != nil {
+				appLogger.Error().Err(err).Msg("Web server error")
+			}
+		}()
+		appLogger.Info().Str("port", cfg.web.port).Msg("Web admin server started")
+	} else {
+		appLogger.Warn().Msg("ADMIN_PASSWORD not set, web admin server disabled")
+	}
+
 	// Wait for shutdown signal
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
 
 	appLogger.Info().Msg("Shutdown signal received, closing connections")
+
+	// Gracefully shutdown web server
+	if webServer != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := webServer.Shutdown(ctx); err != nil {
+			appLogger.Error().Err(err).Msg("Error shutting down web server")
+		}
+	}
+
 	if err := application.betrayalManager.Session().Close(); err != nil {
 		appLogger.Error().Err(err).Msg("Error closing Discord connection")
 	}
