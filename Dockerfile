@@ -7,8 +7,8 @@ WORKDIR /app
 # Install templ CLI
 RUN go install github.com/a-h/templ/cmd/templ@latest
 
-# Install Tailwind CSS standalone CLI
-RUN curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/download/v3.4.1/tailwindcss-linux-x64 \
+# Install Tailwind CSS v4 standalone CLI
+RUN curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.2/tailwindcss-linux-x64 \
     && chmod +x tailwindcss-linux-x64 \
     && mv tailwindcss-linux-x64 /usr/local/bin/tailwindcss
 
