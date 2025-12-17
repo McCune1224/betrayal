@@ -3,8 +3,10 @@ package list
 import (
 	"context"
 	"fmt"
-	"github.com/mccune1224/betrayal/internal/logger"
+	"sort"
 	"strings"
+
+	"github.com/mccune1224/betrayal/internal/logger"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,7 +19,7 @@ import (
 var (
 	DummyGoodRoles    = []string{"Agent", "Analyst", "Biker", "Cerberus", "Detective", "Fisherman", "Gunman", "Hero", "Hydra", "Judge", "Knight", "The Major", "Medium", "Nurse", "Seraph", "Terminal", "Time Traveler", "Undercover", "Wizard", "Yeti"}
 	DummyNeutralRoles = []string{"Amalgamation", "Backstabber", "Bard", "Bomber", "Cheater", "Entertainer", "Empress", "Ghost", "Goliath", "Incubus", "Magician", "Masochist", "Mercenary", "Mimic", "Pathologist", "Siren", "Sidekick", "Succubus", "Villager", "Wanderer"}
-	DummyEvilRoles    = []string{"Anarchist", "Arsonist", "Bartender", "Consort", "Juggernaut", "Doll", "Forsaken Angel", "Gatekeeper", "Hacker", "Highwayman", "Hunter", "Jester", "Overlord", "Parasite", "Phantom", "Psychotherapist", "Revenant", "Slaughterer", "Threatener", "Witchdoctor"}
+	DummyEvilRoles    = []string{"Anarchist", "Arsonist", "Bartender", "Consort", "Cultist", "Juggernaut", "Doll", "Forsaken Angel", "Gatekeeper", "Hacker", "Highwayman", "Hunter", "Jester", "Overlord", "Parasite", "Phantom", "Psychotherapist", "Slaughterer", "Threatener", "Witchdoctor"}
 
 	GameEvents = []string{
 		"Care Package - Game Start - Each player starts off with a care package which contains 1 item and 1 Any Ability.",
@@ -198,6 +200,15 @@ func (l *List) listActiveRoles(ctx ken.SubCommandContext) (err error) {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
+
+	roleGroups := [][]string{DummyGoodRoles, DummyEvilRoles, DummyNeutralRoles}
+
+	for _, roleGroup := range roleGroups {
+		sort.Slice(roleGroup, func(i int, j int) bool {
+			return roleGroup[i] < roleGroup[j]
+		})
+	}
+
 	fields := []*discordgo.MessageEmbedField{
 		{
 			Name:   "Good",
