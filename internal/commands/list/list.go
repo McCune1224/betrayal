@@ -3,7 +3,7 @@ package list
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/mccune1224/betrayal/internal/logger"
@@ -204,9 +204,7 @@ func (l *List) listActiveRoles(ctx ken.SubCommandContext) (err error) {
 	roleGroups := [][]string{DummyGoodRoles, DummyEvilRoles, DummyNeutralRoles}
 
 	for _, roleGroup := range roleGroups {
-		sort.Slice(roleGroup, func(i int, j int) bool {
-			return roleGroup[i] < roleGroup[j]
-		})
+		slices.Sort(roleGroup)
 	}
 
 	fields := []*discordgo.MessageEmbedField{
