@@ -15,6 +15,51 @@ type DashboardData struct {
 
 templ Dashboard(data DashboardData) {
 	@layouts.Base("Dashboard") {
+		<script>
+			document.body.addEventListener('redeployStarted', function() {
+				// Disable automatic polling
+				const statusDiv = document.getElementById('health-status');
+				statusDiv.setAttribute('hx-trigger', 'none');
+
+				// Show restarting status
+				statusDiv.innerHTML = `
+					<div class="flex flex-col gap-3">
+						<div class="flex items-center justify-between">
+							<span class="text-zinc-400 text-sm">BOT</span>
+							<div class="flex items-center">
+								<span class="status-degraded"></span>
+								<span class="text-amber-500 text-sm">RESTARTING</span>
+							</div>
+						</div>
+						<div class="flex items-center justify-between">
+							<span class="text-zinc-400 text-sm">DATABASE</span>
+							<div class="flex items-center">
+								<span class="status-online"></span>
+								<span class="text-green-500 text-sm">ONLINE</span>
+							</div>
+						</div>
+						<div class="text-xs text-zinc-600 mt-2">
+							RESTARTING BOT...
+						</div>
+						<button
+							hx-get="/health/status"
+							hx-target="#health-status"
+							hx-swap="innerHTML"
+							class="btn-ghost text-sm mt-2">
+							REFRESH
+						</button>
+					</div>
+				`;
+
+				// Re-enable normal polling after 30 seconds
+				setTimeout(function() {
+					const statusDiv = document.getElementById('health-status');
+					statusDiv.setAttribute('hx-trigger', 'load, every 15s');
+					// Trigger a refresh
+					htmx.trigger(statusDiv, 'load');
+				}, 30000);
+			});
+		</script>
 		<h1 class="text-2xl font-bold mb-6 text-amber-400">DASHBOARD</h1>
 		
 		<!-- Status Cards - Mobile: 1 col, Desktop: 2 col then 3 col -->
@@ -64,12 +109,19 @@ templ Dashboard(data DashboardData) {
 			<!-- Quick Actions -->
 			<div class="bg-zinc-900 border border-amber-700 p-4">
 				<h2 class="text-sm text-zinc-400 mb-3 border-b border-zinc-700 pb-2">ACTIONS</h2>
-				<button 
+				<button
+					id="redeploy-btn"
 					hx-post="/admin/redeploy"
 					hx-confirm="Are you sure you want to redeploy? This will restart the bot."
 					hx-swap="none"
-					class="btn-danger w-full text-sm">
-					REDEPLOY BOT
+					hx-disabled-elt="this"
+					hx-indicator="#redeploy-indicator"
+					class="btn-danger w-full text-sm relative">
+					<span id="redeploy-text">REDEPLOY BOT</span>
+					<span id="redeploy-indicator" class="htmx-indicator flex items-center justify-center">
+						<span class="spinner mr-2"></span>
+						RESTARTING...
+					</span>
 				</button>
 			</div>
 		</div>

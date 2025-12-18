@@ -45,8 +45,11 @@ func (h *AdminHandler) Redeploy(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to restart deployment")
 	}
 
-	// Return success with HTMX trigger for toast notification
-	c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Redeploy triggered successfully!", "type": "success"}}`)
+	// Return success with HTMX trigger for toast notification and status update
+	c.Response().Header().Set("HX-Trigger", `{
+		"showToast": {"message": "Redeploy triggered successfully!", "type": "success"},
+		"redeployStarted": {}
+	}`)
 	return c.String(http.StatusOK, "Redeploy triggered")
 }
 
