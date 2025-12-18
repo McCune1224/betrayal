@@ -401,8 +401,8 @@ func paginationHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	customID := i.MessageComponentData().CustomID
 
-	// Check if this is a pagination button (format: search_type_userid_timestamp:action)
-	if !strings.Contains(customID, "search_") || !strings.Contains(customID, ":") {
+	// Check if this is a pagination button (format: search_type_userid_timestamp:action or list_type_userid:action)
+	if (!strings.Contains(customID, "search_") && !strings.Contains(customID, "list_")) || !strings.Contains(customID, ":") {
 		return
 	}
 
