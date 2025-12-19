@@ -32,7 +32,7 @@ func Init(cfg Config) (zerolog.Logger, error) {
 	consoleWriter := zerolog.ConsoleWriter{
 		Out:        os.Stderr,
 		TimeFormat: "15:04:05",
-		NoColor:    false, // Kitty terminal supports color
+		NoColor:    true, // Disable color codes for better readability in DB/Railway
 	}
 	writers = append(writers, consoleWriter)
 

@@ -14,6 +14,8 @@ import (
 	"github.com/zekrotja/ken"
 )
 
+const infinity = "∞"
+
 type AbilityWithRoles struct {
 	Ability models.AbilityInfo
 	Roles   []models.Role
@@ -272,8 +274,14 @@ func formatAbilityField(item any) *discordgo.MessageEmbedField {
 
 func formatItemField(item any) *discordgo.MessageEmbedField {
 	itemData := item.(models.Item)
+	costStr := ""
+	if itemData.Cost == 0 {
+		costStr = infinity
+	} else {
+		costStr = fmt.Sprintf("$%d", itemData.Cost)
+	}
 	return &discordgo.MessageEmbedField{
-		Name:  fmt.Sprintf("%s [%s] $%d", itemData.Name, itemData.Rarity, itemData.Cost),
+		Name:  fmt.Sprintf("%s [%s] %s", itemData.Name, itemData.Rarity, costStr),
 		Value: itemData.Description,
 	}
 }
