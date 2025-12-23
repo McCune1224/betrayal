@@ -282,6 +282,7 @@ func formatItemField(item any) *discordgo.MessageEmbedField {
 	}
 	if strings.Contains(strings.ToLower(itemData.Name), "doggo") {
 		itemData.Description += fmt.Sprintf("\n\n%s *no doggos in this game...strange...wonder where they went?*", discord.EmojiWarning)
+		itemData.Cost = 0
 	}
 	return &discordgo.MessageEmbedField{
 		Name:  fmt.Sprintf("%s [%s] %s", itemData.Name, itemData.Rarity, costStr),

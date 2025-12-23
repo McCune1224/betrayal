@@ -34,7 +34,7 @@ where id = $1
 -- name: GetRandomItemByRarity :one
 select *
 from item
-where rarity = $1
+where rarity = $1 AND name NOT ILIKE '%doggo%'
 order by random()
 limit 1
 ;
@@ -42,7 +42,7 @@ limit 1
 -- name: GetRandomItemByMinimumRarity :one
 select *
 from item
-where rarity >= $1 and rarity != 'UNIQUE'
+where rarity >= $1 and rarity != 'UNIQUE' AND name NOT ILIKE '%doggo%'
 order by random()
 limit 1
 ;

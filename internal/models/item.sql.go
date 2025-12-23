@@ -109,7 +109,7 @@ func (q *Queries) GetItemByName(ctx context.Context, name string) (Item, error) 
 const getRandomItemByMinimumRarity = `-- name: GetRandomItemByMinimumRarity :one
 select id, name, description, rarity, cost
 from item
-where rarity >= $1 and rarity != 'UNIQUE'
+where rarity >= $1 and rarity != 'UNIQUE' AND name NOT ILIKE '%doggo%'
 order by random()
 limit 1
 `
@@ -130,7 +130,7 @@ func (q *Queries) GetRandomItemByMinimumRarity(ctx context.Context, rarity Rarit
 const getRandomItemByRarity = `-- name: GetRandomItemByRarity :one
 select id, name, description, rarity, cost
 from item
-where rarity = $1
+where rarity = $1 AND name NOT ILIKE '%doggo%'
 order by random()
 limit 1
 `
