@@ -355,6 +355,10 @@ func (v *View) viewItem(ctx ken.SubCommandContext) (err error) {
 		)
 	}
 
+	if strings.Contains(strings.ToLower(item.Name), "doggo") {
+		item.Description += fmt.Sprintf("\n\n%s *no doggos in this game...strange...wonder where they went?*", discord.EmojiWarning)
+	}
+
 	itemCostStr := ""
 	if item.Cost == 0 {
 		itemCostStr = infinity
