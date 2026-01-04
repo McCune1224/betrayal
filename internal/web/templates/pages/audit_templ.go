@@ -10,18 +10,28 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/mccune1224/betrayal/internal/web/templates/layouts"
+	"github.com/mccune1224/betrayal/internal/web/templates/partials"
 	"time"
 )
 
 type AuditLogEntry struct {
 	ID         int
 	Command    string
+	Arguments  string // Formatted command arguments in Discord syntax
 	Username   string
 	UserID     string
 	ChannelID  string
 	ExecutedAt time.Time
 	Status     string
 	ErrorMsg   string
+}
+
+// FormatCommand returns the command with arguments in Discord syntax
+func (a AuditLogEntry) FormatCommand() string {
+	if a.Arguments == "" {
+		return "/" + a.Command
+	}
+	return "/" + a.Command + " " + a.Arguments
 }
 
 func AuditLogs(logs []AuditLogEntry) templ.Component {
@@ -57,19 +67,19 @@ func AuditLogs(logs []AuditLogEntry) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-6\"><h1 class=\"text-2xl font-bold text-amber-400\">AUDIT LOGS</h1><span class=\"text-zinc-500 text-sm\">LAST 100 COMMANDS</span></div><!-- Mobile Card View --> <div class=\"md:hidden space-y-2\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-6\"><h1 class=\"page-title\">AUDIT LOGS</h1><span class=\"text-dust text-base font-medium\">LAST 100 COMMANDS</span></div><!-- Mobile Card View --> <div class=\"md:hidden space-y-3\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, log := range logs {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"bg-zinc-900 border border-amber-700/50 p-4\"><div class=\"flex items-center justify-between mb-2\"><span class=\"text-orange-400 font-mono\">/")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"mobile-card\"><div class=\"flex items-center justify-between mb-2\"><span class=\"text-leather font-bold text-base break-all\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 string
-				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(log.Command)
+				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(log.FormatCommand())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 31, Col: 60}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 41, Col: 84}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -79,31 +89,31 @@ func AuditLogs(logs []AuditLogEntry) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = AuditStatusBadge(log.Status).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = partials.AuditStatusBadge(log.Status).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><div class=\"flex items-center justify-between text-xs\"><span class=\"text-zinc-500\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><div class=\"flex items-center justify-between text-sm\"><span class=\"text-dust\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(log.Username)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 35, Col: 48}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 45, Col: 44}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</span> <span class=\"text-zinc-600\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</span> <span class=\"text-dust\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(log.ExecutedAt.Format("15:04:05"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 36, Col: 69}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 46, Col: 65}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -114,14 +124,14 @@ func AuditLogs(logs []AuditLogEntry) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				if log.ErrorMsg != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<p class=\"text-red-400 text-xs mt-2 truncate\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<p class=\"text-rust text-sm mt-2 truncate\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var6 string
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(log.ErrorMsg)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 39, Col: 66}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 49, Col: 63}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 					if templ_7745c5c3_Err != nil {
@@ -138,155 +148,100 @@ func AuditLogs(logs []AuditLogEntry) templ.Component {
 				}
 			}
 			if len(logs) == 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"text-center py-8 text-zinc-500\">NO AUDIT LOGS FOUND</div>")
+				templ_7745c5c3_Err = partials.EmptyState("NO AUDIT LOGS FOUND").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</div><!-- Desktop Table View --> <div class=\"hidden md:block bg-zinc-900 border border-amber-700 overflow-hidden\"><div class=\"overflow-x-auto\"><table class=\"w-full min-w-[600px]\"><thead class=\"bg-zinc-800 border-b border-amber-700\"><tr><th class=\"px-4 py-3 text-left text-xs text-zinc-400 uppercase\">TIME</th><th class=\"px-4 py-3 text-left text-xs text-zinc-400 uppercase\">COMMAND</th><th class=\"px-4 py-3 text-left text-xs text-zinc-400 uppercase\">USER</th><th class=\"px-4 py-3 text-left text-xs text-zinc-400 uppercase\">STATUS</th><th class=\"px-4 py-3 text-left text-xs text-zinc-400 uppercase\">ERROR</th></tr></thead> <tbody class=\"divide-y divide-zinc-800\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div><!-- Desktop Table View --> <div class=\"hidden md:block card overflow-hidden p-0\"><div class=\"overflow-x-auto\"><table class=\"w-full min-w-[700px]\"><thead class=\"bg-parchment-dark border-b-2 border-leather\"><tr><th class=\"px-4 py-4 text-left text-sm text-wood uppercase font-bold\">TIME</th><th class=\"px-4 py-4 text-left text-sm text-wood uppercase font-bold\">COMMAND</th><th class=\"px-4 py-4 text-left text-sm text-wood uppercase font-bold\">USER</th><th class=\"px-4 py-4 text-left text-sm text-wood uppercase font-bold\">STATUS</th><th class=\"px-4 py-4 text-left text-sm text-wood uppercase font-bold\">ERROR</th></tr></thead> <tbody class=\"divide-y divide-rope\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, log := range logs {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<tr class=\"hover:bg-zinc-800/50\"><td class=\"px-4 py-3 whitespace-nowrap text-sm text-zinc-500\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<tr class=\"hover:bg-parchment-dark/50 transition-colors\"><td class=\"px-4 py-4 whitespace-nowrap text-base text-dust\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(log.ExecutedAt.Format("15:04:05"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 68, Col: 44}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 76, Col: 44}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</td><td class=\"px-4 py-3 whitespace-nowrap text-sm text-orange-400 font-mono\">/")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</td><td class=\"px-4 py-4 text-base text-leather font-bold max-w-md\"><span class=\"break-all\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var8 string
-				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(log.Command)
+				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(log.FormatCommand())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 71, Col: 23}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 79, Col: 54}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</td><td class=\"px-4 py-3 whitespace-nowrap text-sm text-zinc-400\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</span></td><td class=\"px-4 py-4 whitespace-nowrap text-base text-ink\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(log.Username)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 74, Col: 23}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 82, Col: 23}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</td><td class=\"px-4 py-3 whitespace-nowrap text-sm\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</td><td class=\"px-4 py-4 whitespace-nowrap text-base\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = AuditStatusBadge(log.Status).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = partials.AuditStatusBadge(log.Status).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</td><td class=\"px-4 py-3 text-sm text-red-400 max-w-xs truncate\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</td><td class=\"px-4 py-4 text-base text-rust max-w-xs truncate\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(log.ErrorMsg)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 80, Col: 23}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 88, Col: 23}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</td></tr>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</td></tr>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</tbody></table></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</tbody></table></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if len(logs) == 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<div class=\"text-center py-8 text-zinc-500\">NO AUDIT LOGS FOUND</div>")
+				templ_7745c5c3_Err = partials.EmptyState("NO AUDIT LOGS FOUND").Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Base("Audit Logs").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Base("Audit Logs", "/admin/audit").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
-		}
-		return nil
-	})
-}
-
-func AuditStatusBadge(status string) templ.Component {
-	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
-		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
-		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
-			return templ_7745c5c3_CtxErr
-		}
-		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
-		if !templ_7745c5c3_IsBuffer {
-			defer func() {
-				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err == nil {
-					templ_7745c5c3_Err = templ_7745c5c3_BufErr
-				}
-			}()
-		}
-		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var11 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var11 == nil {
-			templ_7745c5c3_Var11 = templ.NopComponent
-		}
-		ctx = templ.ClearChildren(ctx)
-		switch status {
-		case "success":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<span class=\"badge-success\">OK</span>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		case "error":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<span class=\"badge-danger\">ERR</span>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		default:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<span class=\"badge-neutral\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var12 string
-			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(status)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 104, Col: 39}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</span>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
 		}
 		return nil
 	})

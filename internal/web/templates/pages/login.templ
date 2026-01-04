@@ -4,20 +4,20 @@ import "github.com/mccune1224/betrayal/internal/web/templates/layouts"
 
 templ Login(errorMsg string) {
 	@layouts.BaseSimple("Login") {
-		<div class="w-full max-w-sm">
-			<div class="bg-zinc-900 p-6 border border-amber-700">
-				<h1 class="text-xl font-bold text-center mb-2 text-amber-400">[BETRAYAL]</h1>
-				<p class="text-center text-zinc-500 text-sm mb-6">ADMIN ACCESS</p>
+		<div class="w-full max-w-md">
+			<div class="card">
+				<h1 class="text-3xl font-western text-center mb-3 text-leather tracking-wide">BETRAYAL</h1>
+				<p class="text-center text-dust text-base mb-6">ADMIN ACCESS</p>
 				
 				if errorMsg != "" {
-					<div class="bg-red-900/50 border border-red-700 text-red-400 px-4 py-3 mb-4 text-sm">
+					<div class="bg-red-100 border-2 border-rust text-rust px-4 py-3 mb-4 text-base">
 						{ errorMsg }
 					</div>
 				}
 				
 				<form action="/login" method="POST">
-					<div class="mb-4">
-						<label for="password" class="block text-sm text-zinc-400 mb-2">
+					<div class="mb-5">
+						<label for="password" class="block text-base text-wood mb-2 font-bold">
 							PASSWORD
 						</label>
 						<input 
@@ -31,7 +31,7 @@ templ Login(errorMsg string) {
 					</div>
 					<button 
 						type="submit"
-						class="btn-primary w-full">
+						class="btn-primary w-full font-western tracking-wide text-lg">
 						LOGIN
 					</button>
 				</form>

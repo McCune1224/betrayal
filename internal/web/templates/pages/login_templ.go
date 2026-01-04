@@ -43,12 +43,12 @@ func Login(errorMsg string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-sm\"><div class=\"bg-zinc-900 p-6 border border-amber-700\"><h1 class=\"text-xl font-bold text-center mb-2 text-amber-400\">[BETRAYAL]</h1><p class=\"text-center text-zinc-500 text-sm mb-6\">ADMIN ACCESS</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"w-full max-w-md\"><div class=\"card\"><h1 class=\"text-3xl font-western text-center mb-3 text-leather tracking-wide\">BETRAYAL</h1><p class=\"text-center text-dust text-base mb-6\">ADMIN ACCESS</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if errorMsg != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"bg-red-900/50 border border-red-700 text-red-400 px-4 py-3 mb-4 text-sm\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"bg-red-100 border-2 border-rust text-rust px-4 py-3 mb-4 text-base\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -66,7 +66,7 @@ func Login(errorMsg string) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<form action=\"/login\" method=\"POST\"><div class=\"mb-4\"><label for=\"password\" class=\"block text-sm text-zinc-400 mb-2\">PASSWORD</label> <input type=\"password\" id=\"password\" name=\"password\" required class=\"input\" placeholder=\"Enter password...\"></div><button type=\"submit\" class=\"btn-primary w-full\">LOGIN</button></form></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<form action=\"/login\" method=\"POST\"><div class=\"mb-5\"><label for=\"password\" class=\"block text-base text-wood mb-2 font-bold\">PASSWORD</label> <input type=\"password\" id=\"password\" name=\"password\" required class=\"input\" placeholder=\"Enter password...\"></div><button type=\"submit\" class=\"btn-primary w-full font-western tracking-wide text-lg\">LOGIN</button></form></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

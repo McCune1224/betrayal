@@ -32,10 +32,19 @@ type TopCommandData struct {
 type CommandErrorData struct {
 	CorrelationID string
 	CommandName   string
+	Arguments     string // Formatted command arguments in Discord syntax
 	Username      string
 	Status        string
 	ErrorMessage  string
 	OccurredAt    time.Time
+}
+
+// FormatCommand returns the command with arguments in Discord syntax
+func (c CommandErrorData) FormatCommand() string {
+	if c.Arguments == "" {
+		return "/" + c.CommandName
+	}
+	return "/" + c.CommandName + " " + c.Arguments
 }
 
 func CommandSummaryCard(summary *CommandActivitySummaryData) templ.Component {
@@ -59,79 +68,79 @@ func CommandSummaryCard(summary *CommandActivitySummaryData) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"grid grid-cols-2 gap-3\"><div><p class=\"text-xs text-zinc-500\">LAST HOUR</p><p class=\"text-2xl text-amber-400 font-semibold\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"grid grid-cols-2 gap-3\"><div><p class=\"text-xs text-dust\">LAST HOUR</p><p class=\"text-2xl text-leather font-western\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", summary.CommandsLastHour))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 37, Col: 97}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 46, Col: 94}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</p></div><div><p class=\"text-xs text-zinc-500\">24H TOTAL</p><p class=\"text-xl text-orange-400 font-semibold\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</p></div><div><p class=\"text-xs text-dust\">24H TOTAL</p><p class=\"text-xl text-rust font-semibold\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", summary.CommandsLast24h))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 41, Col: 96}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 50, Col: 90}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</p></div><div><p class=\"text-xs text-green-500\">SUCCESSES</p><p class=\"text-lg text-zinc-100 font-semibold\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</p></div><div><p class=\"text-xs text-sage font-semibold\">SUCCESSES</p><p class=\"text-lg text-ink font-semibold\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", summary.SuccessLast24h))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 45, Col: 93}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 54, Col: 88}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</p></div><div><p class=\"text-xs text-red-400\">FAILURES</p><p class=\"text-lg text-zinc-100 font-semibold\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</p></div><div><p class=\"text-xs text-rust font-semibold\">FAILURES</p><p class=\"text-lg text-ink font-semibold\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", summary.FailuresLast24h))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 49, Col: 94}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 58, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</p></div><div><p class=\"text-xs text-zinc-500\">ADMIN USE</p><p class=\"text-lg text-zinc-100 font-semibold\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</p></div><div><p class=\"text-xs text-dust\">ADMIN USE</p><p class=\"text-lg text-ink font-semibold\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", summary.AdminCommandsLast24h))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 53, Col: 99}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 62, Col: 94}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</p></div><div><p class=\"text-xs text-zinc-500\">AVG DURATION</p><p class=\"text-lg text-zinc-100 font-semibold\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</p></div><div><p class=\"text-xs text-dust\">AVG DURATION</p><p class=\"text-lg text-ink font-semibold\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(formatDuration(summary.AvgExecutionTimeMs))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 57, Col: 94}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 66, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -166,58 +175,58 @@ func TopCommandsTable(commands []TopCommandData) templ.Component {
 			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<table class=\"w-full\"><thead class=\"text-xs text-zinc-500 uppercase border-b border-zinc-800\"><tr><th class=\"text-left py-2\">Command</th><th class=\"text-right py-2\">Usage</th><th class=\"text-right py-2\">Failures</th><th class=\"text-right py-2\">Last Used</th></tr></thead> <tbody class=\"divide-y divide-zinc-800\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<table class=\"w-full\"><thead class=\"text-xs text-wood uppercase border-b-2 border-rope\"><tr><th class=\"text-left py-2 font-semibold\">Command</th><th class=\"text-right py-2 font-semibold\">Usage</th><th class=\"text-right py-2 font-semibold\">Failures</th><th class=\"text-right py-2 font-semibold\">Last Used</th></tr></thead> <tbody class=\"divide-y divide-rope\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, cmd := range commands {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<tr class=\"text-sm\"><td class=\"py-2 text-amber-400 font-semibold\">/")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<tr class=\"text-sm\"><td class=\"py-2 text-leather font-semibold\">/")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(cmd.CommandName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 75, Col: 69}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 84, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</td><td class=\"py-2 text-right text-zinc-200\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</td><td class=\"py-2 text-right text-ink\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cmd.UsageCount))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 76, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 85, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</td><td class=\"py-2 text-right text-red-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</td><td class=\"py-2 text-right text-rust\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", cmd.FailureCount))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 77, Col: 83}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 86, Col: 80}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</td><td class=\"py-2 text-right text-zinc-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</td><td class=\"py-2 text-right text-dust\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(timeSince(cmd.LastUsedAt))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 78, Col: 74}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 87, Col: 70}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -262,66 +271,66 @@ func CommandErrorsList(errors []CommandErrorData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		for _, cmdErr := range errors {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div class=\"border border-zinc-800 p-3\"><div class=\"flex items-center justify-between text-sm\"><span class=\"text-red-400 font-semibold\">/")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div class=\"border-2 border-rope p-3 bg-parchment-dark\"><div class=\"flex items-center justify-between text-sm\"><span class=\"text-rust font-semibold break-all\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var14 string
-			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(cmdErr.CommandName)
+			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(cmdErr.FormatCommand())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 90, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 99, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</span> <span class=\"text-zinc-500\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</span> <span class=\"text-dust shrink-0 ml-2\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var15 string
 			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(timeSince(cmdErr.OccurredAt))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 91, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 100, Col: 73}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</span></div><p class=\"text-xs text-zinc-400 mt-1\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</span></div><p class=\"text-xs text-ink mt-1\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(cmdErr.ErrorMessage)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 93, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 102, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</p><p class=\"text-xs text-zinc-500 mt-2\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "</p><p class=\"text-xs text-dust mt-2\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(cmdErr.Username)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 94, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 103, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, " • ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, " &#x2022; ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(cmdErr.Status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 94, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 103, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
@@ -332,14 +341,14 @@ func CommandErrorsList(errors []CommandErrorData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if cmdErr.CorrelationID != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<p class=\"text-xs text-zinc-500\">ID: ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<p class=\"text-xs text-dust\">ID: ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var19 string
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(cmdErr.CorrelationID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 96, Col: 64}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/command_summary.templ`, Line: 105, Col: 60}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {

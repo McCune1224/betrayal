@@ -96,7 +96,8 @@ SELECT
     username,
     error_message,
     status,
-    timestamp
+    timestamp,
+    command_arguments
 FROM command_audit
 WHERE status != 'success'
 ORDER BY timestamp DESC

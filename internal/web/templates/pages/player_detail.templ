@@ -2,6 +2,7 @@ package pages
 
 import (
 	"github.com/mccune1224/betrayal/internal/web/templates/layouts"
+	"github.com/mccune1224/betrayal/internal/web/templates/partials"
 	"strconv"
 )
 
@@ -22,80 +23,80 @@ type PlayerDetailData struct {
 }
 
 templ PlayerDetail(data PlayerDetailData) {
-	@layouts.Base("Player " + data.Name) {
+	@layouts.Base("Player " + data.Name, "/players") {
 		<!-- Back Link -->
-		<a href="/players" class="inline-block text-orange-400 hover:text-orange-300 text-sm mb-4 min-h-[44px] py-2">
-			← BACK TO PLAYERS
+		<a href="/players" class="table-link text-sm mb-4 inline-flex">
+			&#x2190; BACK TO PLAYERS
 		</a>
 		
 		<!-- Header -->
-		<div class="bg-zinc-900 border border-amber-700 p-4 mb-4">
+		<div class="card mb-4">
 			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div>
-					<h1 class="text-xl font-bold text-amber-400">{ data.Role }</h1>
-					<p class="text-xs text-zinc-500 font-mono mt-1">ID: { strconv.FormatInt(data.ID, 10) }</p>
+					<h1 class="text-xl font-western text-leather tracking-wide">{ data.Role }</h1>
+					<p class="text-xs text-dust mt-1">ID: { strconv.FormatInt(data.ID, 10) }</p>
 				</div>
 				<div class="flex items-center gap-2">
-					@AlignmentBadge(data.Alignment)
-					@StatusBadge(data.Alive)
+					@partials.AlignmentBadge(data.Alignment)
+					@partials.StatusBadge(data.Alive)
 				</div>
 			</div>
 		</div>
 		
 		<!-- Stats Row -->
 		<div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-			<div class="bg-zinc-900 border border-amber-700/50 p-4">
-				<p class="text-xs text-zinc-500">COINS</p>
-				<p class="text-2xl font-bold text-yellow-500">{ strconv.Itoa(data.Coins) }</p>
+			<div class="card text-center">
+				<p class="text-xs text-dust">COINS</p>
+				<p class="text-2xl font-western text-wood">{ strconv.Itoa(data.Coins) }</p>
 			</div>
-			<div class="bg-zinc-900 border border-amber-700/50 p-4">
-				<p class="text-xs text-zinc-500">LUCK</p>
-				<p class="text-2xl font-bold text-purple-400">{ strconv.Itoa(data.Luck) }</p>
+			<div class="card text-center">
+				<p class="text-xs text-dust">LUCK</p>
+				<p class="text-2xl font-western text-leather">{ strconv.Itoa(data.Luck) }</p>
 			</div>
-			<div class="bg-zinc-900 border border-amber-700/50 p-4">
-				<p class="text-xs text-zinc-500">ITEMS</p>
-				<p class="text-2xl font-bold text-blue-400">{ strconv.Itoa(len(data.Items)) }</p>
+			<div class="card text-center">
+				<p class="text-xs text-dust">ITEMS</p>
+				<p class="text-2xl font-western text-sage">{ strconv.Itoa(len(data.Items)) }</p>
 			</div>
-			<div class="bg-zinc-900 border border-amber-700/50 p-4">
-				<p class="text-xs text-zinc-500">ABILITIES</p>
-				<p class="text-2xl font-bold text-green-400">{ strconv.Itoa(len(data.Abilities)) }</p>
+			<div class="card text-center">
+				<p class="text-xs text-dust">ABILITIES</p>
+				<p class="text-2xl font-western text-rust">{ strconv.Itoa(len(data.Abilities)) }</p>
 			</div>
 		</div>
 		
 		<!-- Inventory Grid -->
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 			<!-- Items -->
-			@InventorySection("ITEMS", "text-blue-400", data.Items)
+			@InventorySection("ITEMS", "text-sage", "border-l-sage", data.Items)
 			
 			<!-- Abilities -->
-			@InventorySection("ABILITIES", "text-green-400", data.Abilities)
+			@InventorySection("ABILITIES", "text-rust", "border-l-rust", data.Abilities)
 			
 			<!-- Perks -->
-			@InventorySection("PERKS", "text-yellow-400", data.Perks)
+			@InventorySection("PERKS", "text-wood", "border-l-wood", data.Perks)
 			
 			<!-- Statuses -->
-			@InventorySection("STATUSES", "text-orange-400", data.Statuses)
+			@InventorySection("STATUSES", "text-leather", "border-l-leather", data.Statuses)
 			
 			<!-- Immunities -->
-			@InventorySection("IMMUNITIES", "text-cyan-400", data.Immunities)
+			@InventorySection("IMMUNITIES", "text-rope", "border-l-rope", data.Immunities)
 			
 			<!-- Notes -->
-			@InventorySection("NOTES", "text-pink-400", data.Notes)
+			@InventorySection("NOTES", "text-dust", "border-l-dust", data.Notes)
 		</div>
 	}
 }
 
-templ InventorySection(title string, colorClass string, items []string) {
-	<div class="bg-zinc-900 border border-amber-700/50 p-4">
-		<h3 class={ "text-sm font-bold mb-3 border-b border-zinc-700 pb-2 " + colorClass }>{ title }</h3>
+templ InventorySection(title string, colorClass string, borderClass string, items []string) {
+	<div class="card">
+		<h3 class={ "text-sm font-semibold mb-3 border-b-2 border-rope pb-2 " + colorClass }>{ title }</h3>
 		if len(items) > 0 {
 			<ul class="space-y-1">
 				for _, item := range items {
-					<li class="text-sm bg-zinc-800 px-3 py-2 text-zinc-300 border-l-2 border-zinc-600">{ item }</li>
+					<li class={ "text-sm bg-parchment-dark px-3 py-2 text-ink border-l-2 " + borderClass }>{ item }</li>
 				}
 			</ul>
 		} else {
-			<p class="text-zinc-600 text-sm">NONE</p>
+			<p class="text-dust text-sm">NONE</p>
 		}
 	</div>
 }

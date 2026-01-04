@@ -72,6 +72,7 @@ func (h *AdminHandler) AuditLogs(c echo.Context) error {
 		auditData[i] = pages.AuditLogEntry{
 			ID:         int(log.ID),
 			Command:    log.CommandName,
+			Arguments:  FormatCommandArguments(log.CommandArguments),
 			Username:   log.Username,
 			UserID:     log.UserID,
 			ChannelID:  log.ChannelID.String,

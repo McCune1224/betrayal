@@ -1,0 +1,44 @@
+package partials
+
+// AlignmentBadge renders a badge for player alignment
+templ AlignmentBadge(alignment string) {
+	switch alignment {
+		case "GOOD":
+			<span class="badge-success">GOOD</span>
+		case "EVIL":
+			<span class="badge-danger">EVIL</span>
+		case "NEUTRAL":
+			<span class="badge-neutral">NEUTRAL</span>
+		default:
+			<span class="badge-neutral">{ alignment }</span>
+	}
+}
+
+// StatusBadge renders a badge for alive/dead status
+templ StatusBadge(alive bool) {
+	if alive {
+		<span class="badge-success">ALIVE</span>
+	} else {
+		<span class="badge-danger">DEAD</span>
+	}
+}
+
+// AuditStatusBadge renders a badge for command execution status
+templ AuditStatusBadge(status string) {
+	switch status {
+		case "success":
+			<span class="badge-success">OK</span>
+		case "error":
+			<span class="badge-danger">ERR</span>
+		default:
+			<span class="badge-neutral">{ status }</span>
+	}
+}
+
+// EmptyState renders a consistent empty state message
+templ EmptyState(message string) {
+	<div class="empty-state">
+		<span class="empty-state-icon">&#x2205;</span>
+		<p class="empty-state-text">{ message }</p>
+	</div>
+}

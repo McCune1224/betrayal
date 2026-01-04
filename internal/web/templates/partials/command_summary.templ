@@ -24,58 +24,67 @@ type TopCommandData struct {
 type CommandErrorData struct {
 	CorrelationID string
 	CommandName   string
+	Arguments     string // Formatted command arguments in Discord syntax
 	Username      string
 	Status        string
 	ErrorMessage  string
 	OccurredAt    time.Time
 }
 
+// FormatCommand returns the command with arguments in Discord syntax
+func (c CommandErrorData) FormatCommand() string {
+	if c.Arguments == "" {
+		return "/" + c.CommandName
+	}
+	return "/" + c.CommandName + " " + c.Arguments
+}
+
 templ CommandSummaryCard(summary *CommandActivitySummaryData) {
 	<div class="grid grid-cols-2 gap-3">
 		<div>
-			<p class="text-xs text-zinc-500">LAST HOUR</p>
-			<p class="text-2xl text-amber-400 font-semibold">{ fmt.Sprintf("%d", summary.CommandsLastHour) }</p>
+			<p class="text-xs text-dust">LAST HOUR</p>
+			<p class="text-2xl text-leather font-western">{ fmt.Sprintf("%d", summary.CommandsLastHour) }</p>
 		</div>
 		<div>
-			<p class="text-xs text-zinc-500">24H TOTAL</p>
-			<p class="text-xl text-orange-400 font-semibold">{ fmt.Sprintf("%d", summary.CommandsLast24h) }</p>
+			<p class="text-xs text-dust">24H TOTAL</p>
+			<p class="text-xl text-rust font-semibold">{ fmt.Sprintf("%d", summary.CommandsLast24h) }</p>
 		</div>
 		<div>
-			<p class="text-xs text-green-500">SUCCESSES</p>
-			<p class="text-lg text-zinc-100 font-semibold">{ fmt.Sprintf("%d", summary.SuccessLast24h) }</p>
+			<p class="text-xs text-sage font-semibold">SUCCESSES</p>
+			<p class="text-lg text-ink font-semibold">{ fmt.Sprintf("%d", summary.SuccessLast24h) }</p>
 		</div>
 		<div>
-			<p class="text-xs text-red-400">FAILURES</p>
-			<p class="text-lg text-zinc-100 font-semibold">{ fmt.Sprintf("%d", summary.FailuresLast24h) }</p>
+			<p class="text-xs text-rust font-semibold">FAILURES</p>
+			<p class="text-lg text-ink font-semibold">{ fmt.Sprintf("%d", summary.FailuresLast24h) }</p>
 		</div>
 		<div>
-			<p class="text-xs text-zinc-500">ADMIN USE</p>
-			<p class="text-lg text-zinc-100 font-semibold">{ fmt.Sprintf("%d", summary.AdminCommandsLast24h) }</p>
+			<p class="text-xs text-dust">ADMIN USE</p>
+			<p class="text-lg text-ink font-semibold">{ fmt.Sprintf("%d", summary.AdminCommandsLast24h) }</p>
 		</div>
 		<div>
-			<p class="text-xs text-zinc-500">AVG DURATION</p>
-			<p class="text-lg text-zinc-100 font-semibold">{ formatDuration(summary.AvgExecutionTimeMs) }</p>
+			<p class="text-xs text-dust">AVG DURATION</p>
+			<p class="text-lg text-ink font-semibold">{ formatDuration(summary.AvgExecutionTimeMs) }</p>
 		</div>
 	</div>
 }
 
 templ TopCommandsTable(commands []TopCommandData) {
 	<table class="w-full">
-		<thead class="text-xs text-zinc-500 uppercase border-b border-zinc-800">
+		<thead class="text-xs text-wood uppercase border-b-2 border-rope">
 			<tr>
-				<th class="text-left py-2">Command</th>
-				<th class="text-right py-2">Usage</th>
-				<th class="text-right py-2">Failures</th>
-				<th class="text-right py-2">Last Used</th>
+				<th class="text-left py-2 font-semibold">Command</th>
+				<th class="text-right py-2 font-semibold">Usage</th>
+				<th class="text-right py-2 font-semibold">Failures</th>
+				<th class="text-right py-2 font-semibold">Last Used</th>
 			</tr>
 		</thead>
-		<tbody class="divide-y divide-zinc-800">
+		<tbody class="divide-y divide-rope">
 			for _, cmd := range commands {
 				<tr class="text-sm">
-					<td class="py-2 text-amber-400 font-semibold">/{ cmd.CommandName }</td>
-					<td class="py-2 text-right text-zinc-200">{ fmt.Sprintf("%d", cmd.UsageCount) }</td>
-					<td class="py-2 text-right text-red-400">{ fmt.Sprintf("%d", cmd.FailureCount) }</td>
-					<td class="py-2 text-right text-zinc-400">{ timeSince(cmd.LastUsedAt) }</td>
+					<td class="py-2 text-leather font-semibold">/{ cmd.CommandName }</td>
+					<td class="py-2 text-right text-ink">{ fmt.Sprintf("%d", cmd.UsageCount) }</td>
+					<td class="py-2 text-right text-rust">{ fmt.Sprintf("%d", cmd.FailureCount) }</td>
+					<td class="py-2 text-right text-dust">{ timeSince(cmd.LastUsedAt) }</td>
 				</tr>
 			}
 		</tbody>
@@ -85,15 +94,15 @@ templ TopCommandsTable(commands []TopCommandData) {
 templ CommandErrorsList(errors []CommandErrorData) {
 	<div class="space-y-4">
 		for _, cmdErr := range errors {
-			<div class="border border-zinc-800 p-3">
+			<div class="border-2 border-rope p-3 bg-parchment-dark">
 				<div class="flex items-center justify-between text-sm">
-					<span class="text-red-400 font-semibold">/{ cmdErr.CommandName }</span>
-					<span class="text-zinc-500">{ timeSince(cmdErr.OccurredAt) }</span>
+					<span class="text-rust font-semibold break-all">{ cmdErr.FormatCommand() }</span>
+					<span class="text-dust shrink-0 ml-2">{ timeSince(cmdErr.OccurredAt) }</span>
 				</div>
-				<p class="text-xs text-zinc-400 mt-1">{ cmdErr.ErrorMessage }</p>
-				<p class="text-xs text-zinc-500 mt-2">{ cmdErr.Username } • { cmdErr.Status }</p>
+				<p class="text-xs text-ink mt-1">{ cmdErr.ErrorMessage }</p>
+				<p class="text-xs text-dust mt-2">{ cmdErr.Username } &#x2022; { cmdErr.Status }</p>
 				if cmdErr.CorrelationID != "" {
-					<p class="text-xs text-zinc-500">ID: { cmdErr.CorrelationID }</p>
+					<p class="text-xs text-dust">ID: { cmdErr.CorrelationID }</p>
 				}
 			</div>
 		}

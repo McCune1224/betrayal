@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "fmt"
 
-func Base(title string) templ.Component {
+func Base(title string, currentPath string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -44,11 +44,11 @@ func Base(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " | Betrayal Admin</title><link href=\"/static/css/output.css\" rel=\"stylesheet\"><script src=\"/static/js/htmx.min.js\"></script><script>\n\t\t\t// Toast notification handler\n\t\t\tdocument.body.addEventListener('showToast', function(evt) {\n\t\t\t\tconst toast = document.getElementById('toast');\n\t\t\t\tconst message = evt.detail.message;\n\t\t\t\tconst type = evt.detail.type;\n\t\t\t\t\n\t\t\t\ttoast.textContent = message;\n\t\t\t\ttoast.className = 'fixed top-4 right-4 px-4 py-3 border shadow-lg transition-opacity duration-300 z-50 ' + \n\t\t\t\t\t(type === 'error' ? 'bg-red-900 border-red-700 text-red-400' : 'bg-green-900 border-green-700 text-green-400');\n\t\t\t\ttoast.style.opacity = '1';\n\t\t\t\t\n\t\t\t\tsetTimeout(() => {\n\t\t\t\t\ttoast.style.opacity = '0';\n\t\t\t\t}, 3000);\n\t\t\t});\n\t\t</script></head><body class=\"bg-black text-amber-500 min-h-screen\"><!-- Desktop Nav -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " | Betrayal Admin</title><!-- Favicon - Sheriff Star --><link rel=\"icon\" href=\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>\"><!-- Google Fonts - Rye for western titles --><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Rye&display=swap\" rel=\"stylesheet\"><link href=\"/static/css/output.css\" rel=\"stylesheet\"><script src=\"/static/js/htmx.min.js\"></script><script>\n\t\t\t// Toast notification handler with slide-in animation\n\t\t\tdocument.body.addEventListener('showToast', function(evt) {\n\t\t\t\tconst toast = document.getElementById('toast');\n\t\t\t\tconst message = evt.detail.message;\n\t\t\t\tconst type = evt.detail.type;\n\t\t\t\t\n\t\t\t\ttoast.textContent = message;\n\t\t\t\ttoast.className = 'toast ' + (type === 'error' ? 'toast-error' : 'toast-success');\n\t\t\t\t\n\t\t\t\t// Trigger reflow for animation\n\t\t\t\ttoast.offsetHeight;\n\t\t\t\ttoast.classList.add('show');\n\t\t\t\t\n\t\t\t\tsetTimeout(() => {\n\t\t\t\t\ttoast.classList.remove('show');\n\t\t\t\t}, 4000);\n\t\t\t});\n\t\t</script></head><body class=\"min-h-screen\"><!-- Desktop Nav -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = DesktopNav().Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = DesktopNav(currentPath).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -64,11 +64,11 @@ func Base(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = MobileNav().Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MobileNav(currentPath).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<!-- Toast container --><div id=\"toast\" class=\"fixed top-4 right-4 px-4 py-3 border opacity-0 transition-opacity duration-300 z-50\"></div></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<!-- Toast container --><div id=\"toast\" class=\"toast\" role=\"alert\" aria-live=\"polite\"></div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -76,7 +76,7 @@ func Base(title string) templ.Component {
 	})
 }
 
-func DesktopNav() templ.Component {
+func DesktopNav(currentPath string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -97,7 +97,73 @@ func DesktopNav() templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<nav class=\"hidden md:block bg-zinc-900 border-b border-amber-700\"><div class=\"container mx-auto px-4\"><div class=\"flex items-center justify-between h-14\"><div class=\"flex items-center space-x-8\"><a href=\"/\" class=\"text-lg font-bold text-amber-400\">[BETRAYAL]</a><div class=\"flex space-x-1\"><a href=\"/\" class=\"px-3 py-2 text-sm text-zinc-400 hover:text-amber-500 hover:bg-amber-900/20 transition-colors\">HOME</a> <a href=\"/players\" class=\"px-3 py-2 text-sm text-zinc-400 hover:text-amber-500 hover:bg-amber-900/20 transition-colors\">PLAYERS</a> <a href=\"/admin/audit\" class=\"px-3 py-2 text-sm text-zinc-400 hover:text-amber-500 hover:bg-amber-900/20 transition-colors\">LOGS</a></div></div><form action=\"/logout\" method=\"POST\"><button type=\"submit\" class=\"px-3 py-2 text-sm text-zinc-400 hover:text-red-500 transition-colors\">LOGOUT</button></form></div></div></nav>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<nav class=\"hidden md:block wood-panel\"><div class=\"container mx-auto px-4\"><div class=\"flex items-center justify-between h-16\"><div class=\"flex items-center space-x-8\"><a href=\"/\" class=\"text-xl font-western tracking-wider text-parchment hover:text-white transition-colors\">BETRAYAL</a><div class=\"flex space-x-1\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var4 = []any{"px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/")}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var4...)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<a href=\"/\" class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var5 string
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var4).String())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/layouts/base.templ`, Line: 1, Col: 0}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\">HOME</a> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var6 = []any{"px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/players"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/players")}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var6...)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<a href=\"/players\" class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var7 string
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var6).String())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/layouts/base.templ`, Line: 1, Col: 0}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "\">PLAYERS</a> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var8 = []any{"px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/admin/audit"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/admin/audit")}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var8...)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<a href=\"/admin/audit\" class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var9 string
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var8).String())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/layouts/base.templ`, Line: 1, Col: 0}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\">LOGS</a></div></div><form action=\"/logout\" method=\"POST\"><button type=\"submit\" class=\"px-4 py-2 text-base font-medium text-parchment hover:text-red-300 transition-colors\">LOGOUT</button></form></div></div></nav>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -105,7 +171,7 @@ func DesktopNav() templ.Component {
 	})
 }
 
-func MobileNav() templ.Component {
+func MobileNav(currentPath string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -121,12 +187,78 @@ func MobileNav() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var4 == nil {
-			templ_7745c5c3_Var4 = templ.NopComponent
+		templ_7745c5c3_Var10 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var10 == nil {
+			templ_7745c5c3_Var10 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<nav class=\"bottom-nav\"><a href=\"/\" class=\"bottom-nav-item\"><span class=\"text-lg mb-1\">⌂</span> <span>HOME</span></a> <a href=\"/players\" class=\"bottom-nav-item\"><span class=\"text-lg mb-1\">◈</span> <span>PLAYERS</span></a> <a href=\"/admin/audit\" class=\"bottom-nav-item\"><span class=\"text-lg mb-1\">▤</span> <span>LOGS</span></a><form action=\"/logout\" method=\"POST\" class=\"flex-1\"><button type=\"submit\" class=\"bottom-nav-item w-full text-zinc-500 hover:text-red-500\"><span class=\"text-lg mb-1\">⏻</span> <span>OUT</span></button></form></nav>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<nav class=\"bottom-nav\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var11 = []any{"bottom-nav-item", templ.KV("active", currentPath == "/")}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var11...)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<a href=\"/\" class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var12 string
+		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var11).String())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/layouts/base.templ`, Line: 1, Col: 0}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\"><span class=\"text-xl mb-1\">&#x2302;</span> <span class=\"text-sm\">HOME</span></a> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var13 = []any{"bottom-nav-item", templ.KV("active", currentPath == "/players")}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var13...)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<a href=\"/players\" class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var14 string
+		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var13).String())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/layouts/base.templ`, Line: 1, Col: 0}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\"><span class=\"text-xl mb-1\">&#x2605;</span> <span class=\"text-sm\">PLAYERS</span></a> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var15 = []any{"bottom-nav-item", templ.KV("active", currentPath == "/admin/audit")}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var15...)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<a href=\"/admin/audit\" class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var16 string
+		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var15).String())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/layouts/base.templ`, Line: 1, Col: 0}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\"><span class=\"text-xl mb-1\">&#x2630;</span> <span class=\"text-sm\">LOGS</span></a><form action=\"/logout\" method=\"POST\" class=\"flex-1\"><button type=\"submit\" class=\"bottom-nav-item w-full hover:text-red-300\"><span class=\"text-xl mb-1\">&#x2716;</span> <span class=\"text-sm\">OUT</span></button></form></nav>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -151,33 +283,33 @@ func BaseSimple(title string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var5 == nil {
-			templ_7745c5c3_Var5 = templ.NopComponent
+		templ_7745c5c3_Var17 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var17 == nil {
+			templ_7745c5c3_Var17 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover\"><title>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover\"><title>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var6 string
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(title)
+		var templ_7745c5c3_Var18 string
+		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/layouts/base.templ`, Line: 102, Col: 16}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/layouts/base.templ`, Line: 110, Col: 16}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, " | Betrayal Admin</title><link href=\"/static/css/output.css\" rel=\"stylesheet\"></head><body class=\"bg-black text-amber-500 min-h-screen flex items-center justify-center p-4\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templ_7745c5c3_Var5.Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, " | Betrayal Admin</title><!-- Favicon - Sheriff Star --><link rel=\"icon\" href=\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>\"><!-- Google Fonts - Rye for western titles --><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Rye&display=swap\" rel=\"stylesheet\"><link href=\"/static/css/output.css\" rel=\"stylesheet\"></head><body class=\"min-h-screen flex items-center justify-center p-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</body></html>")
+		templ_7745c5c3_Err = templ_7745c5c3_Var17.Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

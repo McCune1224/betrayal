@@ -149,6 +149,7 @@ func buildRecentErrors(rows []models.ListRecentCommandErrorsRow, err error) []pa
 		errors = append(errors, pages.CommandErrorData{
 			CorrelationID: formatUUID(row.CorrelationID),
 			CommandName:   row.CommandName,
+			Arguments:     FormatCommandArguments(row.CommandArguments),
 			Username:      row.Username,
 			Status:        safeText(row.Status),
 			ErrorMessage:  safeText(row.ErrorMessage),

@@ -2,36 +2,44 @@ package layouts
 
 import "fmt"
 
-templ Base(title string) {
+templ Base(title string, currentPath string) {
 	<!DOCTYPE html>
 	<html lang="en">
 	<head>
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 		<title>{ title } | Betrayal Admin</title>
+		<!-- Favicon - Sheriff Star -->
+		<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>"/>
+		<!-- Google Fonts - Rye for western titles -->
+		<link rel="preconnect" href="https://fonts.googleapis.com"/>
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+		<link href="https://fonts.googleapis.com/css2?family=Rye&display=swap" rel="stylesheet"/>
 		<link href="/static/css/output.css" rel="stylesheet"/>
 		<script src="/static/js/htmx.min.js"></script>
 		<script>
-			// Toast notification handler
+			// Toast notification handler with slide-in animation
 			document.body.addEventListener('showToast', function(evt) {
 				const toast = document.getElementById('toast');
 				const message = evt.detail.message;
 				const type = evt.detail.type;
 				
 				toast.textContent = message;
-				toast.className = 'fixed top-4 right-4 px-4 py-3 border shadow-lg transition-opacity duration-300 z-50 ' + 
-					(type === 'error' ? 'bg-red-900 border-red-700 text-red-400' : 'bg-green-900 border-green-700 text-green-400');
-				toast.style.opacity = '1';
+				toast.className = 'toast ' + (type === 'error' ? 'toast-error' : 'toast-success');
+				
+				// Trigger reflow for animation
+				toast.offsetHeight;
+				toast.classList.add('show');
 				
 				setTimeout(() => {
-					toast.style.opacity = '0';
-				}, 3000);
+					toast.classList.remove('show');
+				}, 4000);
 			});
 		</script>
 	</head>
-	<body class="bg-black text-amber-500 min-h-screen">
+	<body class="min-h-screen">
 		<!-- Desktop Nav -->
-		@DesktopNav()
+		@DesktopNav(currentPath)
 		
 		<!-- Main Content - padding bottom for mobile nav -->
 		<main class="container mx-auto px-4 py-6 pb-safe md:pb-6 max-w-full overflow-x-hidden">
@@ -39,28 +47,28 @@ templ Base(title string) {
 		</main>
 		
 		<!-- Mobile Bottom Nav -->
-		@MobileNav()
+		@MobileNav(currentPath)
 		
 		<!-- Toast container -->
-		<div id="toast" class="fixed top-4 right-4 px-4 py-3 border opacity-0 transition-opacity duration-300 z-50"></div>
+		<div id="toast" class="toast" role="alert" aria-live="polite"></div>
 	</body>
 	</html>
 }
 
-templ DesktopNav() {
-	<nav class="hidden md:block bg-zinc-900 border-b border-amber-700">
+templ DesktopNav(currentPath string) {
+	<nav class="hidden md:block wood-panel">
 		<div class="container mx-auto px-4">
-			<div class="flex items-center justify-between h-14">
+			<div class="flex items-center justify-between h-16">
 				<div class="flex items-center space-x-8">
-					<a href="/" class="text-lg font-bold text-amber-400">[BETRAYAL]</a>
+					<a href="/" class="text-xl font-western tracking-wider text-parchment hover:text-white transition-colors">BETRAYAL</a>
 					<div class="flex space-x-1">
-						<a href="/" class="px-3 py-2 text-sm text-zinc-400 hover:text-amber-500 hover:bg-amber-900/20 transition-colors">HOME</a>
-						<a href="/players" class="px-3 py-2 text-sm text-zinc-400 hover:text-amber-500 hover:bg-amber-900/20 transition-colors">PLAYERS</a>
-						<a href="/admin/audit" class="px-3 py-2 text-sm text-zinc-400 hover:text-amber-500 hover:bg-amber-900/20 transition-colors">LOGS</a>
+						<a href="/" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/") }>HOME</a>
+						<a href="/players" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/players"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/players") }>PLAYERS</a>
+						<a href="/admin/audit" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/admin/audit"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/admin/audit") }>LOGS</a>
 					</div>
 				</div>
 				<form action="/logout" method="POST">
-					<button type="submit" class="px-3 py-2 text-sm text-zinc-400 hover:text-red-500 transition-colors">
+					<button type="submit" class="px-4 py-2 text-base font-medium text-parchment hover:text-red-300 transition-colors">
 						LOGOUT
 					</button>
 				</form>
@@ -69,24 +77,24 @@ templ DesktopNav() {
 	</nav>
 }
 
-templ MobileNav() {
+templ MobileNav(currentPath string) {
 	<nav class="bottom-nav">
-		<a href="/" class="bottom-nav-item">
-			<span class="text-lg mb-1">⌂</span>
-			<span>HOME</span>
+		<a href="/" class={ "bottom-nav-item", templ.KV("active", currentPath == "/") }>
+			<span class="text-xl mb-1">&#x2302;</span>
+			<span class="text-sm">HOME</span>
 		</a>
-		<a href="/players" class="bottom-nav-item">
-			<span class="text-lg mb-1">◈</span>
-			<span>PLAYERS</span>
+		<a href="/players" class={ "bottom-nav-item", templ.KV("active", currentPath == "/players") }>
+			<span class="text-xl mb-1">&#x2605;</span>
+			<span class="text-sm">PLAYERS</span>
 		</a>
-		<a href="/admin/audit" class="bottom-nav-item">
-			<span class="text-lg mb-1">▤</span>
-			<span>LOGS</span>
+		<a href="/admin/audit" class={ "bottom-nav-item", templ.KV("active", currentPath == "/admin/audit") }>
+			<span class="text-xl mb-1">&#x2630;</span>
+			<span class="text-sm">LOGS</span>
 		</a>
 		<form action="/logout" method="POST" class="flex-1">
-			<button type="submit" class="bottom-nav-item w-full text-zinc-500 hover:text-red-500">
-				<span class="text-lg mb-1">⏻</span>
-				<span>OUT</span>
+			<button type="submit" class="bottom-nav-item w-full hover:text-red-300">
+				<span class="text-xl mb-1">&#x2716;</span>
+				<span class="text-sm">OUT</span>
 			</button>
 		</form>
 	</nav>
@@ -100,9 +108,15 @@ templ BaseSimple(title string) {
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 		<title>{ title } | Betrayal Admin</title>
+		<!-- Favicon - Sheriff Star -->
+		<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>"/>
+		<!-- Google Fonts - Rye for western titles -->
+		<link rel="preconnect" href="https://fonts.googleapis.com"/>
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+		<link href="https://fonts.googleapis.com/css2?family=Rye&display=swap" rel="stylesheet"/>
 		<link href="/static/css/output.css" rel="stylesheet"/>
 	</head>
-	<body class="bg-black text-amber-500 min-h-screen flex items-center justify-center p-4">
+	<body class="min-h-screen flex items-center justify-center p-4">
 		{ children... }
 	</body>
 	</html>

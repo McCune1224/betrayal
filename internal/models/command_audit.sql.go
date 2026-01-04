@@ -23,7 +23,7 @@ last_day AS (
         COUNT(*) FILTER (WHERE status = 'success') AS successes,
         COUNT(*) FILTER (WHERE status != 'success') AS failures,
         COUNT(*) FILTER (WHERE is_admin) AS admin_commands,
-        COALESCE(AVG(execution_time_ms), 0) AS avg_execution_time_ms
+        COALESCE(AVG(execution_time_ms)::float8, 0::float8) AS avg_execution_time_ms
     FROM command_audit
     WHERE timestamp >= NOW() - INTERVAL '24 hours'
 )
@@ -295,7 +295,8 @@ SELECT
     username,
     error_message,
     status,
-    timestamp
+    timestamp,
+    command_arguments
 FROM command_audit
 WHERE status != 'success'
 ORDER BY timestamp DESC
@@ -303,13 +304,14 @@ LIMIT $1
 `
 
 type ListRecentCommandErrorsRow struct {
-	CorrelationID pgtype.UUID      `json:"correlation_id"`
-	CommandName   string           `json:"command_name"`
-	UserID        string           `json:"user_id"`
-	Username      string           `json:"username"`
-	ErrorMessage  pgtype.Text      `json:"error_message"`
-	Status        pgtype.Text      `json:"status"`
-	Timestamp     pgtype.Timestamp `json:"timestamp"`
+	CorrelationID    pgtype.UUID      `json:"correlation_id"`
+	CommandName      string           `json:"command_name"`
+	UserID           string           `json:"user_id"`
+	Username         string           `json:"username"`
+	ErrorMessage     pgtype.Text      `json:"error_message"`
+	Status           pgtype.Text      `json:"status"`
+	Timestamp        pgtype.Timestamp `json:"timestamp"`
+	CommandArguments []byte           `json:"command_arguments"`
 }
 
 func (q *Queries) ListRecentCommandErrors(ctx context.Context, limit int32) ([]ListRecentCommandErrorsRow, error) {
@@ -329,6 +331,7 @@ func (q *Queries) ListRecentCommandErrors(ctx context.Context, limit int32) ([]L
 			&i.ErrorMessage,
 			&i.Status,
 			&i.Timestamp,
+			&i.CommandArguments,
 		); err != nil {
 			return nil, err
 		}

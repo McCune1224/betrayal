@@ -10,6 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/mccune1224/betrayal/internal/web/templates/layouts"
+	"github.com/mccune1224/betrayal/internal/web/templates/partials"
 	"strconv"
 )
 
@@ -62,27 +63,27 @@ func PlayerDetail(data PlayerDetailData) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!-- Back Link --> <a href=\"/players\" class=\"inline-block text-orange-400 hover:text-orange-300 text-sm mb-4 min-h-[44px] py-2\">← BACK TO PLAYERS</a><!-- Header --> <div class=\"bg-zinc-900 border border-amber-700 p-4 mb-4\"><div class=\"flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4\"><div><h1 class=\"text-xl font-bold text-amber-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!-- Back Link --> <a href=\"/players\" class=\"table-link text-sm mb-4 inline-flex\">&#x2190; BACK TO PLAYERS</a><!-- Header --> <div class=\"card mb-4\"><div class=\"flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4\"><div><h1 class=\"text-xl font-western text-leather tracking-wide\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(data.Role)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 35, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 36, Col: 76}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</h1><p class=\"text-xs text-zinc-500 font-mono mt-1\">ID: ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</h1><p class=\"text-xs text-dust mt-1\">ID: ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.FormatInt(data.ID, 10))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 36, Col: 89}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 37, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -92,61 +93,61 @@ func PlayerDetail(data PlayerDetailData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = AlignmentBadge(data.Alignment).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = partials.AlignmentBadge(data.Alignment).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = StatusBadge(data.Alive).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = partials.StatusBadge(data.Alive).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></div></div><!-- Stats Row --> <div class=\"grid grid-cols-2 md:grid-cols-4 gap-2 mb-4\"><div class=\"bg-zinc-900 border border-amber-700/50 p-4\"><p class=\"text-xs text-zinc-500\">COINS</p><p class=\"text-2xl font-bold text-yellow-500\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div></div></div><!-- Stats Row --> <div class=\"grid grid-cols-2 md:grid-cols-4 gap-2 mb-4\"><div class=\"card text-center\"><p class=\"text-xs text-dust\">COINS</p><p class=\"text-2xl font-western text-wood\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.Coins))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 49, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 50, Col: 73}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</p></div><div class=\"bg-zinc-900 border border-amber-700/50 p-4\"><p class=\"text-xs text-zinc-500\">LUCK</p><p class=\"text-2xl font-bold text-purple-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</p></div><div class=\"card text-center\"><p class=\"text-xs text-dust\">LUCK</p><p class=\"text-2xl font-western text-leather\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.Luck))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 53, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 54, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</p></div><div class=\"bg-zinc-900 border border-amber-700/50 p-4\"><p class=\"text-xs text-zinc-500\">ITEMS</p><p class=\"text-2xl font-bold text-blue-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</p></div><div class=\"card text-center\"><p class=\"text-xs text-dust\">ITEMS</p><p class=\"text-2xl font-western text-sage\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(len(data.Items)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 57, Col: 79}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 58, Col: 78}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</p></div><div class=\"bg-zinc-900 border border-amber-700/50 p-4\"><p class=\"text-xs text-zinc-500\">ABILITIES</p><p class=\"text-2xl font-bold text-green-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</p></div><div class=\"card text-center\"><p class=\"text-xs text-dust\">ABILITIES</p><p class=\"text-2xl font-western text-rust\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(len(data.Abilities)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 61, Col: 84}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 62, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -156,7 +157,7 @@ func PlayerDetail(data PlayerDetailData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = InventorySection("ITEMS", "text-blue-400", data.Items).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = InventorySection("ITEMS", "text-sage", "border-l-sage", data.Items).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -164,7 +165,7 @@ func PlayerDetail(data PlayerDetailData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = InventorySection("ABILITIES", "text-green-400", data.Abilities).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = InventorySection("ABILITIES", "text-rust", "border-l-rust", data.Abilities).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -172,7 +173,7 @@ func PlayerDetail(data PlayerDetailData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = InventorySection("PERKS", "text-yellow-400", data.Perks).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = InventorySection("PERKS", "text-wood", "border-l-wood", data.Perks).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -180,7 +181,7 @@ func PlayerDetail(data PlayerDetailData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = InventorySection("STATUSES", "text-orange-400", data.Statuses).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = InventorySection("STATUSES", "text-leather", "border-l-leather", data.Statuses).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -188,7 +189,7 @@ func PlayerDetail(data PlayerDetailData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = InventorySection("IMMUNITIES", "text-cyan-400", data.Immunities).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = InventorySection("IMMUNITIES", "text-rope", "border-l-rope", data.Immunities).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -196,7 +197,7 @@ func PlayerDetail(data PlayerDetailData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = InventorySection("NOTES", "text-pink-400", data.Notes).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = InventorySection("NOTES", "text-dust", "border-l-dust", data.Notes).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -206,7 +207,7 @@ func PlayerDetail(data PlayerDetailData) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layouts.Base("Player "+data.Name).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = layouts.Base("Player "+data.Name, "/players").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -214,7 +215,7 @@ func PlayerDetail(data PlayerDetailData) templ.Component {
 	})
 }
 
-func InventorySection(title string, colorClass string, items []string) templ.Component {
+func InventorySection(title string, colorClass string, borderClass string, items []string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -235,11 +236,11 @@ func InventorySection(title string, colorClass string, items []string) templ.Com
 			templ_7745c5c3_Var9 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"bg-zinc-900 border border-amber-700/50 p-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"card\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var10 = []any{"text-sm font-bold mb-3 border-b border-zinc-700 pb-2 " + colorClass}
+		var templ_7745c5c3_Var10 = []any{"text-sm font-semibold mb-3 border-b-2 border-rope pb-2 " + colorClass}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var10...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -264,7 +265,7 @@ func InventorySection(title string, colorClass string, items []string) templ.Com
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 90, Col: 92}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 91, Col: 94}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -280,35 +281,53 @@ func InventorySection(title string, colorClass string, items []string) templ.Com
 				return templ_7745c5c3_Err
 			}
 			for _, item := range items {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<li class=\"text-sm bg-zinc-800 px-3 py-2 text-zinc-300 border-l-2 border-zinc-600\">")
+				var templ_7745c5c3_Var13 = []any{"text-sm bg-parchment-dark px-3 py-2 text-ink border-l-2 " + borderClass}
+				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var13...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var13 string
-				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(item)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 94, Col: 94}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<li class=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</li>")
+				var templ_7745c5c3_Var14 string
+				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var13).String())
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 1, Col: 0}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var15 string
+				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(item)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/player_detail.templ`, Line: 95, Col: 98}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</li>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</ul>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</ul>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<p class=\"text-zinc-600 text-sm\">NONE</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<p class=\"text-dust text-sm\">NONE</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -29,7 +29,7 @@ func HealthStatus(botStatus string, dbStatus string, lastChecked string) templ.C
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col gap-3\"><!-- Bot Status --><div class=\"flex items-center justify-between\"><span class=\"text-zinc-400 text-sm\">BOT</span><div class=\"flex items-center\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col gap-3\"><!-- Bot Status --><div class=\"flex items-center justify-between\"><span class=\"text-dust text-base\">BOT</span><div class=\"flex items-center\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -37,7 +37,7 @@ func HealthStatus(botStatus string, dbStatus string, lastChecked string) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div></div><!-- Database Status --><div class=\"flex items-center justify-between\"><span class=\"text-zinc-400 text-sm\">DATABASE</span><div class=\"flex items-center\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div></div><!-- Database Status --><div class=\"flex items-center justify-between\"><span class=\"text-dust text-base\">DATABASE</span><div class=\"flex items-center\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -45,7 +45,7 @@ func HealthStatus(botStatus string, dbStatus string, lastChecked string) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div></div><!-- Last Checked --><div class=\"text-xs text-zinc-600 mt-2\">CHECKED: ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div></div><!-- Last Checked --><div class=\"text-sm text-dust mt-2\">CHECKED: ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -58,7 +58,7 @@ func HealthStatus(botStatus string, dbStatus string, lastChecked string) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><!-- Manual Refresh Button --><button hx-get=\"/health/status\" hx-target=\"#health-status\" hx-swap=\"innerHTML\" class=\"btn-ghost text-sm mt-2\">REFRESH</button></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><!-- Manual Refresh Button --><button hx-get=\"/health/status\" hx-target=\"#health-status\" hx-swap=\"innerHTML\" class=\"btn-ghost mt-2\">REFRESH</button></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -89,17 +89,17 @@ func StatusIndicator(status string) templ.Component {
 		ctx = templ.ClearChildren(ctx)
 		switch status {
 		case "online", "ok":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<span class=\"status-online\"></span> <span class=\"text-green-500 text-sm\">ONLINE</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<span class=\"status-online\"></span> <span class=\"text-sage text-base font-bold\">ONLINE</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "degraded":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<span class=\"status-degraded\"></span> <span class=\"text-amber-500 text-sm\">DEGRADED</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<span class=\"status-degraded\"></span> <span class=\"text-rope text-base font-bold\">DEGRADED</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		default:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<span class=\"status-offline\"></span> <span class=\"text-red-500 text-sm\">OFFLINE</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<span class=\"status-offline\"></span> <span class=\"text-rust text-base font-bold\">OFFLINE</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -130,7 +130,7 @@ func HealthStatusLoading() templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"flex items-center justify-center py-4\"><span class=\"spinner\"></span> <span class=\"ml-2 text-zinc-500 text-sm\">CHECKING...</span></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"flex items-center justify-center py-4\"><span class=\"spinner\"></span> <span class=\"ml-2 text-dust text-base\">CHECKING...</span></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
