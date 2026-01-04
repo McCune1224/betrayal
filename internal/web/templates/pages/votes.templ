@@ -1,0 +1,309 @@
+package pages
+
+import (
+	"fmt"
+	"time"
+	"strconv"
+	"github.com/mccune1224/betrayal/internal/web/templates/layouts"
+	"github.com/mccune1224/betrayal/internal/web/templates/partials"
+)
+
+// VoteRow represents a single vote in the display
+type VoteRow struct {
+	ID         int
+	VoterID    int64
+	VoterName  string
+	TargetID   int64
+	TargetName string
+	Weight     int
+	Context    string
+	UpdatedAt  time.Time
+}
+
+// TallyRow represents a vote tally for a target
+type TallyRow struct {
+	TargetID   int64
+	TargetName string
+	RoleName   string
+	TotalVotes int
+	VoteCount  int
+	IsAlive    bool
+	Rank       int
+}
+
+// CycleOption represents a cycle in the history dropdown
+type CycleOption struct {
+	Day           int
+	IsElimination bool
+	Label         string
+	IsSelected    bool
+}
+
+// PlayerVoteStat represents vote statistics for a player
+type PlayerVoteStat struct {
+	PlayerID   int64
+	PlayerName string
+	Count      int
+}
+
+// VoteStatsData contains all voting statistics
+type VoteStatsData struct {
+	MostVotedPlayers  []PlayerVoteStat
+	MostActiveVoters  []PlayerVoteStat
+	LeastVotedPlayers []PlayerVoteStat
+}
+
+// VotesData contains all data for the votes page
+type VotesData struct {
+	CurrentPhase    string
+	CurrentDay      int
+	IsCurrentCycle  bool
+	Votes           []VoteRow
+	Tallies         []TallyRow
+	CycleOptions    []CycleOption
+	Stats           *VoteStatsData
+	TotalVotesCount int
+}
+
+func formatVoteTime(t time.Time) string {
+	if t.IsZero() {
+		return "-"
+	}
+	return t.Format("15:04:05")
+}
+
+func formatTimeSince(t time.Time) string {
+	if t.IsZero() {
+		return "-"
+	}
+	diff := time.Since(t)
+	if diff < time.Minute {
+		return "just now"
+	}
+	if diff < time.Hour {
+		return fmt.Sprintf("%dm ago", int(diff.Minutes()))
+	}
+	if diff < 24*time.Hour {
+		return fmt.Sprintf("%dh ago", int(diff.Hours()))
+	}
+	return t.Format("02 Jan 15:04")
+}
+
+templ Votes(data VotesData) {
+	@layouts.Base("Votes", "/votes") {
+		<h1 class="page-title mb-6">VOTE TRACKER</h1>
+
+		<!-- Current Cycle Header -->
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+			<!-- Current View Card -->
+			<div class="card">
+				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">VIEWING</h2>
+				<p class="text-3xl font-western text-leather">
+					{ data.CurrentPhase }
+					<span class="text-rust">{ strconv.Itoa(data.CurrentDay) }</span>
+				</p>
+				if data.IsCurrentCycle {
+					<span class="badge-success mt-2">CURRENT</span>
+				} else {
+					<span class="badge-neutral mt-2">HISTORICAL</span>
+				}
+			</div>
+
+			<!-- Vote Count Card -->
+			<div class="card">
+				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">VOTES CAST</h2>
+				<p class="text-3xl font-western text-leather">{ strconv.Itoa(data.TotalVotesCount) }</p>
+				<p class="text-sm text-dust mt-2">TOTAL THIS PHASE</p>
+			</div>
+
+			<!-- Top Target Card -->
+			<div class="card">
+				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">LEADING TARGET</h2>
+				if len(data.Tallies) > 0 {
+					<p class="text-xl font-bold text-rust">{ data.Tallies[0].TargetName }</p>
+					<p class="text-2xl font-western text-leather">{ strconv.Itoa(data.Tallies[0].TotalVotes) } votes</p>
+				} else {
+					<p class="text-dust">No votes yet</p>
+				}
+			</div>
+
+			<!-- Cycle Selector Card -->
+			<div class="card">
+				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">VIEW HISTORY</h2>
+				if len(data.CycleOptions) > 0 {
+					<form method="GET" action="/votes">
+						<select name="cycle" class="w-full p-2 border-2 border-rope bg-parchment text-ink" onchange="this.form.submit()">
+							for _, opt := range data.CycleOptions {
+								if opt.IsSelected {
+									<option value={ fmt.Sprintf("%d-%t", opt.Day, opt.IsElimination) } selected>{ opt.Label }</option>
+								} else {
+									<option value={ fmt.Sprintf("%d-%t", opt.Day, opt.IsElimination) }>{ opt.Label }</option>
+								}
+							}
+						</select>
+						<input type="hidden" name="day" value={ strconv.Itoa(data.CurrentDay) }/>
+						<input type="hidden" name="elimination" value={ strconv.FormatBool(data.CurrentPhase == "Elimination") }/>
+					</form>
+				} else {
+					<p class="text-dust mb-4">No voting history</p>
+				}
+				if !data.IsCurrentCycle {
+					<a href="/votes" class="btn-ghost mt-2 inline-block text-center w-full">VIEW CURRENT</a>
+				}
+			</div>
+		</div>
+
+		<!-- Main Content Grid -->
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+			<!-- Vote Tally (Main Focus) -->
+			<div class="card lg:col-span-2">
+				<div class="flex justify-between items-center mb-3 border-b-2 border-rope pb-2">
+					<h2 class="text-base text-wood font-bold">VOTE TALLY</h2>
+					if data.IsCurrentCycle {
+						<span class="text-rust text-sm font-bold">LIVE</span>
+					}
+				</div>
+				if len(data.Tallies) > 0 {
+					@VoteTallyTable(data.Tallies)
+				} else {
+					@partials.EmptyState("No votes have been cast yet")
+				}
+			</div>
+
+			<!-- Recent Votes -->
+			<div class="card">
+				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">INDIVIDUAL VOTES</h2>
+				if len(data.Votes) > 0 {
+					@VotesList(data.Votes)
+				} else {
+					@partials.EmptyState("No votes recorded")
+				}
+			</div>
+		</div>
+
+		<!-- Stats Section -->
+		if data.Stats != nil {
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+				<!-- Most Voted Players -->
+				<div class="card">
+					<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">MOST VOTED (ALL TIME)</h2>
+					if len(data.Stats.MostVotedPlayers) > 0 {
+						@PlayerStatsList(data.Stats.MostVotedPlayers, "votes received")
+					} else {
+						@partials.EmptyState("No data yet")
+					}
+				</div>
+
+				<!-- Most Active Voters -->
+				<div class="card">
+					<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">MOST ACTIVE VOTERS</h2>
+					if len(data.Stats.MostActiveVoters) > 0 {
+						@PlayerStatsList(data.Stats.MostActiveVoters, "votes cast")
+					} else {
+						@partials.EmptyState("No data yet")
+					}
+				</div>
+
+				<!-- Least Voted Players -->
+				<div class="card">
+					<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">LEAST VOTED</h2>
+					if len(data.Stats.LeastVotedPlayers) > 0 {
+						@PlayerStatsList(data.Stats.LeastVotedPlayers, "votes received")
+					} else {
+						@partials.EmptyState("No data yet")
+					}
+				</div>
+			</div>
+		}
+	}
+}
+
+templ VoteTallyTable(tallies []TallyRow) {
+	<table class="w-full">
+		<thead class="text-xs text-wood uppercase border-b-2 border-rope">
+			<tr>
+				<th class="text-left py-2 font-semibold">RANK</th>
+				<th class="text-left py-2 font-semibold">PLAYER</th>
+				<th class="text-left py-2 font-semibold">ROLE</th>
+				<th class="text-right py-2 font-semibold">VOTES</th>
+				<th class="text-right py-2 font-semibold">WEIGHT</th>
+				<th class="text-center py-2 font-semibold">STATUS</th>
+			</tr>
+		</thead>
+		<tbody class="divide-y divide-rope">
+			for _, tally := range tallies {
+				<tr class={ templ.KV("bg-rust/10", tally.Rank == 1) }>
+					<td class="py-2">
+						if tally.Rank == 1 {
+							<span class="text-xl font-western text-rust">1</span>
+						} else if tally.Rank == 2 {
+							<span class="text-lg font-bold text-leather">2</span>
+						} else if tally.Rank == 3 {
+							<span class="text-lg font-bold text-wood">3</span>
+						} else {
+							<span class="text-ink">{ strconv.Itoa(tally.Rank) }</span>
+						}
+					</td>
+					<td class="py-2 text-leather font-semibold">{ tally.TargetName }</td>
+					<td class="py-2 text-dust">{ tally.RoleName }</td>
+					<td class="py-2 text-right">
+						<span class="text-xl font-bold text-rust">{ strconv.Itoa(tally.TotalVotes) }</span>
+					</td>
+					<td class="py-2 text-right text-dust">
+						if tally.TotalVotes != tally.VoteCount {
+							<span class="text-rope">({ strconv.Itoa(tally.VoteCount) } voters)</span>
+						}
+					</td>
+					<td class="py-2 text-center">
+						@partials.StatusBadge(tally.IsAlive)
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}
+
+templ VoteTallyPartial(tallies []TallyRow) {
+	if len(tallies) > 0 {
+		@VoteTallyTable(tallies)
+	} else {
+		@partials.EmptyState("No votes have been cast yet")
+	}
+}
+
+templ VotesList(votes []VoteRow) {
+	<div class="space-y-3 max-h-96 overflow-y-auto">
+		for _, vote := range votes {
+			<div class="border-2 border-rope p-3 bg-parchment-dark">
+				<div class="flex items-center justify-between">
+					<span class="text-leather font-semibold">{ vote.VoterName }</span>
+					<span class="text-dust text-sm">{ formatTimeSince(vote.UpdatedAt) }</span>
+				</div>
+				<div class="mt-1">
+					<span class="text-dust">voted for</span>
+					<span class="text-rust font-bold ml-1">{ vote.TargetName }</span>
+					if vote.Weight > 1 {
+						<span class="badge-neutral ml-2">x{ strconv.Itoa(vote.Weight) }</span>
+					}
+				</div>
+				if vote.Context != "" {
+					<p class="text-xs text-dust mt-2 italic">"{ vote.Context }"</p>
+				}
+			</div>
+		}
+	</div>
+}
+
+templ PlayerStatsList(stats []PlayerVoteStat, suffix string) {
+	<div class="space-y-2">
+		for i, stat := range stats {
+			<div class="flex items-center justify-between py-2 border-b border-rope last:border-0">
+				<div class="flex items-center gap-2">
+					<span class="text-dust text-sm">{ strconv.Itoa(i + 1) }.</span>
+					<span class="text-leather font-semibold">{ stat.PlayerName }</span>
+				</div>
+				<span class="text-rust font-bold">{ strconv.Itoa(stat.Count) } <span class="text-dust font-normal text-sm">{ suffix }</span></span>
+			</div>
+		}
+	</div>
+}

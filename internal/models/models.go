@@ -272,6 +272,18 @@ type Status struct {
 	HourDuration int32  `json:"hour_duration"`
 }
 
+type Vote struct {
+	ID            int32            `json:"id"`
+	VoterID       int64            `json:"voter_id"`
+	TargetID      int64            `json:"target_id"`
+	CycleDay      int32            `json:"cycle_day"`
+	IsElimination bool             `json:"is_elimination"`
+	Weight        int32            `json:"weight"`
+	Context       pgtype.Text      `json:"context"`
+	CreatedAt     pgtype.Timestamp `json:"created_at"`
+	UpdatedAt     pgtype.Timestamp `json:"updated_at"`
+}
+
 type VoteChannel struct {
 	ChannelID string `json:"channel_id"`
 }

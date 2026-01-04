@@ -3,11 +3,12 @@ package vote
 import (
 	"context"
 	"fmt"
-	"github.com/mccune1224/betrayal/internal/logger"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mccune1224/betrayal/internal/discord"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"github.com/mccune1224/betrayal/internal/models"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
@@ -109,6 +110,23 @@ func (v *Vote) batch(ctx ken.SubCommandContext) (err error) {
 	sesh := ctx.GetSession()
 	event := ctx.GetEvent()
 
+	q := models.New(v.dbPool)
+	dbCtx := context.Background()
+
+	// Validate voter is a player
+	voterID, _ := util.Atoi64(ctx.GetEvent().Member.User.ID)
+	_, err = q.GetPlayer(dbCtx, voterID)
+	if err != nil {
+		return discord.ErrorMessage(ctx, "You are not a player", "You must be a player to vote")
+	}
+
+	// Get current game cycle
+	cycle, err := q.GetCycle(dbCtx)
+	if err != nil {
+		logger.Get().Error().Err(err).Msg("failed to get game cycle")
+		return discord.ErrorMessage(ctx, "Game cycle not found", "Please have admin set up the game cycle")
+	}
+
 	firstTarget, _ := sesh.GuildMember(discord.BetraylGuildID, ctx.Options().GetByName("user").UserValue(ctx).ID)
 	votedMembers := []*discordgo.Member{firstTarget}
 
@@ -117,6 +135,30 @@ func (v *Vote) batch(ctx ken.SubCommandContext) (err error) {
 		if ok {
 			nextMember, _ := sesh.GuildMember(discord.BetraylGuildID, user.UserValue(ctx).ID)
 			votedMembers = append(votedMembers, nextMember)
+		}
+	}
+
+	// Store each vote in database
+	for _, member := range votedMembers {
+		targetID, _ := util.Atoi64(member.User.ID)
+
+		// Validate target is a player
+		_, err = q.GetPlayer(dbCtx, targetID)
+		if err != nil {
+			logger.Get().Warn().Str("target", member.DisplayName()).Msg("batch vote target is not a player, skipping")
+			continue
+		}
+
+		_, err = q.UpsertVote(dbCtx, models.UpsertVoteParams{
+			VoterID:       voterID,
+			TargetID:      targetID,
+			CycleDay:      cycle.Day,
+			IsElimination: cycle.IsElimination,
+			Weight:        1,
+			Context:       pgtype.Text{Valid: false},
+		})
+		if err != nil {
+			logger.Get().Error().Err(err).Str("target", member.DisplayName()).Msg("failed to save batch vote")
 		}
 	}
 
@@ -136,8 +178,6 @@ func (v *Vote) batch(ctx ken.SubCommandContext) (err error) {
 		Color:       discord.ColorThemeYellow,
 	}
 
-	q := models.New(v.dbPool)
-	dbCtx := context.Background()
 	voteChannelID, err := q.GetVoteChannel(dbCtx)
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
@@ -150,7 +190,6 @@ func (v *Vote) batch(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "Failed to send vote message")
 	}
 
-	// _, err = sesh.ChannelMessageSend(voteChannelID, discord.Code(voteLogText)+"\n"+discord.AbsoluteTimestamp(time.Now().Unix())+" "+discord.MessageURL(confSuccMsg.Reference()))
 	_, err = sesh.ChannelMessageSend(voteChannelID, discord.Code(voteLogText))
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
@@ -181,12 +220,43 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "You are not a player", "You must be a player to vote")
 	}
 
+	// Get target player ID
+	targetID, _ := util.Atoi64(targetVoteUser.User.ID)
+	_, err = q.GetPlayer(dbCtx, targetID)
+	if err != nil {
+		return discord.ErrorMessage(ctx, "Target is not a player", "You can only vote for registered players")
+	}
+
+	// Get current game cycle
+	cycle, err := q.GetCycle(dbCtx)
+	if err != nil {
+		logger.Get().Error().Err(err).Msg("failed to get game cycle")
+		return discord.ErrorMessage(ctx, "Game cycle not found", "Please have admin set up the game cycle")
+	}
+
 	voteLogMsg := ""
+	var voteContextText pgtype.Text
 	if ok {
-		voteContext := voteContext.StringValue()
-		voteLogMsg = fmt.Sprintf("%s voted for %s with context: %s", event.Member.DisplayName(), targetVoteUser.DisplayName(), voteContext)
+		voteContextStr := voteContext.StringValue()
+		voteContextText = pgtype.Text{String: voteContextStr, Valid: true}
+		voteLogMsg = fmt.Sprintf("%s voted for %s with context: %s", event.Member.DisplayName(), targetVoteUser.DisplayName(), voteContextStr)
 	} else {
+		voteContextText = pgtype.Text{Valid: false}
 		voteLogMsg = fmt.Sprintf("%s voted for %s", event.Member.DisplayName(), targetVoteUser.DisplayName())
+	}
+
+	// Store vote in database (upsert - will update if player already voted this cycle)
+	_, err = q.UpsertVote(dbCtx, models.UpsertVoteParams{
+		VoterID:       voterID,
+		TargetID:      targetID,
+		CycleDay:      cycle.Day,
+		IsElimination: cycle.IsElimination,
+		Weight:        1, // Default weight, can be modified for special abilities
+		Context:       voteContextText,
+	})
+	if err != nil {
+		logger.Get().Error().Err(err).Msg("failed to save vote to database")
+		return discord.AlexError(ctx, "Failed to save vote")
 	}
 
 	voteChannel, err := q.GetVoteChannel(dbCtx)
@@ -207,7 +277,6 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "Failed to send vote message")
 	}
 
-	// _, err = sesh.ChannelMessageSend(voteChannel, discord.Code(voteLogMsg)+"\n"+discord.AbsoluteTimestamp(time.Now().Unix())+" "+discord.MessageURL(confSuccMsg.Reference()))
 	_, err = sesh.ChannelMessageSend(voteChannel, discord.Code(voteLogMsg))
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")

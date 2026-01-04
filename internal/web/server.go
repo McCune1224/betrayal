@@ -115,6 +115,7 @@ func (s *Server) setupRoutes() {
 	dashboardHandler := handlers.NewDashboardHandler(s.dbPool)
 	playersHandler := handlers.NewPlayersHandler(s.dbPool)
 	adminHandler := handlers.NewAdminHandler(s.dbPool, s.railwayClient)
+	votesHandler := handlers.NewVotesHandler(s.dbPool)
 
 	// Auth middleware
 	authMiddleware := webmiddleware.NewAuthMiddleware(s.sessionStore)
@@ -132,6 +133,8 @@ func (s *Server) setupRoutes() {
 	protected.GET("/players", playersHandler.List)
 	protected.GET("/players/table", playersHandler.Table)
 	protected.GET("/players/:id", playersHandler.Detail)
+	protected.GET("/votes", votesHandler.Votes)
+	protected.GET("/votes/tally", votesHandler.VoteTally)
 	protected.POST("/admin/redeploy", adminHandler.Redeploy)
 	protected.GET("/admin/audit", adminHandler.AuditLogs)
 }

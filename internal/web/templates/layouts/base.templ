@@ -64,6 +64,7 @@ templ DesktopNav(currentPath string) {
 					<div class="flex space-x-1">
 						<a href="/" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/") }>HOME</a>
 						<a href="/players" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/players"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/players") }>PLAYERS</a>
+						<a href="/votes" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/votes"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/votes") }>VOTES</a>
 						<a href="/admin/audit" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/admin/audit"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/admin/audit") }>LOGS</a>
 					</div>
 				</div>
@@ -86,6 +87,10 @@ templ MobileNav(currentPath string) {
 		<a href="/players" class={ "bottom-nav-item", templ.KV("active", currentPath == "/players") }>
 			<span class="text-xl mb-1">&#x2605;</span>
 			<span class="text-sm">PLAYERS</span>
+		</a>
+		<a href="/votes" class={ "bottom-nav-item", templ.KV("active", currentPath == "/votes") }>
+			<span class="text-xl mb-1">&#x2713;</span>
+			<span class="text-sm">VOTES</span>
 		</a>
 		<a href="/admin/audit" class={ "bottom-nav-item", templ.KV("active", currentPath == "/admin/audit") }>
 			<span class="text-xl mb-1">&#x2630;</span>
