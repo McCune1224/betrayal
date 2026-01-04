@@ -18,6 +18,11 @@ type InventoryTestSuite struct {
 func (its *InventoryTestSuite) SetupTest() {
 	godotenv.Load(".env")
 	godotenv.Load("../.env")
+
+	if !postgresSocketAvailable() {
+		its.T().Skip("skipping inventory tests: postgres socket not available at /tmp/.s.PGSQL.5432")
+	}
+
 	pools, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
 		its.FailNow(err.Error())
@@ -27,4 +32,11 @@ func (its *InventoryTestSuite) SetupTest() {
 
 func TestInventorySuite(t *testing.T) {
 	suite.Run(t, new(InventoryTestSuite))
+}
+
+func postgresSocketAvailable() bool {
+	if _, err := os.Stat("/tmp/.s.PGSQL.5432"); err != nil {
+		return false
+	}
+	return true
 }

@@ -5,6 +5,10 @@
 run:
 	go run ./cmd/betrayal-bot/main.go
 
+# Run web server only (no Discord bot)
+run-web:
+	DISABLE_DISCORD=true go run ./cmd/betrayal-bot/main.go
+
 # Connect to database
 sql: 
 	psql $(shell cat .env | grep DATABASE_POOLER_URL | cut -d '=' -f2)

@@ -19,6 +19,12 @@ func (lts *LoggerTestSuite) SetupTest() {
 	godotenv.Load(".env")
 	godotenv.Load("../.env")
 	godotenv.Load("../../.env")
+
+	if !postgresSocketAvailable() {
+		lts.T().Skip("skipping logger tests: postgres socket not available at /tmp/.s.PGSQL.5432")
+		return
+	}
+
 	pools, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
 		lts.FailNow(err.Error())
@@ -40,4 +46,11 @@ func (lts *LoggerTestSuite) TearDownTest() {
 
 func TestLoggerSuite(t *testing.T) {
 	suite.Run(t, new(LoggerTestSuite))
+}
+
+func postgresSocketAvailable() bool {
+	if _, err := os.Stat("/tmp/.s.PGSQL.5432"); err != nil {
+		return false
+	}
+	return true
 }

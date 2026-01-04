@@ -44,3 +44,20 @@ func NumericToString(num pgtype.Numeric) (string, error) {
 	s := val.(string)
 	return s, nil
 }
+
+func IntFromNumeric(num pgtype.Numeric) (int, error) {
+	if !num.Valid {
+		return 0, nil
+	}
+
+	val, err := num.Int64Value()
+	if err != nil {
+		return 0, err
+	}
+
+	if !val.Valid {
+		return 0, nil
+	}
+
+	return int(val.Int64), nil
+}

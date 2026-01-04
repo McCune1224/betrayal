@@ -1,0 +1,130 @@
+package partials
+
+import (
+	"fmt"
+	"time"
+)
+
+type CommandActivitySummaryData struct {
+	CommandsLastHour     int
+	CommandsLast24h      int
+	SuccessLast24h       int
+	FailuresLast24h      int
+	AdminCommandsLast24h int
+	AvgExecutionTimeMs   int
+}
+
+type TopCommandData struct {
+	CommandName  string
+	UsageCount   int
+	FailureCount int
+	LastUsedAt   time.Time
+}
+
+type CommandErrorData struct {
+	CorrelationID string
+	CommandName   string
+	Username      string
+	Status        string
+	ErrorMessage  string
+	OccurredAt    time.Time
+}
+
+templ CommandSummaryCard(summary *CommandActivitySummaryData) {
+	<div class="grid grid-cols-2 gap-3">
+		<div>
+			<p class="text-xs text-zinc-500">LAST HOUR</p>
+			<p class="text-2xl text-amber-400 font-semibold">{ fmt.Sprintf("%d", summary.CommandsLastHour) }</p>
+		</div>
+		<div>
+			<p class="text-xs text-zinc-500">24H TOTAL</p>
+			<p class="text-xl text-orange-400 font-semibold">{ fmt.Sprintf("%d", summary.CommandsLast24h) }</p>
+		</div>
+		<div>
+			<p class="text-xs text-green-500">SUCCESSES</p>
+			<p class="text-lg text-zinc-100 font-semibold">{ fmt.Sprintf("%d", summary.SuccessLast24h) }</p>
+		</div>
+		<div>
+			<p class="text-xs text-red-400">FAILURES</p>
+			<p class="text-lg text-zinc-100 font-semibold">{ fmt.Sprintf("%d", summary.FailuresLast24h) }</p>
+		</div>
+		<div>
+			<p class="text-xs text-zinc-500">ADMIN USE</p>
+			<p class="text-lg text-zinc-100 font-semibold">{ fmt.Sprintf("%d", summary.AdminCommandsLast24h) }</p>
+		</div>
+		<div>
+			<p class="text-xs text-zinc-500">AVG DURATION</p>
+			<p class="text-lg text-zinc-100 font-semibold">{ formatDuration(summary.AvgExecutionTimeMs) }</p>
+		</div>
+	</div>
+}
+
+templ TopCommandsTable(commands []TopCommandData) {
+	<table class="w-full">
+		<thead class="text-xs text-zinc-500 uppercase border-b border-zinc-800">
+			<tr>
+				<th class="text-left py-2">Command</th>
+				<th class="text-right py-2">Usage</th>
+				<th class="text-right py-2">Failures</th>
+				<th class="text-right py-2">Last Used</th>
+			</tr>
+		</thead>
+		<tbody class="divide-y divide-zinc-800">
+			for _, cmd := range commands {
+				<tr class="text-sm">
+					<td class="py-2 text-amber-400 font-semibold">/{ cmd.CommandName }</td>
+					<td class="py-2 text-right text-zinc-200">{ fmt.Sprintf("%d", cmd.UsageCount) }</td>
+					<td class="py-2 text-right text-red-400">{ fmt.Sprintf("%d", cmd.FailureCount) }</td>
+					<td class="py-2 text-right text-zinc-400">{ timeSince(cmd.LastUsedAt) }</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}
+
+templ CommandErrorsList(errors []CommandErrorData) {
+	<div class="space-y-4">
+		for _, cmdErr := range errors {
+			<div class="border border-zinc-800 p-3">
+				<div class="flex items-center justify-between text-sm">
+					<span class="text-red-400 font-semibold">/{ cmdErr.CommandName }</span>
+					<span class="text-zinc-500">{ timeSince(cmdErr.OccurredAt) }</span>
+				</div>
+				<p class="text-xs text-zinc-400 mt-1">{ cmdErr.ErrorMessage }</p>
+				<p class="text-xs text-zinc-500 mt-2">{ cmdErr.Username } • { cmdErr.Status }</p>
+				if cmdErr.CorrelationID != "" {
+					<p class="text-xs text-zinc-500">ID: { cmdErr.CorrelationID }</p>
+				}
+			</div>
+		}
+	</div>
+}
+
+func formatDuration(ms int) string {
+	if ms <= 0 {
+		return "-"
+	}
+
+	return fmt.Sprintf("%dms", ms)
+}
+
+func timeSince(t time.Time) string {
+	if t.IsZero() {
+		return "-"
+	}
+
+	diff := time.Since(t)
+	if diff < time.Minute {
+		return "just now"
+	}
+
+	if diff < time.Hour {
+		return fmt.Sprintf("%dm ago", int(diff.Minutes()))
+	}
+
+	if diff < 24*time.Hour {
+		return fmt.Sprintf("%dh ago", int(diff.Hours()))
+	}
+
+	return t.Format("02 Jan 15:04")
+}

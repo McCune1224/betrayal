@@ -11,6 +11,56 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getCommandActivitySummary = `-- name: GetCommandActivitySummary :one
+WITH last_hour AS (
+    SELECT COUNT(*) AS total
+    FROM command_audit
+    WHERE timestamp >= NOW() - INTERVAL '1 hour'
+),
+last_day AS (
+    SELECT
+        COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE status = 'success') AS successes,
+        COUNT(*) FILTER (WHERE status != 'success') AS failures,
+        COUNT(*) FILTER (WHERE is_admin) AS admin_commands,
+        COALESCE(AVG(execution_time_ms), 0) AS avg_execution_time_ms
+    FROM command_audit
+    WHERE timestamp >= NOW() - INTERVAL '24 hours'
+)
+SELECT
+    COALESCE(last_hour.total, 0) AS commands_last_hour,
+    COALESCE(last_day.total, 0) AS commands_last_24h,
+    COALESCE(last_day.successes, 0) AS success_count_last_24h,
+    COALESCE(last_day.failures, 0) AS failure_count_last_24h,
+    COALESCE(last_day.admin_commands, 0) AS admin_commands_last_24h,
+    COALESCE(last_day.avg_execution_time_ms, 0) AS avg_execution_time_ms_last_24h
+FROM last_hour,
+     last_day
+`
+
+type GetCommandActivitySummaryRow struct {
+	CommandsLastHour          int64       `json:"commands_last_hour"`
+	CommandsLast24h           int64       `json:"commands_last_24h"`
+	SuccessCountLast24h       int64       `json:"success_count_last_24h"`
+	FailureCountLast24h       int64       `json:"failure_count_last_24h"`
+	AdminCommandsLast24h      int64       `json:"admin_commands_last_24h"`
+	AvgExecutionTimeMsLast24h interface{} `json:"avg_execution_time_ms_last_24h"`
+}
+
+func (q *Queries) GetCommandActivitySummary(ctx context.Context) (GetCommandActivitySummaryRow, error) {
+	row := q.db.QueryRow(ctx, getCommandActivitySummary)
+	var i GetCommandActivitySummaryRow
+	err := row.Scan(
+		&i.CommandsLastHour,
+		&i.CommandsLast24h,
+		&i.SuccessCountLast24h,
+		&i.FailureCountLast24h,
+		&i.AdminCommandsLast24h,
+		&i.AvgExecutionTimeMsLast24h,
+	)
+	return i, err
+}
+
 const getCommandAuditByCorrelationID = `-- name: GetCommandAuditByCorrelationID :one
 SELECT id, correlation_id, timestamp, command_name, user_id, username, user_roles, guild_id, channel_id, is_admin, command_arguments, status, error_message, execution_time_ms, environment
 FROM command_audit
@@ -237,6 +287,59 @@ func (q *Queries) ListCommandAuditByUser(ctx context.Context, arg ListCommandAud
 	return items, nil
 }
 
+const listRecentCommandErrors = `-- name: ListRecentCommandErrors :many
+SELECT
+    correlation_id,
+    command_name,
+    user_id,
+    username,
+    error_message,
+    status,
+    timestamp
+FROM command_audit
+WHERE status != 'success'
+ORDER BY timestamp DESC
+LIMIT $1
+`
+
+type ListRecentCommandErrorsRow struct {
+	CorrelationID pgtype.UUID      `json:"correlation_id"`
+	CommandName   string           `json:"command_name"`
+	UserID        string           `json:"user_id"`
+	Username      string           `json:"username"`
+	ErrorMessage  pgtype.Text      `json:"error_message"`
+	Status        pgtype.Text      `json:"status"`
+	Timestamp     pgtype.Timestamp `json:"timestamp"`
+}
+
+func (q *Queries) ListRecentCommandErrors(ctx context.Context, limit int32) ([]ListRecentCommandErrorsRow, error) {
+	rows, err := q.db.Query(ctx, listRecentCommandErrors, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRecentCommandErrorsRow
+	for rows.Next() {
+		var i ListRecentCommandErrorsRow
+		if err := rows.Scan(
+			&i.CorrelationID,
+			&i.CommandName,
+			&i.UserID,
+			&i.Username,
+			&i.ErrorMessage,
+			&i.Status,
+			&i.Timestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRecentCommands = `-- name: ListRecentCommands :many
 SELECT id, correlation_id, timestamp, command_name, user_id, username, user_roles, guild_id, channel_id, is_admin, command_arguments, status, error_message, execution_time_ms, environment
 FROM command_audit
@@ -270,6 +373,51 @@ func (q *Queries) ListRecentCommands(ctx context.Context) ([]CommandAudit, error
 			&i.ErrorMessage,
 			&i.ExecutionTimeMs,
 			&i.Environment,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTopCommandsLastHour = `-- name: ListTopCommandsLastHour :many
+SELECT
+    command_name,
+    COUNT(*) AS usage_count,
+    COUNT(*) FILTER (WHERE status != 'success') AS failure_count,
+    MAX(timestamp) AS last_used_at
+FROM command_audit
+WHERE timestamp >= NOW() - INTERVAL '1 hour'
+GROUP BY command_name
+ORDER BY usage_count DESC, command_name
+LIMIT $1
+`
+
+type ListTopCommandsLastHourRow struct {
+	CommandName  string      `json:"command_name"`
+	UsageCount   int64       `json:"usage_count"`
+	FailureCount int64       `json:"failure_count"`
+	LastUsedAt   interface{} `json:"last_used_at"`
+}
+
+func (q *Queries) ListTopCommandsLastHour(ctx context.Context, limit int32) ([]ListTopCommandsLastHourRow, error) {
+	rows, err := q.db.Query(ctx, listTopCommandsLastHour, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTopCommandsLastHourRow
+	for rows.Next() {
+		var i ListTopCommandsLastHourRow
+		if err := rows.Scan(
+			&i.CommandName,
+			&i.UsageCount,
+			&i.FailureCount,
+			&i.LastUsedAt,
 		); err != nil {
 			return nil, err
 		}

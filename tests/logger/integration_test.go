@@ -1,3 +1,5 @@
+//go:build integration
+
 package logger
 
 import (
@@ -9,13 +11,15 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/mccune1224/betrayal/internal/logger"
 )
 
 // AuditIntegrationSuite tests the full audit flow with multiple commands
 type AuditIntegrationSuite struct {
 	suite.Suite
 	dbPool *pgxpool.Pool
-	writer *AuditWriter
+	writer *logger.AuditWriter
 }
 
 // SetupTest initializes the integration test suite
@@ -36,14 +40,13 @@ func (suite *AuditIntegrationSuite) SetupTest() {
 	}
 
 	// Initialize audit writer
-	suite.writer = NewAuditWriter(suite.dbPool, 50, 3*time.Second)
-	go suite.writer.Start(context.Background())
+	suite.writer = logger.NewAuditWriter(suite.dbPool, "test")
 }
 
 // TearDownTest closes connections and cleanup
 func (suite *AuditIntegrationSuite) TearDownTest() {
 	if suite.writer != nil {
-		suite.writer.Stop()
+		suite.writer.Close()
 	}
 	if suite.dbPool != nil {
 		// Clean up test data
@@ -54,7 +57,7 @@ func (suite *AuditIntegrationSuite) TearDownTest() {
 
 // TestSingleCommandAudit tests audit logging for a single command
 func (suite *AuditIntegrationSuite) TestSingleCommandAudit() {
-	audit := CommandAudit{
+	audit := logger.CommandAudit{
 		CorrelationID:    "test-corr-id-1",
 		CommandName:      "test_command",
 		UserID:           "test_user_1",
@@ -90,7 +93,7 @@ func (suite *AuditIntegrationSuite) TestMultipleCommandsAudit() {
 
 	// Log multiple commands
 	for i := 0; i < numCommands; i++ {
-		audit := CommandAudit{
+		audit := logger.CommandAudit{
 			CorrelationID:    fmt.Sprintf("test-corr-id-%d", i),
 			CommandName:      fmt.Sprintf("cmd_%d", i%5),
 			UserID:           fmt.Sprintf("test_user_%d", i%10),
@@ -121,7 +124,7 @@ func (suite *AuditIntegrationSuite) TestMultipleCommandsAudit() {
 // TestErrorCommandAudit tests audit logging for failed commands
 func (suite *AuditIntegrationSuite) TestErrorCommandAudit() {
 	errorMsg := "command execution failed"
-	audit := CommandAudit{
+	audit := logger.CommandAudit{
 		CorrelationID:    "test-corr-error-1",
 		CommandName:      "failed_command",
 		UserID:           "test_user_error",
@@ -162,7 +165,7 @@ func (suite *AuditIntegrationSuite) TestConcurrentCommandAudit() {
 		go func(goroutineID int) {
 			defer wg.Done()
 			for i := 0; i < commandsPerGoroutine; i++ {
-				audit := CommandAudit{
+				audit := logger.CommandAudit{
 					CorrelationID:    fmt.Sprintf("concurrent-%d-%d", goroutineID, i),
 					CommandName:      fmt.Sprintf("cmd_%d", goroutineID),
 					UserID:           fmt.Sprintf("test_user_%d", goroutineID),
@@ -200,7 +203,7 @@ func (suite *AuditIntegrationSuite) TestAuditDataIntegrity() {
 		"options":       map[string]interface{}{"nested": "value"},
 	}
 
-	audit := CommandAudit{
+	audit := logger.CommandAudit{
 		CorrelationID:    "test-integrity-1",
 		CommandName:      "data_integrity_cmd",
 		UserID:           "test_user_integrity",
@@ -241,7 +244,7 @@ func (suite *AuditIntegrationSuite) TestAuditStatistics() {
 	users := []string{"user_1", "user_2", "user_3"}
 
 	for i := 0; i < 30; i++ {
-		audit := CommandAudit{
+		audit := logger.CommandAudit{
 			CorrelationID:    fmt.Sprintf("stats-test-%d", i),
 			CommandName:      commands[i%3],
 			UserID:           users[i%3],
@@ -291,7 +294,7 @@ func (suite *AuditIntegrationSuite) TestAuditStatistics() {
 func (suite *AuditIntegrationSuite) TestAuditBatchFlushing() {
 	// Write exactly one batch (50 records)
 	for i := 0; i < 50; i++ {
-		audit := CommandAudit{
+		audit := logger.CommandAudit{
 			CorrelationID:    fmt.Sprintf("batch-test-1-%d", i),
 			CommandName:      "batch_cmd",
 			UserID:           "test_user_batch",
@@ -317,7 +320,6 @@ func (suite *AuditIntegrationSuite) TestAuditBatchFlushing() {
 	suite.Equal(int64(50), count, "Batch should be flushed when reaching batch size")
 }
 
-// In TestAuditIntegration, run the integration tests
 func TestAuditIntegration(t *testing.T) {
 	suite.Run(t, new(AuditIntegrationSuite))
 }

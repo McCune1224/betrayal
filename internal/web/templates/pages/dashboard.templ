@@ -2,15 +2,25 @@ package pages
 
 import (
 	"github.com/mccune1224/betrayal/internal/web/templates/layouts"
+	"github.com/mccune1224/betrayal/internal/web/templates/partials"
 	"strconv"
 )
 
+type CommandActivitySummaryData = partials.CommandActivitySummaryData
+
+type TopCommandData = partials.TopCommandData
+
+type CommandErrorData = partials.CommandErrorData
+
 type DashboardData struct {
-	CyclePhase   string
-	CycleNumber  int
-	PlayersAlive int
-	PlayersDead  int
-	TotalPlayers int
+	CyclePhase     string
+	CycleNumber    int
+	PlayersAlive   int
+	PlayersDead    int
+	TotalPlayers   int
+	CommandSummary *CommandActivitySummaryData
+	TopCommands    []TopCommandData
+	RecentErrors   []CommandErrorData
 }
 
 templ Dashboard(data DashboardData) {
@@ -61,14 +71,13 @@ templ Dashboard(data DashboardData) {
 			});
 		</script>
 		<h1 class="text-2xl font-bold mb-6 text-amber-400">DASHBOARD</h1>
-		
+
 		<!-- Status Cards - Mobile: 1 col, Desktop: 2 col then 3 col -->
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-			
 			<!-- Bot Status Card - Most Important -->
 			<div class="bg-zinc-900 border border-amber-700 p-4">
 				<h2 class="text-sm text-zinc-400 mb-3 border-b border-zinc-700 pb-2">SYSTEM STATUS</h2>
-				<div 
+				<div
 					id="health-status"
 					hx-get="/health/status"
 					hx-trigger="load, every 15s"
@@ -80,7 +89,7 @@ templ Dashboard(data DashboardData) {
 					</div>
 				</div>
 			</div>
-			
+
 			<!-- Cycle Status -->
 			<div class="bg-zinc-900 border border-amber-700 p-4">
 				<h2 class="text-sm text-zinc-400 mb-3 border-b border-zinc-700 pb-2">CURRENT CYCLE</h2>
@@ -89,7 +98,7 @@ templ Dashboard(data DashboardData) {
 					<span class="text-orange-400">{ strconv.Itoa(data.CycleNumber) }</span>
 				</p>
 			</div>
-			
+
 			<!-- Player Count -->
 			<div class="bg-zinc-900 border border-amber-700 p-4">
 				<h2 class="text-sm text-zinc-400 mb-3 border-b border-zinc-700 pb-2">PLAYERS</h2>
@@ -105,7 +114,7 @@ templ Dashboard(data DashboardData) {
 				</div>
 				<p class="text-xs text-zinc-600 mt-2">{ strconv.Itoa(data.TotalPlayers) } TOTAL</p>
 			</div>
-			
+
 			<!-- Quick Actions -->
 			<div class="bg-zinc-900 border border-amber-700 p-4">
 				<h2 class="text-sm text-zinc-400 mb-3 border-b border-zinc-700 pb-2">ACTIONS</h2>
@@ -125,17 +134,55 @@ templ Dashboard(data DashboardData) {
 				</button>
 			</div>
 		</div>
-		
+
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+			<!-- Command Activity -->
+			<div class="bg-zinc-900 border border-amber-700 p-4">
+				<h2 class="text-sm text-zinc-400 mb-3 border-b border-zinc-700 pb-2">COMMAND ACTIVITY</h2>
+				if data.CommandSummary != nil {
+					@partials.CommandSummaryCard(data.CommandSummary)
+				} else {
+					<p class="text-sm text-zinc-500">No command activity data available.</p>
+				}
+			</div>
+
+			<!-- Top Commands -->
+			<div class="bg-zinc-900 border border-amber-700 p-4 lg:col-span-2">
+				<div class="flex justify-between items-center mb-3 border-b border-zinc-700 pb-2">
+					<h2 class="text-sm text-zinc-400">TOP COMMANDS (LAST HOUR)</h2>
+					<span class="text-orange-400 text-xs">LIVE</span>
+				</div>
+				if len(data.TopCommands) > 0 {
+					@partials.TopCommandsTable(data.TopCommands)
+				} else {
+					<p class="text-sm text-zinc-500">No command usage in the last hour.</p>
+				}
+			</div>
+
+			<!-- Recent Command Errors -->
+			<div class="bg-zinc-900 border border-amber-700 p-4">
+				<div class="flex justify-between items-center mb-3 border-b border-zinc-700 pb-2">
+					<h2 class="text-sm text-zinc-400">RECENT COMMAND ERRORS</h2>
+					<span class="text-orange-400 text-xs">MONITORING</span>
+				</div>
+				if len(data.RecentErrors) > 0 {
+					@partials.CommandErrorsList(data.RecentErrors)
+				} else {
+					<p class="text-sm text-zinc-500">No recent failures detected.</p>
+				}
+			</div>
+		</div>
+
 		<!-- Recent Players Section -->
 		<div class="bg-zinc-900 border border-amber-700">
 			<div class="flex justify-between items-center p-4 border-b border-zinc-700">
 				<h2 class="text-sm text-zinc-400">RECENT PLAYERS</h2>
 				<a href="/players" class="text-orange-400 hover:text-orange-300 text-sm">VIEW ALL →</a>
 			</div>
-			<div 
+			<div
 				class="overflow-x-auto"
-				hx-get="/players/table" 
-				hx-trigger="load" 
+				hx-get="/players/table"
+				hx-trigger="load"
 				hx-swap="innerHTML">
 				<div class="flex items-center justify-center py-8">
 					<span class="spinner"></span>

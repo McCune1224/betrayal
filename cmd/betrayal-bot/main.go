@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -41,9 +42,10 @@ import (
 // config struct to hold env variables and any other config settings
 type config struct {
 	discord struct {
-		clientID     string
-		clientSecret string
-		botToken     string
+		clientID       string
+		clientSecret   string
+		botToken       string
+		disableDiscord bool
 	}
 	database struct {
 		dsn string
@@ -107,6 +109,7 @@ func main() {
 	cfg.discord.botToken = os.Getenv("DISCORD_BOT_TOKEN")
 	cfg.discord.clientID = os.Getenv("DISCORD_CLIENT_ID")
 	cfg.discord.clientSecret = os.Getenv("DISCORD_CLIENT_SECRET")
+	cfg.discord.disableDiscord = strings.EqualFold(os.Getenv("DISABLE_DISCORD"), "true")
 	cfg.database.dsn = os.Getenv("DATABASE_POOLER_URL")
 
 	// Web admin configuration
@@ -121,12 +124,17 @@ func main() {
 	cfg.web.railwayServiceID = os.Getenv("RAILWAY_BETRAYAL_SERVICE_ID")
 	cfg.web.railwayEnvID = os.Getenv("RAILWAY_BETRAYAL_ENVIRONMENT_ID")
 
-	// Spin up Bot and give it admin permissions
-	bot, err := discordgo.New("Bot " + cfg.discord.botToken)
-	if err != nil {
-		appLogger.Fatal().Err(err).Msg("Error creating Discord session")
+	var bot *discordgo.Session
+
+	if !cfg.discord.disableDiscord {
+		bot, err = discordgo.New("Bot " + cfg.discord.botToken)
+		if err != nil {
+			appLogger.Fatal().Err(err).Msg("Error creating Discord session")
+		}
+		bot.Identify.Intents = discordgo.PermissionAdministrator
+	} else {
+		appLogger.Info().Msg("DISABLE_DISCORD=true; skipping Discord session startup")
 	}
-	bot.Identify.Intents = discordgo.PermissionAdministrator
 
 	// Create database pool
 	pools, err := pgxpool.New(context.Background(), cfg.database.dsn)
@@ -146,89 +154,93 @@ func main() {
 	logger.InitAuditWriter(pools, env)
 	defer logger.CloseAuditWriter()
 
-	// Create Ken instance with logger integration
-	km, err := ken.New(bot, ken.Options{
-		State: state.NewInternal(),
-		EmbedColors: ken.EmbedColors{
-			Default: discord.ColorThemeOrange,
-			Error:   discord.ColorThemeRuby,
-		},
-		DisableCommandInfoCache: true,
-		OnSystemError: func(ctx string, errMsg error, args ...any) {
-			appLogger.Error().
-				Str("context", ctx).
-				Err(errMsg).
-				Any("args", args).
-				Msg("System error")
-		},
-		OnCommandError: func(errMsg error, ctx *ken.Ctx) {
-			logger.InjectKenContext(ctx)
-			cmdLogger := logger.FromKenContext(ctx)
+	// Create Ken instance with logger integration when Discord is enabled
+	if !cfg.discord.disableDiscord {
+		km, err := ken.New(bot, ken.Options{
+			State: state.NewInternal(),
+			EmbedColors: ken.EmbedColors{
+				Default: discord.ColorThemeOrange,
+				Error:   discord.ColorThemeRuby,
+			},
+			DisableCommandInfoCache: true,
+			OnSystemError: func(ctx string, errMsg error, args ...any) {
+				appLogger.Error().
+					Str("context", ctx).
+					Err(errMsg).
+					Any("args", args).
+					Msg("System error")
+			},
+			OnCommandError: func(errMsg error, ctx *ken.Ctx) {
+				logger.InjectKenContext(ctx)
+				cmdLogger := logger.FromKenContext(ctx)
 
-			cmdArg := processOptions(bot, ctx.GetEvent().ApplicationCommandData().Options)
-			cmdLogger.Error().
-				Err(errMsg).
-				Str("options", cmdArg).
-				Msg("Command execution failed")
+				cmdArg := processOptions(bot, ctx.GetEvent().ApplicationCommandData().Options)
+				cmdLogger.Error().
+					Err(errMsg).
+					Str("options", cmdArg).
+					Msg("Command execution failed")
 
-			// Log to audit for failed commands
-			auditWriter := logger.GetAuditWriter()
-			if auditWriter != nil && ctx.GetEvent().Member != nil && ctx.GetEvent().Member.User != nil {
-				audit := logger.CreateAuditFromContext(ctx, bot, time.Now())
-				audit.Status = "error"
-				errorMsg := errMsg.Error()
-				audit.ErrorMessage = &errorMsg
-				audit.ExecutionTimeMs = 0 // Unknown for error case
-				auditWriter.LogCommand(audit)
-			}
-		},
-		OnEventError: func(context string, errMsg error) {
-			appLogger.Error().
-				Str("event_context", context).
-				Err(errMsg).
-				Msg("Event error")
-		},
-	})
-	application.betrayalManager = km
-	if err != nil {
-		appLogger.Fatal().Err(err).Msg("Failed to initialize Ken framework")
+				// Log to audit for failed commands
+				auditWriter := logger.GetAuditWriter()
+				if auditWriter != nil && ctx.GetEvent().Member != nil && ctx.GetEvent().Member.User != nil {
+					audit := logger.CreateAuditFromContext(ctx, bot, time.Now())
+					audit.Status = "error"
+					errorMsg := errMsg.Error()
+					audit.ErrorMessage = &errorMsg
+					audit.ExecutionTimeMs = 0 // Unknown for error case
+					auditWriter.LogCommand(audit)
+				}
+			},
+			OnEventError: func(context string, errMsg error) {
+				appLogger.Error().
+					Str("event_context", context).
+					Err(errMsg).
+					Msg("Event error")
+			},
+		})
+		if err != nil {
+			appLogger.Fatal().Err(err).Msg("Failed to initialize Ken framework")
+		}
+
+		application.betrayalManager = km
+
+		// Call unregister twice to remove any lingering commands from previous runs
+		application.betrayalManager.Unregister()
+
+		tally := application.RegisterBetrayalCommands(
+			new(inv.Inv),
+			new(roll.Roll),
+			new(action.Action),
+			new(view.View),
+			new(buy.Buy),
+			new(channels.Channel),
+			new(help.Help),
+			new(vote.Vote),
+			new(setup.Setup),
+			new(echo.Echo),
+			new(list.List),
+			new(search.Search),
+			new(healthcheck.Healthcheck),
+			new(cycle.Cycle),
+		)
+
+		application.betrayalManager.Session().AddHandler(logHandler)
+		application.betrayalManager.Session().AddHandler(auditHandler)
+		application.betrayalManager.Session().AddHandler(paginationHandler)
+		defer application.betrayalManager.Unregister()
+
+		if err = bot.Open(); err != nil {
+			appLogger.Fatal().Err(err).Msg("Error opening Discord connection")
+		}
+		defer bot.Close()
+
+		appLogger.Info().
+			Str("bot_name", bot.State.User.Username).
+			Int("command_count", tally).
+			Msg("Bot initialized and running")
+	} else {
+		appLogger.Info().Msg("Discord functionality disabled; running web server only")
 	}
-
-	// Call unregister twice to remove any lingering commands from previous runs
-	application.betrayalManager.Unregister()
-
-	tally := application.RegisterBetrayalCommands(
-		new(inv.Inv),
-		new(roll.Roll),
-		new(action.Action),
-		new(view.View),
-		new(buy.Buy),
-		new(channels.Channel),
-		new(help.Help),
-		new(vote.Vote),
-		new(setup.Setup),
-		new(echo.Echo),
-		new(list.List),
-		new(search.Search),
-		new(healthcheck.Healthcheck),
-		new(cycle.Cycle),
-	)
-
-	application.betrayalManager.Session().AddHandler(logHandler)
-	application.betrayalManager.Session().AddHandler(auditHandler)
-	application.betrayalManager.Session().AddHandler(paginationHandler)
-	defer application.betrayalManager.Unregister()
-
-	err = bot.Open()
-	if err != nil {
-		appLogger.Fatal().Err(err).Msg("Error opening Discord connection")
-	}
-	defer bot.Close()
-
-	appLogger.Info().
-		Str("bot_name", bot.State.User.Username).
-		Int("command_count", tally).
-		Msg("Bot initialized and running")
 
 	// Start log retention worker (90 day retention with archival)
 	logger.StartRetentionWorker(pools, appLogger, logger.RetentionConfig{
@@ -368,11 +380,8 @@ func auditHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	userRoles := i.Member.Roles
 	isAdmin := false
 	for _, roleID := range userRoles {
-		for _, adminRole := range discord.AdminRoles {
-			if roleID == adminRole {
-				isAdmin = true
-				break
-			}
+		if slices.Contains(discord.AdminRoles, roleID) {
+			isAdmin = true
 		}
 	}
 
