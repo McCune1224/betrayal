@@ -94,16 +94,17 @@ func (a *app) RegisterBetrayalCommands(commands ...BetrayalCommand) int {
 }
 
 func main() {
-	// Initialize logger
+	// Initialize logger (without database - we need to create the pool first)
 	env := os.Getenv("ENVIRONMENT")
 	if env == "" {
 		env = "local"
 	}
-	appLogger, err := logger.Init(logger.Config{Environment: env})
+
+	// Create temporary logger for startup
+	tempLogger, err := logger.Init(logger.Config{Environment: env})
 	if err != nil {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
-	defer logger.Close()
 
 	var cfg config
 	cfg.discord.botToken = os.Getenv("DISCORD_BOT_TOKEN")
@@ -129,19 +130,29 @@ func main() {
 	if !cfg.discord.disableDiscord {
 		bot, err = discordgo.New("Bot " + cfg.discord.botToken)
 		if err != nil {
-			appLogger.Fatal().Err(err).Msg("Error creating Discord session")
+			tempLogger.Fatal().Err(err).Msg("Error creating Discord session")
 		}
 		bot.Identify.Intents = discordgo.PermissionAdministrator
 	} else {
-		appLogger.Info().Msg("DISABLE_DISCORD=true; skipping Discord session startup")
+		tempLogger.Info().Msg("DISABLE_DISCORD=true; skipping Discord session startup")
 	}
 
 	// Create database pool
 	pools, err := pgxpool.New(context.Background(), cfg.database.dsn)
 	if err != nil {
-		appLogger.Fatal().Err(err).Msg("Failed to create database connection pool")
+		tempLogger.Fatal().Err(err).Msg("Failed to create database connection pool")
 	}
 	defer pools.Close()
+
+	// Re-initialize logger with database support
+	appLogger, err := logger.Init(logger.Config{
+		Environment: env,
+		DBPool:      pools,
+	})
+	if err != nil {
+		log.Fatalf("Failed to re-initialize logger with database: %v", err)
+	}
+	defer logger.Close()
 
 	// Create app instance
 	application := &app{

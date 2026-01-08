@@ -5,18 +5,21 @@ import (
 	"os"
 	"strings"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 )
 
 // Config holds logger configuration
 type Config struct {
-	Environment string      // "local", "staging", "production"
-	DBPool      interface{} // *pgxpool.Pool (avoid circular import)
+	Environment string        // "local", "staging", "production"
+	DBPool      *pgxpool.Pool // Database connection pool for logging
 }
 
 var (
 	// defaultLogger is the global logger instance
 	defaultLogger zerolog.Logger
+	// defaultDBWriter holds the database writer instance
+	defaultDBWriter *DatabaseWriter
 )
 
 // Init initializes the global logger based on environment
@@ -36,13 +39,21 @@ func Init(cfg Config) (zerolog.Logger, error) {
 	}
 	writers = append(writers, consoleWriter)
 
+	// Database output - include if pool is provided
+	if cfg.DBPool != nil {
+		defaultDBWriter = NewDatabaseWriter(cfg.DBPool, env)
+		if defaultDBWriter != nil {
+			writers = append(writers, defaultDBWriter)
+		}
+	}
+
 	// Determine log level based on environment
 	logLevel := zerolog.DebugLevel
 	if env == "production" || env == "staging" {
 		logLevel = zerolog.InfoLevel
 	}
 
-	// Create multi-writer if we have a database
+	// Create multi-writer if we have multiple writers
 	var writer io.Writer
 	if len(writers) == 1 {
 		writer = writers[0]
@@ -75,6 +86,8 @@ func SetLevel(level zerolog.Level) {
 
 // Close performs cleanup (used during shutdown)
 func Close() error {
-	// Placeholder for future cleanup (e.g., flushing database writer)
+	if defaultDBWriter != nil {
+		return defaultDBWriter.Close()
+	}
 	return nil
 }
