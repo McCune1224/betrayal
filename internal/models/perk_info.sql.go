@@ -99,3 +99,23 @@ func (q *Queries) ListPerkInfo(ctx context.Context) ([]PerkInfo, error) {
 	}
 	return items, nil
 }
+
+const updatePerkInfo = `-- name: UpdatePerkInfo :one
+UPDATE perk_info
+SET name = $2, description = $3
+WHERE id = $1
+RETURNING id, name, description
+`
+
+type UpdatePerkInfoParams struct {
+	ID          int32  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+func (q *Queries) UpdatePerkInfo(ctx context.Context, arg UpdatePerkInfoParams) (PerkInfo, error) {
+	row := q.db.QueryRow(ctx, updatePerkInfo, arg.ID, arg.Name, arg.Description)
+	var i PerkInfo
+	err := row.Scan(&i.ID, &i.Name, &i.Description)
+	return i, err
+}

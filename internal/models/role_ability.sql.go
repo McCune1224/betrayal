@@ -23,6 +23,21 @@ func (q *Queries) CreateRoleAbilityJoin(ctx context.Context, arg CreateRoleAbili
 	return err
 }
 
+const deleteRoleAbilityJoin = `-- name: DeleteRoleAbilityJoin :exec
+DELETE FROM role_ability
+WHERE role_id = $1 AND ability_id = $2
+`
+
+type DeleteRoleAbilityJoinParams struct {
+	RoleID    int32 `json:"role_id"`
+	AbilityID int32 `json:"ability_id"`
+}
+
+func (q *Queries) DeleteRoleAbilityJoin(ctx context.Context, arg DeleteRoleAbilityJoinParams) error {
+	_, err := q.db.Exec(ctx, deleteRoleAbilityJoin, arg.RoleID, arg.AbilityID)
+	return err
+}
+
 const getRandomAnyAbilityByMinimumRarity = `-- name: GetRandomAnyAbilityByMinimumRarity :one
 select id, name, description, default_charges, any_ability, role_specific_id, rarity
 from ability_info

@@ -64,6 +64,7 @@ templ DesktopNav(currentPath string) {
 					<div class="flex space-x-1">
 						<a href="/" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/") }>HOME</a>
 						<a href="/players" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/players"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/players") }>PLAYERS</a>
+						<a href="/roles" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/roles"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/roles") }>ROLES</a>
 						<a href="/votes" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/votes"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/votes") }>VOTES</a>
 						<a href="/admin/audit" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/admin/audit"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/admin/audit") }>LOGS</a>
 					</div>
@@ -82,26 +83,24 @@ templ MobileNav(currentPath string) {
 	<nav class="bottom-nav">
 		<a href="/" class={ "bottom-nav-item", templ.KV("active", currentPath == "/") }>
 			<span class="text-xl mb-1">&#x2302;</span>
-			<span class="text-sm">HOME</span>
+			<span class="text-xs">HOME</span>
 		</a>
 		<a href="/players" class={ "bottom-nav-item", templ.KV("active", currentPath == "/players") }>
 			<span class="text-xl mb-1">&#x2605;</span>
-			<span class="text-sm">PLAYERS</span>
+			<span class="text-xs">PLAYERS</span>
+		</a>
+		<a href="/roles" class={ "bottom-nav-item", templ.KV("active", currentPath == "/roles") }>
+			<span class="text-xl mb-1">&#x2606;</span>
+			<span class="text-xs">ROLES</span>
 		</a>
 		<a href="/votes" class={ "bottom-nav-item", templ.KV("active", currentPath == "/votes") }>
 			<span class="text-xl mb-1">&#x2713;</span>
-			<span class="text-sm">VOTES</span>
+			<span class="text-xs">VOTES</span>
 		</a>
 		<a href="/admin/audit" class={ "bottom-nav-item", templ.KV("active", currentPath == "/admin/audit") }>
 			<span class="text-xl mb-1">&#x2630;</span>
-			<span class="text-sm">LOGS</span>
+			<span class="text-xs">LOGS</span>
 		</a>
-		<form action="/logout" method="POST" class="flex-1">
-			<button type="submit" class="bottom-nav-item w-full hover:text-red-300">
-				<span class="text-xl mb-1">&#x2716;</span>
-				<span class="text-sm">OUT</span>
-			</button>
-		</form>
 	</nav>
 }
 

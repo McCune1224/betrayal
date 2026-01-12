@@ -1,0 +1,123 @@
+package partials
+
+import "fmt"
+
+// AbilityRow represents an ability in the role abilities list
+type AbilityRow struct {
+	ID             int32
+	Name           string
+	Description    string
+	DefaultCharges int32
+	AnyAbility     bool
+	Rarity         string
+}
+
+templ RoleAbilities(roleID int32, abilities []AbilityRow) {
+	if len(abilities) == 0 {
+		<div class="p-4 text-center text-dust">
+			No abilities associated with this role
+		</div>
+	} else {
+		<div class="divide-y divide-dust/20">
+			for _, ability := range abilities {
+				<div class="p-4" id={ fmt.Sprintf("ability-%d", ability.ID) }>
+					<form
+						hx-put={ fmt.Sprintf("/roles/%d/abilities/%d", roleID, ability.ID) }
+						hx-swap="none"
+						class="space-y-3"
+					>
+						<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+							<div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+								<div>
+									<label class="block text-xs font-medium text-dust mb-1">Name</label>
+									<input 
+										type="text" 
+										name="name" 
+										value={ ability.Name }
+										class="w-full px-3 py-2 text-sm border border-dust rounded bg-parchment text-wood focus:outline-none focus:ring-1 focus:ring-leather"
+									/>
+								</div>
+								<div class="flex gap-2">
+									<div class="flex-1">
+										<label class="block text-xs font-medium text-dust mb-1">Charges</label>
+										<input 
+											type="number" 
+											name="default_charges" 
+											value={ fmt.Sprintf("%d", ability.DefaultCharges) }
+											class="w-full px-3 py-2 text-sm border border-dust rounded bg-parchment text-wood focus:outline-none focus:ring-1 focus:ring-leather"
+										/>
+									</div>
+									<div class="flex-1">
+										<label class="block text-xs font-medium text-dust mb-1">Rarity</label>
+										<select 
+											name="rarity"
+											class="w-full px-3 py-2 text-sm border border-dust rounded bg-parchment text-wood focus:outline-none focus:ring-1 focus:ring-leather"
+										>
+											<option value="COMMON" selected?={ ability.Rarity == "COMMON" }>COMMON</option>
+											<option value="UNCOMMON" selected?={ ability.Rarity == "UNCOMMON" }>UNCOMMON</option>
+											<option value="RARE" selected?={ ability.Rarity == "RARE" }>RARE</option>
+											<option value="EPIC" selected?={ ability.Rarity == "EPIC" }>EPIC</option>
+											<option value="LEGENDARY" selected?={ ability.Rarity == "LEGENDARY" }>LEGENDARY</option>
+											<option value="MYTHICAL" selected?={ ability.Rarity == "MYTHICAL" }>MYTHICAL</option>
+											<option value="ROLE_SPECIFIC" selected?={ ability.Rarity == "ROLE_SPECIFIC" }>ROLE_SPECIFIC</option>
+											<option value="UNIQUE" selected?={ ability.Rarity == "UNIQUE" }>UNIQUE</option>
+										</select>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div>
+							<label class="block text-xs font-medium text-dust mb-1">Description</label>
+							<textarea 
+								name="description" 
+								rows="2"
+								class="w-full px-3 py-2 text-sm border border-dust rounded bg-parchment text-wood focus:outline-none focus:ring-1 focus:ring-leather"
+							>{ ability.Description }</textarea>
+						</div>
+						<div class="flex items-center justify-between">
+							<label class="flex items-center gap-2 text-sm text-wood">
+								<input 
+									type="checkbox" 
+									name="any_ability" 
+									checked?={ ability.AnyAbility }
+									class="rounded border-dust text-leather focus:ring-leather"
+								/>
+								Any Ability (can be given to any role)
+							</label>
+							<div class="flex gap-2">
+								<button type="submit" class="btn-primary text-sm px-3 py-1">
+									Save
+								</button>
+								<button 
+									type="button" 
+									class="btn-danger text-sm px-3 py-1"
+									onclick={ showDeleteConfirm(roleID, ability.ID, ability.Name, "ability") }
+								>
+									Remove
+								</button>
+							</div>
+						</div>
+					</form>
+				</div>
+			}
+		</div>
+	}
+}
+
+script showDeleteConfirm(roleID int32, itemID int32, itemName string, itemType string) {
+	showDeleteModal(
+		`Are you sure you want to remove "${itemName}" from this role? This only removes the association, not the ${itemType} itself.`,
+		function() {
+			htmx.ajax('DELETE', `/roles/${roleID}/${itemType === 'ability' ? 'abilities' : 'perks'}/${itemID}`, {
+				target: `#${itemType}-${itemID}`,
+				swap: 'outerHTML'
+			}).then(function() {
+				// Refresh the list
+				htmx.ajax('GET', `/roles/${roleID}/${itemType === 'ability' ? 'abilities' : 'perks'}`, {
+					target: `#${itemType === 'ability' ? 'abilities' : 'perks'}-list`,
+					swap: 'innerHTML'
+				});
+			});
+		}
+	);
+}

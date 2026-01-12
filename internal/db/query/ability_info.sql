@@ -50,3 +50,8 @@ WHERE LOWER(description) LIKE LOWER($1)
 ORDER BY rarity DESC, name ASC
 ;
 
+-- name: UpdateAbilityInfo :one
+UPDATE ability_info
+SET name = $2, description = $3, default_charges = $4, any_ability = $5, rarity = $6
+WHERE id = $1
+RETURNING *;

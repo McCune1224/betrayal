@@ -1,0 +1,78 @@
+package pages
+
+import "github.com/mccune1224/betrayal/internal/web/templates/layouts"
+
+// Data types for role detail page
+type RoleAbilityRow struct {
+	ID             int32
+	Name           string
+	Description    string
+	DefaultCharges int32
+	AnyAbility     bool
+	Rarity         string
+}
+
+type RolePerkRow struct {
+	ID          int32
+	Name        string
+	Description string
+}
+
+type RoleDetailData struct {
+	ID          int32
+	Name        string
+	Description string
+	Alignment   string
+	Abilities   []RoleAbilityRow
+	Perks       []RolePerkRow
+}
+
+templ Roles() {
+	@layouts.Base("Roles", "/roles") {
+		<div class="space-y-6">
+			<!-- Header -->
+			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+				<h1 class="text-2xl font-western text-wood">Role Editor</h1>
+			</div>
+
+			<!-- Search Card -->
+			<div class="card">
+				<div class="p-4 border-b border-dust/30">
+					<h2 class="font-semibold text-wood">Search Roles</h2>
+				</div>
+				<div class="p-4">
+					<div class="max-w-md">
+						<label for="role-search" class="block text-sm font-medium text-wood mb-2">
+							Role Name
+						</label>
+						<input 
+							type="text" 
+							id="role-search" 
+							name="q"
+							placeholder="Type to search roles..."
+							class="w-full px-4 py-2 border border-dust rounded-lg bg-parchment text-wood placeholder-dust focus:outline-none focus:ring-2 focus:ring-leather focus:border-transparent"
+							hx-get="/roles/search"
+							hx-trigger="input changed delay:300ms, search"
+							hx-target="#search-results"
+							hx-indicator="#search-spinner"
+						/>
+						<p class="mt-1 text-sm text-dust">Uses fuzzy matching to find similar role names</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Search Results -->
+			<div class="card">
+				<div class="p-4 border-b border-dust/30 flex items-center justify-between">
+					<h2 class="font-semibold text-wood">Results</h2>
+					<div id="search-spinner" class="htmx-indicator">
+						<div class="spinner"></div>
+					</div>
+				</div>
+				<div id="search-results" class="p-4">
+					<p class="text-dust text-center py-8">Enter a role name to search</p>
+				</div>
+			</div>
+		</div>
+	}
+}

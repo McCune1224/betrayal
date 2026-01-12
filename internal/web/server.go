@@ -116,6 +116,7 @@ func (s *Server) setupRoutes() {
 	playersHandler := handlers.NewPlayersHandler(s.dbPool)
 	adminHandler := handlers.NewAdminHandler(s.dbPool, s.railwayClient)
 	votesHandler := handlers.NewVotesHandler(s.dbPool)
+	rolesHandler := handlers.NewRolesHandler(s.dbPool)
 
 	// Auth middleware
 	authMiddleware := webmiddleware.NewAuthMiddleware(s.sessionStore)
@@ -137,6 +138,18 @@ func (s *Server) setupRoutes() {
 	protected.GET("/votes/tally", votesHandler.VoteTally)
 	protected.POST("/admin/redeploy", adminHandler.Redeploy)
 	protected.GET("/admin/audit", adminHandler.AuditLogs)
+
+	// Role routes
+	protected.GET("/roles", rolesHandler.List)
+	protected.GET("/roles/search", rolesHandler.Search)
+	protected.GET("/roles/:id", rolesHandler.Detail)
+	protected.PUT("/roles/:id", rolesHandler.Update)
+	protected.GET("/roles/:id/abilities", rolesHandler.ListAbilities)
+	protected.PUT("/roles/:id/abilities/:abilityId", rolesHandler.UpdateAbility)
+	protected.DELETE("/roles/:id/abilities/:abilityId", rolesHandler.RemoveAbility)
+	protected.GET("/roles/:id/perks", rolesHandler.ListPerks)
+	protected.PUT("/roles/:id/perks/:perkId", rolesHandler.UpdatePerk)
+	protected.DELETE("/roles/:id/perks/:perkId", rolesHandler.RemovePerk)
 }
 
 // Start begins listening on the configured port (blocking)

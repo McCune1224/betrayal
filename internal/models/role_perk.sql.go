@@ -23,6 +23,21 @@ func (q *Queries) CreateRolePerkJoin(ctx context.Context, arg CreateRolePerkJoin
 	return err
 }
 
+const deleteRolePerkJoin = `-- name: DeleteRolePerkJoin :exec
+DELETE FROM role_perk
+WHERE role_id = $1 AND perk_id = $2
+`
+
+type DeleteRolePerkJoinParams struct {
+	RoleID int32 `json:"role_id"`
+	PerkID int32 `json:"perk_id"`
+}
+
+func (q *Queries) DeleteRolePerkJoin(ctx context.Context, arg DeleteRolePerkJoinParams) error {
+	_, err := q.db.Exec(ctx, deleteRolePerkJoin, arg.RoleID, arg.PerkID)
+	return err
+}
+
 const listAssociatedRolesForPerk = `-- name: ListAssociatedRolesForPerk :many
 select role.id, role.name, role.description, role.alignment from role_perk 
 inner join role on role.id = role_perk.role_id

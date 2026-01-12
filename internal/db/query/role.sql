@@ -40,3 +40,14 @@ where id = $1
 -- name: NukeRoles :exec
 TRUNCATE TABLE role, role_ability, role_perk, role_ability, role_perk, ability_category RESTART IDENTITY CASCADE;
 
+-- name: UpdateRole :one
+UPDATE role
+SET name = $2, description = $3, alignment = $4
+WHERE id = $1
+RETURNING *;
+
+-- name: SearchRoleByName :many
+SELECT *
+FROM role
+ORDER BY levenshtein(LOWER(name), LOWER($1)) ASC
+LIMIT 20;

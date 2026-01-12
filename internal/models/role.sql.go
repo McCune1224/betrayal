@@ -165,3 +165,66 @@ func (q *Queries) NukeRoles(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, nukeRoles)
 	return err
 }
+
+const searchRoleByName = `-- name: SearchRoleByName :many
+SELECT id, name, description, alignment
+FROM role
+ORDER BY levenshtein(LOWER(name), LOWER($1)) ASC
+LIMIT 20
+`
+
+func (q *Queries) SearchRoleByName(ctx context.Context, lower string) ([]Role, error) {
+	rows, err := q.db.Query(ctx, searchRoleByName, lower)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Role
+	for rows.Next() {
+		var i Role
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Alignment,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateRole = `-- name: UpdateRole :one
+UPDATE role
+SET name = $2, description = $3, alignment = $4
+WHERE id = $1
+RETURNING id, name, description, alignment
+`
+
+type UpdateRoleParams struct {
+	ID          int32     `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Alignment   Alignment `json:"alignment"`
+}
+
+func (q *Queries) UpdateRole(ctx context.Context, arg UpdateRoleParams) (Role, error) {
+	row := q.db.QueryRow(ctx, updateRole,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.Alignment,
+	)
+	var i Role
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Alignment,
+	)
+	return i, err
+}

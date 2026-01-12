@@ -239,3 +239,41 @@ func (q *Queries) SearchAbilityByKeyword(ctx context.Context, lower string) ([]A
 	}
 	return items, nil
 }
+
+const updateAbilityInfo = `-- name: UpdateAbilityInfo :one
+UPDATE ability_info
+SET name = $2, description = $3, default_charges = $4, any_ability = $5, rarity = $6
+WHERE id = $1
+RETURNING id, name, description, default_charges, any_ability, role_specific_id, rarity
+`
+
+type UpdateAbilityInfoParams struct {
+	ID             int32  `json:"id"`
+	Name           string `json:"name"`
+	Description    string `json:"description"`
+	DefaultCharges int32  `json:"default_charges"`
+	AnyAbility     bool   `json:"any_ability"`
+	Rarity         Rarity `json:"rarity"`
+}
+
+func (q *Queries) UpdateAbilityInfo(ctx context.Context, arg UpdateAbilityInfoParams) (AbilityInfo, error) {
+	row := q.db.QueryRow(ctx, updateAbilityInfo,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.DefaultCharges,
+		arg.AnyAbility,
+		arg.Rarity,
+	)
+	var i AbilityInfo
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.DefaultCharges,
+		&i.AnyAbility,
+		&i.RoleSpecificID,
+		&i.Rarity,
+	)
+	return i, err
+}

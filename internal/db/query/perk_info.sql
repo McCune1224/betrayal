@@ -30,3 +30,8 @@ delete from perk_info
 where id = $1
 ;
 
+-- name: UpdatePerkInfo :one
+UPDATE perk_info
+SET name = $2, description = $3
+WHERE id = $1
+RETURNING *;

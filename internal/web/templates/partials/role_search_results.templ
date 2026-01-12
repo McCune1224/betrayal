@@ -1,0 +1,77 @@
+package partials
+
+import "strconv"
+
+// RoleSearchRow represents a role in search results
+type RoleSearchRow struct {
+	ID          int32
+	Name        string
+	Description string
+	Alignment   string
+}
+
+func itoa(i int32) string {
+	return strconv.Itoa(int(i))
+}
+
+func truncateText(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen-3] + "..."
+}
+
+func alignmentClass(alignment string) string {
+	switch alignment {
+	case "GOOD":
+		return "badge-success"
+	case "EVIL":
+		return "badge-danger"
+	default:
+		return "badge-neutral"
+	}
+}
+
+templ RoleSearchResults(roles []RoleSearchRow) {
+	if len(roles) == 0 {
+		<p class="text-dust text-center py-8">No roles found</p>
+	} else {
+		<div class="overflow-x-auto">
+			<table class="w-full">
+				<thead>
+					<tr class="border-b border-dust/30">
+						<th class="text-left py-3 px-4 text-sm font-semibold text-wood">Name</th>
+						<th class="text-left py-3 px-4 text-sm font-semibold text-wood hidden md:table-cell">Description</th>
+						<th class="text-left py-3 px-4 text-sm font-semibold text-wood">Alignment</th>
+						<th class="text-right py-3 px-4 text-sm font-semibold text-wood">Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, role := range roles {
+						<tr class="border-b border-dust/20 hover:bg-dust/10 transition-colors">
+							<td class="py-3 px-4">
+								<span class="font-medium text-wood">{ role.Name }</span>
+							</td>
+							<td class="py-3 px-4 hidden md:table-cell">
+								<span class="text-sm text-dust truncate max-w-xs block">{ truncateText(role.Description, 60) }</span>
+							</td>
+							<td class="py-3 px-4">
+								<span class={ "badge", alignmentClass(role.Alignment) }>
+									{ role.Alignment }
+								</span>
+							</td>
+							<td class="py-3 px-4 text-right">
+								<a 
+									href={ templ.SafeURL("/roles/" + itoa(role.ID)) }
+									class="table-link"
+								>
+									Edit
+								</a>
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+}

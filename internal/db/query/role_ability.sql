@@ -1,6 +1,9 @@
 -- name: CreateRoleAbilityJoin :exec
 insert into role_ability (role_id, ability_id) values ($1, $2);
 
+-- name: DeleteRoleAbilityJoin :exec
+DELETE FROM role_ability
+WHERE role_id = $1 AND ability_id = $2;
 
 -- name: ListRoleAbilityForRole :many
 select ability_info.*
