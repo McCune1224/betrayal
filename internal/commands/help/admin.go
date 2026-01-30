@@ -156,6 +156,16 @@ func (h *Help) adminOverview(ctx ken.SubCommandContext) (err error) {
 				return true
 			}), clearAll)
 
+			b.Add(discordgo.Button{
+				CustomID: "a-tarot-help",
+				Label:    "Tarot",
+				Style:    discordgo.SecondaryButton,
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
+				ctx.SetEphemeral(true)
+				ctx.RespondEmbed(adminTarotEmbed())
+				return true
+			}), clearAll)
+
 		}, clearAll)
 	})
 
@@ -235,4 +245,12 @@ func (h *Help) adminHealthcheck(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	return ctx.RespondEmbed(adminHealthcheckEmbed())
+}
+
+func (h *Help) adminTarot(ctx ken.SubCommandContext) (err error) {
+	if err = ctx.Defer(); err != nil {
+		logger.Get().Error().Err(err).Msg("operation failed")
+		return err
+	}
+	return ctx.RespondEmbed(adminTarotEmbed())
 }

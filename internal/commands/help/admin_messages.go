@@ -252,3 +252,25 @@ func adminHealthcheckEmbed() *discordgo.MessageEmbed {
 
 	return msg
 }
+
+func adminTarotEmbed() *discordgo.MessageEmbed {
+	msg := &discordgo.MessageEmbed{
+		Title:       "Tarot Admin Commands",
+		Description: "Configure and reset tarot modes that keep state.",
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:  "Reset In-Memory State",
+				Value: "`/tarot reset scope:per_user user:@X` – clear a specific user’s assignment\n`/tarot reset scope:per_user` – clear all per-user assignments for this guild\n`/tarot reset scope:guild_deck` – reshuffle the guild deck (start fresh)\n`/tarot reset scope:all` – clear all tarot state",
+			},
+			{
+				Name:  "Modes Overview",
+				Value: "`deterministic` – stable by guild+user\n`random` – fresh draw each time\n`per_user` – remembers a card per user (in-memory)\n`guild_deck` – deals without replacement per guild",
+			},
+			{
+				Name:  "Persistence",
+				Value: "By default, tarot state is in-memory and resets on restart. Ask the devs to enable DB persistence if you want state to survive restarts.",
+			},
+		},
+	}
+	return msg
+}

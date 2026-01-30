@@ -70,6 +70,11 @@ func (*Help) Options() []*discordgo.ApplicationCommandOption {
 					Name:        "search",
 					Description: "how to use search commands",
 				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "tarot",
+					Description: "how to use the tarot command",
+				},
 			},
 		},
 
@@ -128,6 +133,11 @@ func (*Help) Options() []*discordgo.ApplicationCommandOption {
 					Name:        "healthcheck",
 					Description: "how to verify game setup and infrastructure",
 				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "tarot",
+					Description: "how to use tarot admin options",
+				},
 			},
 		},
 	}
@@ -145,6 +155,7 @@ func (h *Help) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "vote", Run: h.playerVote},
 			ken.SubCommandHandler{Name: "view", Run: h.playerView},
 			ken.SubCommandHandler{Name: "search", Run: h.playerSearch},
+			ken.SubCommandHandler{Name: "tarot", Run: h.playerTarot},
 			// ken.SubCommandHandler{Name: "list", Run: h.playerList},
 		}},
 		ken.SubCommandGroup{Name: "admin", SubHandler: []ken.CommandHandler{
@@ -158,6 +169,7 @@ func (h *Help) Run(ctx ken.Context) (err error) {
 			ken.SubCommandHandler{Name: "channels", Run: h.adminChannels},
 			ken.SubCommandHandler{Name: "cycle", Run: h.adminCycle},
 			ken.SubCommandHandler{Name: "healthcheck", Run: h.adminHealthcheck},
+			ken.SubCommandHandler{Name: "tarot", Run: h.adminTarot},
 		}},
 	)
 }

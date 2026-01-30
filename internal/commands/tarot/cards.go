@@ -1,0 +1,295 @@
+package tarot
+
+import "hash/fnv"
+
+// Card represents a Tarot card with its upright and reversed meanings.
+type Card struct {
+	Name     string
+	Upright  string
+	Reversed string
+}
+
+// TarotCards is the struct-based view of the tarot deck.
+// It is constructed at init time by zipping the name/upright/reversed arrays below.
+var TarotCards []Card
+
+func init() {
+	// Build struct slice from the arrays. Arrays are expected to be index-aligned.
+	ln := len(TarotCardOptions)
+	if len(TarotUprightOptions) < ln {
+		ln = len(TarotUprightOptions)
+	}
+	if len(TarotReverseOptions) < ln {
+		ln = len(TarotReverseOptions)
+	}
+	TarotCards = make([]Card, ln)
+	for i := 0; i < ln; i++ {
+		TarotCards[i] = Card{
+			Name:     TarotCardOptions[i],
+			Upright:  TarotUprightOptions[i],
+			Reversed: TarotReverseOptions[i],
+		}
+	}
+}
+
+// DeterministicDraw returns a deterministic index and orientation based on guild+user.
+// This provides a stable mapping without persistence.
+func DeterministicDraw(guildID, userID string) (idx int, reversed bool) {
+	total := len(TarotCards)
+	if total == 0 {
+		return 0, false
+	}
+	idx = int(hash64(guildID+":"+userID) % uint64(total))
+	reversed = (hash64(guildID+":"+userID+"/rev") & 1) == 1
+	return idx, reversed
+}
+
+// hash64 computes FNV-1a 64-bit hash of a string.
+func hash64(s string) uint64 {
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(s))
+	return h.Sum64()
+}
+
+var TarotCardOptions = [...]string{
+	"The Fool",
+	"The Magician",
+	"The High Priestess",
+	"The Empress",
+	"The Emperor",
+	"The Hierophant",
+	"The Lovers",
+	"The Chariot",
+	"Strength",
+	"The Hermit",
+	"The Wheel of Fortune",
+	"Justice",
+	"The Hanged Man",
+	"Death",
+	"Temperance",
+	"The Devil",
+	"The Tower",
+	"The Star",
+	"The Moon",
+	"The Sun",
+	"Judgement",
+	"The World",
+	"Knight of Wands",
+	"King of Wands",
+	"Queen of Wands",
+	"Page of Wands",
+	"Two of Wands",
+	"Three of Wands",
+	"Five of Wands",
+	"Six of Wands",
+	"Eight of Wands",
+	"Nine of Wands",
+	"Ten of Wands",
+	"Ace of Wands",
+	"Four of Wands",
+	"Seven of Wands",
+	"Ace of Cups",
+	"Two of Cups",
+	"Three of Cups",
+	"Four of Cups",
+	"Five of Cups",
+	"Six of Cups",
+	"Seven of Cups",
+	"Eight of Cups",
+	"Nine of Cups",
+	"Ten of Cups",
+	"Page of Cups",
+	"Knight of Cups",
+	"Queen of Cups",
+	"King of Cups",
+	"Ace of Swords",
+	"Two of Swords",
+	"Three of Swords",
+	"Four of Swords",
+	"Five of Swords",
+	"Six of Swords",
+	"Seven of Swords",
+	"Eight of Swords",
+	"Nine of Swords",
+	"Ten of Swords",
+	"Page of Swords",
+	"Queen of Swords",
+	"Knight of Swords",
+	"King of Swords",
+	"Ace of Pentacles",
+	"Two of Pentacles",
+	"Three of Pentacles",
+	"Four of Pentacles",
+	"Five of Pentacles",
+	"Six of Pentacles",
+	"Seven of Pentacles",
+	"Eight of Pentacles",
+	"Nine of Pentacles",
+	"Ten of Pentacles",
+	"Page of Pentacles",
+	"Knight of Pentacles",
+	"Queen of Pentacles",
+	"King of Pentacles",
+}
+
+var TarotUprightOptions = [...]string{
+	"beginnings, freedom, innocence, originality, adventure, idealism, spontaneity",
+	"willpower, desire, being resourceful,, skill, ability, concentration, manifestation",
+	"unconscious, intuition, mystery, spirituality, higher power, inner voice",
+	"divine feminine, sensuality, fertility, nurturing, creativity, beauty, abundance, nature",
+	"stability, structure, protection, authority, control, practicality, focus, discipline",
+	"tradition, social groups, conventionality, conformity, education, knowledge, beliefs",
+	"love, unions, partnerships, relationships, choices, romance, balance, unity",
+	"success, ambition, determination, willpower, control, self-discipline, focus",
+	"courage, bravery, confidence, compassion, self-confidence, inner power",
+	"self-reflection, introspection, contemplation, withdrawal, solitude, search for self",
+	"change, cycles, fate, decisive moments, luck, fortune, unexpected events",
+	"justice, karma, consequence, accountability, law, truth, honesty, integrity, cause and effect",
+	"sacrifice, waiting, uncertainty, lack of direction, perspective, contemplation",
+	"transformation, endings, change, transition, letting go, release",
+	"balance, peace, patience, moderation, calm, tranquillity, harmony, serenity",
+	"oppression, addiction, obsession, dependency, excess, powerlessness, limitations",
+	"disaster, destruction, upheaval, trauma, sudden change, chaos",
+	"hope, inspiration, positivity, faith, renewal, healing, rejuvenation",
+	"illusion, intuition, uncertainty, confusion, complexity, secrets, unconscious",
+	"happiness, success, optimism, vitality, joy, confidence, happiness, truth",
+	"self-evaluation, awakening, renewal, purpose, reflection, reckoning",
+	"completion, achievement, fulfilment, sense of belonging, wholeness, harmony",
+	"courageous, energetic, charming, hero, rebellious, hot tempered, free spirit",
+	"leadership, vision, big picture, taking control, daring decisions, boldness, optimism",
+	"confident, self-assured, passionate, determined, social, charismatic, vivacious, optimistic",
+	"adventure, excitement, fresh ideas, cheerfulness, energetic, fearless, extroverted",
+	"planning, first steps, making decisions, leaving comfort, taking risks",
+	"momentum, confidence, expansion, growth, foresight, looking ahead",
+	"conflict, competition, arguments, aggression, tension, rivals, clashes of ego",
+	"success, victory, triumph, rewards, recognition, praise, acclaim, pride",
+	"movement, speed, progress, quick decisions, sudden changes, excitement",
+	"last stand, persistence, grit, resilience, perseverance, close to success, fatigue",
+	"burden, responsibility, duty, stress, obligation, burning out, struggles",
+	"inspiration, creative spark, new initiative, new passion, enthusiasm, energy",
+	"community, home, celebrations, reunions, parties, gatherings, stability, belonging",
+	"protectiveness, standing up for yourself, defending yourself, protecting territory",
+	"love, new feelings, emotional awakening, creativity, spirituality, intuition",
+	"unity, partnership, attraction, connection, close bonds, joining forces, mutual respect",
+	"friendship, community, gatherings, celebrations, group events, social events",
+	"apathy, contemplation, feeling disconnected, melancholy, boredom, indifference, discontent",
+	"loss, grief, disappointment, sadness, mourning, discontent, feeling let down",
+	"nostalgia, memories, familiarity, healing, comfort, sentimentality, pleasure",
+	"choices, searching for purpose, illusion, fantasy, daydreaming, wishful thinking, indecision",
+	"abandonment, walking away, letting go, searching for truth, leaving behind",
+	"wishes coming true, contentment, satisfaction, success, achievements, recognition, pleasure",
+	"happiness, homecomings, fulfillment, emotional stability, security, domestic harmony",
+	"idealism, sensitivity, dreamer, naivete, innocence, inner child, head in the clouds",
+	"idealist, charming, artistic, graceful, tactful, diplomatic, mediator, negotiator",
+	"compassion, warmth, kindness, intuition, healer, counsellor, supportive",
+	"wise, diplomatic, balance between head and heart, devoted, advisor, counsellor",
+	"clarity, breakthrough, new idea, concentration, vision, force, focus, truth",
+	"stalemate, difficult choices, stuck in the middle, denial, hidden information",
+	"heartbreak, separation, sadness, grief, sorrow, upset, loss, trauma, tears",
+	"rest, relaxation, peace, sanctuary, recuperation, self-protection, rejuvenation",
+	"arguments, disputes, aggression, bullying, intimidation, conflict, hostility, stress",
+	"moving on, departure, leaving behind, distance, accepting lessons",
+	"lies, trickery, scheming, strategy, resourcefulness,sneakiness, cunning",
+	"trapped, restricted, victimised, paralysed, helpless, powerless, imprisonment",
+	"fear, anxiety, negativity, breaking point, despair, nightmares, isolation",
+	"ruin, failure, bitterness, collapse, exhaustion, dead end, victimization, betrayal",
+	"curious, witty, chatty, communicative, inspired, vigilant, alert, mental agility",
+	"honest, independent, principled, fair, constructive criticism, objective, perceptive",
+	"assertive, direct, impatient, intellectual, daring, focused, perfectionist, ambitious",
+	"reason, authority, discipline, integrity, morality, serious, high standards, strict",
+	"new opportunities, resources, abundance, prosperity, security, stability, manifestation",
+	"balancing resources, adaptation, resourcefulness, flexibility, stretching resources",
+	"teamwork, shared goals, collaboration, apprenticeship, effort, pooling energy",
+	"possessiveness, insecurity, hoarding, stinginess, stability, security, savings, materialism, wealth, frugality, boundaries, guardedness",
+	"hardship, loss, isolation, feeling abandoned, adversity, struggle, unemployment, alienation, disgrace",
+	"generosity, charity, community, material help, support, sharing, giving and receiving, gratitude",
+	"harvest, rewards, results, growth, progress, perseverance, patience, planning",
+	"skill, talent, craftsmanship, quality, high standards, expertise, mastery, commitment, dedication, accomplishment",
+	"rewarded efforts, success, achievement, independence, leisure, material security, self-sufficiency",
+	"legacy, roots, family, ancestry, inheritance, windfall, foundations, privilege, affluence, stability, tradition",
+	"ambitious, diligent, goal oriented, planner, consistent, star student, studious, grounded, loyal, faithful, dependable",
+	"practical, reliable, efficient, stoic, slow and steady, hard-working, committed, patient, conservative",
+	"generous, caring, nurturing, homebody, good business sense, practical, comforting, welcoming, sensible, luxurious",
+	"abundance, prosperity, security, ambitious, safe, kind, patriarchal, protective, businessman, provider, sensual, reliable",
+}
+
+var TarotReverseOptions = [...]string{
+	"reckless, careless, distracted, naive, foolish, gullible, stale, dull",
+	"manipulation, cunning, trickery, wasted talent, illusion, deception",
+	"repressed intuition, hidden motives, superficiality, confusion, cognitive dissonance",
+	"insecurity, overbearing, negligence, smothering, lack of growth, lack of progress",
+	"tyrant, domineering, rigid, stubborn, lack of discipline, recklessness",
+	"rebellion, unconventionality, non-conformity, new methods, ignorance",
+	"disharmony, imbalance, conflict, detachment, bad choices, indecision",
+	"forceful, no direction, no control, powerless, aggression, obstacles",
+	"self-doubt, weakness, low confidence, inadequacy, cowardice, forcefulness",
+	"loneliness, isolation, recluse, being anti-social, rejection, returning to society",
+	"bad luck, lack of control, clinging to control, unwelcome changes, delays",
+	"injustice, retribution, dishonesty, corruption, dishonesty, unfairness, avoiding accountability",
+	"stalling, disinterest, stagnation, avoiding sacrifice, standstill, apathy",
+	"fear of change, repeating negative patterns, resisting change, stagnancy, decay",
+	"imbalance, excess, extremes, discord, recklessness, hastiness",
+	"independence, freedom, revelation, release, reclaiming power, reclaiming control",
+	"averting disaster, delaying the inevitable, resisting change",
+	"hopelessness, despair, negativity, lack of faith, despondent",
+	"fear, deception, anxiety, misunderstanding, misinterpretation, clarity, understanding",
+	"blocked happiness, excessive enthusiasm, pessimism, unrealistic expectations, conceitedness",
+	"self-doubt, lack of self-awareness, failure to learn lessons, self-loathing",
+	"lack of closure, lack of achievement, feeling incomplete, emptiness",
+	"arrogant, reckless, impatient, lack of self control, passive, volatile, domineering",
+	"forceful, domineering, tyrant, vicious, powerless, ineffective, weak leader",
+	"demanding, vengeful, low confidence, jealous, selfish, temperamental, bully",
+	"hasty, impatient, lacking ideas, tantrums, laziness, boring, unreliable, distracted",
+	"bad planning, overanalyzing, not taking action, playing it safe, avoiding risk",
+	"restriction, limitations, lack of progress, obstacles, delays, frustration",
+	"end of conflict, cooperation, agreements, truces, harmony, peace, avoiding conflict",
+	"failure, lack of recognition, no rewards, lack of achievement",
+	"waiting, slowness, chaos, delays, losing momentum, hastiness, being unprepared",
+	"stubbornness, rigidity, defensiveness, refusing compromise, giving up",
+	"failure to delegate, shouldering too much responsibility, collapse, breakdown",
+	"delays, blocks, lack of passion, lack of energy, hesitancy, creative blocks",
+	"lack of support, instability, feeling unwelcome, transience, lack of roots, home conflict",
+	"giving up, admitting defeat, yielding, lack of self belief, surrender",
+	"coldness, emptiness, emotional loss, blocked creativity, feeling unloved, gloominess",
+	"separation, rejection, division, imbalance, tension, bad communication, withdrawal",
+	"gossip, scandal, excess, isolation, loneliness, solitude, imbalanced social life",
+	"clarity, awareness, acceptance, choosing happiness, depression, negativity",
+	"acceptance, moving on, finding peace, contentment, seeing positives",
+	"stuck in past, moving forward, leaving home, independence",
+	"lack of purpose, disarray, confusion, diversion, distractions, clarity, making choices",
+	"stagnation, monotony, accepting less, avoidance, fear of change, staying in bad situation",
+	"unhappiness, lack of fulfilment, disappointment, underachievement, arrogance, snobbery",
+	"unhappy home, separation, domestic conflict, disharmony, isolation​",
+	"emotional vulnerability, immaturity, neglecting inner child, escapism, insecurity",
+	"disappointment, tantrums, moodiness, turmoil, avoiding conflict, vanity",
+	"insecurity, giving too much, overly-sensitive, needy, fragile, dependence, martyrdom",
+	"overwhelmed, anxious, cold, repressed, withdrawn, manipulative, selfish",
+	"confusion, miscommunication, hostility, arguments, destruction, brutality",
+	"indecision, hesitancy, anxiety, too much information, no right choice, truth revealed",
+	"healing, forgiveness, recovery, reconciliation, repressing emotions",
+	"recovery, awakening, re-entering world, release from isolation, restlessness, burnout",
+	"reconciliation, resolution, compromise, revenge, regret, remorse, cutting losses",
+	"stuck in past, returning to trouble, running away from problems, trapped",
+	"confession, conscience, regret, maliciousness, truth revealed",
+	"freedom, release, taking control, survivor, facing fears, empowered, surrender",
+	"recovery, learning to cope, facing life, finding help, shame, guilt, mental health issues",
+	"survival, improvement, healing, lessons learned, despair, relapse",
+	"scatterbrained, cynical, sarcastic, gossipy, insulting, rude, lack of planning",
+	"pessimistic, malicious, manipulative, harsh, bitter, spiteful, cruel, deceitful, unforgiving",
+	"rude, tactless, forceful, bully, aggressive, vicious, ruthless, arrogant",
+	"irrational, dictator, oppressive, inhumane, controlling, cold, ruthless, dishonest",
+	"missed chances, scarcity, deficiency, instability, stinginess, bad investments",
+	"imbalance, unorganized, overwhelmed, messiness, chaos, overextending",
+	"lack of cohesion, lack of teamwork, apathy, poor motivation, conflict, ego, competition",
+	"generosity, giving, spending, openness, financial insecurity, reckless spending",
+	"positive changes, recovery from loss, overcoming adversity, forgiveness, feeling welcomed",
+	"power dynamics, abuse of generosity, strings attached gifts, inequality, extortion",
+	"unfinished work, procrastination, low effort, waste, lack of growth, setbacks, impatience, lack of reward",
+	"lack of quality, rushed job, bad reputation, lack of motivation, mediocrity, laziness, low skill, dead-end job",
+	"being guarded, living beyond means, material instability, reckless spending, superficiality",
+	"family disputes, bankruptcy, debt, fleeting success, conflict over money, instability, breaking traditions",
+	"foolish, immature, irresponsible, lazy, underachiever, procrastinator, missed chances, poor prospects",
+	"workaholic, laziness, dull, boring, no initiative, cheap, irresponsible, gambler, risky investments",
+	"selfish, unkempt, jealous, insecure, greedy, materialistic, gold digger, intolerant, self-absorbed, envious",
+	"greed, materialistic, wasteful, chauvanist, poor financial decisions, gambler, exploitative, possessive",
+}

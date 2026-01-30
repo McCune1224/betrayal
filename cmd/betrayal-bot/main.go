@@ -28,6 +28,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/commands/roll"
 	"github.com/mccune1224/betrayal/internal/commands/search"
 	"github.com/mccune1224/betrayal/internal/commands/setup"
+	"github.com/mccune1224/betrayal/internal/commands/tarot"
 	"github.com/mccune1224/betrayal/internal/commands/view"
 	"github.com/mccune1224/betrayal/internal/commands/vote"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -233,6 +234,7 @@ func main() {
 			new(search.Search),
 			new(healthcheck.Healthcheck),
 			new(cycle.Cycle),
+			new(tarot.Tarot),
 		)
 
 		application.betrayalManager.Session().AddHandler(logHandler)
@@ -326,7 +328,7 @@ func logHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 // Primary helper for logHandler to process options that a user inputted for a slash command to get invoked (including value arguments)
 func processOptions(s *discordgo.Session, options []*discordgo.ApplicationCommandInteractionDataOption) string {
-	var msg string
+	var msg strings.Builder
 	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
 
 	for _, opt := range options {
@@ -335,11 +337,11 @@ func processOptions(s *discordgo.Session, options []*discordgo.ApplicationComman
 
 	for _, opt := range options {
 		if o, ok := optionMap[opt.Name]; ok {
-			msg += formatOption(s, o)
+			msg.WriteString(formatOption(s, o))
 		}
 	}
 
-	return msg
+	return msg.String()
 }
 
 // Helper to handle parsing argument options to a string format (really should just be apart of processOptions but...Too Bad!)

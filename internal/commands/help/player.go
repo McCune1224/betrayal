@@ -110,6 +110,15 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				ctx.RespondEmbed(playerSearchHelpEmbed())
 				return true
 			}), clearAll2)
+			b.Add(discordgo.Button{
+				CustomID: "p-tarot-help",
+				Style:    discordgo.SecondaryButton,
+				Label:    "Tarot",
+			}, logger.WrapKenComponent(func(ctx ken.ComponentContext) bool {
+				ctx.SetEphemeral(true)
+				ctx.RespondEmbed(playerTarotHelpEmbed())
+				return true
+			}), clearAll2)
 		}, clearAll2)
 	})
 
@@ -166,4 +175,12 @@ func (*Help) playerSearch(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	return ctx.RespondEmbed(playerSearchHelpEmbed())
+}
+
+func (*Help) playerTarot(ctx ken.SubCommandContext) (err error) {
+	if err := ctx.Defer(); err != nil {
+		logger.Get().Error().Err(err).Msg("operation failed")
+		return err
+	}
+	return ctx.RespondEmbed(playerTarotHelpEmbed())
 }

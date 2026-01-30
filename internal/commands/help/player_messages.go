@@ -154,3 +154,29 @@ func playerSearchHelpEmbed() *discordgo.MessageEmbed {
 	}
 	return msg
 }
+
+func playerTarotHelpEmbed() *discordgo.MessageEmbed {
+	msg := &discordgo.MessageEmbed{
+		Title:       "Tarot",
+		Description: "Draw tarot cards for fun and flavor. Modes let you choose how unique the draw should be.",
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name:  "Basic Usage",
+				Value: "`/tarot draw` – draws a card deterministically based on your user and guild (stable result).",
+			},
+			{
+				Name:  "Modes",
+				Value: "`mode: deterministic` (default) – stable per user in this guild\n`mode: random` – fresh random draw each time\n`mode: per_user` – assigns and remembers a unique card for you (in-memory)\n`mode: guild_deck` – deals cards without replacement for the guild until reset",
+			},
+			{
+				Name:  "Options",
+				Value: "`reversed: true` – force reversed orientation",
+			},
+			{
+				Name:  "Notes",
+				Value: "Per-user and guild-deck modes reset when the bot restarts unless an admin uses persistence (not enabled by default).",
+			},
+		},
+	}
+	return msg
+}
