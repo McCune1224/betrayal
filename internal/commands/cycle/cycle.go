@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/models"
+	cyclesvc "github.com/mccune1224/betrayal/internal/services/cycle"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
@@ -88,9 +89,9 @@ func (c *Cycle) current(ctx ken.SubCommandContext) error {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return err
 	}
-	q := models.New(c.dbPool)
+	svc := cyclesvc.New(c.dbPool)
 	dbCtx := context.Background()
-	currCycle, err := q.GetCycle(dbCtx)
+	currCycle, err := svc.Current(dbCtx)
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Unable to get current game cycle")
@@ -125,19 +126,10 @@ func (c *Cycle) set(ctx ken.SubCommandContext) error {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to get channels for cycle messages")
 	}
-	q := models.New(c.dbPool)
+	svc := cyclesvc.New(c.dbPool)
 	dbCtx := context.Background()
-	currCycle, err := q.GetCycle(dbCtx)
-	if err != nil {
-		logger.Get().Error().Err(err).Msg("operation failed")
-		return discord.AlexError(ctx, "Failed to get current cycle")
-	}
 	isElimination := phaseNameOpt == "Elimination"
-	updatedCycle, err := q.UpdateCycle(dbCtx, models.UpdateCycleParams{
-		ID:            currCycle.ID,
-		Day:           int32(phaseNumberOpt),
-		IsElimination: isElimination,
-	})
+	updatedCycle, err := svc.Set(dbCtx, isElimination, int32(phaseNumberOpt))
 
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
@@ -145,7 +137,7 @@ func (c *Cycle) set(ctx ken.SubCommandContext) error {
 	}
 
 	for _, channelID := range channels {
-		_, err := ctx.GetSession().ChannelMessageSend(channelID, formatCycleMessage(updatedCycle))
+		_, err := ctx.GetSession().ChannelMessageSend(channelID, cyclesvc.FormatMessage(updatedCycle))
 		if err != nil {
 			logger.Get().Error().Err(err).Msg("operation failed")
 			return discord.AlexError(ctx, err.Error())
@@ -176,13 +168,14 @@ func (c *Cycle) next(ctx ken.SubCommandContext) error {
 		return discord.AlexError(ctx, "Failed to get channels for cycle update messages")
 	}
 
-	updatedCycle, err := c.incrementCycle()
+	dbCtx := context.Background()
+	updatedCycle, err := cyclesvc.New(c.dbPool).Increment(dbCtx)
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to update game cycle")
 	}
 
-	msg := formatCycleMessage(updatedCycle)
+	msg := cyclesvc.FormatMessage(updatedCycle)
 
 	for _, channelID := range channelIDSendList {
 		_, err := sesh.ChannelMessageSend(channelID, msg)
@@ -232,55 +225,4 @@ func (c *Cycle) getCycleChannelIDs(sesh *discordgo.Session, event *discordgo.Int
 	channels = append(channels, playerChannelIds...)
 	channels = append(channels, allianceChannelIDs...)
 	return channels, nil
-}
-
-// Wrapper for models.UpdateCycle
-func (c *Cycle) incrementCycle() (models.GameCycle, error) {
-	q := models.New(c.dbPool)
-	dbCtx := context.Background()
-
-	currCycle, err := q.GetCycle(dbCtx)
-	if err != nil {
-		return currCycle, err
-	}
-
-	if currCycle.Day == 0 {
-		return q.UpdateCycle(dbCtx, models.UpdateCycleParams{
-			IsElimination: false,
-			Day:           1,
-			ID:            currCycle.ID,
-		})
-	}
-
-	if currCycle.IsElimination {
-		return q.UpdateCycle(dbCtx, models.UpdateCycleParams{
-			IsElimination: false,
-			Day:           currCycle.Day + 1,
-			ID:            currCycle.ID,
-		})
-	}
-
-	return q.UpdateCycle(dbCtx, models.UpdateCycleParams{
-		IsElimination: true,
-		Day:           currCycle.Day,
-		ID:            currCycle.ID,
-	})
-}
-
-func formatCycleMessage(updatedCycle models.GameCycle) string {
-	// Handle elimination cycle
-	if updatedCycle.IsElimination {
-		return fmt.Sprintf("# === END OF DAY %d ===\n# === START OF ELIMINATION %d ===",
-			updatedCycle.Day, updatedCycle.Day)
-	}
-
-	// Handle day 0 transition
-	if updatedCycle.Day-1 == 0 {
-		return fmt.Sprintf("# === END OF DAY 0 ===\n# === START OF DAY %d ===",
-			updatedCycle.Day)
-	}
-
-	// Handle regular elimination to day transition
-	return fmt.Sprintf("# === END OF ELIMINATION %d ===\n# === START OF DAY %d ===",
-		updatedCycle.Day-1, updatedCycle.Day)
 }

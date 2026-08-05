@@ -27,6 +27,9 @@ func (lts *LoggerTestSuite) TestRecoverWithLogNoPanic() {
 }
 
 // TestRecoverWithLogHandlesPanic tests recovery catches and logs panic
+// NOTE: RecoverWithLog re-panics at Info level or below (see recovery.go), so
+// this test raises the level to exercise the log-and-continue branch. The
+// re-panic branch is covered by TestRecoverWithLogRePanicsInProduction.
 func (lts *LoggerTestSuite) TestRecoverWithLogHandlesPanic() {
 	cfg := logger.Config{
 		Environment: "production",
@@ -37,6 +40,7 @@ func (lts *LoggerTestSuite) TestRecoverWithLogHandlesPanic() {
 	lts.NoError(err)
 
 	log := logger.Get()
+	logger.SetLevel(zerolog.WarnLevel)
 
 	// This should not crash the test
 	func() {

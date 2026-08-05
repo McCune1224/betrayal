@@ -12,6 +12,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/models"
 	"github.com/mccune1224/betrayal/internal/services/inventory"
+	rollsvc "github.com/mccune1224/betrayal/internal/services/roll"
 	"github.com/zekrotja/ken"
 )
 
@@ -46,7 +47,7 @@ func (*Roll) Options() []*discordgo.ApplicationCommandOption {
 		})
 	}
 	minRarityOpts := []*discordgo.ApplicationCommandOptionChoice{}
-	for _, r := range rarityPriorities {
+	for _, r := range rollsvc.RarityPriorities {
 		minRarityOpts = append(minRarityOpts, &discordgo.ApplicationCommandOptionChoice{
 			Name:  string(r),
 			Value: string(r),
@@ -169,12 +170,12 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 	level := opts.GetByName("luck").IntValue()
 
 	rng := rand.Float64()
-	rarity := RollRarityLevel(float64(level), rng)
+	rarity := rollsvc.RollRarityLevel(float64(level), rng)
 
-	q := models.New(r.dbPool)
+	svc := rollsvc.New(r.dbPool)
 	dbCtx := context.Background()
 	if target == "item" {
-		item, err := q.GetRandomItemByRarity(dbCtx, rarity)
+		item, err := svc.RollItemByRarity(dbCtx, rarity)
 		if err != nil {
 			logger.Get().Error().Err(err).Msg("operation failed")
 			return discord.AlexError(ctx, "Failed to get random item")
@@ -188,7 +189,7 @@ func (r *Roll) luckManual(ctx ken.SubCommandContext) (err error) {
 			},
 		})
 	} else {
-		aa, err := q.GetRandomAnyAbilityByRarity(dbCtx, rarity)
+		aa, err := svc.RollAnyAbilityByRarity(dbCtx, rarity)
 		if err != nil {
 			logger.Get().Error().Err(err).Msg("operation failed")
 			return discord.AlexError(ctx, "")
@@ -232,12 +233,12 @@ func (r *Roll) luckTable(ctx ken.SubCommandContext) (err error) {
 
 	for level := float64(low); level < float64(high); level++ {
 		currChances := []float64{
-			commonLuckChance(level) * 100,
-			uncommonLuckChance(level) * 100,
-			rareLuckChance(level) * 100,
-			epicLuckChance(level) * 100,
-			legendaryLuckChance(level) * 100,
-			mythicalLuckChance(level) * 100,
+			rollsvc.CommonLuckChance(level) * 100,
+			rollsvc.UncommonLuckChance(level) * 100,
+			rollsvc.RareLuckChance(level) * 100,
+			rollsvc.EpicLuckChance(level) * 100,
+			rollsvc.LegendaryLuckChance(level) * 100,
+			rollsvc.MythicalLuckChance(level) * 100,
 		}
 
 		tMsg += fmt.Sprintf("%d - ,", int(level))
@@ -265,19 +266,19 @@ func (r *Roll) rollByMinimumRarity(ctx ken.SubCommandContext) (err error) {
 	minimumRarity := models.Rarity(ctx.Options().GetByName("min_rarity").StringValue())
 	target := ctx.Options().GetByName("target").StringValue()
 
-	q := models.New(r.dbPool)
 	dbCtx := context.Background()
 	_, err = inventory.NewInventoryHandler(ctx, r.dbPool)
 	if err != nil {
 		return discord.ErrorMessage(ctx, "Failed to get user inventory", err.Error())
 	}
 
-	start := slices.Index(rarityPriorities, minimumRarity)
-	rarityOptions := rarityPriorities[start:]
-	rarity := rollAtRarity(float64(level), rarityOptions)
+	start := slices.Index(rollsvc.RarityPriorities, minimumRarity)
+	rarityOptions := rollsvc.RarityPriorities[start:]
+	rarity := rollsvc.RollAtRarity(float64(level), rarityOptions)
 
+	svc := rollsvc.New(r.dbPool)
 	if target == "item" {
-		item, err := q.GetRandomItemByMinimumRarity(dbCtx, rarity)
+		item, err := svc.RollItemAtMinimumRarity(dbCtx, rarity)
 		if err != nil {
 			logger.Get().Error().Err(err).Msg("operation failed")
 			return discord.AlexError(ctx, "Failed to get random item")
@@ -291,7 +292,7 @@ func (r *Roll) rollByMinimumRarity(ctx ken.SubCommandContext) (err error) {
 		})
 	} else {
 		// FIXME: This is broken
-		ability, err := q.GetRandomAnyAbilityByMinimumRarity(dbCtx, rarity)
+		ability, err := svc.RollAnyAbilityAtMinimumRarity(dbCtx, rarity)
 		if err != nil {
 			logger.Get().Error().Err(err).Msg("operation failed")
 			return discord.AlexError(ctx, "Failed to get random ability")
