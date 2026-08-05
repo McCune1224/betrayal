@@ -67,19 +67,19 @@ func AuditLogs(logs []AuditLogEntry) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-6\"><h1 class=\"page-title\">AUDIT LOGS</h1><span class=\"text-dust text-base font-medium\">LAST 100 COMMANDS</span></div><!-- Mobile Card View --> <div class=\"md:hidden space-y-3\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-6\"><h1 class=\"page-title\">AUDIT LOGS</h1><span class=\"text-silver text-base font-medium\">LAST 100 COMMANDS</span></div><!-- Mobile Card View --> <div class=\"md:hidden space-y-3\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, log := range logs {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"mobile-card\"><div class=\"flex items-center justify-between mb-2\"><span class=\"text-leather font-bold text-base break-all\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"mobile-card\"><div class=\"flex items-center justify-between mb-2\"><span class=\"text-accent font-bold text-base break-all\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(log.FormatCommand())
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 41, Col: 84}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 41, Col: 83}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -93,27 +93,27 @@ func AuditLogs(logs []AuditLogEntry) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><div class=\"flex items-center justify-between text-sm\"><span class=\"text-dust\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</div><div class=\"flex items-center justify-between text-sm\"><span class=\"text-silver\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(log.Username)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 45, Col: 44}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 45, Col: 46}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</span> <span class=\"text-dust\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</span> <span class=\"text-silver\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(log.ExecutedAt.Format("15:04:05"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 46, Col: 65}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 46, Col: 67}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -124,14 +124,14 @@ func AuditLogs(logs []AuditLogEntry) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				if log.ErrorMsg != "" {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<p class=\"text-rust text-sm mt-2 truncate\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<p class=\"text-ember text-sm mt-2 truncate\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var6 string
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(log.ErrorMsg)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 49, Col: 63}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/audit.templ`, Line: 49, Col: 64}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 					if templ_7745c5c3_Err != nil {
@@ -153,12 +153,12 @@ func AuditLogs(logs []AuditLogEntry) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div><!-- Desktop Table View --> <div class=\"hidden md:block card overflow-hidden p-0\"><div class=\"overflow-x-auto\"><table class=\"w-full min-w-[700px]\"><thead class=\"bg-parchment-dark border-b-2 border-leather\"><tr><th class=\"px-4 py-4 text-left text-sm text-wood uppercase font-bold\">TIME</th><th class=\"px-4 py-4 text-left text-sm text-wood uppercase font-bold\">COMMAND</th><th class=\"px-4 py-4 text-left text-sm text-wood uppercase font-bold\">USER</th><th class=\"px-4 py-4 text-left text-sm text-wood uppercase font-bold\">STATUS</th><th class=\"px-4 py-4 text-left text-sm text-wood uppercase font-bold\">ERROR</th></tr></thead> <tbody class=\"divide-y divide-rope\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div><!-- Desktop Table View --> <div class=\"hidden md:block card overflow-hidden p-0\"><div class=\"overflow-x-auto\"><table class=\"w-full min-w-[700px]\"><thead class=\"bg-smoke border-b border-white/15\"><tr><th class=\"px-4 py-4 text-left text-sm text-ice uppercase font-bold\">TIME</th><th class=\"px-4 py-4 text-left text-sm text-ice uppercase font-bold\">COMMAND</th><th class=\"px-4 py-4 text-left text-sm text-ice uppercase font-bold\">USER</th><th class=\"px-4 py-4 text-left text-sm text-ice uppercase font-bold\">STATUS</th><th class=\"px-4 py-4 text-left text-sm text-ice uppercase font-bold\">ERROR</th></tr></thead> <tbody class=\"divide-y divide-hairline\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, log := range logs {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<tr class=\"hover:bg-parchment-dark/50 transition-colors\"><td class=\"px-4 py-4 whitespace-nowrap text-base text-dust\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<tr class=\"hover:bg-white/5 transition-colors\"><td class=\"px-4 py-4 whitespace-nowrap text-base text-silver\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -171,7 +171,7 @@ func AuditLogs(logs []AuditLogEntry) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</td><td class=\"px-4 py-4 text-base text-leather font-bold max-w-md\"><span class=\"break-all\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</td><td class=\"px-4 py-4 text-base text-accent font-bold max-w-md\"><span class=\"break-all\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -184,7 +184,7 @@ func AuditLogs(logs []AuditLogEntry) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</span></td><td class=\"px-4 py-4 whitespace-nowrap text-base text-ink\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</span></td><td class=\"px-4 py-4 whitespace-nowrap text-base text-ice\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -205,7 +205,7 @@ func AuditLogs(logs []AuditLogEntry) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</td><td class=\"px-4 py-4 text-base text-rust max-w-xs truncate\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</td><td class=\"px-4 py-4 text-base text-ember max-w-xs truncate\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

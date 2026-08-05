@@ -69,8 +69,8 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 ## Web Admin Panel
 
 - Routes (`internal/web/server.go`): `/login`, `/` dashboard, `/health`, `/players` + `/players/:id`, `/votes`, `/roles` CRUD, `/admin/audit`, `/admin/redeploy` (Railway). Session-auth protected except `/login` + `/health`.
-- Editing templates requires `make generate` (commits `_templ.go`); Tailwind source is v4 CSS (`@import "tailwindcss"`, theme tokens in `@theme` — "Dusty Western" palette).
-- Theme: warm, non-corporate, **mobile-first** — preserve this.
+- Editing templates requires `make generate` (commits `_templ.go`); Tailwind source is v4 CSS (`@import "tailwindcss"`, theme tokens in `@theme` — "Dark Obsidian Glass" palette: charcoal surfaces, frost-silver accent, teal/violet iridescent hints).
+- Theme: dark, atmospheric obsidian-glass (game theme is "mirrors"), **mobile-first** — preserve this.
 - Security TODOs (before adding public-facing routes): CSRF middleware, login rate limiting, require `SESSION_SECRET` (no password fallback).
 
 ## Known Jank Register (fix under WT-5, don't perpetuate)

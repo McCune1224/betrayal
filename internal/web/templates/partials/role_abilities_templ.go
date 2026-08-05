@@ -42,12 +42,12 @@ func RoleAbilities(roleID int32, abilities []AbilityRow) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if len(abilities) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"p-4 text-center text-dust\">No abilities associated with this role</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"p-4 text-center text-silver\">No abilities associated with this role</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"divide-y divide-dust/20\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"divide-y divide-white/10\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -78,7 +78,7 @@ func RoleAbilities(roleID int32, abilities []AbilityRow) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" hx-swap=\"none\" class=\"space-y-3\"><div class=\"flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3\"><div class=\"flex-1 grid grid-cols-1 md:grid-cols-2 gap-3\"><div><label class=\"block text-xs font-medium text-dust mb-1\">Name</label> <input type=\"text\" name=\"name\" value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" hx-swap=\"none\" class=\"space-y-3\"><div class=\"flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3\"><div class=\"flex-1 grid grid-cols-1 md:grid-cols-2 gap-3\"><div><label class=\"block text-xs font-medium text-silver mb-1\">Name</label> <input type=\"text\" name=\"name\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -91,7 +91,7 @@ func RoleAbilities(roleID int32, abilities []AbilityRow) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"w-full px-3 py-2 text-sm border border-dust rounded bg-parchment text-wood focus:outline-none focus:ring-1 focus:ring-leather\"></div><div class=\"flex gap-2\"><div class=\"flex-1\"><label class=\"block text-xs font-medium text-dust mb-1\">Charges</label> <input type=\"number\" name=\"default_charges\" value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"w-full px-3 py-2 text-sm border border-white/15 rounded bg-white/5 text-ice focus:outline-none focus:ring-1 focus:ring-accent/40\"></div><div class=\"flex gap-2\"><div class=\"flex-1\"><label class=\"block text-xs font-medium text-silver mb-1\">Charges</label> <input type=\"number\" name=\"default_charges\" value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -104,7 +104,7 @@ func RoleAbilities(roleID int32, abilities []AbilityRow) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" class=\"w-full px-3 py-2 text-sm border border-dust rounded bg-parchment text-wood focus:outline-none focus:ring-1 focus:ring-leather\"></div><div class=\"flex-1\"><label class=\"block text-xs font-medium text-dust mb-1\">Rarity</label> <select name=\"rarity\" class=\"w-full px-3 py-2 text-sm border border-dust rounded bg-parchment text-wood focus:outline-none focus:ring-1 focus:ring-leather\"><option value=\"COMMON\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" class=\"w-full px-3 py-2 text-sm border border-white/15 rounded bg-white/5 text-ice focus:outline-none focus:ring-1 focus:ring-accent/40\"></div><div class=\"flex-1\"><label class=\"block text-xs font-medium text-silver mb-1\">Rarity</label> <select name=\"rarity\" class=\"w-full px-3 py-2 text-sm border border-white/15 rounded bg-white/5 text-ice focus:outline-none focus:ring-1 focus:ring-accent/40\"><option value=\"COMMON\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -184,7 +184,7 @@ func RoleAbilities(roleID int32, abilities []AbilityRow) templ.Component {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, ">UNIQUE</option></select></div></div></div></div><div><label class=\"block text-xs font-medium text-dust mb-1\">Description</label> <textarea name=\"description\" rows=\"2\" class=\"w-full px-3 py-2 text-sm border border-dust rounded bg-parchment text-wood focus:outline-none focus:ring-1 focus:ring-leather\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, ">UNIQUE</option></select></div></div></div></div><div><label class=\"block text-xs font-medium text-silver mb-1\">Description</label> <textarea name=\"description\" rows=\"2\" class=\"w-full px-3 py-2 text-sm border border-white/15 rounded bg-white/5 text-ice focus:outline-none focus:ring-1 focus:ring-accent/40\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -197,7 +197,7 @@ func RoleAbilities(roleID int32, abilities []AbilityRow) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</textarea></div><div class=\"flex items-center justify-between\"><label class=\"flex items-center gap-2 text-sm text-wood\"><input type=\"checkbox\" name=\"any_ability\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</textarea></div><div class=\"flex items-center justify-between\"><label class=\"flex items-center gap-2 text-sm text-ice\"><input type=\"checkbox\" name=\"any_ability\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -207,7 +207,7 @@ func RoleAbilities(roleID int32, abilities []AbilityRow) templ.Component {
 						return templ_7745c5c3_Err
 					}
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, " class=\"rounded border-dust text-leather focus:ring-leather\"> Any Ability (can be given to any role)</label><div class=\"flex gap-2\"><button type=\"submit\" class=\"btn-primary text-sm px-3 py-1\">Save</button> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, " class=\"rounded border-white/25 text-accent focus:ring-accent/40\"> Any Ability (can be given to any role)</label><div class=\"flex gap-2\"><button type=\"submit\" class=\"btn-primary text-sm px-3 py-1\">Save</button> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

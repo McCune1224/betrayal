@@ -44,7 +44,7 @@ func Base(title string, currentPath string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " | Betrayal Admin</title><!-- Favicon - Sheriff Star --><link rel=\"icon\" href=\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>\"><!-- Google Fonts - Rye for western titles --><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Rye&display=swap\" rel=\"stylesheet\"><link href=\"/static/css/output.css\" rel=\"stylesheet\"><script src=\"/static/js/htmx.min.js\"></script><script>\n\t\t\t// Toast notification handler with slide-in animation\n\t\t\tdocument.body.addEventListener('showToast', function(evt) {\n\t\t\t\tconst toast = document.getElementById('toast');\n\t\t\t\tconst message = evt.detail.message;\n\t\t\t\tconst type = evt.detail.type;\n\t\t\t\t\n\t\t\t\ttoast.textContent = message;\n\t\t\t\ttoast.className = 'toast ' + (type === 'error' ? 'toast-error' : 'toast-success');\n\t\t\t\t\n\t\t\t\t// Trigger reflow for animation\n\t\t\t\ttoast.offsetHeight;\n\t\t\t\ttoast.classList.add('show');\n\t\t\t\t\n\t\t\t\tsetTimeout(() => {\n\t\t\t\t\ttoast.classList.remove('show');\n\t\t\t\t}, 4000);\n\t\t\t});\n\t\t</script></head><body class=\"min-h-screen\"><!-- Desktop Nav -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " | Betrayal Admin</title><!-- Favicon - Mirror Glint --><link rel=\"icon\" href=\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>\"><!-- Google Fonts - Cinzel for display titles --><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&display=swap\" rel=\"stylesheet\"><link href=\"/static/css/output.css\" rel=\"stylesheet\"><script src=\"/static/js/htmx.min.js\"></script><script>\n\t\t\t// Toast notification handler with slide-in animation\n\t\t\tdocument.body.addEventListener('showToast', function(evt) {\n\t\t\t\tconst toast = document.getElementById('toast');\n\t\t\t\tconst message = evt.detail.message;\n\t\t\t\tconst type = evt.detail.type;\n\t\t\t\t\n\t\t\t\ttoast.textContent = message;\n\t\t\t\ttoast.className = 'toast ' + (type === 'error' ? 'toast-error' : 'toast-success');\n\t\t\t\t\n\t\t\t\t// Trigger reflow for animation\n\t\t\t\ttoast.offsetHeight;\n\t\t\t\ttoast.classList.add('show');\n\t\t\t\t\n\t\t\t\tsetTimeout(() => {\n\t\t\t\t\ttoast.classList.remove('show');\n\t\t\t\t}, 4000);\n\t\t\t});\n\t\t</script></head><body class=\"min-h-screen\"><!-- Desktop Nav -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -97,11 +97,11 @@ func DesktopNav(currentPath string) templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<nav class=\"hidden md:block wood-panel\"><div class=\"container mx-auto px-4\"><div class=\"flex items-center justify-between h-16\"><div class=\"flex items-center space-x-8\"><a href=\"/\" class=\"text-xl font-western tracking-wider text-parchment hover:text-white transition-colors\">BETRAYAL</a><div class=\"flex space-x-1\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<nav class=\"hidden md:block glass-nav\"><div class=\"container mx-auto px-4\"><div class=\"flex items-center justify-between h-16\"><div class=\"flex items-center space-x-8\"><a href=\"/\" class=\"text-xl font-display tracking-wider text-ice hover:text-accent-bright transition-colors\">BETRAYAL</a><div class=\"flex space-x-1\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var4 = []any{"px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/")}
+		var templ_7745c5c3_Var4 = []any{"px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/")}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var4...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -123,7 +123,7 @@ func DesktopNav(currentPath string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var6 = []any{"px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/players"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/players")}
+		var templ_7745c5c3_Var6 = []any{"px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/players"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/players")}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var6...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -145,7 +145,7 @@ func DesktopNav(currentPath string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var8 = []any{"px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/roles"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/roles")}
+		var templ_7745c5c3_Var8 = []any{"px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/roles"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/roles")}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var8...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -167,7 +167,7 @@ func DesktopNav(currentPath string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var10 = []any{"px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/votes"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/votes")}
+		var templ_7745c5c3_Var10 = []any{"px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/votes"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/votes")}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var10...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -189,7 +189,7 @@ func DesktopNav(currentPath string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var12 = []any{"px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/admin/audit"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/admin/audit")}
+		var templ_7745c5c3_Var12 = []any{"px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/admin/audit"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/admin/audit")}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var12...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -207,7 +207,7 @@ func DesktopNav(currentPath string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\">LOGS</a></div></div><form action=\"/logout\" method=\"POST\"><button type=\"submit\" class=\"px-4 py-2 text-base font-medium text-parchment hover:text-red-300 transition-colors\">LOGOUT</button></form></div></div></nav>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\">LOGS</a></div></div><form action=\"/logout\" method=\"POST\"><button type=\"submit\" class=\"px-4 py-2 text-base font-medium text-silver hover:text-red-300 transition-colors\">LOGOUT</button></form></div></div></nav>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -389,7 +389,7 @@ func BaseSimple(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, " | Betrayal Admin</title><!-- Favicon - Sheriff Star --><link rel=\"icon\" href=\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>\"><!-- Google Fonts - Rye for western titles --><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Rye&display=swap\" rel=\"stylesheet\"><link href=\"/static/css/output.css\" rel=\"stylesheet\"></head><body class=\"min-h-screen flex items-center justify-center p-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, " | Betrayal Admin</title><!-- Favicon - Mirror Glint --><link rel=\"icon\" href=\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>\"><!-- Google Fonts - Cinzel for display titles --><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&display=swap\" rel=\"stylesheet\"><link href=\"/static/css/output.css\" rel=\"stylesheet\"></head><body class=\"min-h-screen flex items-center justify-center p-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -22,9 +22,9 @@ templ PlayerTable(players []PlayerRowData) {
 						@StatusBadge(p.Alive)
 						@AlignmentBadge(p.Alignment)
 					</div>
-					<p class="text-leather truncate text-base font-bold">{ p.Role }</p>
+					<p class="text-accent truncate text-base font-bold">{ p.Role }</p>
 				</div>
-				<span class="text-leather text-lg ml-2 font-bold">&#x2192;</span>
+				<span class="text-accent text-lg ml-2 font-bold">&#x2192;</span>
 			</a>
 		}
 		
@@ -36,30 +36,30 @@ templ PlayerTable(players []PlayerRowData) {
 	<!-- Desktop Table View -->
 	<div class="hidden md:block">
 		<table class="w-full min-w-[600px]">
-			<thead class="bg-parchment-dark border-b-2 border-leather">
+			<thead class="bg-smoke border-b border-white/15">
 				<tr>
-					<th class="px-4 py-4 text-left text-sm text-wood uppercase font-bold">ID</th>
-					<th class="px-4 py-4 text-left text-sm text-wood uppercase font-bold">ROLE</th>
-					<th class="px-4 py-4 text-left text-sm text-wood uppercase font-bold">ALIGN</th>
-					<th class="px-4 py-4 text-left text-sm text-wood uppercase font-bold">STATUS</th>
-					<th class="px-4 py-4 text-left text-sm text-wood uppercase font-bold">COINS</th>
-					<th class="px-4 py-4 text-left text-sm text-wood uppercase font-bold">LUCK</th>
-					<th class="px-4 py-4 text-left text-sm text-wood uppercase font-bold"></th>
+					<th class="px-4 py-4 text-left text-sm text-ice uppercase font-bold">ID</th>
+					<th class="px-4 py-4 text-left text-sm text-ice uppercase font-bold">ROLE</th>
+					<th class="px-4 py-4 text-left text-sm text-ice uppercase font-bold">ALIGN</th>
+					<th class="px-4 py-4 text-left text-sm text-ice uppercase font-bold">STATUS</th>
+					<th class="px-4 py-4 text-left text-sm text-ice uppercase font-bold">COINS</th>
+					<th class="px-4 py-4 text-left text-sm text-ice uppercase font-bold">LUCK</th>
+					<th class="px-4 py-4 text-left text-sm text-ice uppercase font-bold"></th>
 				</tr>
 			</thead>
-			<tbody class="divide-y divide-rope">
+			<tbody class="divide-y divide-hairline">
 				for _, p := range players {
-					<tr class="hover:bg-parchment-dark/50 transition-colors">
-						<td class="px-4 py-4 text-base text-dust">{ strconv.FormatInt(p.ID, 10) }</td>
-						<td class="px-4 py-4 text-base text-leather font-bold">{ p.Role }</td>
+					<tr class="hover:bg-white/5 transition-colors">
+						<td class="px-4 py-4 text-base text-silver">{ strconv.FormatInt(p.ID, 10) }</td>
+						<td class="px-4 py-4 text-base text-accent font-bold">{ p.Role }</td>
 						<td class="px-4 py-4 text-base">
 							@AlignmentBadge(p.Alignment)
 						</td>
 						<td class="px-4 py-4 text-base">
 							@StatusBadge(p.Alive)
 						</td>
-						<td class="px-4 py-4 text-base text-wood font-bold">{ strconv.Itoa(p.Coins) }</td>
-						<td class="px-4 py-4 text-base text-dust">{ strconv.Itoa(p.Luck) }</td>
+						<td class="px-4 py-4 text-base text-ice font-bold">{ strconv.Itoa(p.Coins) }</td>
+						<td class="px-4 py-4 text-base text-silver">{ strconv.Itoa(p.Luck) }</td>
 						<td class="px-4 py-4 text-base">
 							<a href={ templ.SafeURL("/players/" + strconv.FormatInt(p.ID, 10)) } class="table-link">
 								VIEW &#x2192;

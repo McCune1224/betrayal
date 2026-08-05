@@ -46,14 +46,14 @@ func RoleDetail(data RoleDetailData) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><!-- Back Link --><div><a href=\"/roles\" class=\"text-leather hover:text-leather-dark transition-colors\">&larr; Back to Role Search</a></div><!-- Role Header --><div class=\"flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4\"><h1 class=\"text-2xl font-western text-wood\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><!-- Back Link --><div><a href=\"/roles\" class=\"text-accent hover:text-accent-bright transition-colors\">&larr; Back to Role Search</a></div><!-- Role Header --><div class=\"flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4\"><h1 class=\"text-2xl font-display text-ice\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(data.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/role_detail.templ`, Line: 20, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/role_detail.templ`, Line: 20, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -94,7 +94,7 @@ func RoleDetail(data RoleDetailData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</span></div><!-- Role Info Form --><div class=\"card\"><div class=\"p-4 border-b border-dust/30\"><h2 class=\"font-semibold text-wood\">Role Information</h2></div><form class=\"p-4 space-y-4\" hx-put=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</span></div><!-- Role Info Form --><div class=\"card\"><div class=\"p-4 border-b border-white/10\"><h2 class=\"font-semibold text-ice\">Role Information</h2></div><form class=\"p-4 space-y-4\" hx-put=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -107,7 +107,7 @@ func RoleDetail(data RoleDetailData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" hx-swap=\"none\"><div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\"><div><label for=\"name\" class=\"block text-sm font-medium text-wood mb-1\">Name</label> <input type=\"text\" id=\"name\" name=\"name\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" hx-swap=\"none\"><div class=\"grid grid-cols-1 md:grid-cols-2 gap-4\"><div><label for=\"name\" class=\"block text-sm font-medium text-ice mb-1\">Name</label> <input type=\"text\" id=\"name\" name=\"name\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -120,7 +120,7 @@ func RoleDetail(data RoleDetailData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" class=\"w-full px-3 py-2 border border-dust rounded-lg bg-parchment text-wood focus:outline-none focus:ring-2 focus:ring-leather\" required></div><div><label for=\"alignment\" class=\"block text-sm font-medium text-wood mb-1\">Alignment</label> <select id=\"alignment\" name=\"alignment\" class=\"w-full px-3 py-2 border border-dust rounded-lg bg-parchment text-wood focus:outline-none focus:ring-2 focus:ring-leather\"><option value=\"GOOD\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" class=\"w-full px-3 py-2 border border-white/15 rounded-lg bg-white/5 text-ice focus:outline-none focus:ring-2 focus:ring-accent/40\" required></div><div><label for=\"alignment\" class=\"block text-sm font-medium text-ice mb-1\">Alignment</label> <select id=\"alignment\" name=\"alignment\" class=\"w-full px-3 py-2 border border-white/15 rounded-lg bg-white/5 text-ice focus:outline-none focus:ring-2 focus:ring-accent/40\"><option value=\"GOOD\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -150,7 +150,7 @@ func RoleDetail(data RoleDetailData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, ">EVIL</option></select></div></div><div><label for=\"description\" class=\"block text-sm font-medium text-wood mb-1\">Description</label> <textarea id=\"description\" name=\"description\" rows=\"3\" class=\"w-full px-3 py-2 border border-dust rounded-lg bg-parchment text-wood focus:outline-none focus:ring-2 focus:ring-leather\" required>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, ">EVIL</option></select></div></div><div><label for=\"description\" class=\"block text-sm font-medium text-ice mb-1\">Description</label> <textarea id=\"description\" name=\"description\" rows=\"3\" class=\"w-full px-3 py-2 border border-white/15 rounded-lg bg-white/5 text-ice focus:outline-none focus:ring-2 focus:ring-accent/40\" required>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -163,14 +163,14 @@ func RoleDetail(data RoleDetailData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</textarea></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"btn-primary\">Save Role Changes</button></div></form></div><!-- Abilities Section --><div class=\"card\"><div class=\"p-4 border-b border-dust/30 flex items-center justify-between\"><h2 class=\"font-semibold text-wood\">Abilities (")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</textarea></div><div class=\"flex justify-end\"><button type=\"submit\" class=\"btn-primary\">Save Role Changes</button></div></form></div><!-- Abilities Section --><div class=\"card\"><div class=\"p-4 border-b border-white/10 flex items-center justify-between\"><h2 class=\"font-semibold text-ice\">Abilities (")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", len(data.Abilities)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/role_detail.templ`, Line: 82, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/role_detail.templ`, Line: 82, Col: 91}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -189,14 +189,14 @@ func RoleDetail(data RoleDetailData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" hx-trigger=\"load\" hx-swap=\"innerHTML\"><div class=\"p-4 text-center\"><div class=\"spinner\"></div></div></div></div><!-- Perks Section --><div class=\"card\"><div class=\"p-4 border-b border-dust/30 flex items-center justify-between\"><h2 class=\"font-semibold text-wood\">Perks (")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\" hx-trigger=\"load\" hx-swap=\"innerHTML\"><div class=\"p-4 text-center\"><div class=\"spinner\"></div></div></div></div><!-- Perks Section --><div class=\"card\"><div class=\"p-4 border-b border-white/10 flex items-center justify-between\"><h2 class=\"font-semibold text-ice\">Perks (")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", len(data.Perks)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/role_detail.templ`, Line: 99, Col: 84}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/role_detail.templ`, Line: 99, Col: 83}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -215,7 +215,7 @@ func RoleDetail(data RoleDetailData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" hx-trigger=\"load\" hx-swap=\"innerHTML\"><div class=\"p-4 text-center\"><div class=\"spinner\"></div></div></div></div></div><!-- Delete Confirmation Modal --> <div id=\"delete-modal\" class=\"fixed inset-0 bg-black/50 hidden items-center justify-center z-50\"><div class=\"bg-parchment rounded-lg p-6 max-w-md mx-4 shadow-xl\"><h3 class=\"text-lg font-semibold text-wood mb-4\">Confirm Removal</h3><p id=\"delete-modal-message\" class=\"text-wood mb-6\">Are you sure you want to remove this item from the role?</p><div class=\"flex justify-end gap-3\"><button onclick=\"closeDeleteModal()\" class=\"btn-ghost\">Cancel</button> <button id=\"delete-modal-confirm\" class=\"btn-danger\">Remove</button></div></div></div><script>\n\t\t\tlet deleteCallback = null;\n\t\t\t\n\t\t\tfunction showDeleteModal(message, onConfirm) {\n\t\t\t\tdocument.getElementById('delete-modal-message').textContent = message;\n\t\t\t\tdocument.getElementById('delete-modal').classList.remove('hidden');\n\t\t\t\tdocument.getElementById('delete-modal').classList.add('flex');\n\t\t\t\tdeleteCallback = onConfirm;\n\t\t\t}\n\t\t\t\n\t\t\tfunction closeDeleteModal() {\n\t\t\t\tdocument.getElementById('delete-modal').classList.add('hidden');\n\t\t\t\tdocument.getElementById('delete-modal').classList.remove('flex');\n\t\t\t\tdeleteCallback = null;\n\t\t\t}\n\t\t\t\n\t\t\tdocument.getElementById('delete-modal-confirm').addEventListener('click', function() {\n\t\t\t\tif (deleteCallback) {\n\t\t\t\t\tdeleteCallback();\n\t\t\t\t}\n\t\t\t\tcloseDeleteModal();\n\t\t\t});\n\t\t\t\n\t\t\t// Close modal on escape key\n\t\t\tdocument.addEventListener('keydown', function(e) {\n\t\t\t\tif (e.key === 'Escape') {\n\t\t\t\t\tcloseDeleteModal();\n\t\t\t\t}\n\t\t\t});\n\t\t\t\n\t\t\t// Close modal on backdrop click\n\t\t\tdocument.getElementById('delete-modal').addEventListener('click', function(e) {\n\t\t\t\tif (e.target === this) {\n\t\t\t\t\tcloseDeleteModal();\n\t\t\t\t}\n\t\t\t});\n\t\t</script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" hx-trigger=\"load\" hx-swap=\"innerHTML\"><div class=\"p-4 text-center\"><div class=\"spinner\"></div></div></div></div></div><!-- Delete Confirmation Modal --> <div id=\"delete-modal\" class=\"fixed inset-0 bg-black/70 hidden items-center justify-center z-50\"><div class=\"bg-glass/95 backdrop-blur-xl rounded-xl p-6 max-w-md mx-4 shadow-2xl border border-white/10\"><h3 class=\"text-lg font-semibold text-ice mb-4\">Confirm Removal</h3><p id=\"delete-modal-message\" class=\"text-ice mb-6\">Are you sure you want to remove this item from the role?</p><div class=\"flex justify-end gap-3\"><button onclick=\"closeDeleteModal()\" class=\"btn-ghost\">Cancel</button> <button id=\"delete-modal-confirm\" class=\"btn-danger\">Remove</button></div></div></div><script>\n\t\t\tlet deleteCallback = null;\n\t\t\t\n\t\t\tfunction showDeleteModal(message, onConfirm) {\n\t\t\t\tdocument.getElementById('delete-modal-message').textContent = message;\n\t\t\t\tdocument.getElementById('delete-modal').classList.remove('hidden');\n\t\t\t\tdocument.getElementById('delete-modal').classList.add('flex');\n\t\t\t\tdeleteCallback = onConfirm;\n\t\t\t}\n\t\t\t\n\t\t\tfunction closeDeleteModal() {\n\t\t\t\tdocument.getElementById('delete-modal').classList.add('hidden');\n\t\t\t\tdocument.getElementById('delete-modal').classList.remove('flex');\n\t\t\t\tdeleteCallback = null;\n\t\t\t}\n\t\t\t\n\t\t\tdocument.getElementById('delete-modal-confirm').addEventListener('click', function() {\n\t\t\t\tif (deleteCallback) {\n\t\t\t\t\tdeleteCallback();\n\t\t\t\t}\n\t\t\t\tcloseDeleteModal();\n\t\t\t});\n\t\t\t\n\t\t\t// Close modal on escape key\n\t\t\tdocument.addEventListener('keydown', function(e) {\n\t\t\t\tif (e.key === 'Escape') {\n\t\t\t\t\tcloseDeleteModal();\n\t\t\t\t}\n\t\t\t});\n\t\t\t\n\t\t\t// Close modal on backdrop click\n\t\t\tdocument.getElementById('delete-modal').addEventListener('click', function(e) {\n\t\t\t\tif (e.target === this) {\n\t\t\t\t\tcloseDeleteModal();\n\t\t\t\t}\n\t\t\t});\n\t\t</script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

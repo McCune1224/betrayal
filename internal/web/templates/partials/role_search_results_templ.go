@@ -62,37 +62,37 @@ func RoleSearchResults(roles []RoleSearchRow) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if len(roles) == 0 {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<p class=\"text-dust text-center py-8\">No roles found</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<p class=\"text-silver text-center py-8\">No roles found</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"overflow-x-auto\"><table class=\"w-full\"><thead><tr class=\"border-b border-dust/30\"><th class=\"text-left py-3 px-4 text-sm font-semibold text-wood\">Name</th><th class=\"text-left py-3 px-4 text-sm font-semibold text-wood hidden md:table-cell\">Description</th><th class=\"text-left py-3 px-4 text-sm font-semibold text-wood\">Alignment</th><th class=\"text-right py-3 px-4 text-sm font-semibold text-wood\">Action</th></tr></thead> <tbody>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"overflow-x-auto\"><table class=\"w-full\"><thead><tr class=\"border-b border-white/10\"><th class=\"text-left py-3 px-4 text-sm font-semibold text-ice\">Name</th><th class=\"text-left py-3 px-4 text-sm font-semibold text-ice hidden md:table-cell\">Description</th><th class=\"text-left py-3 px-4 text-sm font-semibold text-ice\">Alignment</th><th class=\"text-right py-3 px-4 text-sm font-semibold text-ice\">Action</th></tr></thead> <tbody>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, role := range roles {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<tr class=\"border-b border-dust/20 hover:bg-dust/10 transition-colors\"><td class=\"py-3 px-4\"><span class=\"font-medium text-wood\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<tr class=\"border-b border-white/10 hover:bg-white/5 transition-colors\"><td class=\"py-3 px-4\"><span class=\"font-medium text-ice\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var2 string
 				templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(role.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/role_search_results.templ`, Line: 53, Col: 55}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/role_search_results.templ`, Line: 53, Col: 54}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span></td><td class=\"py-3 px-4 hidden md:table-cell\"><span class=\"text-sm text-dust truncate max-w-xs block\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span></td><td class=\"py-3 px-4 hidden md:table-cell\"><span class=\"text-sm text-silver truncate max-w-xs block\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(truncateText(role.Description, 60))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/role_search_results.templ`, Line: 56, Col: 100}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/partials/role_search_results.templ`, Line: 56, Col: 102}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {

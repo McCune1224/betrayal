@@ -9,12 +9,12 @@ templ Base(title string, currentPath string) {
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 		<title>{ title } | Betrayal Admin</title>
-		<!-- Favicon - Sheriff Star -->
-		<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>"/>
-		<!-- Google Fonts - Rye for western titles -->
+		<!-- Favicon - Mirror Glint -->
+		<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>"/>
+		<!-- Google Fonts - Cinzel for display titles -->
 		<link rel="preconnect" href="https://fonts.googleapis.com"/>
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-		<link href="https://fonts.googleapis.com/css2?family=Rye&display=swap" rel="stylesheet"/>
+		<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&display=swap" rel="stylesheet"/>
 		<link href="/static/css/output.css" rel="stylesheet"/>
 		<script src="/static/js/htmx.min.js"></script>
 		<script>
@@ -56,21 +56,21 @@ templ Base(title string, currentPath string) {
 }
 
 templ DesktopNav(currentPath string) {
-	<nav class="hidden md:block wood-panel">
+	<nav class="hidden md:block glass-nav">
 		<div class="container mx-auto px-4">
 			<div class="flex items-center justify-between h-16">
 				<div class="flex items-center space-x-8">
-					<a href="/" class="text-xl font-western tracking-wider text-parchment hover:text-white transition-colors">BETRAYAL</a>
+					<a href="/" class="text-xl font-display tracking-wider text-ice hover:text-accent-bright transition-colors">BETRAYAL</a>
 					<div class="flex space-x-1">
-						<a href="/" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/") }>HOME</a>
-						<a href="/players" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/players"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/players") }>PLAYERS</a>
-						<a href="/roles" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/roles"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/roles") }>ROLES</a>
-						<a href="/votes" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/votes"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/votes") }>VOTES</a>
-						<a href="/admin/audit" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/admin/audit"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/admin/audit") }>LOGS</a>
+						<a href="/" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/") }>HOME</a>
+						<a href="/players" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/players"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/players") }>PLAYERS</a>
+						<a href="/roles" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/roles"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/roles") }>ROLES</a>
+						<a href="/votes" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/votes"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/votes") }>VOTES</a>
+						<a href="/admin/audit" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/admin/audit"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/admin/audit") }>LOGS</a>
 					</div>
 				</div>
 				<form action="/logout" method="POST">
-					<button type="submit" class="px-4 py-2 text-base font-medium text-parchment hover:text-red-300 transition-colors">
+					<button type="submit" class="px-4 py-2 text-base font-medium text-silver hover:text-red-300 transition-colors">
 						LOGOUT
 					</button>
 				</form>
@@ -112,12 +112,12 @@ templ BaseSimple(title string) {
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 		<title>{ title } | Betrayal Admin</title>
-		<!-- Favicon - Sheriff Star -->
-		<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>"/>
-		<!-- Google Fonts - Rye for western titles -->
+		<!-- Favicon - Mirror Glint -->
+		<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>"/>
+		<!-- Google Fonts - Cinzel for display titles -->
 		<link rel="preconnect" href="https://fonts.googleapis.com"/>
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-		<link href="https://fonts.googleapis.com/css2?family=Rye&display=swap" rel="stylesheet"/>
+		<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&display=swap" rel="stylesheet"/>
 		<link href="/static/css/output.css" rel="stylesheet"/>
 	</head>
 	<body class="min-h-screen flex items-center justify-center p-4">
