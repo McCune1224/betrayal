@@ -15,7 +15,7 @@ from player
 ;
 
 -- name: CreatePlayer :one
-INSERT INTO player (id, role_id, alive, coins, coin_bonus, luck, alignment) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
+INSERT INTO player (id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
 
 -- name: UpdatePlayer :one
 UPDATE player SET role_id = $2, alive = $3, coins = $4, coin_bonus = $5, luck = $6, item_limit = $7, alignment = $8 WHERE id = $1 RETURNING *;

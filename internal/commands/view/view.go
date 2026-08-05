@@ -202,7 +202,11 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 			fmt.Sprintf("Unable to find Associated Role for Ability: %s", nameArg))
 	}
 
-	dbcategories, _ := q.ListAbilityCategoryNames(dbCtx, ability.ID)
+	// Categories are auxiliary — a failed query shouldn't block the embed.
+	dbcategories, err := q.ListAbilityCategoryNames(dbCtx, ability.ID)
+	if err != nil {
+		logger.Get().Warn().Err(err).Str("ability", ability.Name).Msg("failed to load ability categories")
+	}
 	for i := range dbcategories {
 		dbcategories[i] = strings.ToLower(dbcategories[i])
 	}
@@ -210,26 +214,22 @@ func (v *View) viewAbility(ctx ken.SubCommandContext) (err error) {
 		Title:       ability.Name,
 		Description: ability.Description,
 		Color:       determineColor(ability.Rarity),
-		// FIXME: Categories need to be queried/overhauled
-		Fields: []*discordgo.MessageEmbedField{
+	}
+	if len(dbcategories) > 0 {
+		abilityEmbed.Fields = []*discordgo.MessageEmbedField{
 			{
 				Name:   "Categories",
 				Value:  strings.Join(dbcategories, " • "),
 				Inline: true,
 			},
-		},
-	}
-	aa, err := q.GetAbilityInfoByFuzzy(dbCtx, ability.Name)
-	if err != nil {
-		logger.Get().Error().Err(err).Msg("operation failed")
-		return err
+		}
 	}
 	msg := ""
-	if aa.AnyAbility {
-		if aa.Rarity == models.RarityROLESPECIFIC {
+	if ability.AnyAbility {
+		if ability.Rarity == models.RarityROLESPECIFIC {
 			msg = fmt.Sprintf("Role Specific AA")
 		} else {
-			msg = fmt.Sprintf("%s AA", aa.Rarity)
+			msg = fmt.Sprintf("%s AA", ability.Rarity)
 		}
 	} else {
 		msg = fmt.Sprintf("Role Specific Ability. (not AA)")

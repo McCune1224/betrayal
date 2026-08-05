@@ -33,6 +33,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/commands/vote"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/logger"
+	"github.com/mccune1224/betrayal/internal/models"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/mccune1224/betrayal/internal/web"
 	"github.com/rs/zerolog"
@@ -95,16 +96,9 @@ func (a *app) RegisterBetrayalCommands(commands ...BetrayalCommand) int {
 }
 
 func main() {
-	// Initialize logger (without database - we need to create the pool first)
 	env := os.Getenv("ENVIRONMENT")
 	if env == "" {
 		env = "local"
-	}
-
-	// Create temporary logger for startup
-	tempLogger, err := logger.Init(logger.Config{Environment: env})
-	if err != nil {
-		log.Fatalf("Failed to initialize logger: %v", err)
 	}
 
 	var cfg config
@@ -126,34 +120,34 @@ func main() {
 	cfg.web.railwayServiceID = os.Getenv("RAILWAY_BETRAYAL_SERVICE_ID")
 	cfg.web.railwayEnvID = os.Getenv("RAILWAY_BETRAYAL_ENVIRONMENT_ID")
 
-	var bot *discordgo.Session
-
-	if !cfg.discord.disableDiscord {
-		bot, err = discordgo.New("Bot " + cfg.discord.botToken)
-		if err != nil {
-			tempLogger.Fatal().Err(err).Msg("Error creating Discord session")
-		}
-		bot.Identify.Intents = discordgo.PermissionAdministrator
-	} else {
-		tempLogger.Info().Msg("DISABLE_DISCORD=true; skipping Discord session startup")
-	}
-
-	// Create database pool
+	// Create the database pool before the logger so the logger can write to it.
 	pools, err := pgxpool.New(context.Background(), cfg.database.dsn)
 	if err != nil {
-		tempLogger.Fatal().Err(err).Msg("Failed to create database connection pool")
+		log.Fatalf("Failed to create database connection pool: %v", err)
 	}
 	defer pools.Close()
 
-	// Re-initialize logger with database support
+	// Initialize the logger exactly once, with database support.
 	appLogger, err := logger.Init(logger.Config{
 		Environment: env,
 		DBPool:      pools,
 	})
 	if err != nil {
-		log.Fatalf("Failed to re-initialize logger with database: %v", err)
+		log.Fatalf("Failed to initialize logger: %v", err)
 	}
 	defer logger.Close()
+
+	var bot *discordgo.Session
+
+	if !cfg.discord.disableDiscord {
+		bot, err = discordgo.New("Bot " + cfg.discord.botToken)
+		if err != nil {
+			appLogger.Fatal().Err(err).Msg("Error creating Discord session")
+		}
+		bot.Identify.Intents = gatewayIntents()
+	} else {
+		appLogger.Info().Msg("DISABLE_DISCORD=true; skipping Discord session startup")
+	}
 
 	// Create app instance
 	application := &app{
@@ -216,9 +210,6 @@ func main() {
 
 		application.betrayalManager = km
 
-		// Call unregister twice to remove any lingering commands from previous runs
-		application.betrayalManager.Unregister()
-
 		tally := application.RegisterBetrayalCommands(
 			new(inv.Inv),
 			new(roll.Roll),
@@ -237,7 +228,7 @@ func main() {
 			new(tarot.Tarot),
 		)
 
-		application.betrayalManager.Session().AddHandler(logHandler)
+		application.betrayalManager.Session().AddHandler(application.logHandler)
 		application.betrayalManager.Session().AddHandler(auditHandler)
 		application.betrayalManager.Session().AddHandler(paginationHandler)
 		defer application.betrayalManager.Unregister()
@@ -300,28 +291,51 @@ func main() {
 		}
 	}
 
-	if err := application.betrayalManager.Session().Close(); err != nil {
-		appLogger.Error().Err(err).Msg("Error closing Discord connection")
+	if application.betrayalManager != nil {
+		if err := application.betrayalManager.Session().Close(); err != nil {
+			appLogger.Error().Err(err).Msg("Error closing Discord connection")
+		}
 	}
 }
 
-// TODO: Make Log Channel configurable with a slash command maybe?
+// gatewayIntents returns the gateway intents the bot subscribes with.
+//
+// IntentsAllWithoutPrivileged keeps the Discord state cache (guilds, channels,
+// members, emojis, ...) populated without requiring privileged intents
+// (GuildMembers, GuildPresences, MessageContent) to be enabled in the Discord
+// developer portal. This replaces the previous assignment of the
+// PermissionAdministrator permission constant (value 8 == emoji intent only),
+// which starved the state cache.
+func gatewayIntents() discordgo.Intent {
+	return discordgo.IntentsAllWithoutPrivileged
+}
 
-// Handles logging all slash commands to a dedicated channel
-func logHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
+// logHandler logs all slash command invocations to the configured command-log
+// channel (see /channel log). If no channel is configured, command logging is
+// skipped.
+func (a *app) logHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type != discordgo.InteractionApplicationCommand {
 		return
 	}
+	if i.Member == nil || i.Member.User == nil {
+		return
+	}
 
-	testLoggerID := "1108318770138714163"
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	channelID, err := models.New(a.dbPool).GetCommandLogChannel(ctx)
+	if err != nil {
+		// Not configured (or DB hiccup) — skip rather than fail the command.
+		return
+	}
+
 	options := i.ApplicationCommandData().Options
 	msg := processOptions(s, options)
 
 	logOutput := fmt.Sprintf("%s - /%s %s - %s", i.Member.User.Username, i.ApplicationCommandData().Name, msg, util.GetEstTimeStamp())
 
 	// Log to Discord channel
-	_, err := s.ChannelMessageSend(testLoggerID, discord.Code(logOutput))
-	if err != nil {
+	if _, err := s.ChannelMessageSend(channelID, discord.Code(logOutput)); err != nil {
 		log.Printf("[CMD] Log send failed: %v", err)
 	}
 }

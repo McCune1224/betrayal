@@ -62,14 +62,12 @@ func (i *Inv) me(ctx ken.SubCommandContext) (err error) {
 		return err
 	}
 	q := models.New(i.dbPool)
-	//WARNING: This is a one off hack. Need to manually create this instead of using the NewInventoryHandler
-	// as this breaks the two checks for inventory authorization but is still *technically* correct
 	targetPlayerID, _ := util.Atoi64(ctx.GetEvent().Member.User.ID)
 	player, err := q.GetPlayer(context.Background(), targetPlayerID)
 	if err != nil {
 		return discord.ErrorMessage(ctx, "Player not found", "Unable to find you as a player")
 	}
-	h := inventory.Jank(player, i.dbPool)
+	h := inventory.NewManualInventoryHandler(player, i.dbPool)
 	inv, err := h.FetchInventory()
 	if err != nil {
 		cmdLogger.Error().Err(err).Msg("Failed to fetch player inventory")

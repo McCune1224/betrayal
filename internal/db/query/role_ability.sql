@@ -52,7 +52,9 @@ limit 1
 -- name: GetRandomAnyAbilityByRarity :one
 select *
 from ability_info
-where ability_info.any_ability = true and ability_info.rarity == $1
+where ability_info.any_ability = true and ability_info.rarity = $1
+order by random()
+limit 1
 ;
 
 -- name: GetRandomAnyAbilityByMinimumRarity :one
@@ -62,5 +64,8 @@ where
     ability_info.any_ability = true
     and ability_info.rarity >= $1
     and ability_info.rarity != 'ROLE_SPECIFIC'
+    and ability_info.rarity != 'UNIQUE'
+order by random()
+limit 1
 ;
 

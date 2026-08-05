@@ -12,7 +12,7 @@ import (
 )
 
 const createPlayer = `-- name: CreatePlayer :one
-INSERT INTO player (id, role_id, alive, coins, coin_bonus, luck, alignment) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment
+INSERT INTO player (id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, role_id, alive, coins, coin_bonus, luck, item_limit, alignment
 `
 
 type CreatePlayerParams struct {
@@ -22,6 +22,7 @@ type CreatePlayerParams struct {
 	Coins     int32          `json:"coins"`
 	CoinBonus pgtype.Numeric `json:"coin_bonus"`
 	Luck      int32          `json:"luck"`
+	ItemLimit int32          `json:"item_limit"`
 	Alignment Alignment      `json:"alignment"`
 }
 
@@ -33,6 +34,7 @@ func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) (Pla
 		arg.Coins,
 		arg.CoinBonus,
 		arg.Luck,
+		arg.ItemLimit,
 		arg.Alignment,
 	)
 	var i Player
