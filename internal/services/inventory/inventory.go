@@ -30,6 +30,13 @@ type InventoryHandler struct {
 	player models.Player
 }
 
+// dbCtx returns a context with a timeout for database operations performed by
+// the service. Command handlers don't carry a request context into ken, so
+// service writes get a bounded context instead of context.TODO().
+func dbCtx() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), 10*time.Second)
+}
+
 // In order for this to work 1 of 2 things must happen:
 // 1. This command is called within the player's confessional by an admin
 // 2. This command is called within a whitelisted channel and explictly asks for the player's inventory
@@ -59,9 +66,12 @@ func NewInventoryHandler(ctx ken.Context, db *pgxpool.Pool) (*InventoryHandler, 
 	return handler, nil
 }
 
-// WARNING: This is a one off hack. Need to manually create this instead of using the NewInventoryHandler
-// as this breaks the two checks for inventory authorization but is still *technically* correct
-func Jank(player models.Player, pool *pgxpool.Pool) *InventoryHandler {
+// NewManualInventoryHandler builds an inventory handler for an already-loaded
+// player. Unlike NewInventoryHandler it does NOT perform the confessional /
+// whitelisted-channel authorization checks — callers are responsible for
+// verifying the caller is allowed to act on this player's inventory (e.g. an
+// admin acting through a channel command that is already admin-gated).
+func NewManualInventoryHandler(player models.Player, pool *pgxpool.Pool) *InventoryHandler {
 	return &InventoryHandler{pool: pool, player: player}
 }
 

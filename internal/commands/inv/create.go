@@ -16,11 +16,17 @@ import (
 	"github.com/zekrotja/ken"
 )
 
-// TODO: Maybe make these configurable?
+// Configurable defaults for `/inv create`, backed by the game_config table
+// (seeded by migration 000029). These constants are the fallback when a row is
+// missing or unparseable.
 const (
-	defaultCoins      = 200
-	defaultItemsLimit = 4
-	defaultLuck       = 0
+	cfgDefaultCoins      = 200
+	cfgDefaultItemsLimit = 4
+	cfgDefaultLuck       = 0
+
+	configKeyDefaultCoins      = "default_coins"
+	configKeyDefaultItemsLimit = "default_items_limit"
+	configKeyDefaultLuck       = "default_luck"
 )
 
 func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
@@ -119,9 +125,10 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 			ID:        int64(discordID),
 			RoleID:    pgtype.Int4{Int32: roleResult.data.ID, Valid: true},
 			Alive:     true,
-			Coins:     defaultCoins,
+			Coins:     gameConfigInt(bgCtx, query, configKeyDefaultCoins, cfgDefaultCoins),
 			CoinBonus: num,
-			Luck:      defaultLuck,
+			Luck:      gameConfigInt(bgCtx, query, configKeyDefaultLuck, cfgDefaultLuck),
+			ItemLimit: gameConfigInt(bgCtx, query, configKeyDefaultItemsLimit, cfgDefaultItemsLimit),
 			Alignment: roleResult.data.Alignment,
 		},
 	)
@@ -160,219 +167,25 @@ func (i *Inv) create(ctx ken.SubCommandContext) (err error) {
 		}
 	}
 
-	// FIXME: Lord please forgive for the unholy amount of switch statements I am about to unleash
-	// Will need to make some sort of Website or UI to allow for custom roles to be created instead of me hardcoding them
-	roleName := strings.ToLower(roleResult.data.Name)
-	statuses, _ := query.ListStatus(bgCtx)
+	// Apply per-role post-creation adjustments (immunities, statuses, item
+	// limit) driven by role perks. Kept as data in roleOpsByRole so a role's
+	// setup is a one-line change instead of a switch arm.
+	statuses, err := query.ListStatus(bgCtx)
+	if err != nil {
+		logger.Get().Error().Err(err).Msg("operation failed")
+		query.DeletePlayer(bgCtx, player.ID)
+		return discord.ErrorMessage(ctx, "Failed to get statuses", "Unable to fetch statuses in database")
+	}
 	statusMap := make(map[string]int32, len(statuses))
 	for _, status := range statuses {
 		statusMap[status.Name] = status.ID
 	}
-	switch roleName {
-	// --- GOOD ROLES ---
-	case "cerberus":
-		// Due to perk Hades' Hound
-		immunities := []string{"Frozen", "Burned"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
 
-	case "detective":
-		// Due to perk Clever
-		immunities := []string{"Blackmailed", "Disabled", "Despaired"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
+	if ops, ok := roleOpsByRole[strings.ToLower(roleResult.data.Name)]; ok {
+		if err := applyRoleOps(bgCtx, query, player, ops, statusMap); err != nil {
 			logger.Get().Error().Err(err).Msg("operation failed")
 			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "fisherman":
-		// Due to perk Barrels
-		_, err := query.UpdatePlayerItemLimit(bgCtx, models.UpdatePlayerItemLimitParams{
-			ID:        player.ID,
-			ItemLimit: 8,
-		})
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to update item limit", "Unable to update item limit in database")
-		}
-	case "hero":
-		// Due to perk Compos Mentis
-		immunities := []string{"Madness"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "nurse":
-		// Due to perk Powerful Immunity
-		immunities := []string{"Death Cursed", "Frozen", "Paralyzed", "Burned", "Empowered", "Drunk", "Restrained", "Disabled", "Blackmailed", "Despaired", "Madness", "Unlucky"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "terminal":
-		// Due to perk Heartbeats
-		immunities := []string{"Death Cursed", "Frozen", "Paralyzed", "Burned", "Empowered", "Drunk", "Restrained", "Disabled", "Blackmailed", "Despaired", "Madness", "Unlucky"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "wizard":
-		// due to perk Magic Barrier
-		immunities := []string{"Frozen", "Paralyzed", "Burned", "Cursed"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "yeti":
-		// Due to perk Winter Coat
-		immunities := []string{"Frozen"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-
-		// Neutral Roles
-	case "cyborg":
-		immunities := []string{"Paralyzed", "Frozen", "Burned", "Despaired", "Blackmailed", "Drunk"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "entertainer":
-		// Due to perk Top-Hat Tip
-		immunities := []string{"Unlucky"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-		statuses := []string{"Lucky"}
-		err = mapStatuses(query, player, statuses, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "magician":
-		// Due to perk Top-Hat Tip
-		statuses := []string{"Lucky"}
-		err := mapImmunities(query, player, statuses, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-		immunities := []string{"Unlucky"}
-		err = mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "masochist":
-		// Due to perk One Track Mind
-		immunities := []string{"Lucky"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "succubus":
-		// Due to perk Dominatrix
-		immunities := []string{"Blackmail"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	//
-	// Evil Roles
-	case "arsonist":
-		// Due to perk Ashes to Ashes / Flamed
-		immunities := []string{"Burned"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "cultist":
-		immunities := []string{"Curse"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "director":
-		immunities := []string{"Despaired", "Blackmailed", "Drunk"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "gatekeeper":
-		immunities := []string{"Restrained", "Paralyzed", "Frozen"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "hacker":
-		immunities := []string{"Disabled", "Blackmailed"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "highwayman":
-		immunities := []string{"Madness"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "imp":
-		immunities := []string{"Despaired", "Paralyzed"}
-		err := mapImmunities(query, player, immunities, statusMap)
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to create immunity", "Unable to create immunity in database")
-		}
-	case "threatener":
-		_, err := query.UpdatePlayerItemLimit(bgCtx, models.UpdatePlayerItemLimitParams{
-			ID:        player.ID,
-			ItemLimit: 6,
-		})
-		if err != nil {
-			logger.Get().Error().Err(err).Msg("operation failed")
-			query.DeletePlayer(bgCtx, player.ID)
-			return discord.ErrorMessage(ctx, "Failed to update item limit", "Unable to update item limit in database")
+			return discord.ErrorMessage(ctx, "Failed to apply role setup", "Unable to apply role immunities/statuses in database")
 		}
 	}
 
@@ -469,11 +282,100 @@ func (i Inv) delete(ctx ken.SubCommandContext) (err error) {
 	return discord.SuccessfulMessage(ctx, "Deleted Player Inventory", fmt.Sprintf("Deleted inventory for %s", playerArg.Username))
 }
 
-func mapImmunities(query *models.Queries, player models.Player, immunities []string, statusMap map[string]int32) (err error) {
+// gameConfigInt reads an integer game config value, falling back to the given
+// default when the row is missing or not a valid integer.
+func gameConfigInt(ctx context.Context, q *models.Queries, key string, fallback int32) int32 {
+	raw, err := q.GetGameConfig(ctx, key)
+	if err != nil {
+		return fallback
+	}
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		logger.Get().Warn().Str("key", key).Str("value", raw).Msg("game config value is not an integer; using fallback")
+		return fallback
+	}
+	return int32(n)
+}
+
+// roleOps describes the post-creation adjustments applied to a player based on
+// their role's perks. A nil itemLimit leaves the player's item limit untouched.
+type roleOps struct {
+	immunities []string
+	statuses   []string
+	itemLimit  *int32
+}
+
+func int32Ptr(v int32) *int32 { return &v }
+
+// roleOpsByRole maps a lowercased role name to its creation-time adjustments
+// (driven by the role's perks). Previously this was a giant switch statement;
+// it is data now so a role's setup is a one-line change.
+//
+// NOTE: three roles were fixed while converting to this map:
+//   - magician's "Lucky" status was accidentally mapped as an immunity (the
+//     call went to mapImmunities instead of mapStatuses); it now gets the Lucky
+//     status like entertainer (same perk, Top-Hat Tip).
+//   - succubus referenced "Blackmail" and cultist referenced "Curse", neither
+//     of which exists in the status table (migration 000008 seeds "Blackmailed"
+//     and "Cursed"). The typo'd names made `/inv create` fail with a foreign
+//     key violation on those roles.
+var roleOpsByRole = map[string]roleOps{
+	// Good roles
+	"cerberus":  {immunities: []string{"Frozen", "Burned"}},                                                                                                                                // Hades' Hound
+	"detective": {immunities: []string{"Blackmailed", "Disabled", "Despaired"}},                                                                                                            // Clever
+	"fisherman": {itemLimit: int32Ptr(8)},                                                                                                                                                  // Barrels
+	"hero":      {immunities: []string{"Madness"}},                                                                                                                                         // Compos Mentis
+	"nurse":     {immunities: []string{"Death Cursed", "Frozen", "Paralyzed", "Burned", "Empowered", "Drunk", "Restrained", "Disabled", "Blackmailed", "Despaired", "Madness", "Unlucky"}}, // Powerful Immunity
+	"terminal":  {immunities: []string{"Death Cursed", "Frozen", "Paralyzed", "Burned", "Empowered", "Drunk", "Restrained", "Disabled", "Blackmailed", "Despaired", "Madness", "Unlucky"}}, // Heartbeats
+	"wizard":    {immunities: []string{"Frozen", "Paralyzed", "Burned", "Cursed"}},                                                                                                         // Magic Barrier
+	"yeti":      {immunities: []string{"Frozen"}},                                                                                                                                          // Winter Coat
+	// Neutral roles
+	"cyborg":      {immunities: []string{"Paralyzed", "Frozen", "Burned", "Despaired", "Blackmailed", "Drunk"}},
+	"entertainer": {immunities: []string{"Unlucky"}, statuses: []string{"Lucky"}}, // Top-Hat Tip
+	"magician":    {immunities: []string{"Unlucky"}, statuses: []string{"Lucky"}}, // Top-Hat Tip
+	"masochist":   {immunities: []string{"Lucky"}},                                // One Track Mind
+	"succubus":    {immunities: []string{"Blackmailed"}},                          // Dominatrix
+	// Evil roles
+	"arsonist":   {immunities: []string{"Burned"}}, // Ashes to Ashes / Flamed
+	"cultist":    {immunities: []string{"Cursed"}},
+	"director":   {immunities: []string{"Despaired", "Blackmailed", "Drunk"}},
+	"gatekeeper": {immunities: []string{"Restrained", "Paralyzed", "Frozen"}},
+	"hacker":     {immunities: []string{"Disabled", "Blackmailed"}},
+	"highwayman": {immunities: []string{"Madness"}},
+	"imp":        {immunities: []string{"Despaired", "Paralyzed"}},
+	"threatener": {itemLimit: int32Ptr(6)},
+}
+
+// applyRoleOps applies the creation-time adjustments for a role to a player.
+func applyRoleOps(ctx context.Context, query *models.Queries, player models.Player, ops roleOps, statusMap map[string]int32) error {
+	if ops.itemLimit != nil {
+		if _, err := query.UpdatePlayerItemLimit(ctx, models.UpdatePlayerItemLimitParams{
+			ID:        player.ID,
+			ItemLimit: *ops.itemLimit,
+		}); err != nil {
+			return err
+		}
+	}
+	if err := mapStatuses(ctx, query, player, ops.statuses, statusMap); err != nil {
+		return err
+	}
+	return mapImmunities(ctx, query, player, ops.immunities, statusMap)
+}
+
+// mapImmunities creates player immunity joins for each named status. Unknown
+// status names are skipped with a warning instead of aborting the player
+// creation (previously a typo'd name inserted status id 0 and failed the
+// foreign key, deleting the freshly created player).
+func mapImmunities(ctx context.Context, query *models.Queries, player models.Player, immunities []string, statusMap map[string]int32) (err error) {
 	for _, immunity := range immunities {
-		_, err := query.CreatePlayerImmunityJoin(context.Background(), models.CreatePlayerImmunityJoinParams{
+		statusID, ok := statusMap[immunity]
+		if !ok {
+			logger.Get().Warn().Str("status", immunity).Msg("unknown status name in role ops; skipping")
+			continue
+		}
+		_, err := query.CreatePlayerImmunityJoin(ctx, models.CreatePlayerImmunityJoinParams{
 			PlayerID: player.ID,
-			StatusID: statusMap[immunity],
+			StatusID: statusID,
 		})
 		if err != nil {
 			logger.Get().Error().Err(err).Msg("operation failed")
@@ -483,11 +385,16 @@ func mapImmunities(query *models.Queries, player models.Player, immunities []str
 	return nil
 }
 
-func mapStatuses(query *models.Queries, player models.Player, statuses []string, statusMap map[string]int32) (err error) {
+func mapStatuses(ctx context.Context, query *models.Queries, player models.Player, statuses []string, statusMap map[string]int32) (err error) {
 	for _, status := range statuses {
-		_, err := query.CreatePlayerStatusJoin(context.Background(), models.CreatePlayerStatusJoinParams{
+		statusID, ok := statusMap[status]
+		if !ok {
+			logger.Get().Warn().Str("status", status).Msg("unknown status name in role ops; skipping")
+			continue
+		}
+		_, err := query.CreatePlayerStatusJoin(ctx, models.CreatePlayerStatusJoinParams{
 			PlayerID: player.ID,
-			StatusID: statusMap[status],
+			StatusID: statusID,
 		})
 		if err != nil {
 			logger.Get().Error().Err(err).Msg("operation failed")

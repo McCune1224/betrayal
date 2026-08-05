@@ -45,6 +45,9 @@ where
     ability_info.any_ability = true
     and ability_info.rarity >= $1
     and ability_info.rarity != 'ROLE_SPECIFIC'
+    and ability_info.rarity != 'UNIQUE'
+order by random()
+limit 1
 `
 
 func (q *Queries) GetRandomAnyAbilityByMinimumRarity(ctx context.Context, rarity Rarity) (AbilityInfo, error) {
@@ -65,7 +68,9 @@ func (q *Queries) GetRandomAnyAbilityByMinimumRarity(ctx context.Context, rarity
 const getRandomAnyAbilityByRarity = `-- name: GetRandomAnyAbilityByRarity :one
 select id, name, description, default_charges, any_ability, role_specific_id, rarity
 from ability_info
-where ability_info.any_ability = true and ability_info.rarity == $1
+where ability_info.any_ability = true and ability_info.rarity = $1
+order by random()
+limit 1
 `
 
 func (q *Queries) GetRandomAnyAbilityByRarity(ctx context.Context, rarity Rarity) (AbilityInfo, error) {

@@ -149,6 +149,18 @@ type CommandAudit struct {
 	Environment      pgtype.Text      `json:"environment"`
 }
 
+type CommandLogChannel struct {
+	ID        int32            `json:"id"`
+	ChannelID string           `json:"channel_id"`
+	UpdatedAt pgtype.Timestamp `json:"updated_at"`
+}
+
+type GameConfig struct {
+	Key       string           `json:"key"`
+	Value     string           `json:"value"`
+	UpdatedAt pgtype.Timestamp `json:"updated_at"`
+}
+
 type GameCycle struct {
 	ID            int32 `json:"id"`
 	IsElimination bool  `json:"is_elimination"`

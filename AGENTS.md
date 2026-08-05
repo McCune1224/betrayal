@@ -52,7 +52,7 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 | `/action` | submit game action (confessional) | player |
 | `/view` | view role/ability/item/status details with buttons | player |
 | `/buy` | purchase item for player | player |
-| `/channel` | channel config: admin/vote/action/lifeboard/confessionals | admin |
+| `/channel` | channel config: admin/vote/action/lifeboard/confessionals/log | admin |
 | `/help` | help embeds (player + admin) | both |
 | `/vote` | cast votes (funnel channel) | player |
 | `/setup` | generate role list from CSV data entry | admin |
@@ -101,16 +101,35 @@ Five channel types drive the game; all are configured via `/channel` (admin-only
 - Theme: warm, non-corporate, **mobile-first** — preserve this.
 - Security TODOs (before adding public-facing routes): CSRF middleware, login rate limiting, require `SESSION_SECRET` (no password fallback).
 
-## Known Jank Register (fix under WT-5, don't perpetuate)
+## Known Jank Register
 
-- `main.go:136` sets Intents from a permission constant (`PermissionAdministrator`) — verify/fix gateway intents (`IntentsAll` or explicit set).
-- `roll.go:294` ability-roll path broken (FIXME) — pinned by `tests/roll` `TestRollAnyAbilityByRarityPinsKnownBug`; update that test when WT-5 fixes the query.
-- `view.go:213` categories FIXME; `help/player.go:49` button-builder FIXME ("What the actual hell").
-- `inv/create.go` hardcoded game constants (coins 200 / items 4 / luck 0) + "unholy" switch chains.
-- `main.go:316` hardcoded command-log channel ID (migration 000028 planned for configurability).
-- `internal/services/inventory/inventory.go` `Jank()` is a documented hack — prefer `NewInventoryHandler`.
-- Logger `Init` + Ken `Unregister` happen twice at startup (cleanup planned).
-- `context.TODO()` in service writes (`item.go:15`, `status.go:15`) — thread real contexts.
+**WT-5 landed 2026-08-05** (`wt5-command-fixes`): the B-list is fixed —
+
+- Gateway intents: `gatewayIntents()` returns `discordgo.IntentsAllWithoutPrivileged`
+  (was the `PermissionAdministrator` permission constant, value 8 = emoji intent);
+  asserted by `cmd/betrayal-bot/main_test.go`.
+- `roll` ability path: `GetRandomAnyAbilityByRarity` had invalid SQL (`==`),
+  and both any-ability roll queries lacked `order by random() limit 1`;
+  `GetRandomAnyAbilityByMinimumRarity` now also excludes `UNIQUE` (item parity).
+  Covered by `tests/database/roll_test.go`.
+- Command-log channel: hardcoded ID replaced by `command_log_channel` table
+  (migration 000028) + `/channel log update|view|remove`; `logHandler` is now an
+  `*app` method that reads the configured channel and skips when unset.
+- `/inv create` defaults (coins 200 / item limit 4 / luck 0) live in the
+  `game_config` table (migration 000029, seeded; constants are the fallback).
+  `CreatePlayer` now sets `item_limit` from config. `roleOpsByRole` map replaced
+  the switch chains (and fixed magician's mislabeled Lucky status + the
+  succubus/cultist non-existent status names). Covered by
+  `internal/commands/inv/create_test.go`.
+- `help/player.go` button-builder FIXME gone (no more dead `clearAll` flags);
+  `/view ability` categories only render when present.
+- `inventory.Jank()` → `inventory.NewManualInventoryHandler()`.
+- Logger initialized once (pool first); double Ken `Unregister()` removed;
+  web-only shutdown no longer nil-panics on `betrayalManager`.
+- Service writes (`item.go`, `status.go`) use a 10s bounded context via `dbCtx()`.
+
+Still open (don't perpetuate): `inv/create.go` placeholder embed copy
+("Idk finished inventory lol"), `roll` `luckTable` is dead (unregistered).
 
 ## Missing Features (roadmap)
 

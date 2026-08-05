@@ -46,9 +46,6 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 
 	b := ctx.FollowUpEmbed(msg)
 
-	// FIXME: What the actual hell
-	clearAll := false
-	clearAll2 := false
 	b.AddComponents(func(cb *ken.ComponentBuilder) {
 		cb.AddActionsRow(func(b ken.ComponentAssembler) {
 			b.Add(discordgo.Button{
@@ -59,7 +56,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerInventoryHelpEmbed())
 				return true
-			}), clearAll)
+			}))
 			b.Add(discordgo.Button{
 				CustomID: "p-action-help",
 				Style:    discordgo.SecondaryButton,
@@ -68,8 +65,8 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerActionHelpEmbed())
 				return true
-			}), clearAll)
-		}, clearAll)
+			}))
+		})
 	})
 
 	b.AddComponents(func(cb *ken.ComponentBuilder) {
@@ -82,7 +79,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerViewHelpEmbed())
 				return true
-			}), clearAll2)
+			}))
 			b.Add(discordgo.Button{
 				CustomID: "p-list-help",
 				Style:    discordgo.SecondaryButton,
@@ -91,7 +88,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerListHelpEmbed())
 				return true
-			}), clearAll2)
+			}))
 			b.Add(discordgo.Button{
 				CustomID: "p-vote-help",
 				Style:    discordgo.SecondaryButton,
@@ -100,7 +97,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerVoteHelpEmbed())
 				return true
-			}), clearAll2)
+			}))
 			b.Add(discordgo.Button{
 				CustomID: "p-search-help",
 				Style:    discordgo.SecondaryButton,
@@ -109,7 +106,7 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerSearchHelpEmbed())
 				return true
-			}), clearAll2)
+			}))
 			b.Add(discordgo.Button{
 				CustomID: "p-tarot-help",
 				Style:    discordgo.SecondaryButton,
@@ -118,8 +115,8 @@ func (h *Help) playerOverview(ctx ken.SubCommandContext) (err error) {
 				ctx.SetEphemeral(true)
 				ctx.RespondEmbed(playerTarotHelpEmbed())
 				return true
-			}), clearAll2)
-		}, clearAll2)
+			}))
+		})
 	})
 
 	fum := b.Send()

@@ -1,18 +1,19 @@
 package inventory
 
 import (
-	"context"
-
 	"github.com/mccune1224/betrayal/internal/models"
 )
 
 func (ih *InventoryHandler) AddStatus(statusName string, quantity int32) (*models.Status, error) {
+	ctx, cancel := dbCtx()
+	defer cancel()
+
 	query := models.New(ih.pool)
-	status, err := query.GetStatusByFuzzy(context.Background(), statusName)
+	status, err := query.GetStatusByFuzzy(ctx, statusName)
 	if err != nil {
 		return nil, err
 	}
-	err = query.UpsertPlayerStatusJoin(context.TODO(), models.UpsertPlayerStatusJoinParams{
+	err = query.UpsertPlayerStatusJoin(ctx, models.UpsertPlayerStatusJoinParams{
 		PlayerID: ih.player.ID,
 		StatusID: status.ID,
 		Quantity: quantity,
@@ -26,24 +27,27 @@ func (ih *InventoryHandler) AddStatus(statusName string, quantity int32) (*model
 }
 
 func (ih *InventoryHandler) RemoveStatus(statusName string, quantity int32) (*models.Status, error) {
+	ctx, cancel := dbCtx()
+	defer cancel()
+
 	query := models.New(ih.pool)
-	status, err := query.GetStatusByFuzzy(context.Background(), statusName)
+	status, err := query.GetStatusByFuzzy(ctx, statusName)
 	if err != nil {
 		return nil, err
 	}
-	statuses, err := query.ListPlayerStatusInventory(context.Background(), ih.player.ID)
+	statuses, err := query.ListPlayerStatusInventory(ctx, ih.player.ID)
 	if err != nil {
 		return nil, err
 	}
 	for _, i := range statuses {
 		if i.ID == status.ID {
 			if i.Quantity-quantity <= 0 {
-				err = query.DeletePlayerStatus(context.Background(), models.DeletePlayerStatusParams{
+				err = query.DeletePlayerStatus(ctx, models.DeletePlayerStatusParams{
 					PlayerID: ih.player.ID,
 					StatusID: status.ID,
 				})
 			} else {
-				_, err = query.UpdatePlayerStatusQuantity(context.Background(), models.UpdatePlayerStatusQuantityParams{
+				_, err = query.UpdatePlayerStatusQuantity(ctx, models.UpdatePlayerStatusQuantityParams{
 					PlayerID: ih.player.ID,
 					StatusID: status.ID,
 					Quantity: i.Quantity - 1,
