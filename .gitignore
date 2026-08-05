@@ -46,3 +46,10 @@ build/
 sandbox/
 old/
 todo.txt
+
+# Betrayal bot binary (build artifact — never commit)
+/betrayal-bot
+/bin/
+
+# Hermes agent workspace (plans, session state)
+.hermes/

@@ -67,7 +67,7 @@ type config struct {
 type app struct {
 	dbPool          *pgxpool.Pool
 	betrayalManager *ken.Ken
-	conifg          config
+	config          config
 	logger          zerolog.Logger
 }
 
@@ -157,7 +157,7 @@ func main() {
 
 	// Create app instance
 	application := &app{
-		conifg: cfg,
+		config: cfg,
 		dbPool: pools,
 		logger: appLogger,
 	}
