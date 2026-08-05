@@ -6,6 +6,8 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 
 ## Build & Run
 
+**Prereqs (one-time per machine):** `templ` CLI (pin v0.3.960: `go install github.com/a-h/templ/cmd/templ@v0.3.960`), Tailwind v4.1.2 standalone binary (`~/bin/tailwindcss`), golang-migrate CLI with the postgres driver (`go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.17.1`), and `$HOME/go/bin:$HOME/bin` on PATH.
+
 - **Full bot** (Discord + web): `make run` — requires `.env` (see Worktrees & Env).
 - **Web panel only**: `make run-web` (sets `DISABLE_DISCORD=true`) — fastest way to iterate on the admin UI, no Discord needed.
 - **Build**: `make build` → templ generate + tailwind build + `go build` to `./bin/`.
@@ -13,7 +15,7 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 - **Hot reload**: `air` is supported (`.air.toml` is gitignored); pair with `templ generate --watch` + `tailwindcss --watch` for template/CSS iteration.
 - **Tests**: `go test ./...` — REQUIRES local Postgres (`make db-up` first, then `make mock-migrate-up`). Tests must never touch the production DB.
 - **Migrations**: `make migrate-up/down` (prod via `DATABASE_POOLER_URL`), `make mock-migrate-up/down` (local via `MOCK_DATABASE`). Never run migrate-up against prod casually.
-- **Local DB**: `make db-up` / `make db-down` (docker compose, postgres:16 on 5432). No Redis — Ken state is internal.
+- **Local DB**: `make db-up` / `make db-down` (docker compose, postgres:16 on 5432). **Run `db-up` ONCE per machine — all worktrees share the same compose container** (stable name `betrayal-postgres`, so `docker exec betrayal-postgres ...` works from any worktree). Running `db-up` from a second worktree fails with a container-name conflict — that's expected. No Redis — Ken state is internal.
 
 ## Worktrees & Env (READ FIRST)
 
