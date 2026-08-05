@@ -1,251 +1,103 @@
 # Agent Guidelines for Betrayal Bot
 
-## Build & Run Commands
+## What this bot is
 
-- **Run bot**: `make run` or `go run ./cmd/betrayal-bot/main.go`
-- **Run tests**: `go test ./...`
-- **Run single test**: `go test -run TestName ./path/to/package`
-- **Database migrations**: `make migrate-up`, `make migrate-down`, `make migrate-sync`
-- **Mock database**: `make mock-migrate-up`, `make mock-migrate-down`
+Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discordgo + zekroTJA/ken (slash commands), pgx/v5 + sqlc (`internal/models/`), Echo + templ + HTMX + Tailwind v4 web admin panel, zerolog logging with DB audit trail. Hosted on **Railway** (prod). The legacy Fly workflow was removed (2026-08) — do not reintroduce it.
 
-## Critical Dependencies
+## Build & Run
 
-**Ken Framework**: https://github.com/zekroTJA/ken - VITAL package for Discord slash command routing and management. All command handlers must implement `ken.Command` interface and be registered via `ken.Ken`.
+- **Full bot** (Discord + web): `make run` — requires `.env` (see Worktrees & Env).
+- **Web panel only**: `make run-web` (sets `DISABLE_DISCORD=true`) — fastest way to iterate on the admin UI, no Discord needed.
+- **Build**: `make build` → templ generate + tailwind build + `go build` to `./bin/`.
+- **Generate assets**: `make generate` (templ + tailwind) — required after editing `*.templ` or `web/static/css/input.css`.
+- **Hot reload**: `air` is supported (`.air.toml` is gitignored); pair with `templ generate --watch` + `tailwindcss --watch` for template/CSS iteration.
+- **Tests**: `go test ./...` — REQUIRES local Postgres (`make db-up` first, then `make mock-migrate-up`). Tests must never touch the production DB.
+- **Migrations**: `make migrate-up/down` (prod via `DATABASE_POOLER_URL`), `make mock-migrate-up/down` (local via `MOCK_DATABASE`). Never run migrate-up against prod casually.
+- **Local DB**: `make db-up` / `make db-down` (docker compose, postgres:16 on 5432). No Redis — Ken state is internal.
 
-## Code Style Guidelines
+## Worktrees & Env (READ FIRST)
 
-**Language**: Go 1.22+ (see go.mod for exact version)
+- `.env` is gitignored; each git worktree lands with no config. **Single source of truth lives outside the repo** at `~/.config/betrayal/env` (override with `BETRAYAL_ENV_FILE`).
+- Every checkout's `.env` is a **symlink** to that file — godotenv autoload, Makefile greps, and tests all keep working unchanged.
+- Tooling: `scripts/dev-env.sh` (also `make env-link` / `make worktree name=...`):
+  - `link` — symlink this checkout's `.env` → canonical file (scaffolds from `.env.example` if missing).
+  - `new-worktree NAME` — `git worktree add ../betrayal-NAME -b wt-NAME`, links env, boots local DB, runs mock migrations.
+  - `doctor` — verifies env file, required keys, DB config.
+- **Per-worktree overrides**: if one worktree needs different creds (e.g. a different bot token), replace its symlink with a real `.env` file. NEVER edit the shared canonical file for a one-off, and never `git add -f` any `.env`.
+- Required keys: see `.env.example`. `ENVIRONMENT=local` in dev (console logs); `production` writes logs to the DB.
+- If `dev-env.sh doctor` fails, fix the reported key before running anything.
 
-**Imports**: Organized in three groups separated by blank lines:
-1. Standard library (e.g., `context`, `fmt`, `log`)
-2. External packages (e.g., `github.com/bwmarrin/discordgo`)
-3. Internal packages (e.g., `github.com/mccune1224/betrayal/internal/...`)
+## Repo Layout
 
-**Naming**: PascalCase for types/interfaces, camelCase for functions/variables. Command structs implement `ken.Command` interface.
+- `cmd/betrayal-bot/main.go` — wiring: config from env, DB pool, Ken init, **command registration list**, web server. Add new commands HERE.
+- `cmd/audit-analysis/`, `cmd/data-entry/` — standalone CLI tools (build with `go build ./cmd/{name}`; never commit binaries).
+- `internal/commands/{name}/` — ken command packages (struct implements `ken.Command` + `Initialize(*pgxpool.Pool)`; keep the `var _ ken.SlashCommand = (*X)(nil)` assertion).
+- `internal/services/` — reusable game logic (inventory exists). Keep new rules here so they're unit-testable WITHOUT Discord.
+- `internal/models/` — sqlc-generated query code. Edit `internal/db/query/*.sql` and regenerate; do NOT hand-edit `*.sql.go`.
+- `internal/db/migration/` — golang-migrate files. Name new ones `NNNN_name.up.sql` / `NNNN_name.down.sql` (legacy files 000016–000018 have inconsistent names; do not rename applied migrations).
+- `internal/discord/` — embed/error/component/channel helpers. (`channels.go` was renamed from the legacy `chanenls.go` typo.)
+- `internal/web/` — Echo server, handlers, middleware, Railway client, templ templates. Static assets in `web/static/` (Tailwind input/output.css, vendored `htmx.min.js`).
+- `tests/` — testify suites. DB suites need local Postgres; logger suites are pure unit tests; web handler tests use Echo httptest.
+- `scripts/dev-env.sh` — worktree/env tooling (see above).
 
-**Error Handling**: Use `util.ErrorContains(err, msg)` and `util.ErrorNotFound(err)` helpers. Log errors with `log.Printf()` and return descriptive messages to Discord.
+## Command Inventory (registered in `main.go`)
 
-**Type Assertions**: Use explicit interface implementations (e.g., `var _ ken.SlashCommand = (*Action)(nil)`)
+| Command | Purpose | Admin? |
+|---------|---------|--------|
+| `/inv` | inventory mgmt: ability/item/coin/status/perk/alignment/role/immunity/luck/death/notes + create | most subcommands |
+| `/roll` | rolls: item/ability rarity, player choice, luck, event rolls | hybrid |
+| `/action` | submit game action (confessional) | player |
+| `/view` | view role/ability/item/status details with buttons | player |
+| `/buy` | purchase item for player | player |
+| `/channel` | channel config: admin/vote/action/lifeboard/confessionals | admin |
+| `/help` | help embeds (player + admin) | both |
+| `/vote` | cast votes (funnel channel) | player |
+| `/setup` | generate role list from CSV data entry | admin |
+| `/echo` | ping/debug | admin |
+| `/list` | list roles/items/statuses/etc | player |
+| `/search` | fuzzy search abilities/items/statuses | player |
+| `/healthcheck` | bot health | admin |
+| `/cycle` | current/next/set phase + broadcast to confessionals/funnels/alliances | admin |
+| `/tarot` | tarot draws (deterministic/per-user/guild-deck/random) | both |
 
-**Database**: Use `pgx/v5` with connection pools (`*pgxpool.Pool`). Database queries via sqlc in `internal/models/` (SQL-generated Go code).
+**Admin roles** (`internal/discord/role.go`): Host, Co-Host, Bot Developer — check with `discord.IsAdminRole(ctx, discord.AdminRoles...)`, respond with `discord.NotAdminError(ctx)`.
 
-**Testing**: Use testify suite pattern (`suite.Suite`) with setup in `SetupTest()`. Place tests in `tests/` directory mirroring structure.
+**Auth pattern for channel commands**: `discord.IsAdminRole` gate + `util.ErrorContains/ErrorNotFound` helpers; log with `logger.Get().Error().Err(err).Msg(...)`; respond via `discord.SuccessfulMessage` / `discord.ErrorMessage` / `discord.AlexError`.
 
-**Comments**: Use `//` for single-line, document public functions/types. Include TODOs for incomplete features.
+## Web Admin Panel
 
-**Package Structure**: Command handlers in `internal/commands/{name}/`, services in `internal/services/`, database layer in `internal/models/` and `internal/db/`
+- Routes (`internal/web/server.go`): `/login`, `/` dashboard, `/health`, `/players` + `/players/:id`, `/votes`, `/roles` CRUD, `/admin/audit`, `/admin/redeploy` (Railway). Session-auth protected except `/login` + `/health`.
+- Editing templates requires `make generate` (commits `_templ.go`); Tailwind source is v4 CSS (`@import "tailwindcss"`, theme tokens in `@theme` — "Dusty Western" palette).
+- Theme: warm, non-corporate, **mobile-first** — preserve this.
+- Security TODOs (before adding public-facing routes): CSRF middleware, login rate limiting, require `SESSION_SECRET` (no password fallback).
+
+## Known Jank Register (fix under WT-5, don't perpetuate)
+
+- `main.go:136` sets Intents from a permission constant (`PermissionAdministrator`) — verify/fix gateway intents (`IntentsAll` or explicit set).
+- `roll.go:293` ability-roll path broken (FIXME).
+- `view.go:213` categories FIXME; `help/player.go:49` button-builder FIXME ("What the actual hell").
+- `inv/create.go` hardcoded game constants (coins 200 / items 4 / luck 0) + "unholy" switch chains.
+- `main.go:316` hardcoded command-log channel ID (migration 000028 planned for configurability).
+- `internal/services/inventory/inventory.go` `Jank()` is a documented hack — prefer `NewInventoryHandler`.
+- Logger `Init` + Ken `Unregister` happen twice at startup (cleanup planned).
+- `context.TODO()` in service writes (`item.go:15`, `status.go:15`) — thread real contexts.
+
+## Deployment
+
+- Prod = **Railway** (env-driven; in-app redeploy button via `internal/web/railway`). `.github/workflows/fly-deploy.yml` was deleted 2026-08.
+- Dockerfile: single-stage today; builds templ + tailwind at image build; needs no `.env` at build (runtime env only).
+- Never commit binaries (`betrayal-bot`, `bin/`) or `.env` files — `make clean` removes build artifacts.
+
+## Testing Workflow (keep it fast)
+
+1. `make db-up` (docker compose postgres) once per machine/worktree; `make mock-migrate-up`.
+2. `go test ./...` — unit + DB suites against LOCAL `DATABASE_URL` only, <60s expected. A guard must fail the run if `DATABASE_POOLER_URL` resolves to prod (see WT-4; until then, never point tests at prod).
+3. Discord interaction changes: `make run` against a **dev guild** with a dev bot token (see `scripts/smoke.sh` when it lands); guild-scoped registration propagates instantly. Never run the prod bot as a test instance.
+4. Web changes: `make run-web` + browser; handlers are httptest-able.
 
 ## Task Tracking & Documentation
 
-**Important**: When completing tasks that result in significant structural or organizational changes:
-- Document all folder/file changes (deletions, moves, renames)
-- Document command changes (additions, removals, modifications to subcommands)
-- Update relevant sections in this file if needed
-- Examples of changes worth documenting:
-  - Adding/removing entire command packages
-  - Restructuring database tables or migrations
-  - Moving code between packages
-  - Adding or removing subcommands from slash commands
-  - Creating new service layers or utilities
-
-## Channel Configuration Quick Reference
-
-This section provides quick reference for Discord channel management used throughout the bot.
-
-### Channel Types at a Glance
-
-#### 1. Admin Channels (Multiple)
-- **Purpose**: Whitelist channels for `/inv` command usage outside confessionals
-- **Command**: `/channel admin [add|list|delete] [channel]`
-- **DB Table**: `admin_channel` (channel_id VARCHAR UNIQUE)
-- **File**: `internal/commands/channels/admin.go` (lines 14-114)
-- **Note**: Can have multiple admin channels
-
-#### 2. Vote Channel (Single)
-- **Purpose**: Funnel channel where players submit votes
-- **Command**: `/channel vote [update|view] [channel]`
-- **DB Table**: `vote_channel` (channel_id VARCHAR UNIQUE)
-- **File**: `internal/commands/channels/vote.go` (lines 14-81)
-- **Note**: Used in `/cycle` broadcasts; UPSERT pattern (replaces on update)
-
-#### 3. Action Channel (Single)
-- **Purpose**: Funnel channel where players submit actions
-- **Command**: `/channel action [update|view] [channel]`
-- **DB Table**: `action_channel` (channel_id VARCHAR UNIQUE)
-- **File**: `internal/commands/channels/action.go` (lines 14-88)
-- **Note**: Used in `/cycle` broadcasts; WIPE+UPSERT pattern
-
-#### 4. Lifeboard (Single)
-- **Purpose**: Player status board (alive/dead display with sorting)
-- **Command**: `/channel lifeboard set [channel]`
-- **DB Table**: `player_lifeboard` (channel_id, message_id VARCHAR UNIQUE)
-- **File**: `internal/commands/channels/lifeboard.go` (lines 17-135)
-- **Behavior**:
-  - Pins message to channel
-  - Sorts: alive players first (A-Z), then dead players (A-Z)
-  - Includes EST timestamp footer
-  - Updates existing lifeboard when set again
-
-#### 5. Confessionals (Multiple, 1 per player)
-- **Purpose**: Private per-player channels for admin communication
-- **Command**: `/channel confessionals` (view only)
-- **DB Table**: `player_confessional` (player_id, channel_id, pin_message_id)
-- **File**: `internal/commands/channels/channels.go` (lines 70-91)
-- **Note**: Created during game setup, not via `/channel` command
-
----
-
-### Configuration Setup Order (Recommended)
-
-1. **Create Confessionals** (per player - outside `/channel` command)
-2. **Set Vote Channel**: `/channel vote update #voting-funnel`
-3. **Set Action Channel**: `/channel action update #action-funnel`
-4. **Add Admin Channel(s)**: `/channel admin add #admin-operations`
-5. **Set Lifeboard**: `/channel lifeboard set #status-board`
-6. **Verify Setup**: 
-   - `/channel confessionals` (view all)
-   - `/channel vote view`
-   - `/channel action view`
-   - `/channel admin list`
-
----
-
-### Admin Role Definition
-
-**Location**: `internal/discord/role.go` (lines 9-13)
-
-**Roles with Admin Access**:
-- "Host"
-- "Co-Host"
-- "Bot Developer"
-
----
-
-### Channel Broadcast Flow (Cycle)
-
-When `/cycle next` or `/cycle set` is executed:
-
-1. Gets all confessional channel IDs
-2. Gets vote channel ID
-3. Gets action channel ID
-4. Gets all alliance channel IDs (from category)
-5. Sends cycle message to ALL of the above
-
-**Location**: `internal/commands/cycle/cycle.go` (lines 200-235)
-
----
-
-### Database Operations Quick Reference
-
-#### Admin Channels
-```go
-q.ListAdminChannel(ctx)              // []string
-q.CreateAdminChannel(ctx, channelID) // string
-q.DeleteAdminChannel(ctx, channelID) // error
-```
-
-#### Vote Channel
-```go
-q.GetVoteChannel(ctx)            // string
-q.UpsertVoteChannel(ctx, ch)     // error
-q.WipeVoteChannel(ctx)           // error
-```
-
-#### Action Channel
-```go
-q.GetActionChannel(ctx)          // string
-q.UpsertActionChannel(ctx, ch)   // error
-q.WipeActionChannel(ctx)         // error
-```
-
-#### Lifeboard
-```go
-q.CreatePlayerLifeboard(ctx, params)  // PlayerLifeboard
-q.GetPlayerLifeboard(ctx)             // PlayerLifeboard
-q.DeletePlayerLifeboard(ctx)          // error
-```
-
-#### Confessionals
-```go
-q.ListPlayerConfessional(ctx)                           // []PlayerConfessional
-q.CreatePlayerConfessional(ctx, playerID, chID, msgID) // PlayerConfessional
-q.GetPlayerConfessional(ctx, playerID)                 // PlayerConfessional
-q.GetPlayerConfessionalByChannelID(ctx, chID)          // PlayerConfessional
-q.DeletePlayerConfessional(ctx, playerID)              // error
-```
-
----
-
-### Command Auth Pattern
-
-All channel commands check:
-```go
-if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
-    return discord.NotAdminError(ctx)
-}
-```
-
-**Files with checks**:
-- `admin.go` (lines 58, 74, 90)
-- `vote.go` (lines 49, 65)
-- `action.go` (lines 50, 74)
-
----
-
-### Common Issues & Solutions
-
-#### Issue: Vote/Action channel "not found" errors
-**Solution**: Use `/channel vote view` or `/channel action view` to verify they're set
-
-#### Issue: Confessional not receiving cycle messages
-**Solution**: Run `/channel confessionals` to list all; check if missing any
-
-#### Issue: Lifeboard message doesn't update
-**Solution**: Re-run `/channel lifeboard set #channel` to force update
-
-#### Issue: Admin commands failing
-**Solution**: Verify user has "Host", "Co-Host", or "Bot Developer" role
-
----
-
-### File Location Reference
-
-#### Commands
-- Main: `internal/commands/channels/channels.go`
-- Admin: `internal/commands/channels/admin.go`
-- Vote: `internal/commands/channels/vote.go`
-- Action: `internal/commands/channels/action.go`
-- Lifeboard: `internal/commands/channels/lifeboard.go`
-
-#### Database Schema
-- Admin: `internal/db/migration/000018_admin_channels.up.sql`
-- Vote: `internal/db/migration/000019_vote_channel.up.sql`
-- Action: `internal/db/migration/000020_action_channel.up.sql`
-- Lifeboard: `internal/db/migration/000021_player_lifeboard.up.sql`
-- Confessional: `internal/db/migration/000016_player_confessional.sql.up.sql`
-
-#### Generated Models
-- Admin: `internal/models/admin_channel.sql.go`
-- Vote: `internal/models/vote_channel.sql.go`
-- Action: `internal/models/action_channel.sql.go`
-- Lifeboard: `internal/models/player_lifeboard.sql.go`
-- Confessional: `internal/models/player_confessional.sql.go`
-
-#### Help Documentation
-- Admin help: `internal/commands/help/admin.go` (lines 10-216)
-- Help messages: `internal/commands/help/admin_messages.go` (lines 143-172)
-
----
-
-### Missing Features (Recommended Additions)
-
-1. `/admin health` - Verify all channels exist in Discord
-2. `/admin status` - Show configuration state
-3. Configuration validation before game start
-4. Orphaned channel detection
-5. Channel recovery procedures
-6. Error messages when channels are deleted mid-game
-
-## Git & Build Management
-
-**Binaries**: DO NOT commit binary files to git (e.g., `audit-analysis`, `data-entry`, `betrayal-bot`). Binaries waste repository space and should never be version controlled. Users should build binaries locally with `go build ./cmd/{tool-name}` or use `make` targets. If binaries appear in `git status`, do NOT stage or commit them - delete them locally with `rm {binary-name}`.
+When completing significant structural/organizational changes (per AGENTS.md history):
+- Document folder/file changes (deletions, moves, renames)
+- Document command changes (additions, removals, subcommand changes)
+- Update this file if it affects agent workflow
