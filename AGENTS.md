@@ -13,7 +13,8 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 - **Build**: `make build` → templ generate + tailwind build + `go build` to `./bin/`.
 - **Generate assets**: `make generate` (templ + tailwind) — required after editing `*.templ` or `web/static/css/input.css`.
 - **Hot reload**: `air` is supported (`.air.toml` is gitignored); pair with `templ generate --watch` + `tailwindcss --watch` for template/CSS iteration.
-- **Tests**: `go test ./...` — REQUIRES local Postgres (`make db-up` first, then `make mock-migrate-up`). Tests must never touch the production DB.
+- **Tests**: `go test ./...` — REQUIRES local Postgres (`make db-up` first; migrations are applied by the test bootstrap itself). Tests must never touch the production DB — a hard guard enforces it (see Testing Workflow).
+- **CI**: `.github/workflows/test.yml` — postgres service container + `go vet ./...` + `go test ./...` + `make build` on push/PR.
 - **Migrations**: `make migrate-up/down` (prod via `DATABASE_POOLER_URL`), `make mock-migrate-up/down` (local via `MOCK_DATABASE`). Never run migrate-up against prod casually.
 - **Local DB**: `make db-up` / `make db-down` (docker compose, postgres:16 on 5432). **Run `db-up` ONCE per machine — all worktrees share the same compose container** (stable name `betrayal-postgres`, so `docker exec betrayal-postgres ...` works from any worktree). Running `db-up` from a second worktree fails with a container-name conflict — that's expected. No Redis — Ken state is internal.
 
@@ -34,12 +35,12 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 - `cmd/betrayal-bot/main.go` — wiring: config from env, DB pool, Ken init, **command registration list**, web server. Add new commands HERE.
 - `cmd/audit-analysis/`, `cmd/data-entry/` — standalone CLI tools (build with `go build ./cmd/{name}`; never commit binaries).
 - `internal/commands/{name}/` — ken command packages (struct implements `ken.Command` + `Initialize(*pgxpool.Pool)`; keep the `var _ ken.SlashCommand = (*X)(nil)` assertion).
-- `internal/services/` — reusable game logic (inventory exists). Keep new rules here so they're unit-testable WITHOUT Discord.
+- `internal/services/` — reusable game logic (inventory, roll, cycle, vote). Keep new rules here so they're unit-testable WITHOUT Discord.
 - `internal/models/` — sqlc-generated query code. Edit `internal/db/query/*.sql` and regenerate; do NOT hand-edit `*.sql.go`.
 - `internal/db/migration/` — golang-migrate files. Name new ones `NNNN_name.up.sql` / `NNNN_name.down.sql` (legacy files 000016–000018 have inconsistent names; do not rename applied migrations).
 - `internal/discord/` — embed/error/component/channel helpers. (`channels.go` was renamed from the legacy `chanenls.go` typo.)
 - `internal/web/` — Echo server, handlers, middleware, Railway client, templ templates. Static assets in `web/static/` (Tailwind input/output.css, vendored `htmx.min.js`).
-- `tests/` — testify suites. DB suites need local Postgres; logger suites are pure unit tests; web handler tests use Echo httptest.
+- `tests/` — testify suites. DB suites use the shared bootstrap in `tests/testutil` (production guard + migrations + truncation); web handler tests drive the real Echo routes with httptest.
 - `scripts/dev-env.sh` — worktree/env tooling (see above).
 
 ## Command Inventory (registered in `main.go`)
@@ -76,7 +77,7 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 ## Known Jank Register (fix under WT-5, don't perpetuate)
 
 - `main.go:136` sets Intents from a permission constant (`PermissionAdministrator`) — verify/fix gateway intents (`IntentsAll` or explicit set).
-- `roll.go:293` ability-roll path broken (FIXME).
+- `roll.go:294` ability-roll path broken (FIXME) — pinned by `tests/roll` `TestRollAnyAbilityByRarityPinsKnownBug`; update that test when WT-5 fixes the query.
 - `view.go:213` categories FIXME; `help/player.go:49` button-builder FIXME ("What the actual hell").
 - `inv/create.go` hardcoded game constants (coins 200 / items 4 / luck 0) + "unholy" switch chains.
 - `main.go:316` hardcoded command-log channel ID (migration 000028 planned for configurability).
@@ -92,10 +93,14 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 
 ## Testing Workflow (keep it fast)
 
-1. `make db-up` (docker compose postgres) once per machine/worktree; `make mock-migrate-up`.
-2. `go test ./...` — unit + DB suites against LOCAL `DATABASE_URL` only, <60s expected. A guard must fail the run if `DATABASE_POOLER_URL` resolves to prod (see WT-4; until then, never point tests at prod).
-3. Discord interaction changes: `make run` against a **dev guild** with a dev bot token (see `scripts/smoke.sh` when it lands); guild-scoped registration propagates instantly. Never run the prod bot as a test instance.
-4. Web changes: `make run-web` + browser; handlers are httptest-able.
+1. `make db-up` (docker compose postgres) once per machine/worktree. `go test` applies migrations itself — no `make mock-migrate-up` needed first.
+2. `go test ./...` — unit + DB suites against LOCAL `DATABASE_URL` only, <60s expected (measured ~5s). The shared bootstrap (`tests/testutil`, every DB suite's `TestMain`) enforces:
+   - **Production guard**: fails the run if `DATABASE_URL` is unset or doesn't resolve to localhost; fails if `DATABASE_POOLER_URL` equals `DATABASE_URL`; then **strips `DATABASE_POOLER_URL` from the test process** so no test can ever route a connection through the prod Railway pooler.
+   - **Isolation**: an advisory lock serializes DB test packages sharing the local Postgres, and all tables are truncated between tests (`TRUNCATE ... RESTART IDENTITY CASCADE`, `game_cycle` re-seeded to Day 0).
+   - **No silent skips**: unreachable `DATABASE_URL` is a hard failure, not a skip (the old `/tmp/.s.PGSQL.5432` socket skip is gone).
+3. Command logic lives in `internal/services/{roll,cycle,vote}` (ken handlers are thin shells) — `tests/{roll,cycle,vote}` unit-test it against the local DB; `tests/web` drives real Echo routes with httptest (login, health, players, roles CRUD).
+4. Discord interaction changes: `make run` against a **dev guild** with a dev bot token (see `scripts/smoke.sh` when it lands); guild-scoped registration propagates instantly. Never run the prod bot as a test instance.
+5. Web changes: `make run-web` + browser; handlers are httptest-able.
 
 ## Task Tracking & Documentation
 

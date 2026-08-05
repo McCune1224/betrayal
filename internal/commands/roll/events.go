@@ -10,6 +10,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/models"
 	"github.com/mccune1224/betrayal/internal/services/inventory"
+	rollsvc "github.com/mccune1224/betrayal/internal/services/roll"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
@@ -35,12 +36,13 @@ func (r *Roll) luckItemRain(ctx ken.SubCommandContext) (err error) {
 	rollAmount := rand.Intn(3) + 1
 
 	q := models.New(r.dbPool)
+	svc := rollsvc.New(r.dbPool)
 	dbCtx := context.Background()
 
 	newItems := []models.Item{}
 	for i := 0; i < rollAmount; i++ {
-		rollRarity := RollRarityLevel(float64(luckLevel), rand.Float64())
-		item, err := q.GetRandomItemByRarity(dbCtx, rollRarity)
+		rollRarity := rollsvc.RollRarityLevel(float64(luckLevel), rand.Float64())
+		item, err := svc.RollItemByRarity(dbCtx, rollRarity)
 		if err != nil {
 			logger.Get().Error().Err(err).Msg("operation failed")
 			return discord.AlexError(ctx, "Failed to get random item")
@@ -183,6 +185,7 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 	}
 
 	q := models.New(r.dbPool)
+	svc := rollsvc.New(r.dbPool)
 	dbCtx := context.Background()
 
 	player := inv.GetPlayer()
@@ -191,11 +194,8 @@ func (r *Roll) luckPowerDrop(ctx ken.SubCommandContext) (err error) {
 	if ok {
 		luckLevel = int32(luckArg.IntValue())
 	}
-	rollRarity := RollRarityLevel(float64(luckLevel), rand.Float64())
-	aa, err := q.GetRandomAnyAbilityIncludingRoleSpecific(dbCtx, models.GetRandomAnyAbilityIncludingRoleSpecificParams{
-		Rarity: rollRarity,
-		RoleID: player.RoleID.Int32,
-	})
+	rollRarity := rollsvc.RollRarityLevel(float64(luckLevel), rand.Float64())
+	aa, err := svc.RollAnyAbilityIncludingRoleSpecific(dbCtx, rollRarity, player.RoleID.Int32)
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(
@@ -304,21 +304,19 @@ func (r *Roll) luckCarePackage(ctx ken.SubCommandContext) (err error) {
 		luckLevel = int32(luckArg.IntValue())
 	}
 
-	aRoll := RollRarityLevel(float64(luckLevel), rand.Float64())
-	iRoll := RollRarityLevel(float64(luckLevel), rand.Float64())
+	aRoll := rollsvc.RollRarityLevel(float64(luckLevel), rand.Float64())
+	iRoll := rollsvc.RollRarityLevel(float64(luckLevel), rand.Float64())
 
 	q := models.New(r.dbPool)
+	svc := rollsvc.New(r.dbPool)
 	dbCtx := context.Background()
 
-	aa, err := q.GetRandomAnyAbilityIncludingRoleSpecific(dbCtx, models.GetRandomAnyAbilityIncludingRoleSpecificParams{
-		Rarity: aRoll,
-		RoleID: player.RoleID.Int32,
-	})
+	aa, err := svc.RollAnyAbilityIncludingRoleSpecific(dbCtx, aRoll, player.RoleID.Int32)
 	if err != nil {
 		return discord.ErrorMessage(ctx, "Error getting random ability", "Alex is a bad programmer")
 	}
 
-	item, err := q.GetRandomItemByRarity(dbCtx, iRoll)
+	item, err := svc.RollItemByRarity(dbCtx, iRoll)
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.ErrorMessage(ctx, "Failed to get Random Item", "Alex is a bad programmer")

@@ -1,4 +1,4 @@
-package inventory
+package cycle
 
 import (
 	"os"
