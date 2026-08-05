@@ -19,6 +19,9 @@ from status
 -- name: CreateStatus :one
 INSERT INTO status (name, description) VALUES ($1, $2) RETURNING *;
 
+-- name: UpdateStatus :one
+UPDATE status SET name = $2, description = $3, hour_duration = $4 WHERE id = $1 RETURNING *;
+
 -- name: DeleteStatus :exec
 delete from status
 where id = $1

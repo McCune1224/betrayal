@@ -1,6 +1,9 @@
 .SILENT:
 .PHONY: run sql migrate-up migrate-down migrate-sync mock-migrate-up mock-migrate-down templ-generate templ-watch tailwind-build tailwind-watch build generate env-link worktree db-up db-down clean
 
+# Extract a value from .env (handles quotes and '=' inside values, e.g. sslmode=disable)
+env-value = $(shell grep -E '^$(1)=' .env | head -n1 | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+
 # Run the bot
 run:
 	go run ./cmd/betrayal-bot/main.go
@@ -11,23 +14,23 @@ run-web:
 
 # Connect to database
 sql: 
-	psql $(shell cat .env | grep DATABASE_POOLER_URL | cut -d '=' -f2)
+	psql $(call env-value,DATABASE_POOLER_URL)
 
 # Database migrations
 migrate-up:
-	migrate -database $(shell cat .env | grep DATABASE_POOLER_URL | cut -d '=' -f2) -path internal/db/migration up
+	migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migration up
 
 migrate-down:
-	migrate -database $(shell cat .env | grep DATABASE_POOLER_URL | cut -d '=' -f2) -path internal/db/migration down
+	migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migration down
 
 migrate-sync:
-	migrate -database $(shell cat .env | grep DATABASE_POOLER_URL | cut -d '=' -f2) -path internal/db/migration down && migrate -database $(shell cat .env | grep DATABASE_POOLER_URL | cut -d '=' -f2) -path internal/db/migration up
+	migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migration down && migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migration up
 
 mock-migrate-up:
-	migrate -database $(shell cat .env | grep MOCK_DATABASE | cut -d '=' -f2) -path internal/db/migration up
+	migrate -database $(call env-value,MOCK_DATABASE) -path internal/db/migration up
 
 mock-migrate-down:
-	migrate -database $(shell cat .env | grep MOCK_DATABASE | cut -d '=' -f2) -path internal/db/migration down
+	migrate -database $(call env-value,MOCK_DATABASE) -path internal/db/migration down
 
 # Templ template generation
 templ-generate:

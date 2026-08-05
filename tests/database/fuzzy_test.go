@@ -21,7 +21,13 @@ func (f *FuzzyTestSuite) SetupTest() {
 	godotenv.Load(".env")
 	godotenv.Load("../.env")
 	godotenv.Load("../../.env")
-	pools, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_POOLER_URL"))
+
+	// Local test DB only — NEVER DATABASE_POOLER_URL (production Railway pooler).
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		f.T().Skip("DATABASE_URL not set; skipping fuzzy tests")
+	}
+	pools, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		f.FailNow(err.Error())
 	}

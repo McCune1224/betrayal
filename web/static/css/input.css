@@ -201,7 +201,7 @@
   
   /* Bottom nav - dark bg, BRIGHT text */
   .bottom-nav {
-    @apply fixed bottom-0 left-0 right-0 flex justify-around items-stretch;
+    @apply fixed bottom-0 left-0 right-0 flex overflow-x-auto items-stretch;
     @apply md:hidden;
     background: linear-gradient(180deg, #5c4033 0%, #3d2a1e 50%, #2a1d14 100%);
     border-top: 3px solid #8b4513;
@@ -209,7 +209,7 @@
   }
   
   .bottom-nav-item {
-    @apply flex-1 flex flex-col items-center justify-center py-3 min-h-[65px];
+    @apply flex-1 flex flex-col items-center justify-center py-3 min-h-[65px] min-w-[76px];
     @apply text-sm font-medium transition-colors;  /* Larger text */
     color: #f5e6d3;  /* Light text on dark */
   }

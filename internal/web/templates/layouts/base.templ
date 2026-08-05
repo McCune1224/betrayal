@@ -17,6 +17,7 @@ templ Base(title string, currentPath string) {
 		<link href="https://fonts.googleapis.com/css2?family=Rye&display=swap" rel="stylesheet"/>
 		<link href="/static/css/output.css" rel="stylesheet"/>
 		<script src="/static/js/htmx.min.js"></script>
+		@CsrfScript()
 		<script>
 			// Toast notification handler with slide-in animation
 			document.body.addEventListener('showToast', function(evt) {
@@ -65,6 +66,9 @@ templ DesktopNav(currentPath string) {
 						<a href="/" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/") }>HOME</a>
 						<a href="/players" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/players"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/players") }>PLAYERS</a>
 						<a href="/roles" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/roles"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/roles") }>ROLES</a>
+						<a href="/items" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/items"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/items") }>ITEMS</a>
+						<a href="/cycle" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/cycle"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/cycle") }>CYCLE</a>
+						<a href="/channels" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/channels"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/channels") }>CHANNELS</a>
 						<a href="/votes" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/votes"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/votes") }>VOTES</a>
 						<a href="/admin/audit" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-white bg-white/20", currentPath == "/admin/audit"), templ.KV("text-parchment hover:text-white hover:bg-white/10", currentPath != "/admin/audit") }>LOGS</a>
 					</div>
@@ -88,6 +92,14 @@ templ MobileNav(currentPath string) {
 		<a href="/players" class={ "bottom-nav-item", templ.KV("active", currentPath == "/players") }>
 			<span class="text-xl mb-1">&#x2605;</span>
 			<span class="text-xs">PLAYERS</span>
+		</a>
+		<a href="/cycle" class={ "bottom-nav-item", templ.KV("active", currentPath == "/cycle") }>
+			<span class="text-xl mb-1">&#x263C;</span>
+			<span class="text-xs">CYCLE</span>
+		</a>
+		<a href="/channels" class={ "bottom-nav-item", templ.KV("active", currentPath == "/channels") }>
+			<span class="text-xl mb-1">&#x0023;</span>
+			<span class="text-xs">CHANNELS</span>
 		</a>
 		<a href="/roles" class={ "bottom-nav-item", templ.KV("active", currentPath == "/roles") }>
 			<span class="text-xl mb-1">&#x2606;</span>
@@ -119,6 +131,7 @@ templ BaseSimple(title string) {
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 		<link href="https://fonts.googleapis.com/css2?family=Rye&display=swap" rel="stylesheet"/>
 		<link href="/static/css/output.css" rel="stylesheet"/>
+		@CsrfScript()
 	</head>
 	<body class="min-h-screen flex items-center justify-center p-4">
 		{ children... }
@@ -129,4 +142,38 @@ templ BaseSimple(title string) {
 // Helper for formatting numbers
 func fmtInt(n int) string {
 	return fmt.Sprintf("%d", n)
+}
+
+// CsrfScript wires the double-submit CSRF token (Echo `_csrf` cookie) into the
+// frontend:
+//   - HTMX: every request gets the X-CSRF-Token header (htmx:configRequest).
+//   - Plain HTML forms (login, logout): a hidden `_csrf` input is injected on
+//     DOMContentLoaded.
+// The cookie is intentionally not HttpOnly so JS can read it — see server.go
+// CSRF middleware config for the full rationale.
+templ CsrfScript() {
+	<script>
+		function getCsrfToken() {
+			const match = document.cookie.match(/(?:^|; )_csrf=([^;]+)/);
+			return match ? decodeURIComponent(match[1]) : '';
+		}
+		document.addEventListener('htmx:configRequest', function(evt) {
+			const token = getCsrfToken();
+			if (token) {
+				evt.detail.headers['X-CSRF-Token'] = token;
+			}
+		});
+		document.addEventListener('DOMContentLoaded', function() {
+			const token = getCsrfToken();
+			if (!token) return;
+			document.querySelectorAll('form').forEach(function(form) {
+				if (form.querySelector('input[name="_csrf"]')) return;
+				const input = document.createElement('input');
+				input.type = 'hidden';
+				input.name = '_csrf';
+				input.value = token;
+				form.appendChild(input);
+			});
+		});
+	</script>
 }

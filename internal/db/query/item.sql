@@ -26,6 +26,9 @@ from item
 -- name: CreateItem :one
 INSERT INTO item (name, description, rarity, cost) VALUES ($1, $2, $3, $4) RETURNING *;
 
+-- name: UpdateItem :one
+UPDATE item SET name = $2, description = $3, rarity = $4, cost = $5 WHERE id = $1 RETURNING *;
+
 -- name: DeleteItem :exec
 delete from item
 where id = $1

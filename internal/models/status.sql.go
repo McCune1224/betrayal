@@ -168,3 +168,31 @@ func (q *Queries) SearchStatusByKeyword(ctx context.Context, lower string) ([]St
 	}
 	return items, nil
 }
+
+const updateStatus = `-- name: UpdateStatus :one
+UPDATE status SET name = $2, description = $3, hour_duration = $4 WHERE id = $1 RETURNING id, name, description, hour_duration
+`
+
+type UpdateStatusParams struct {
+	ID           int32  `json:"id"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	HourDuration int32  `json:"hour_duration"`
+}
+
+func (q *Queries) UpdateStatus(ctx context.Context, arg UpdateStatusParams) (Status, error) {
+	row := q.db.QueryRow(ctx, updateStatus,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.HourDuration,
+	)
+	var i Status
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.HourDuration,
+	)
+	return i, err
+}

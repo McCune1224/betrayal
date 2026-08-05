@@ -242,3 +242,34 @@ func (q *Queries) SearchItemByKeyword(ctx context.Context, lower string) ([]Item
 	}
 	return items, nil
 }
+
+const updateItem = `-- name: UpdateItem :one
+UPDATE item SET name = $2, description = $3, rarity = $4, cost = $5 WHERE id = $1 RETURNING id, name, description, rarity, cost
+`
+
+type UpdateItemParams struct {
+	ID          int32  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Rarity      Rarity `json:"rarity"`
+	Cost        int32  `json:"cost"`
+}
+
+func (q *Queries) UpdateItem(ctx context.Context, arg UpdateItemParams) (Item, error) {
+	row := q.db.QueryRow(ctx, updateItem,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.Rarity,
+		arg.Cost,
+	)
+	var i Item
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Rarity,
+		&i.Cost,
+	)
+	return i, err
+}

@@ -66,10 +66,12 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 
 ## Web Admin Panel
 
-- Routes (`internal/web/server.go`): `/login`, `/` dashboard, `/health`, `/players` + `/players/:id`, `/votes`, `/roles` CRUD, `/admin/audit`, `/admin/redeploy` (Railway). Session-auth protected except `/login` + `/health`.
+- Routes (`internal/web/server.go`): `/login`, `/` dashboard, `/health`, `/players` + `/players/:id` + `/players/:id/edit`, `/cycle` (+ `/cycle/advance`, `/cycle/set`), `/channels` (config validation), `/votes`, `/roles` CRUD, `/items` `/abilities` `/statuses` CRUD (search/create/detail/update/delete), `/admin/audit`, `/admin/redeploy` (Railway). Session-auth protected except `/login` + `/health`.
+- Security: Echo CSRF (double-submit cookie, HTMX-compatible — the base layout injects `X-CSRF-Token` on `htmx:configRequest` and hidden `_csrf` inputs into plain forms), login + redeploy rate limiting, and `web.New` **refuses to start** when `SESSION_SECRET` is unset or < 32 bytes (no ADMIN_PASSWORD fallback).
+- **`make run-web` connects to `DATABASE_POOLER_URL` (prod)** — main.go uses it regardless of Discord mode. The panel's write routes (/cycle, player edit, catalog CRUD) therefore hit the LIVE game. For safe UI iteration against a local DB: `DATABASE_POOLER_URL=$$(grep '^DATABASE_URL=' .env | cut -d= -f2-) make run-web`.
 - Editing templates requires `make generate` (commits `_templ.go`); Tailwind source is v4 CSS (`@import "tailwindcss"`, theme tokens in `@theme` — "Dusty Western" palette).
 - Theme: warm, non-corporate, **mobile-first** — preserve this.
-- Security TODOs (before adding public-facing routes): CSRF middleware, login rate limiting, require `SESSION_SECRET` (no password fallback).
+- Handler tests live in `tests/web/` (httptest + local Postgres via `DATABASE_URL`; they seed + clean up their own data).
 
 ## Known Jank Register (fix under WT-5, don't perpetuate)
 

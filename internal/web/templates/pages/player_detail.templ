@@ -39,6 +39,9 @@ templ PlayerDetail(data PlayerDetailData) {
 				<div class="flex items-center gap-2">
 					@partials.AlignmentBadge(data.Alignment)
 					@partials.StatusBadge(data.Alive)
+					<a href={ "/players/" + strconv.FormatInt(data.ID, 10) + "/edit" } class="btn-ghost text-sm">
+						EDIT &#x270E;
+					</a>
 				</div>
 			</div>
 		</div>
