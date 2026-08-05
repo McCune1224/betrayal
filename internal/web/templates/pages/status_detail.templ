@@ -1,0 +1,73 @@
+package pages
+
+import (
+	"strconv"
+
+	"github.com/mccune1224/betrayal/internal/web/templates/layouts"
+)
+
+templ StatusDetail(data StatusDetailData) {
+	@layouts.Base("Edit " + data.Name, "/statuses") {
+		<div class="space-y-6">
+			<div>
+				<a href="/statuses" class="text-leather hover:text-leather-dark transition-colors">
+					&larr; Back to Status Search
+				</a>
+			</div>
+
+			<!-- Status Header -->
+			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+				<h1 class="text-2xl font-western text-wood">{ data.Name }</h1>
+				if data.HourDuration > 0 {
+					<span class="badge-neutral">{ strconv.Itoa(int(data.HourDuration)) }h</span>
+				}
+			</div>
+
+			<!-- Status Info Form -->
+			<div class="card">
+				<div class="p-4 border-b border-dust/30">
+					<h2 class="font-semibold text-wood">Status Information</h2>
+				</div>
+				<form
+					class="p-4 space-y-4"
+					hx-post={ "/statuses/" + strconv.Itoa(int(data.ID)) }
+					hx-swap="none"
+				>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<label for="name" class="block text-sm font-medium text-wood mb-1">Name</label>
+							<input type="text" id="name" name="name" value={ data.Name } class="input" required/>
+						</div>
+						<div>
+							<label for="hour_duration" class="block text-sm font-medium text-wood mb-1">Hour Duration (0 = permanent)</label>
+							<input type="number" id="hour_duration" name="hour_duration" min="0" value={ strconv.Itoa(int(data.HourDuration)) } class="input" required/>
+						</div>
+					</div>
+					<div>
+						<label for="description" class="block text-sm font-medium text-wood mb-1">Description</label>
+						<textarea id="description" name="description" rows="3" class="input" required>{ data.Description }</textarea>
+					</div>
+					<div class="flex justify-end">
+						<button type="submit" class="btn-primary">SAVE STATUS</button>
+					</div>
+				</form>
+			</div>
+
+			<!-- Danger Zone -->
+			<div class="card border-2 border-rust/50">
+				<div class="p-4 border-b border-dust/30">
+					<h2 class="font-semibold text-rust">Danger Zone</h2>
+				</div>
+				<div class="p-4">
+					<form
+						action={ "/statuses/" + strconv.Itoa(int(data.ID)) + "/delete" }
+						method="POST"
+						onsubmit="return confirm('Delete this status? This cannot be undone.')"
+					>
+						<button type="submit" class="btn-danger">DELETE STATUS</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	}
+}

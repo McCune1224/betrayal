@@ -244,6 +244,12 @@ func main() {
 			Msg("Bot initialized and running")
 	} else {
 		appLogger.Info().Msg("Discord functionality disabled; running web server only")
+		if strings.Contains(cfg.database.dsn, "roundhouse.proxy.rlwy.net") {
+			// The web panel now has state-changing routes (/cycle, player edit,
+			// catalog CRUD). In web-only mode against the prod pooler those
+			// mutations hit the LIVE game — warn loudly at startup.
+			appLogger.Warn().Msg("WEB-ONLY MODE CONNECTED TO PRODUCTION DATABASE (DATABASE_POOLER_URL): changes made in the admin panel affect the live game")
+		}
 	}
 
 	// Start log retention worker (90 day retention with archival)
@@ -255,7 +261,8 @@ func main() {
 	// Start web admin server (if password is configured)
 	var webServer *web.Server
 	if cfg.web.adminPassword != "" {
-		webServer = web.New(pools, bot, appLogger, web.Config{
+		var err error
+		webServer, err = web.New(pools, bot, appLogger, web.Config{
 			Port:             cfg.web.port,
 			AdminPassword:    cfg.web.adminPassword,
 			SessionSecret:    cfg.web.sessionSecret,
@@ -264,6 +271,10 @@ func main() {
 			RailwayServiceID: cfg.web.railwayServiceID,
 			RailwayEnvID:     cfg.web.railwayEnvID,
 		})
+		if err != nil {
+			// Refuse to start without required security config (e.g. SESSION_SECRET).
+			appLogger.Fatal().Err(err).Msg("Failed to initialize web server")
+		}
 
 		go func() {
 			if err := webServer.Start(); err != nil {

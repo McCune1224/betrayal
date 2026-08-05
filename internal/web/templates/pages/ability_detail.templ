@@ -1,0 +1,85 @@
+package pages
+
+import (
+	"strconv"
+
+	"github.com/mccune1224/betrayal/internal/web/templates/layouts"
+)
+
+templ AbilityDetail(data AbilityDetailData) {
+	@layouts.Base("Edit " + data.Name, "/abilities") {
+		<div class="space-y-6">
+			<div>
+				<a href="/abilities" class="text-leather hover:text-leather-dark transition-colors">
+					&larr; Back to Ability Search
+				</a>
+			</div>
+
+			<!-- Ability Header -->
+			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+				<h1 class="text-2xl font-western text-wood">{ data.Name }</h1>
+				<span class="badge-neutral">{ data.Rarity }</span>
+			</div>
+
+			<!-- Ability Info Form -->
+			<div class="card">
+				<div class="p-4 border-b border-dust/30">
+					<h2 class="font-semibold text-wood">Ability Information</h2>
+				</div>
+				<form
+					class="p-4 space-y-4"
+					hx-post={ "/abilities/" + strconv.Itoa(int(data.ID)) }
+					hx-swap="none"
+				>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<label for="name" class="block text-sm font-medium text-wood mb-1">Name</label>
+							<input type="text" id="name" name="name" value={ data.Name } class="input" required/>
+						</div>
+						<div>
+							<label for="rarity" class="block text-sm font-medium text-wood mb-1">Rarity</label>
+							<select id="rarity" name="rarity" class="input">
+								@RarityOptions(data.Rarity)
+							</select>
+						</div>
+					</div>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<label for="default_charges" class="block text-sm font-medium text-wood mb-1">Default Charges</label>
+							<input type="number" id="default_charges" name="default_charges" min="0" value={ strconv.Itoa(int(data.DefaultCharges)) } class="input" required/>
+						</div>
+						<div class="flex items-end pb-2">
+							<label class="flex items-center gap-2 text-sm font-medium text-wood">
+								<input type="checkbox" name="any_ability" class="w-4 h-4 accent-wood" checked?={ data.AnyAbility }/>
+								Any Ability (AA)
+							</label>
+						</div>
+					</div>
+					<div>
+						<label for="description" class="block text-sm font-medium text-wood mb-1">Description</label>
+						<textarea id="description" name="description" rows="3" class="input" required>{ data.Description }</textarea>
+					</div>
+					<div class="flex justify-end">
+						<button type="submit" class="btn-primary">SAVE ABILITY</button>
+					</div>
+				</form>
+			</div>
+
+			<!-- Danger Zone -->
+			<div class="card border-2 border-rust/50">
+				<div class="p-4 border-b border-dust/30">
+					<h2 class="font-semibold text-rust">Danger Zone</h2>
+				</div>
+				<div class="p-4">
+					<form
+						action={ "/abilities/" + strconv.Itoa(int(data.ID)) + "/delete" }
+						method="POST"
+						onsubmit="return confirm('Delete this ability? This cannot be undone.')"
+					>
+						<button type="submit" class="btn-danger">DELETE ABILITY</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	}
+}

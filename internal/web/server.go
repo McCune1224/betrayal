@@ -3,8 +3,10 @@ package web
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gorilla/sessions"
@@ -15,13 +17,27 @@ import (
 	webmiddleware "github.com/mccune1224/betrayal/internal/web/middleware"
 	"github.com/mccune1224/betrayal/internal/web/railway"
 	"github.com/rs/zerolog"
+	"golang.org/x/time/rate"
+)
+
+// Session secret minimum length. gorilla/securecookie panics when the hash key
+// is shorter than 32 bytes, so we refuse to start instead of crashing later.
+const minSessionSecretLen = 32
+
+// Login rate limiting: allows a short burst of attempts, then throttles to a
+// trickle per IP. Generous for a solo admin panel, hostile to brute force.
+const (
+	loginRateLimit    rate.Limit = 1   // requests/sec sustained
+	loginRateBurst    int        = 10  // burst before throttling
+	redeployRate      rate.Limit = 0.1 // 1 request / 10s
+	redeployRateBurst int        = 2   // max 2 within the window
 )
 
 // Config holds the web server configuration
 type Config struct {
 	Port          string
 	AdminPassword string
-	SessionSecret string // For cookie encryption
+	SessionSecret string // For cookie encryption (REQUIRED — server refuses to start without it)
 
 	// Railway API configuration
 	RailwayToken     string
@@ -41,19 +57,22 @@ type Server struct {
 	railwayClient  *railway.Client
 }
 
-// New creates a new web server
-func New(pool *pgxpool.Pool, discord *discordgo.Session, logger zerolog.Logger, cfg Config) *Server {
+// New creates a new web server. Returns an error (refusing to start) when
+// required security configuration is missing: SESSION_SECRET must be set and
+// at least 32 bytes — there is deliberately no fallback to ADMIN_PASSWORD.
+func New(pool *pgxpool.Pool, discord *discordgo.Session, logger zerolog.Logger, cfg Config) (*Server, error) {
+	if cfg.SessionSecret == "" {
+		return nil, errors.New("SESSION_SECRET must be set: refusing to start the web server without a session secret (no fallback to ADMIN_PASSWORD)")
+	}
+	if len(cfg.SessionSecret) < minSessionSecretLen {
+		return nil, fmt.Errorf("SESSION_SECRET must be at least %d bytes (got %d): refusing to start the web server", minSessionSecretLen, len(cfg.SessionSecret))
+	}
+
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
 
-	// Use session secret or default to admin password (not ideal but works for simple case)
-	sessionSecret := cfg.SessionSecret
-	if sessionSecret == "" {
-		sessionSecret = cfg.AdminPassword
-	}
-
-	store := sessions.NewCookieStore([]byte(sessionSecret))
+	store := sessions.NewCookieStore([]byte(cfg.SessionSecret))
 	store.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   86400 * 7, // 7 days
@@ -82,7 +101,7 @@ func New(pool *pgxpool.Pool, discord *discordgo.Session, logger zerolog.Logger, 
 	s.setupMiddleware()
 	s.setupRoutes()
 
-	return s
+	return s, nil
 }
 
 func (s *Server) setupMiddleware() {
@@ -104,6 +123,22 @@ func (s *Server) setupMiddleware() {
 		},
 	}))
 
+	// CSRF protection — double-submit cookie pattern.
+	// - HTMX requests carry the token in the X-CSRF-Token header (the base
+	//   layout's htmx:configRequest handler reads the `_csrf` cookie and adds it).
+	// - Regular HTML forms include a hidden `_csrf` input, injected by the base
+	//   layout script. Token validation only applies to state-changing methods;
+	//   safe methods (GET/HEAD/OPTIONS/TRACE) are skipped by Echo.
+	// The cookie is intentionally NOT HttpOnly so client JS can read it — this is
+	// the standard HTMX-compatible double-submit setup.
+	s.echo.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
+		TokenLookup:    "header:" + echo.HeaderXCSRFToken + ",form:_csrf",
+		CookieName:     "_csrf",
+		CookieHTTPOnly: false, // readable by JS so htmx can attach it to every request
+		CookieSameSite: http.SameSiteLaxMode,
+		CookiePath:     "/",
+	}))
+
 	// Static files
 	s.echo.Static("/static", "web/static")
 }
@@ -117,6 +152,10 @@ func (s *Server) setupRoutes() {
 	adminHandler := handlers.NewAdminHandler(s.dbPool, s.railwayClient)
 	votesHandler := handlers.NewVotesHandler(s.dbPool)
 	rolesHandler := handlers.NewRolesHandler(s.dbPool)
+	cycleHandler := handlers.NewCycleHandler(s.dbPool)
+	channelsHandler := handlers.NewChannelsHandler(s.dbPool, s.discordSession)
+	playerEditHandler := handlers.NewPlayerEditHandler(s.dbPool)
+	catalogHandler := handlers.NewCatalogHandler(s.dbPool)
 
 	// Auth middleware
 	authMiddleware := webmiddleware.NewAuthMiddleware(s.sessionStore)
@@ -124,7 +163,18 @@ func (s *Server) setupRoutes() {
 	// Public routes
 	s.echo.GET("/health", healthHandler.Health)
 	s.echo.GET("/login", authHandler.LoginPage)
-	s.echo.POST("/login", authHandler.Login)
+
+	// Login is the brute-force surface: rate limit by IP (a burst of attempts,
+	// then ~1/sec). Note: behind a proxy this buckets by proxy IP unless a
+	// trusted-proxy extractor is configured — still throttles global brute force.
+	loginLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
+		Rate:      loginRateLimit,
+		Burst:     loginRateBurst,
+		ExpiresIn: 10 * time.Minute,
+	})
+	s.echo.POST("/login", authHandler.Login, middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
+		Store: loginLimiter,
+	}))
 
 	// Protected routes
 	protected := s.echo.Group("", authMiddleware.RequireAuth)
@@ -136,8 +186,17 @@ func (s *Server) setupRoutes() {
 	protected.GET("/players/:id", playersHandler.Detail)
 	protected.GET("/votes", votesHandler.Votes)
 	protected.GET("/votes/tally", votesHandler.VoteTally)
-	protected.POST("/admin/redeploy", adminHandler.Redeploy)
 	protected.GET("/admin/audit", adminHandler.AuditLogs)
+
+	// Redeploy is a state-changing, cost-incurring action: rate limit it.
+	redeployLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
+		Rate:      redeployRate,
+		Burst:     redeployRateBurst,
+		ExpiresIn: 10 * time.Minute,
+	})
+	protected.POST("/admin/redeploy", adminHandler.Redeploy, middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
+		Store: redeployLimiter,
+	}))
 
 	// Role routes
 	protected.GET("/roles", rolesHandler.List)
@@ -150,6 +209,52 @@ func (s *Server) setupRoutes() {
 	protected.GET("/roles/:id/perks", rolesHandler.ListPerks)
 	protected.PUT("/roles/:id/perks/:perkId", rolesHandler.UpdatePerk)
 	protected.DELETE("/roles/:id/perks/:perkId", rolesHandler.RemovePerk)
+
+	// Cycle routes
+	protected.GET("/cycle", cycleHandler.Page)
+	protected.POST("/cycle/advance", cycleHandler.Advance)
+	protected.POST("/cycle/set", cycleHandler.Set)
+
+	// Channel config routes
+	protected.GET("/channels", channelsHandler.Page)
+
+	// Player edit routes
+	protected.GET("/players/:id/edit", playerEditHandler.Edit)
+	protected.POST("/players/:id/edit", playerEditHandler.UpdateStats)
+	protected.POST("/players/:id/items/add", playerEditHandler.AddItem)
+	protected.POST("/players/:id/items/remove", playerEditHandler.RemoveItem)
+	protected.POST("/players/:id/abilities/add", playerEditHandler.AddAbility)
+	protected.POST("/players/:id/abilities/remove", playerEditHandler.RemoveAbility)
+	protected.POST("/players/:id/statuses/add", playerEditHandler.AddStatus)
+	protected.POST("/players/:id/statuses/remove", playerEditHandler.RemoveStatus)
+	protected.POST("/players/:id/perks/add", playerEditHandler.AddPerk)
+	protected.POST("/players/:id/perks/remove", playerEditHandler.RemovePerk)
+
+	// Catalog (items / abilities / statuses) routes
+	protected.GET("/items", catalogHandler.Items)
+	protected.GET("/items/search", catalogHandler.SearchItems)
+	protected.POST("/items", catalogHandler.CreateItem)
+	protected.GET("/items/:id", catalogHandler.ItemDetail)
+	protected.POST("/items/:id", catalogHandler.UpdateItem)
+	protected.POST("/items/:id/delete", catalogHandler.DeleteItem)
+	protected.GET("/abilities", catalogHandler.Abilities)
+	protected.GET("/abilities/search", catalogHandler.SearchAbilities)
+	protected.POST("/abilities", catalogHandler.CreateAbility)
+	protected.GET("/abilities/:id", catalogHandler.AbilityDetail)
+	protected.POST("/abilities/:id", catalogHandler.UpdateAbility)
+	protected.POST("/abilities/:id/delete", catalogHandler.DeleteAbility)
+	protected.GET("/statuses", catalogHandler.Statuses)
+	protected.GET("/statuses/search", catalogHandler.SearchStatuses)
+	protected.POST("/statuses", catalogHandler.CreateStatus)
+	protected.GET("/statuses/:id", catalogHandler.StatusDetail)
+	protected.POST("/statuses/:id", catalogHandler.UpdateStatus)
+	protected.POST("/statuses/:id/delete", catalogHandler.DeleteStatus)
+}
+
+// Handler exposes the underlying Echo router as a plain http.Handler.
+// Used by httptest-based handler tests; the running server uses Start().
+func (s *Server) Handler() http.Handler {
+	return s.echo
 }
 
 // Handler exposes the underlying Echo HTTP handler so tests can drive routes
