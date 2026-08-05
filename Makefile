@@ -1,5 +1,5 @@
 .SILENT:
-.PHONY: run sql migrate-up migrate-down migrate-sync mock-migrate-up mock-migrate-down templ-generate templ-watch tailwind-build tailwind-watch build generate
+.PHONY: run sql migrate-up migrate-down migrate-sync mock-migrate-up mock-migrate-down templ-generate templ-watch tailwind-build tailwind-watch build generate env-link worktree db-up db-down clean
 
 # Run the bot
 run:
@@ -49,3 +49,21 @@ generate: templ-generate tailwind-build
 # Build the binary (generates templates and CSS first)
 build: generate
 	go build -o ./bin/betrayal-bot ./cmd/betrayal-bot/
+
+# Local dev database (docker compose)
+db-up:
+	docker compose up -d --wait
+
+db-down:
+	docker compose down
+
+# Worktree & env tooling (see scripts/dev-env.sh)
+env-link:
+	./scripts/dev-env.sh link
+
+worktree:
+	./scripts/dev-env.sh new-worktree $(name)
+
+# Remove build artifacts (never commit binaries)
+clean:
+	rm -rf ./bin betrayal-bot
