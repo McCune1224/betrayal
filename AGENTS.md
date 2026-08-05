@@ -39,7 +39,7 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 - `internal/models/` — sqlc-generated query code. Edit `internal/db/query/*.sql` and regenerate; do NOT hand-edit `*.sql.go`.
 - `internal/db/migration/` — golang-migrate files. Name new ones `NNNN_name.up.sql` / `NNNN_name.down.sql` (legacy files 000016–000018 have inconsistent names; do not rename applied migrations).
 - `internal/discord/` — embed/error/component/channel helpers. (`channels.go` was renamed from the legacy `chanenls.go` typo.)
-- `internal/web/` — Echo server, handlers, middleware, Railway client, templ templates. Static assets in `web/static/` (Tailwind input/output.css, vendored `htmx.min.js`).
+- `internal/web/` — Echo server, handlers, middleware, Railway client, templ templates (see `internal/web/README.md`). Static assets in `web/static/` (Tailwind input/output.css, vendored `htmx.min.js`).
 - `tests/` — testify suites. DB suites use the shared bootstrap in `tests/testutil` (production guard + migrations + truncation); web handler tests drive the real Echo routes with httptest.
 - `scripts/dev-env.sh` — worktree/env tooling (see above).
 
@@ -67,9 +67,36 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 
 **Auth pattern for channel commands**: `discord.IsAdminRole` gate + `util.ErrorContains/ErrorNotFound` helpers; log with `logger.Get().Error().Err(err).Msg(...)`; respond via `discord.SuccessfulMessage` / `discord.ErrorMessage` / `discord.AlexError`.
 
+## Channel Configuration (quick reference)
+
+Five channel types drive the game; all are configured via `/channel` (admin-only). Code lives in `internal/commands/channels/{channels,admin,vote,action,lifeboard}.go`; generated queries in `internal/models/*.sql.go`.
+
+| Type | Cardinality | Purpose | Command | DB table (migration) |
+|------|-------------|---------|---------|----------------------|
+| Admin | multiple | Whitelist where `/inv` works outside confessionals (`inv/get.go:41`) | `/channel admin [add/list/delete] [channel]` | `admin_channel` (000018) |
+| Vote | single | Funnel where players submit votes; target of `/cycle` broadcasts | `/channel vote [update/view] [channel]` | `vote_channel` (000019) |
+| Action | single | Funnel where players submit actions; target of `/cycle` broadcasts | `/channel action [update/view] [channel]` | `action_channel` (000020) |
+| Lifeboard | single | Pinned player status board — alive players A–Z, then dead A–Z, EST footer | `/channel lifeboard set [channel]` | `player_lifeboard` (000021) |
+| Confessional | one per player | Private player↔admin channel; created during game setup, NOT via `/channel` | `/channel confessionals` (view only) | `player_confessional` (000016) |
+
+**Setup order (new game):**
+1. Create a confessional per player (outside `/channel`).
+2. `/channel vote update #funnel`, then `/channel action update #funnel`.
+3. `/channel admin add #ops` (repeatable for multiple).
+4. `/channel lifeboard set #status-board`.
+5. Verify: `/channel confessionals`, `vote view`, `action view`, `admin list`.
+
+**Cycle broadcast flow** (`cycle.go`): `/cycle next|set` messages go to all confessionals + vote channel + action channel + every channel in the `alliances` category (via `discord.GetChannelsWithinCategory`).
+
+**Error recovery:**
+- Vote/action "not found" → `/channel vote view` / `action view` to confirm they're set.
+- Confessional missing cycle messages → `/channel confessionals` and re-create any missing ones.
+- Lifeboard stale → re-run `/channel lifeboard set #channel` (deletes + rebuilds + re-pins).
+- Admin commands failing → confirm the user holds Host, Co-Host, or Bot Developer.
+
 ## Web Admin Panel
 
-- Routes (`internal/web/server.go`): `/login`, `/` dashboard, `/health`, `/players` + `/players/:id`, `/votes`, `/roles` CRUD, `/admin/audit`, `/admin/redeploy` (Railway). Session-auth protected except `/login` + `/health`.
+- Routes (`internal/web/server.go`): public `/login` + `/health`; everything else session-auth protected — `/logout`, `/` dashboard, `/health/status` partial, `/players` + `/players/table` partial + `/players/:id`, `/votes` + `/votes/tally`, `/roles` CRUD (+ `/roles/search`, `/roles/:id/abilities|perks` sub-routes), `/admin/audit`, `/admin/redeploy` (Railway). Full route table: `internal/web/README.md`.
 - Editing templates requires `make generate` (commits `_templ.go`); Tailwind source is v4 CSS (`@import "tailwindcss"`, theme tokens in `@theme` — "Dusty Western" palette).
 - Theme: warm, non-corporate, **mobile-first** — preserve this.
 - Security TODOs (before adding public-facing routes): CSRF middleware, login rate limiting, require `SESSION_SECRET` (no password fallback).
@@ -84,6 +111,13 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 - `internal/services/inventory/inventory.go` `Jank()` is a documented hack — prefer `NewInventoryHandler`.
 - Logger `Init` + Ken `Unregister` happen twice at startup (cleanup planned).
 - `context.TODO()` in service writes (`item.go:15`, `status.go:15`) — thread real contexts.
+
+## Missing Features (roadmap)
+
+Documented gaps from the 2026-08 admin analysis (tracked under WT-5/WT-6 — don't build ad-hoc versions):
+- No `/admin health` or `/admin status` command: can't verify configured channels still exist in Discord, detect orphaned confessionals, or check configuration completeness before a game starts.
+- No channel validation / recovery tooling for channels deleted mid-game (error paths above are manual).
+- Web panel lacks game-state admin pages (cycle control, channel-config validation, player edit, item/ability/status CRUD) — see `internal/web/README.md` and the WT-6 workstream in `docs/plans/`.
 
 ## Deployment
 
