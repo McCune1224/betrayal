@@ -97,10 +97,10 @@ templ Votes(data VotesData) {
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 			<!-- Current View Card -->
 			<div class="card">
-				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">VIEWING</h2>
-				<p class="text-3xl font-western text-leather">
+				<h2 class="text-base text-ice mb-3 border-b border-hairline pb-2 font-bold">VIEWING</h2>
+				<p class="text-3xl font-display text-accent">
 					{ data.CurrentPhase }
-					<span class="text-rust">{ strconv.Itoa(data.CurrentDay) }</span>
+					<span class="text-ember">{ strconv.Itoa(data.CurrentDay) }</span>
 				</p>
 				if data.IsCurrentCycle {
 					<span class="badge-success mt-2">CURRENT</span>
@@ -111,28 +111,28 @@ templ Votes(data VotesData) {
 
 			<!-- Vote Count Card -->
 			<div class="card">
-				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">VOTES CAST</h2>
-				<p class="text-3xl font-western text-leather">{ strconv.Itoa(data.TotalVotesCount) }</p>
-				<p class="text-sm text-dust mt-2">TOTAL THIS PHASE</p>
+				<h2 class="text-base text-ice mb-3 border-b border-hairline pb-2 font-bold">VOTES CAST</h2>
+				<p class="text-3xl font-display text-accent">{ strconv.Itoa(data.TotalVotesCount) }</p>
+				<p class="text-sm text-silver mt-2">TOTAL THIS PHASE</p>
 			</div>
 
 			<!-- Top Target Card -->
 			<div class="card">
-				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">LEADING TARGET</h2>
+				<h2 class="text-base text-ice mb-3 border-b border-hairline pb-2 font-bold">LEADING TARGET</h2>
 				if len(data.Tallies) > 0 {
-					<p class="text-xl font-bold text-rust">{ data.Tallies[0].TargetName }</p>
-					<p class="text-2xl font-western text-leather">{ strconv.Itoa(data.Tallies[0].TotalVotes) } votes</p>
+					<p class="text-xl font-bold text-ember">{ data.Tallies[0].TargetName }</p>
+					<p class="text-2xl font-display text-accent">{ strconv.Itoa(data.Tallies[0].TotalVotes) } votes</p>
 				} else {
-					<p class="text-dust">No votes yet</p>
+					<p class="text-silver">No votes yet</p>
 				}
 			</div>
 
 			<!-- Cycle Selector Card -->
 			<div class="card">
-				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">VIEW HISTORY</h2>
+				<h2 class="text-base text-ice mb-3 border-b border-hairline pb-2 font-bold">VIEW HISTORY</h2>
 				if len(data.CycleOptions) > 0 {
 					<form method="GET" action="/votes">
-						<select name="cycle" class="w-full p-2 border-2 border-rope bg-parchment text-ink" onchange="this.form.submit()">
+						<select name="cycle" class="w-full p-2 border border-white/15 bg-white/5 text-ice rounded-lg" onchange="this.form.submit()">
 							for _, opt := range data.CycleOptions {
 								if opt.IsSelected {
 									<option value={ fmt.Sprintf("%d-%t", opt.Day, opt.IsElimination) } selected>{ opt.Label }</option>
@@ -145,7 +145,7 @@ templ Votes(data VotesData) {
 						<input type="hidden" name="elimination" value={ strconv.FormatBool(data.CurrentPhase == "Elimination") }/>
 					</form>
 				} else {
-					<p class="text-dust mb-4">No voting history</p>
+					<p class="text-silver mb-4">No voting history</p>
 				}
 				if !data.IsCurrentCycle {
 					<a href="/votes" class="btn-ghost mt-2 inline-block text-center w-full">VIEW CURRENT</a>
@@ -157,10 +157,10 @@ templ Votes(data VotesData) {
 		<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
 			<!-- Vote Tally (Main Focus) -->
 			<div class="card lg:col-span-2">
-				<div class="flex justify-between items-center mb-3 border-b-2 border-rope pb-2">
-					<h2 class="text-base text-wood font-bold">VOTE TALLY</h2>
+				<div class="flex justify-between items-center mb-3 border-b border-hairline pb-2">
+					<h2 class="text-base text-ice font-bold">VOTE TALLY</h2>
 					if data.IsCurrentCycle {
-						<span class="text-rust text-sm font-bold">LIVE</span>
+						<span class="text-ember text-sm font-bold">LIVE</span>
 					}
 				</div>
 				if len(data.Tallies) > 0 {
@@ -172,7 +172,7 @@ templ Votes(data VotesData) {
 
 			<!-- Recent Votes -->
 			<div class="card">
-				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">INDIVIDUAL VOTES</h2>
+				<h2 class="text-base text-ice mb-3 border-b border-hairline pb-2 font-bold">INDIVIDUAL VOTES</h2>
 				if len(data.Votes) > 0 {
 					@VotesList(data.Votes)
 				} else {
@@ -186,7 +186,7 @@ templ Votes(data VotesData) {
 			<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 				<!-- Most Voted Players -->
 				<div class="card">
-					<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">MOST VOTED (ALL TIME)</h2>
+					<h2 class="text-base text-ice mb-3 border-b border-hairline pb-2 font-bold">MOST VOTED (ALL TIME)</h2>
 					if len(data.Stats.MostVotedPlayers) > 0 {
 						@PlayerStatsList(data.Stats.MostVotedPlayers, "votes received")
 					} else {
@@ -196,7 +196,7 @@ templ Votes(data VotesData) {
 
 				<!-- Most Active Voters -->
 				<div class="card">
-					<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">MOST ACTIVE VOTERS</h2>
+					<h2 class="text-base text-ice mb-3 border-b border-hairline pb-2 font-bold">MOST ACTIVE VOTERS</h2>
 					if len(data.Stats.MostActiveVoters) > 0 {
 						@PlayerStatsList(data.Stats.MostActiveVoters, "votes cast")
 					} else {
@@ -206,7 +206,7 @@ templ Votes(data VotesData) {
 
 				<!-- Least Voted Players -->
 				<div class="card">
-					<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">LEAST VOTED</h2>
+					<h2 class="text-base text-ice mb-3 border-b border-hairline pb-2 font-bold">LEAST VOTED</h2>
 					if len(data.Stats.LeastVotedPlayers) > 0 {
 						@PlayerStatsList(data.Stats.LeastVotedPlayers, "votes received")
 					} else {
@@ -220,7 +220,7 @@ templ Votes(data VotesData) {
 
 templ VoteTallyTable(tallies []TallyRow) {
 	<table class="w-full">
-		<thead class="text-xs text-wood uppercase border-b-2 border-rope">
+		<thead class="text-xs text-ice uppercase border-b border-hairline">
 			<tr>
 				<th class="text-left py-2 font-semibold">RANK</th>
 				<th class="text-left py-2 font-semibold">PLAYER</th>
@@ -230,28 +230,28 @@ templ VoteTallyTable(tallies []TallyRow) {
 				<th class="text-center py-2 font-semibold">STATUS</th>
 			</tr>
 		</thead>
-		<tbody class="divide-y divide-rope">
+		<tbody class="divide-y divide-hairline">
 			for _, tally := range tallies {
-				<tr class={ templ.KV("bg-rust/10", tally.Rank == 1) }>
+				<tr class={ templ.KV("bg-ember/10", tally.Rank == 1) }>
 					<td class="py-2">
 						if tally.Rank == 1 {
-							<span class="text-xl font-western text-rust">1</span>
+							<span class="text-xl font-display text-ember">1</span>
 						} else if tally.Rank == 2 {
-							<span class="text-lg font-bold text-leather">2</span>
+							<span class="text-lg font-bold text-accent">2</span>
 						} else if tally.Rank == 3 {
-							<span class="text-lg font-bold text-wood">3</span>
+							<span class="text-lg font-bold text-ice">3</span>
 						} else {
-							<span class="text-ink">{ strconv.Itoa(tally.Rank) }</span>
+							<span class="text-ice">{ strconv.Itoa(tally.Rank) }</span>
 						}
 					</td>
-					<td class="py-2 text-leather font-semibold">{ tally.TargetName }</td>
-					<td class="py-2 text-dust">{ tally.RoleName }</td>
+					<td class="py-2 text-accent font-semibold">{ tally.TargetName }</td>
+					<td class="py-2 text-silver">{ tally.RoleName }</td>
 					<td class="py-2 text-right">
-						<span class="text-xl font-bold text-rust">{ strconv.Itoa(tally.TotalVotes) }</span>
+						<span class="text-xl font-bold text-ember">{ strconv.Itoa(tally.TotalVotes) }</span>
 					</td>
-					<td class="py-2 text-right text-dust">
+					<td class="py-2 text-right text-silver">
 						if tally.TotalVotes != tally.VoteCount {
-							<span class="text-rope">({ strconv.Itoa(tally.VoteCount) } voters)</span>
+							<span class="text-steel">({ strconv.Itoa(tally.VoteCount) } voters)</span>
 						}
 					</td>
 					<td class="py-2 text-center">
@@ -274,20 +274,20 @@ templ VoteTallyPartial(tallies []TallyRow) {
 templ VotesList(votes []VoteRow) {
 	<div class="space-y-3 max-h-96 overflow-y-auto">
 		for _, vote := range votes {
-			<div class="border-2 border-rope p-3 bg-parchment-dark">
+			<div class="border border-white/10 p-3 bg-white/5 rounded-lg">
 				<div class="flex items-center justify-between">
-					<span class="text-leather font-semibold">{ vote.VoterName }</span>
-					<span class="text-dust text-sm">{ formatTimeSince(vote.UpdatedAt) }</span>
+					<span class="text-accent font-semibold">{ vote.VoterName }</span>
+					<span class="text-silver text-sm">{ formatTimeSince(vote.UpdatedAt) }</span>
 				</div>
 				<div class="mt-1">
-					<span class="text-dust">voted for</span>
-					<span class="text-rust font-bold ml-1">{ vote.TargetName }</span>
+					<span class="text-silver">voted for</span>
+					<span class="text-ember font-bold ml-1">{ vote.TargetName }</span>
 					if vote.Weight > 1 {
 						<span class="badge-neutral ml-2">x{ strconv.Itoa(vote.Weight) }</span>
 					}
 				</div>
 				if vote.Context != "" {
-					<p class="text-xs text-dust mt-2 italic">"{ vote.Context }"</p>
+					<p class="text-xs text-silver mt-2 italic">"{ vote.Context }"</p>
 				}
 			</div>
 		}
@@ -297,12 +297,12 @@ templ VotesList(votes []VoteRow) {
 templ PlayerStatsList(stats []PlayerVoteStat, suffix string) {
 	<div class="space-y-2">
 		for i, stat := range stats {
-			<div class="flex items-center justify-between py-2 border-b border-rope last:border-0">
+			<div class="flex items-center justify-between py-2 border-b border-white/10 last:border-0">
 				<div class="flex items-center gap-2">
-					<span class="text-dust text-sm">{ strconv.Itoa(i + 1) }.</span>
-					<span class="text-leather font-semibold">{ stat.PlayerName }</span>
+					<span class="text-silver text-sm">{ strconv.Itoa(i + 1) }.</span>
+					<span class="text-accent font-semibold">{ stat.PlayerName }</span>
 				</div>
-				<span class="text-rust font-bold">{ strconv.Itoa(stat.Count) } <span class="text-dust font-normal text-sm">{ suffix }</span></span>
+				<span class="text-ember font-bold">{ strconv.Itoa(stat.Count) } <span class="text-silver font-normal text-sm">{ suffix }</span></span>
 			</div>
 		}
 	</div>

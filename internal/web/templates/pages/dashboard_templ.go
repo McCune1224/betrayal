@@ -64,7 +64,7 @@ func Dashboard(data DashboardData) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<script>\n\t\t\tdocument.body.addEventListener('redeployStarted', function() {\n\t\t\t\t// Disable automatic polling\n\t\t\t\tconst statusDiv = document.getElementById('health-status');\n\t\t\t\tstatusDiv.setAttribute('hx-trigger', 'none');\n\n\t\t\t\t// Show restarting status\n\t\t\t\tstatusDiv.innerHTML = `\n\t\t\t\t\t<div class=\"flex flex-col gap-3\">\n\t\t\t\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t\t\t\t<span class=\"text-dust text-base\">BOT</span>\n\t\t\t\t\t\t\t<div class=\"flex items-center\">\n\t\t\t\t\t\t\t\t<span class=\"status-degraded\"></span>\n\t\t\t\t\t\t\t\t<span class=\"text-rope text-base font-semibold\">RESTARTING</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t\t\t\t<span class=\"text-dust text-base\">DATABASE</span>\n\t\t\t\t\t\t\t<div class=\"flex items-center\">\n\t\t\t\t\t\t\t\t<span class=\"status-online\"></span>\n\t\t\t\t\t\t\t\t<span class=\"text-sage text-base font-semibold\">ONLINE</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-sm text-dust mt-2\">\n\t\t\t\t\t\t\tRESTARTING BOT...\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\thx-get=\"/health/status\"\n\t\t\t\t\t\t\thx-target=\"#health-status\"\n\t\t\t\t\t\t\thx-swap=\"innerHTML\"\n\t\t\t\t\t\t\tclass=\"btn-ghost mt-2\">\n\t\t\t\t\t\t\tREFRESH\n\t\t\t\t\t\t</button>\n\t\t\t\t\t</div>\n\t\t\t\t`;\n\n\t\t\t\t// Re-enable normal polling after 30 seconds\n\t\t\t\tsetTimeout(function() {\n\t\t\t\t\tconst statusDiv = document.getElementById('health-status');\n\t\t\t\t\tstatusDiv.setAttribute('hx-trigger', 'load, every 15s');\n\t\t\t\t\t// Trigger a refresh\n\t\t\t\t\thtmx.trigger(statusDiv, 'load');\n\t\t\t\t}, 30000);\n\t\t\t});\n\t\t</script> <h1 class=\"page-title mb-6\">DASHBOARD</h1><!-- Status Cards - Mobile: 1 col, Desktop: 2 col then 3 col --> <div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6\"><!-- Bot Status Card - Most Important --><div class=\"card\"><h2 class=\"text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold\">SYSTEM STATUS</h2><div id=\"health-status\" hx-get=\"/health/status\" hx-trigger=\"load, every 15s\" hx-swap=\"innerHTML\"><!-- Loading state --><div class=\"flex items-center justify-center py-4\"><span class=\"spinner\"></span> <span class=\"ml-2 text-dust text-base\">CHECKING...</span></div></div></div><!-- Cycle Status --><div class=\"card\"><h2 class=\"text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold\">CURRENT CYCLE</h2><p class=\"text-3xl font-western text-leather\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<script>\n\t\t\tdocument.body.addEventListener('redeployStarted', function() {\n\t\t\t\t// Disable automatic polling\n\t\t\t\tconst statusDiv = document.getElementById('health-status');\n\t\t\t\tstatusDiv.setAttribute('hx-trigger', 'none');\n\n\t\t\t\t// Show restarting status\n\t\t\t\tstatusDiv.innerHTML = `\n\t\t\t\t\t<div class=\"flex flex-col gap-3\">\n\t\t\t\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t\t\t\t<span class=\"text-silver text-base\">BOT</span>\n\t\t\t\t\t\t\t<div class=\"flex items-center\">\n\t\t\t\t\t\t\t\t<span class=\"status-degraded\"></span>\n\t\t\t\t\t\t\t\t<span class=\"text-steel text-base font-semibold\">RESTARTING</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t\t\t\t<span class=\"text-silver text-base\">DATABASE</span>\n\t\t\t\t\t\t\t<div class=\"flex items-center\">\n\t\t\t\t\t\t\t\t<span class=\"status-online\"></span>\n\t\t\t\t\t\t\t\t<span class=\"text-jade text-base font-semibold\">ONLINE</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-sm text-silver mt-2\">\n\t\t\t\t\t\t\tRESTARTING BOT...\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\thx-get=\"/health/status\"\n\t\t\t\t\t\t\thx-target=\"#health-status\"\n\t\t\t\t\t\t\thx-swap=\"innerHTML\"\n\t\t\t\t\t\t\tclass=\"btn-ghost mt-2\">\n\t\t\t\t\t\t\tREFRESH\n\t\t\t\t\t\t</button>\n\t\t\t\t\t</div>\n\t\t\t\t`;\n\n\t\t\t\t// Re-enable normal polling after 30 seconds\n\t\t\t\tsetTimeout(function() {\n\t\t\t\t\tconst statusDiv = document.getElementById('health-status');\n\t\t\t\t\tstatusDiv.setAttribute('hx-trigger', 'load, every 15s');\n\t\t\t\t\t// Trigger a refresh\n\t\t\t\t\thtmx.trigger(statusDiv, 'load');\n\t\t\t\t}, 30000);\n\t\t\t});\n\t\t</script> <h1 class=\"page-title mb-6\">DASHBOARD</h1><!-- Status Cards - Mobile: 1 col, Desktop: 2 col then 3 col --> <div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6\"><!-- Bot Status Card - Most Important --><div class=\"card\"><h2 class=\"text-base text-ice mb-3 border-b border-hairline pb-2 font-bold\">SYSTEM STATUS</h2><div id=\"health-status\" hx-get=\"/health/status\" hx-trigger=\"load, every 15s\" hx-swap=\"innerHTML\"><!-- Loading state --><div class=\"flex items-center justify-center py-4\"><span class=\"spinner\"></span> <span class=\"ml-2 text-silver text-base\">CHECKING...</span></div></div></div><!-- Cycle Status --><div class=\"card\"><h2 class=\"text-base text-ice mb-3 border-b border-hairline pb-2 font-bold\">CURRENT CYCLE</h2><p class=\"text-3xl font-display text-accent\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -77,20 +77,20 @@ func Dashboard(data DashboardData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " <span class=\"text-rust\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " <span class=\"text-ember\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.CycleNumber))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/dashboard.templ`, Line: 98, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/dashboard.templ`, Line: 98, Col: 62}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</span></p></div><!-- Player Count --><div class=\"card\"><h2 class=\"text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold\">PLAYERS</h2><div class=\"flex items-baseline gap-4\"><div><span class=\"text-3xl font-bold text-sage\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</span></p></div><!-- Player Count --><div class=\"card\"><h2 class=\"text-base text-ice mb-3 border-b border-hairline pb-2 font-bold\">PLAYERS</h2><div class=\"flex items-baseline gap-4\"><div><span class=\"text-3xl font-bold text-jade\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -103,33 +103,33 @@ func Dashboard(data DashboardData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span> <span class=\"text-sm text-dust ml-1\">ALIVE</span></div><div><span class=\"text-xl text-rust font-bold\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span> <span class=\"text-sm text-silver ml-1\">ALIVE</span></div><div><span class=\"text-xl text-ember font-bold\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.PlayersDead))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/dashboard.templ`, Line: 111, Col: 80}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/dashboard.templ`, Line: 111, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</span> <span class=\"text-sm text-dust ml-1\">DEAD</span></div></div><p class=\"text-sm text-dust mt-2\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</span> <span class=\"text-sm text-silver ml-1\">DEAD</span></div></div><p class=\"text-sm text-silver mt-2\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(data.TotalPlayers))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/dashboard.templ`, Line: 115, Col: 71}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/pages/dashboard.templ`, Line: 115, Col: 73}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " TOTAL</p></div><!-- Quick Actions --><div class=\"card\"><h2 class=\"text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold\">ACTIONS</h2><button id=\"redeploy-btn\" hx-post=\"/admin/redeploy\" hx-confirm=\"Are you sure you want to redeploy? This will restart the bot.\" hx-swap=\"none\" hx-disabled-elt=\"this\" class=\"btn-danger w-full relative\"><span class=\"htmx-hide-on-request\">REDEPLOY BOT</span> <span class=\"htmx-indicator items-center justify-center\"><span class=\"spinner mr-2\"></span> RESTARTING...</span></button></div></div><!-- Admin Tools - quick links (mobile + desktop) --> <div class=\"card mb-6\"><h2 class=\"text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold\">ADMIN TOOLS</h2><div class=\"grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3\"><a href=\"/cycle\" class=\"mobile-card text-center\"><p class=\"text-2xl mb-1\">&#x263C;</p><p class=\"text-sm font-semibold text-wood\">CYCLE</p></a> <a href=\"/channels\" class=\"mobile-card text-center\"><p class=\"text-2xl mb-1\">&#x0023;</p><p class=\"text-sm font-semibold text-wood\">CHANNELS</p></a> <a href=\"/items\" class=\"mobile-card text-center\"><p class=\"text-2xl mb-1\">&#x2694;</p><p class=\"text-sm font-semibold text-wood\">ITEMS</p></a> <a href=\"/abilities\" class=\"mobile-card text-center\"><p class=\"text-2xl mb-1\">&#x2728;</p><p class=\"text-sm font-semibold text-wood\">ABILITIES</p></a> <a href=\"/statuses\" class=\"mobile-card text-center\"><p class=\"text-2xl mb-1\">&#x26A1;</p><p class=\"text-sm font-semibold text-wood\">STATUSES</p></a> <a href=\"/roles\" class=\"mobile-card text-center\"><p class=\"text-2xl mb-1\">&#x2606;</p><p class=\"text-sm font-semibold text-wood\">ROLES</p></a></div></div><div class=\"grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6\"><!-- Command Activity --><div class=\"card\"><h2 class=\"text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold\">COMMAND ACTIVITY</h2>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " TOTAL</p></div><!-- Quick Actions --><div class=\"card\"><h2 class=\"text-base text-ice mb-3 border-b border-hairline pb-2 font-bold\">ACTIONS</h2><button id=\"redeploy-btn\" hx-post=\"/admin/redeploy\" hx-confirm=\"Are you sure you want to redeploy? This will restart the bot.\" hx-swap=\"none\" hx-disabled-elt=\"this\" class=\"btn-danger w-full relative\"><span class=\"htmx-hide-on-request\">REDEPLOY BOT</span> <span class=\"htmx-indicator items-center justify-center\"><span class=\"spinner mr-2\"></span> RESTARTING...</span></button></div></div><!-- Admin Tools - quick links (mobile + desktop) --> <div class=\"card mb-6\"><h2 class=\"text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold\">ADMIN TOOLS</h2><div class=\"grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3\"><a href=\"/cycle\" class=\"mobile-card text-center\"><p class=\"text-2xl mb-1\">&#x263C;</p><p class=\"text-sm font-semibold text-wood\">CYCLE</p></a> <a href=\"/channels\" class=\"mobile-card text-center\"><p class=\"text-2xl mb-1\">&#x0023;</p><p class=\"text-sm font-semibold text-wood\">CHANNELS</p></a> <a href=\"/items\" class=\"mobile-card text-center\"><p class=\"text-2xl mb-1\">&#x2694;</p><p class=\"text-sm font-semibold text-wood\">ITEMS</p></a> <a href=\"/abilities\" class=\"mobile-card text-center\"><p class=\"text-2xl mb-1\">&#x2728;</p><p class=\"text-sm font-semibold text-wood\">ABILITIES</p></a> <a href=\"/statuses\" class=\"mobile-card text-center\"><p class=\"text-2xl mb-1\">&#x26A1;</p><p class=\"text-sm font-semibold text-wood\">STATUSES</p></a> <a href=\"/roles\" class=\"mobile-card text-center\"><p class=\"text-2xl mb-1\">&#x2606;</p><p class=\"text-sm font-semibold text-wood\">ROLES</p></a></div></div><div class=\"grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6\"><!-- Command Activity --><div class=\"card\"><h2 class=\"text-base text-ice mb-3 border-b border-hairline pb-2 font-bold\">COMMAND ACTIVITY</h2>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -144,7 +144,7 @@ func Dashboard(data DashboardData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div><!-- Top Commands --><div class=\"card lg:col-span-2\"><div class=\"flex justify-between items-center mb-3 border-b-2 border-rope pb-2\"><h2 class=\"text-base text-wood font-bold\">TOP COMMANDS (LAST HOUR)</h2><span class=\"text-rust text-sm font-bold\">LIVE</span></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div><!-- Top Commands --><div class=\"card lg:col-span-2\"><div class=\"flex justify-between items-center mb-3 border-b border-hairline pb-2\"><h2 class=\"text-base text-ice font-bold\">TOP COMMANDS (LAST HOUR)</h2><span class=\"text-ember text-sm font-bold\">LIVE</span></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -159,7 +159,7 @@ func Dashboard(data DashboardData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div><!-- Recent Command Errors --><div class=\"card\"><div class=\"flex justify-between items-center mb-3 border-b-2 border-rope pb-2\"><h2 class=\"text-base text-wood font-bold\">RECENT COMMAND ERRORS</h2><span class=\"text-rust text-sm font-bold\">MONITORING</span></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div><!-- Recent Command Errors --><div class=\"card\"><div class=\"flex justify-between items-center mb-3 border-b border-hairline pb-2\"><h2 class=\"text-base text-ice font-bold\">RECENT COMMAND ERRORS</h2><span class=\"text-ember text-sm font-bold\">MONITORING</span></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -174,7 +174,7 @@ func Dashboard(data DashboardData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div></div><!-- Recent Players Section --> <div class=\"card\"><div class=\"card-header flex justify-between items-center\"><h2 class=\"text-base text-wood font-bold\">RECENT PLAYERS</h2><a href=\"/players\" class=\"table-link\">VIEW ALL &#x2192;</a></div><div class=\"overflow-x-auto\" hx-get=\"/players/table\" hx-trigger=\"load\" hx-swap=\"innerHTML\"><div class=\"flex items-center justify-center py-8\"><span class=\"spinner\"></span> <span class=\"ml-2 text-dust text-base\">LOADING...</span></div></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</div></div><!-- Recent Players Section --> <div class=\"card\"><div class=\"card-header flex justify-between items-center\"><h2 class=\"text-base text-ice font-bold\">RECENT PLAYERS</h2><a href=\"/players\" class=\"table-link\">VIEW ALL &#x2192;</a></div><div class=\"overflow-x-auto\" hx-get=\"/players/table\" hx-trigger=\"load\" hx-swap=\"innerHTML\"><div class=\"flex items-center justify-center py-8\"><span class=\"spinner\"></span> <span class=\"ml-2 text-silver text-base\">LOADING...</span></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

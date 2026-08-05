@@ -35,20 +35,20 @@ templ Dashboard(data DashboardData) {
 				statusDiv.innerHTML = `
 					<div class="flex flex-col gap-3">
 						<div class="flex items-center justify-between">
-							<span class="text-dust text-base">BOT</span>
+							<span class="text-silver text-base">BOT</span>
 							<div class="flex items-center">
 								<span class="status-degraded"></span>
-								<span class="text-rope text-base font-semibold">RESTARTING</span>
+								<span class="text-steel text-base font-semibold">RESTARTING</span>
 							</div>
 						</div>
 						<div class="flex items-center justify-between">
-							<span class="text-dust text-base">DATABASE</span>
+							<span class="text-silver text-base">DATABASE</span>
 							<div class="flex items-center">
 								<span class="status-online"></span>
-								<span class="text-sage text-base font-semibold">ONLINE</span>
+								<span class="text-jade text-base font-semibold">ONLINE</span>
 							</div>
 						</div>
-						<div class="text-sm text-dust mt-2">
+						<div class="text-sm text-silver mt-2">
 							RESTARTING BOT...
 						</div>
 						<button
@@ -76,7 +76,7 @@ templ Dashboard(data DashboardData) {
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 			<!-- Bot Status Card - Most Important -->
 			<div class="card">
-				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">SYSTEM STATUS</h2>
+				<h2 class="text-base text-ice mb-3 border-b border-hairline pb-2 font-bold">SYSTEM STATUS</h2>
 				<div
 					id="health-status"
 					hx-get="/health/status"
@@ -85,39 +85,39 @@ templ Dashboard(data DashboardData) {
 					<!-- Loading state -->
 					<div class="flex items-center justify-center py-4">
 						<span class="spinner"></span>
-						<span class="ml-2 text-dust text-base">CHECKING...</span>
+						<span class="ml-2 text-silver text-base">CHECKING...</span>
 					</div>
 				</div>
 			</div>
 
 			<!-- Cycle Status -->
 			<div class="card">
-				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">CURRENT CYCLE</h2>
-				<p class="text-3xl font-western text-leather">
+				<h2 class="text-base text-ice mb-3 border-b border-hairline pb-2 font-bold">CURRENT CYCLE</h2>
+				<p class="text-3xl font-display text-accent">
 					{ data.CyclePhase }
-					<span class="text-rust">{ strconv.Itoa(data.CycleNumber) }</span>
+					<span class="text-ember">{ strconv.Itoa(data.CycleNumber) }</span>
 				</p>
 			</div>
 
 			<!-- Player Count -->
 			<div class="card">
-				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">PLAYERS</h2>
+				<h2 class="text-base text-ice mb-3 border-b border-hairline pb-2 font-bold">PLAYERS</h2>
 				<div class="flex items-baseline gap-4">
 					<div>
-						<span class="text-3xl font-bold text-sage">{ strconv.Itoa(data.PlayersAlive) }</span>
-						<span class="text-sm text-dust ml-1">ALIVE</span>
+						<span class="text-3xl font-bold text-jade">{ strconv.Itoa(data.PlayersAlive) }</span>
+						<span class="text-sm text-silver ml-1">ALIVE</span>
 					</div>
 					<div>
-						<span class="text-xl text-rust font-bold">{ strconv.Itoa(data.PlayersDead) }</span>
-						<span class="text-sm text-dust ml-1">DEAD</span>
+						<span class="text-xl text-ember font-bold">{ strconv.Itoa(data.PlayersDead) }</span>
+						<span class="text-sm text-silver ml-1">DEAD</span>
 					</div>
 				</div>
-				<p class="text-sm text-dust mt-2">{ strconv.Itoa(data.TotalPlayers) } TOTAL</p>
+				<p class="text-sm text-silver mt-2">{ strconv.Itoa(data.TotalPlayers) } TOTAL</p>
 			</div>
 
 			<!-- Quick Actions -->
 			<div class="card">
-				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">ACTIONS</h2>
+				<h2 class="text-base text-ice mb-3 border-b border-hairline pb-2 font-bold">ACTIONS</h2>
 				<button
 					id="redeploy-btn"
 					hx-post="/admin/redeploy"
@@ -168,7 +168,7 @@ templ Dashboard(data DashboardData) {
 		<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
 			<!-- Command Activity -->
 			<div class="card">
-				<h2 class="text-base text-wood mb-3 border-b-2 border-rope pb-2 font-bold">COMMAND ACTIVITY</h2>
+				<h2 class="text-base text-ice mb-3 border-b border-hairline pb-2 font-bold">COMMAND ACTIVITY</h2>
 				if data.CommandSummary != nil {
 					@partials.CommandSummaryCard(data.CommandSummary)
 				} else {
@@ -178,9 +178,9 @@ templ Dashboard(data DashboardData) {
 
 			<!-- Top Commands -->
 			<div class="card lg:col-span-2">
-				<div class="flex justify-between items-center mb-3 border-b-2 border-rope pb-2">
-					<h2 class="text-base text-wood font-bold">TOP COMMANDS (LAST HOUR)</h2>
-					<span class="text-rust text-sm font-bold">LIVE</span>
+				<div class="flex justify-between items-center mb-3 border-b border-hairline pb-2">
+					<h2 class="text-base text-ice font-bold">TOP COMMANDS (LAST HOUR)</h2>
+					<span class="text-ember text-sm font-bold">LIVE</span>
 				</div>
 				if len(data.TopCommands) > 0 {
 					@partials.TopCommandsTable(data.TopCommands)
@@ -191,9 +191,9 @@ templ Dashboard(data DashboardData) {
 
 			<!-- Recent Command Errors -->
 			<div class="card">
-				<div class="flex justify-between items-center mb-3 border-b-2 border-rope pb-2">
-					<h2 class="text-base text-wood font-bold">RECENT COMMAND ERRORS</h2>
-					<span class="text-rust text-sm font-bold">MONITORING</span>
+				<div class="flex justify-between items-center mb-3 border-b border-hairline pb-2">
+					<h2 class="text-base text-ice font-bold">RECENT COMMAND ERRORS</h2>
+					<span class="text-ember text-sm font-bold">MONITORING</span>
 				</div>
 				if len(data.RecentErrors) > 0 {
 					@partials.CommandErrorsList(data.RecentErrors)
@@ -206,7 +206,7 @@ templ Dashboard(data DashboardData) {
 		<!-- Recent Players Section -->
 		<div class="card">
 			<div class="card-header flex justify-between items-center">
-				<h2 class="text-base text-wood font-bold">RECENT PLAYERS</h2>
+				<h2 class="text-base text-ice font-bold">RECENT PLAYERS</h2>
 				<a href="/players" class="table-link">VIEW ALL &#x2192;</a>
 			</div>
 			<div
@@ -216,7 +216,7 @@ templ Dashboard(data DashboardData) {
 				hx-swap="innerHTML">
 				<div class="flex items-center justify-center py-8">
 					<span class="spinner"></span>
-					<span class="ml-2 text-dust text-base">LOADING...</span>
+					<span class="ml-2 text-silver text-base">LOADING...</span>
 				</div>
 			</div>
 		</div>

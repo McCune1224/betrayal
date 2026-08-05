@@ -33,8 +33,8 @@ templ PlayerDetail(data PlayerDetailData) {
 		<div class="card mb-4">
 			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div>
-					<h1 class="text-xl font-western text-leather tracking-wide">{ data.Role }</h1>
-					<p class="text-xs text-dust mt-1">ID: { strconv.FormatInt(data.ID, 10) }</p>
+					<h1 class="text-xl font-display text-accent tracking-wide">{ data.Role }</h1>
+					<p class="text-xs text-silver mt-1">ID: { strconv.FormatInt(data.ID, 10) }</p>
 				</div>
 				<div class="flex items-center gap-2">
 					@partials.AlignmentBadge(data.Alignment)
@@ -49,57 +49,57 @@ templ PlayerDetail(data PlayerDetailData) {
 		<!-- Stats Row -->
 		<div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
 			<div class="card text-center">
-				<p class="text-xs text-dust">COINS</p>
-				<p class="text-2xl font-western text-wood">{ strconv.Itoa(data.Coins) }</p>
+				<p class="text-xs text-silver">COINS</p>
+				<p class="text-2xl font-display text-ice">{ strconv.Itoa(data.Coins) }</p>
 			</div>
 			<div class="card text-center">
-				<p class="text-xs text-dust">LUCK</p>
-				<p class="text-2xl font-western text-leather">{ strconv.Itoa(data.Luck) }</p>
+				<p class="text-xs text-silver">LUCK</p>
+				<p class="text-2xl font-display text-accent">{ strconv.Itoa(data.Luck) }</p>
 			</div>
 			<div class="card text-center">
-				<p class="text-xs text-dust">ITEMS</p>
-				<p class="text-2xl font-western text-sage">{ strconv.Itoa(len(data.Items)) }</p>
+				<p class="text-xs text-silver">ITEMS</p>
+				<p class="text-2xl font-display text-jade">{ strconv.Itoa(len(data.Items)) }</p>
 			</div>
 			<div class="card text-center">
-				<p class="text-xs text-dust">ABILITIES</p>
-				<p class="text-2xl font-western text-rust">{ strconv.Itoa(len(data.Abilities)) }</p>
+				<p class="text-xs text-silver">ABILITIES</p>
+				<p class="text-2xl font-display text-ember">{ strconv.Itoa(len(data.Abilities)) }</p>
 			</div>
 		</div>
 		
 		<!-- Inventory Grid -->
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 			<!-- Items -->
-			@InventorySection("ITEMS", "text-sage", "border-l-sage", data.Items)
+			@InventorySection("ITEMS", "text-jade", "border-l-jade", data.Items)
 			
 			<!-- Abilities -->
-			@InventorySection("ABILITIES", "text-rust", "border-l-rust", data.Abilities)
+			@InventorySection("ABILITIES", "text-ember", "border-l-ember", data.Abilities)
 			
 			<!-- Perks -->
-			@InventorySection("PERKS", "text-wood", "border-l-wood", data.Perks)
+			@InventorySection("PERKS", "text-ice", "border-l-ice", data.Perks)
 			
 			<!-- Statuses -->
-			@InventorySection("STATUSES", "text-leather", "border-l-leather", data.Statuses)
+			@InventorySection("STATUSES", "text-accent", "border-l-accent", data.Statuses)
 			
 			<!-- Immunities -->
-			@InventorySection("IMMUNITIES", "text-rope", "border-l-rope", data.Immunities)
+			@InventorySection("IMMUNITIES", "text-steel", "border-l-steel", data.Immunities)
 			
 			<!-- Notes -->
-			@InventorySection("NOTES", "text-dust", "border-l-dust", data.Notes)
+			@InventorySection("NOTES", "text-silver", "border-l-silver", data.Notes)
 		</div>
 	}
 }
 
 templ InventorySection(title string, colorClass string, borderClass string, items []string) {
 	<div class="card">
-		<h3 class={ "text-sm font-semibold mb-3 border-b-2 border-rope pb-2 " + colorClass }>{ title }</h3>
+		<h3 class={ "text-sm font-semibold mb-3 border-b border-hairline pb-2 " + colorClass }>{ title }</h3>
 		if len(items) > 0 {
 			<ul class="space-y-1">
 				for _, item := range items {
-					<li class={ "text-sm bg-parchment-dark px-3 py-2 text-ink border-l-2 " + borderClass }>{ item }</li>
+					<li class={ "text-sm bg-white/5 px-3 py-2 text-ice border-l-2 " + borderClass }>{ item }</li>
 				}
 			</ul>
 		} else {
-			<p class="text-dust text-sm">NONE</p>
+			<p class="text-silver text-sm">NONE</p>
 		}
 	</div>
 }
