@@ -1,13 +1,15 @@
 # Betrayal Discord Bot 🤖
 
-[![Go](https://img.shields.io/badge/Go-1.21-blue.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.23-blue.svg)](https://golang.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Welcome to the Betrayal Discord Bot - your go-to companion for immersive Betrayal game experiences on Discord! 🎮
 
+> **For contributors/agents:** see [AGENTS.md](AGENTS.md) for the working setup — build/run commands, worktrees & env, repo layout, command inventory, and testing workflow. This README is the user-facing intro; AGENTS.md is the source of truth for how to work on the code.
+
 ## Overview 🌐
 
-The Betrayal Discord Bot, crafted with ❤️ in Go, is designed to assist with the game management for the game Betrayal. This dynamic bot seamlessly integrates with Discord, managing game events, characters, and more, all powered by a robust PostgreSQL database.
+The Betrayal Discord Bot, crafted with ❤️ in Go, is designed to assist with the game management for the game Betrayal. This dynamic bot seamlessly integrates with Discord, managing game events, characters, and more, all powered by a robust PostgreSQL database. It also ships a web admin panel (Echo + templ + HTMX) for operational control. **Production is hosted on Railway** (deploys are env-driven; the legacy Fly workflow was removed).
 
 ## Features 🚀
 
@@ -32,7 +34,7 @@ The Betrayal bot uses a production-grade structured logging system powered by [z
 - **Correlation IDs:** Every request gets a unique UUID for tracing across the system
 - **Async Database Writes:** Non-blocking batch insertion of logs (buffered by 100 logs or 5 seconds)
 - **Panic Recovery:** Goroutines wrapped with automatic panic recovery and logging
-- **Retention Policy:** Logs retained for 90 days with automatic CSV archival to `./logs_archive/`
+- **Retention Policy:** `logs` retained for 90 days with automatic CSV archival to `./logs_archive/` (see `internal/logger/retention.go`). The `command_audit` table is separate and kept for 365 days.
 
 ### Configuration
 
@@ -153,6 +155,7 @@ The bot maintains a comprehensive audit trail of all player and admin commands f
 - **Error Logging:** Failed commands logged with error messages for debugging
 - **Execution Timing:** Records how long each command took to execute
 - **Async Batch Writes:** Non-blocking audit logging (buffered by 50 entries or 3 seconds)
+- **Retention:** Audit records are purged after **365 days** by `CleanupAuditTrail()` (daily worker; do not confuse with the 90-day `logs` retention)
 
 ### Command Audit Table Schema
 
