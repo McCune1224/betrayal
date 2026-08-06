@@ -23,7 +23,7 @@ import (
 
 const (
 	testPassword = "test-admin-password"
-	testSecret   = "test-session-secret"
+	testSecret   = "test-session-secret-0123456789abcdef"
 )
 
 // WebServerSuite drives the real Echo routes with httptest against the LOCAL
@@ -68,6 +68,22 @@ func (s *WebServerSuite) SetupTest() {
 			return http.ErrUseLastResponse
 		},
 	}
+	// Establish the CSRF cookie (double-submit pattern: the middleware rejects
+	// state-changing requests whose X-CSRF-Token header doesn't match it).
+	s.get("/login")
+}
+
+// csrfToken returns the double-submit CSRF token from the cookie jar, or ""
+// when no _csrf cookie is present yet.
+func (s *WebServerSuite) csrfToken() string {
+	u, err := url.Parse(s.ts.URL)
+	s.Require().NoError(err)
+	for _, c := range s.client.Jar.Cookies(u) {
+		if c.Name == "_csrf" {
+			return c.Value
+		}
+	}
+	return ""
 }
 
 func (s *WebServerSuite) get(path string) *http.Response {
@@ -77,13 +93,25 @@ func (s *WebServerSuite) get(path string) *http.Response {
 }
 
 func (s *WebServerSuite) postForm(path string, form url.Values) *http.Response {
-	resp, err := s.client.PostForm(s.ts.URL+path, form)
+	req, err := http.NewRequest(http.MethodPost, s.ts.URL+path, strings.NewReader(form.Encode()))
+	s.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if tok := s.csrfToken(); tok != "" {
+		req.Header.Set("X-CSRF-Token", tok)
+	}
+	resp, err := s.client.Do(req)
 	s.Require().NoError(err)
 	return resp
 }
 
 func (s *WebServerSuite) postFormNoRedirect(path string, form url.Values) *http.Response {
-	resp, err := s.clientNoRedirect.PostForm(s.ts.URL+path, form)
+	req, err := http.NewRequest(http.MethodPost, s.ts.URL+path, strings.NewReader(form.Encode()))
+	s.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if tok := s.csrfToken(); tok != "" {
+		req.Header.Set("X-CSRF-Token", tok)
+	}
+	resp, err := s.clientNoRedirect.Do(req)
 	s.Require().NoError(err)
 	return resp
 }
@@ -92,6 +120,9 @@ func (s *WebServerSuite) putForm(path string, form url.Values) *http.Response {
 	req, err := http.NewRequest(http.MethodPut, s.ts.URL+path, strings.NewReader(form.Encode()))
 	s.Require().NoError(err)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if tok := s.csrfToken(); tok != "" {
+		req.Header.Set("X-CSRF-Token", tok)
+	}
 	resp, err := s.client.Do(req)
 	s.Require().NoError(err)
 	return resp

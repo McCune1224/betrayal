@@ -16,9 +16,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 	"github.com/mccune1224/betrayal/internal/models"
 	"github.com/mccune1224/betrayal/internal/web"
+	"github.com/mccune1224/betrayal/tests/testutil"
 	"github.com/rs/zerolog"
 )
 
@@ -28,31 +28,21 @@ const (
 	testAdminPassword = "hunter2-test-password"
 )
 
-// TestMain loads the repo .env (local DATABASE_URL only) like the other suites.
+// TestMain bootstraps the suite through testutil: loads env, enforces the
+// production guard, serializes against other DB suites via an advisory lock,
+// and applies migrations once.
 func TestMain(m *testing.M) {
-	_ = godotenv.Load("../../.env") // repo root .env (tests/web -> tests -> root)
-	_ = godotenv.Load("../.env")    // legacy: tests/.env
-	_ = godotenv.Load(".env")
-	os.Exit(m.Run())
+	os.Exit(testutil.Bootstrap(m))
 }
 
-// mustPool connects to the local test DB, or skips when it is unavailable.
+// mustPool connects to the local test DB via testutil (fails, not skips, when
+// unavailable) and truncates all tables so each test starts from a clean
+// schema with the game_cycle Day-0 seed row present.
 func mustPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		t.Skip("DATABASE_URL not set; skipping web handler tests")
-	}
-
-	pool, err := pgxpool.New(context.Background(), dsn)
-	if err != nil {
-		t.Fatalf("failed to create pool: %v", err)
-	}
+	pool := testutil.NewTestPool(t)
 	t.Cleanup(pool.Close)
-
-	if err := pool.Ping(context.Background()); err != nil {
-		t.Skipf("local postgres unreachable (%v); skipping web handler tests", err)
-	}
+	testutil.TruncateAll(t, pool)
 	return pool
 }
 

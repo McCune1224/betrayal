@@ -101,16 +101,16 @@ func (s *RollServiceSuite) TestRollAnyAbilityIncludingRoleSpecific() {
 	s.Equal("Mafia Hit", ability.Name)
 }
 
-// TestRollAnyAbilityByRarityPinsKnownBug documents the WT-5 B2 regression:
-// the SQL uses `rarity == $1` (invalid in Postgres), so the query always
-// errors. When WT-5 fixes the query, this test must be updated to assert the
-// returned ability instead of the error.
-func (s *RollServiceSuite) TestRollAnyAbilityByRarityPinsKnownBug() {
+// TestRollAnyAbilityByRarity originally pinned the WT-5 B2 regression
+// (invalid `rarity == $1` SQL always errored). WT-5 fixed the query;
+// this test now asserts the roll succeeds and returns an ability.
+func (s *RollServiceSuite) TestRollAnyAbilityByRarity() {
 	ctx := context.Background()
 	svc := rollsvc.New(s.DB)
 
-	_, err := svc.RollAnyAbilityByRarity(ctx, models.RarityRARE)
-	s.Require().Error(err)
+	ability, err := svc.RollAnyAbilityByRarity(ctx, models.RarityRARE)
+	s.Require().NoError(err)
+	s.Require().NotEmpty(ability.Name)
 }
 
 func TestRollServiceSuite(t *testing.T) {
