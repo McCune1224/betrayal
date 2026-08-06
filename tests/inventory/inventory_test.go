@@ -64,8 +64,8 @@ func (s *InventoryServiceSuite) SetupTest() {
 }
 
 func (s *InventoryServiceSuite) handler() *inventory.InventoryHandler {
-	// Jank() builds a handler without a ken context (documented test path).
-	return inventory.Jank(s.player, s.DB)
+	// NewManualInventoryHandler builds a handler without a ken context (documented test path).
+	return inventory.NewManualInventoryHandler(s.player, s.DB)
 }
 
 func (s *InventoryServiceSuite) TestAddAbility() {

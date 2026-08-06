@@ -257,12 +257,6 @@ func (s *Server) Handler() http.Handler {
 	return s.echo
 }
 
-// Handler exposes the underlying Echo HTTP handler so tests can drive routes
-// with net/http/httptest.
-func (s *Server) Handler() http.Handler {
-	return s.echo
-}
-
 // Start begins listening on the configured port (blocking)
 func (s *Server) Start() error {
 	addr := fmt.Sprintf(":%s", s.config.Port)

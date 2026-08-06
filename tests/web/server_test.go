@@ -40,11 +40,13 @@ type WebServerSuite struct {
 
 func (s *WebServerSuite) SetupSuite() {
 	s.DB = testutil.NewTestPool(s.T())
-	s.server = web.New(s.DB, nil, zerolog.Nop(), web.Config{
+	var err error
+	s.server, err = web.New(s.DB, nil, zerolog.Nop(), web.Config{
 		Port:          "0",
 		AdminPassword: testPassword,
 		SessionSecret: testSecret,
 	})
+	s.Require().NoError(err)
 	s.ts = httptest.NewServer(s.server.Handler())
 }
 
