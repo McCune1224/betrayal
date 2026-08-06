@@ -347,3 +347,22 @@ Admin roles (role.go): Host, Co-Host, Bot Developer — check with
 5. **`.opencode/` in git:** keep (plans are useful history) or ignore? Minor.
 6. **`go mod tidy`:** safe to run? It may drop lib/pq if truly unused — verify migrate CLI still works from the Makefile path.
 7. **Test DB in CI:** GitHub Actions `services: postgres` is the cheap path; testcontainers is the heavier alternative. Recommend services.
+
+---
+
+## Progress (2026-08-05)
+
+All five workstreams merged into `main`, verified, branches removed:
+WT-4 (test infra), WT-5 (command fixes), WT-6 (web admin), WT-7 (docs),
+WT-9 (Dark Obsidian Glass UI theme). Post-merge cleanup: Makefile `env-value`
+helper, web suite joined `testutil.Bootstrap` (advisory lock + prod guard),
+CSRF-aware web tests, roll pin test updated post-fix, `web.New` 2-value
+signature, `Jank()` → `NewManualInventoryHandler` fallout. `go vet` +
+`go test ./...` green on merged main.
+
+**Before deploying merged main to Railway:** run `make migrate-up` on prod
+(migrations 000028 `command_log_channel`, 000029 `game_config`) and set
+`SESSION_SECRET` (≥32 bytes) in the Railway env — `web.New` refuses to start
+without it. `make run-web` connects to `DATABASE_POOLER_URL` (prod) unless
+overridden with the local `DATABASE_URL`; the WT-6 pages added after WT-9's
+theme pass (items/statuses/abilities/cycle/channels) need a glass-theme polish.
