@@ -61,4 +61,14 @@ Configuration/container changes may use executable CI or shell validation tests 
 - Do not commit binaries, `.env`, or generated secret material.
 - Report any vulnerability that remains and why.
 
+## Toolchain compatibility evidence
+
+The reachable pgx SQL-injection fix is `github.com/jackc/pgx/v5 v5.9.2`.
+The first fixed release requires Go 1.25 (`go` directive in its module file);
+the last Go-1.23-compatible release tested here, v5.7.6, still reports
+GO-2026-5004 in `internal/models/command_audit.sql.go`. Therefore this
+workstream intentionally raises the module, Docker image, and CI setup-go
+toolchain to Go 1.25 rather than retaining the repository's previous Go 1.23
+guidance. Pinned templ/Tailwind versions remain unchanged.
+
 Commit locally only. Do not push or merge.

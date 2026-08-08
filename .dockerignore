@@ -48,3 +48,18 @@
 **/old
 **/todo.txt
 fly.toml
+
+# Keep repository metadata, build outputs, and secret-like files out of the
+# Docker build context. Runtime configuration is injected by the platform.
+.git
+.git/**
+bin
+**/bin
+**/*secret*
+**/*token*
+**/*password*
+**/*credential*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx

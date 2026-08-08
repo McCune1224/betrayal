@@ -38,7 +38,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: "1.25"
           cache: true
 
       - name: Install templ (pinned to go.mod version)
@@ -53,8 +53,26 @@ jobs:
       - name: Vet
         run: go vet ./...
 
+      - name: Validate dependency and container hardening
+        run: ./scripts/validate-dependency-container.sh
+
+      - name: Check module tidy state
+        run: go mod tidy -diff
+
+      - name: Check vulnerabilities
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
       - name: Test (local Postgres)
-        run: go test ./...
+        run: go test -race ./...
+
+      - name: Test (uncached)
+        run: go test -count=1 ./...
 
       - name: Build
         run: make build
+
+      - name: Build container without secrets
+        run: docker build -t betrayal:local-build-test .
+
+      - name: Inspect container history and contents for secret baking
+        run: ./scripts/validate-dependency-container.sh --image betrayal:local-build-test
