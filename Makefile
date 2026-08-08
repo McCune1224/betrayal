@@ -1,5 +1,5 @@
 .SILENT:
-.PHONY: run sql migrate-up migrate-down migrate-sync mock-migrate-up mock-migrate-down templ-generate templ-watch tailwind-build tailwind-watch build generate env-link worktree db-up db-down clean
+.PHONY: run run-web sql migrate-up migrate-down migrate-sync migrate-local-up migrate-local-down migrate-production-up migrate-production-down migrate-production-sync mock-migrate-up mock-migrate-down test-migration-targets templ-generate templ-watch tailwind-build tailwind-watch build generate env-link worktree db-up db-down clean
 
 # Extract a value from .env (handles quotes and '=' inside values, e.g. sslmode=disable)
 env-value = $(shell grep -E '^$(1)=' .env | head -n1 | cut -d '=' -f2- | tr -d '"' | tr -d "'")
@@ -10,20 +10,43 @@ run:
 
 # Run web server only (no Discord bot)
 run-web:
-	DISABLE_DISCORD=true go run ./cmd/betrayal-bot/main.go
+	ENVIRONMENT=local DISABLE_DISCORD=true go run ./cmd/betrayal-bot/main.go
 
-# Connect to database
-sql: 
-	psql $(call env-value,DATABASE_POOLER_URL)
+# Connect to the local database
+sql:
+	psql $(call env-value,DATABASE_URL)
 
-# Database migrations
-migrate-up:
+# Local database migrations
+migrate-local-up:
+	migrate -database $(call env-value,DATABASE_URL) -path internal/db/migrate/migrations up
+
+migrate-local-down:
+	migrate -database $(call env-value,DATABASE_URL) -path internal/db/migrate/migrations down
+
+# Compatibility aliases: preserve the historical production target names, but
+# delegate to recipes that require explicit confirmation.
+migrate-up: migrate-production-up
+
+migrate-down: migrate-production-down
+
+migrate-sync: migrate-production-sync
+
+# Validate migration target compatibility and production refusal without running migrations.
+test-migration-targets:
+	./scripts/test-migration-targets.sh
+
+# Production migrations are intentionally named and require an explicit opt-in:
+#   make migrate-production-up CONFIRM_PRODUCTION_MIGRATION=YES
+migrate-production-up:
+	@test "$(CONFIRM_PRODUCTION_MIGRATION)" = "YES" || (echo "refusing production migration; set CONFIRM_PRODUCTION_MIGRATION=YES" >&2; exit 1)
 	migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migrate/migrations up
 
-migrate-down:
+migrate-production-down:
+	@test "$(CONFIRM_PRODUCTION_MIGRATION)" = "YES" || (echo "refusing production migration; set CONFIRM_PRODUCTION_MIGRATION=YES" >&2; exit 1)
 	migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migrate/migrations down
 
-migrate-sync:
+migrate-production-sync:
+	@test "$(CONFIRM_PRODUCTION_MIGRATION)" = "YES" || (echo "refusing production migration; set CONFIRM_PRODUCTION_MIGRATION=YES" >&2; exit 1)
 	migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migrate/migrations down && migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migrate/migrations up
 
 mock-migrate-up:

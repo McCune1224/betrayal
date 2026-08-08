@@ -10,21 +10,18 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// TestNewUsesAdminPasswordFallback: a small deployment may omit SESSION_SECRET;
-// the admin password is then used as the source for the signing key.
-func TestNewUsesAdminPasswordFallback(t *testing.T) {
+// TestNewRequiresExplicitSessionSecret: session signing must use a dedicated,
+// explicit secret rather than deriving one from the admin password.
+func TestNewRequiresExplicitSessionSecret(t *testing.T) {
 	pool := mustPool(t)
 
-	srv, err := web.New(pool, nil, zerolog.Nop(), web.Config{
+	_, err := web.New(pool, nil, zerolog.Nop(), web.Config{
 		Port:          "0",
 		AdminPassword: testAdminPassword,
-		SessionSecret: "", // fallback is intentional for this deployment
+		SessionSecret: "",
 	})
-	if err != nil {
-		t.Fatalf("expected admin password fallback to work, got: %v", err)
-	}
-	if srv == nil {
-		t.Fatal("expected non-nil server")
+	if err == nil || !strings.Contains(err.Error(), "SESSION_SECRET") {
+		t.Fatalf("expected explicit session secret error, got: %v", err)
 	}
 }
 

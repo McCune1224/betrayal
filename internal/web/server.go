@@ -3,8 +3,6 @@ package web
 
 import (
 	"context"
-	"crypto/sha256"
-	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -86,16 +84,11 @@ type Server struct {
 	migrateRunnerOnce sync.Once
 }
 
-// New creates a new web server. When SESSION_SECRET is empty, the admin
-// password is hashed into the cookie-signing key for the small deployment
-// configuration. An explicit session secret is still validated when present.
+// New creates a new web server. SESSION_SECRET is always explicit and is
+// never derived from ADMIN_PASSWORD.
 func New(pool *pgxpool.Pool, discord *discordgo.Session, logger zerolog.Logger, cfg Config) (*Server, error) {
 	if cfg.SessionSecret == "" {
-		if cfg.AdminPassword == "" {
-			return nil, errors.New("ADMIN_PASSWORD must be set when SESSION_SECRET is unset")
-		}
-		signingKey := sha256.Sum256([]byte(cfg.AdminPassword))
-		cfg.SessionSecret = string(signingKey[:])
+		return nil, fmt.Errorf("SESSION_SECRET must be set explicitly; refusing to derive it from ADMIN_PASSWORD")
 	}
 	if len(cfg.SessionSecret) < minSessionSecretLen {
 		return nil, fmt.Errorf("SESSION_SECRET must be at least %d bytes (got %d): refusing to start the web server", minSessionSecretLen, len(cfg.SessionSecret))

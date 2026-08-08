@@ -25,6 +25,19 @@ required_keys() {
   grep -E '^[A-Z_]+=' "$REPO_ROOT/.env.example" | cut -d= -f1
 }
 
+# Read the complete value after the first '='. Do not use `cut -d= -f2`,
+# because PostgreSQL URLs commonly contain additional '=' query parameters.
+env_value() {
+  local key="$1" line value
+  line="$(grep -m1 "^${key}=" "$REPO_ROOT/.env" || true)"
+  value="${line#*=}"
+  value="${value%\"}"
+  value="${value#\"}"
+  value="${value%\'}"
+  value="${value#\'}"
+  printf '%s' "$value"
+}
+
 cmd_link() {
   if [[ ! -f "$CANONICAL_ENV" ]]; then
     info "canonical env not found at $CANONICAL_ENV; scaffolding from .env.example"
@@ -83,11 +96,21 @@ cmd_doctor() {
   done
   [[ $missing -eq 0 ]] || fatal "env file is missing required keys (see .env.example)"
 
-  local mock
-  mock="$(grep -E '^MOCK_DATABASE=' "$REPO_ROOT/.env" | cut -d= -f2- | tr -d '"')"
-  if [[ -n "$mock" ]]; then
-    info "MOCK_DATABASE: ${mock%%\?*}"
-  fi
+  local environment
+  environment="$(env_value ENVIRONMENT)"
+  [[ -n "$environment" ]] || environment="local"
+  case "$environment" in
+    local)
+      [[ -n "$(env_value DATABASE_URL)" ]] || fatal "DATABASE_URL is required when ENVIRONMENT=local"
+      ;;
+    production)
+      [[ -n "$(env_value DATABASE_POOLER_URL)" ]] || fatal "DATABASE_POOLER_URL is required when ENVIRONMENT=production"
+      ;;
+    *)
+      fatal "ENVIRONMENT must be local or production"
+      ;;
+  esac
+  info "environment contract: $environment (required DSN is configured)"
   info "doctor OK — env file looks complete"
 }
 
