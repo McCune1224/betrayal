@@ -175,6 +175,9 @@ func ExtractCommandArguments(session *discordgo.Session, options []*discordgo.Ap
 // extractOptions recursively extracts command options and subcommands
 func extractOptions(session *discordgo.Session, result map[string]interface{}, options []*discordgo.ApplicationCommandInteractionDataOption, prefix string) {
 	for _, opt := range options {
+		if opt == nil {
+			continue
+		}
 		key := opt.Name
 		if prefix != "" {
 			key = prefix + "." + opt.Name
@@ -188,46 +191,84 @@ func extractOptions(session *discordgo.Session, result map[string]interface{}, o
 			result[key] = "subcommand_group"
 			extractOptions(session, result, opt.Options, key)
 		case discordgo.ApplicationCommandOptionString:
-			result[key] = opt.StringValue()
+			if value, ok := opt.Value.(string); ok {
+				result[key] = value
+			}
 		case discordgo.ApplicationCommandOptionInteger:
-			result[key] = opt.IntValue()
+			switch value := opt.Value.(type) {
+			case float64:
+				result[key] = int64(value)
+			case int64:
+				result[key] = value
+			}
 		case discordgo.ApplicationCommandOptionNumber:
-			result[key] = opt.FloatValue()
+			if value, ok := opt.Value.(float64); ok {
+				result[key] = value
+			}
 		case discordgo.ApplicationCommandOptionBoolean:
-			result[key] = opt.BoolValue()
+			if value, ok := opt.Value.(bool); ok {
+				result[key] = value
+			}
 		case discordgo.ApplicationCommandOptionUser:
-			if session != nil {
-				result[key] = map[string]interface{}{
-					"id":       opt.UserValue(session).ID,
-					"username": opt.UserValue(session).Username,
+			if id, ok := optionID(opt); ok {
+				value := map[string]interface{}{"id": id}
+				if session != nil {
+					user := opt.UserValue(session)
+					if user != nil && user.Username != "" {
+						value["username"] = user.Username
+					}
 				}
-			} else {
-				result[key] = "user (unavailable)"
+				result[key] = value
 			}
 		case discordgo.ApplicationCommandOptionChannel:
-			if session != nil {
-				result[key] = map[string]interface{}{
-					"id":   opt.ChannelValue(session).ID,
-					"name": opt.ChannelValue(session).Name,
+			if id, ok := optionID(opt); ok {
+				value := map[string]interface{}{"id": id}
+				if session != nil {
+					channel := opt.ChannelValue(session)
+					if channel != nil && channel.Name != "" {
+						value["name"] = channel.Name
+					}
 				}
-			} else {
-				result[key] = "channel (unavailable)"
+				result[key] = value
 			}
 		case discordgo.ApplicationCommandOptionRole:
-			if session != nil {
-				result[key] = map[string]interface{}{
-					"id":   opt.RoleValue(session, "").ID,
-					"name": opt.RoleValue(session, "").Name,
-				}
-			} else {
-				result[key] = "role (unavailable)"
+			if id, ok := optionID(opt); ok {
+				result[key] = map[string]interface{}{"id": id}
 			}
 		case discordgo.ApplicationCommandOptionMentionable:
-			result[key] = opt.StringValue()
-		default:
-			result[key] = "unknown"
+			if id, ok := optionID(opt); ok {
+				result[key] = map[string]interface{}{"id": id, "type": "mentionable"}
+			}
 		}
 	}
+}
+
+func optionID(opt *discordgo.ApplicationCommandInteractionDataOption) (string, bool) {
+	id, ok := opt.Value.(string)
+	return id, ok && id != ""
+}
+
+func isAdminMember(member *discordgo.Member, guildRoles []*discordgo.Role) bool {
+	if member == nil {
+		return false
+	}
+	for _, memberRoleID := range member.Roles {
+		for _, role := range guildRoles {
+			if role != nil && memberRoleID == role.ID && containsString(discord.AdminRoles, role.Name) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }
 
 // CreateAuditFromContext builds a CommandAudit from Ken context
@@ -240,17 +281,11 @@ func CreateAuditFromContext(ctx *ken.Ctx, session *discordgo.Session, startTime 
 		userRoles = event.Member.Roles
 	}
 
-	isAdmin := false
-	if event.Member != nil {
-		for _, roleID := range event.Member.Roles {
-			for _, adminRole := range discord.AdminRoles {
-				if roleID == adminRole {
-					isAdmin = true
-					break
-				}
-			}
-		}
+	var guildRoles []*discordgo.Role
+	if session != nil {
+		guildRoles, _ = session.GuildRoles(event.GuildID)
 	}
+	isAdmin := isAdminMember(event.Member, guildRoles)
 
 	cmdData := event.ApplicationCommandData()
 	arguments := ExtractCommandArguments(session, cmdData.Options)
@@ -258,8 +293,8 @@ func CreateAuditFromContext(ctx *ken.Ctx, session *discordgo.Session, startTime 
 	return CommandAudit{
 		CorrelationID:    GenerateCorrelationID().String(),
 		CommandName:      cmdData.Name,
-		UserID:           event.Member.User.ID,
-		Username:         event.Member.User.Username,
+		UserID:           memberUserID(event.Member),
+		Username:         memberUsername(event.Member),
 		UserRoles:        userRoles,
 		GuildID:          event.GuildID,
 		ChannelID:        event.ChannelID,
@@ -268,6 +303,20 @@ func CreateAuditFromContext(ctx *ken.Ctx, session *discordgo.Session, startTime 
 		Status:           "success",
 		ExecutionTimeMs:  execution_time,
 	}
+}
+
+func memberUserID(member *discordgo.Member) string {
+	if member == nil || member.User == nil {
+		return ""
+	}
+	return member.User.ID
+}
+
+func memberUsername(member *discordgo.Member) string {
+	if member == nil || member.User == nil {
+		return ""
+	}
+	return member.User.Username
 }
 
 // Global audit writer instance
