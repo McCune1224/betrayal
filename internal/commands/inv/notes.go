@@ -1,14 +1,14 @@
 package inv
 
 import (
-	"github.com/mccune1224/betrayal/internal/logger"
 	"context"
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
-	"github.com/mccune1224/betrayal/internal/models"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"github.com/mccune1224/betrayal/internal/services/inventory"
+	"github.com/mccune1224/betrayal/internal/services/playernotes"
 	"github.com/zekrotja/ken"
 )
 
@@ -82,7 +82,7 @@ func (i *Inv) addNote(ctx ken.SubCommandContext) (err error) {
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
 	noteArg := ctx.Options().GetByName("note").StringValue()
-	h.CreatePlayerNote(h.GetPlayer().ID, noteArg)
+	_, err = playernotes.New(i.dbPool).Add(context.Background(), playernotes.Authorization{IsAdmin: true}, h.GetPlayer().ID, noteArg)
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to add note")
@@ -105,10 +105,7 @@ func (i *Inv) listNote(ctx ken.SubCommandContext) (err error) {
 		return discord.AlexError(ctx, "failed to init inv handler")
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
-	q := models.New(i.dbPool)
-	dbCtx := context.Background()
-
-	playerNotes, err := q.ListPlayerNote(dbCtx, h.GetPlayer().ID)
+	playerNotes, err := playernotes.New(i.dbPool).List(context.Background(), playernotes.Authorization{IsAdmin: true}, h.GetPlayer().ID)
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to get player notes")
@@ -143,7 +140,7 @@ func (i *Inv) removeNote(ctx ken.SubCommandContext) (err error) {
 	}
 	defer h.UpdateInventoryMessage(ctx.GetSession())
 	positionArg := ctx.Options().GetByName("position").IntValue()
-	h.DeletePlayerNote(h.GetPlayer().ID, int(positionArg))
+	err = playernotes.New(i.dbPool).Delete(context.Background(), playernotes.Authorization{IsAdmin: true}, h.GetPlayer().ID, int32(positionArg))
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to remove note")
@@ -168,7 +165,7 @@ func (i *Inv) updateNote(ctx ken.SubCommandContext) (err error) {
 	defer h.UpdateInventoryMessage(ctx.GetSession())
 	noteArg := ctx.Options().GetByName("note").StringValue()
 	positionArg := ctx.Options().GetByName("position").IntValue()
-	h.UpdatePlayerNote(h.GetPlayer().ID, int(positionArg), noteArg)
+	_, err = playernotes.New(i.dbPool).Save(context.Background(), playernotes.Authorization{IsAdmin: true}, h.GetPlayer().ID, int(positionArg), noteArg)
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to update note")
