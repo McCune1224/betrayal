@@ -121,13 +121,13 @@ func (v *Vote) batch(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "You are not a player", "You must be a player to vote")
 	}
 
-	firstTarget, _ := sesh.GuildMember(discord.BetraylGuildID, ctx.Options().GetByName("user").UserValue(ctx).ID)
+	firstTarget, _ := sesh.GuildMember(event.GuildID, ctx.Options().GetByName("user").UserValue(ctx).ID)
 	votedMembers := []*discordgo.Member{firstTarget}
 
 	for i := 2; i <= 5; i++ {
 		user, ok := ctx.Options().GetByNameOptional(fmt.Sprintf("user%d", i))
 		if ok {
-			nextMember, _ := sesh.GuildMember(discord.BetraylGuildID, user.UserValue(ctx).ID)
+			nextMember, _ := sesh.GuildMember(event.GuildID, user.UserValue(ctx).ID)
 			votedMembers = append(votedMembers, nextMember)
 		}
 	}
@@ -194,7 +194,7 @@ func (v *Vote) player(ctx ken.SubCommandContext) (err error) {
 	sesh := ctx.GetSession()
 	event := ctx.GetEvent()
 
-	targetVoteUser, _ := sesh.GuildMember(discord.BetraylGuildID, ctx.Options().GetByName("user").UserValue(ctx).ID)
+	targetVoteUser, _ := sesh.GuildMember(event.GuildID, ctx.Options().GetByName("user").UserValue(ctx).ID)
 	voteContext, ok := ctx.Options().GetByNameOptional("context")
 
 	q := models.New(v.dbPool)

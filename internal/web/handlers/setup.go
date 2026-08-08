@@ -3,7 +3,9 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -17,10 +19,18 @@ import (
 type SetupHandler struct {
 	dbPool         *pgxpool.Pool
 	discordSession *discordgo.Session
+	guildID        string
 }
 
 func NewSetupHandler(pool *pgxpool.Pool, session *discordgo.Session) *SetupHandler {
-	return &SetupHandler{dbPool: pool, discordSession: session}
+	return &SetupHandler{dbPool: pool, discordSession: session, guildID: configuredGuildID(os.Getenv)}
+}
+
+func configuredGuildID(getenv func(string) string) string {
+	if guildID := strings.TrimSpace(getenv("DISCORD_GUILD_ID")); guildID != "" {
+		return guildID
+	}
+	return discord.BetraylGuildID
 }
 
 func (h *SetupHandler) Page(c echo.Context) error {
@@ -51,11 +61,11 @@ func (h *SetupHandler) deceptionistCount() int {
 	if h.discordSession == nil {
 		return 0
 	}
-	members, err := h.discordSession.GuildMembers(discord.BetraylGuildID, "", 1000)
+	members, err := h.discordSession.GuildMembers(h.guildID, "", 1000)
 	if err != nil {
 		return 0
 	}
-	roles, err := h.discordSession.GuildRoles(discord.BetraylGuildID)
+	roles, err := h.discordSession.GuildRoles(h.guildID)
 	if err != nil {
 		return 0
 	}

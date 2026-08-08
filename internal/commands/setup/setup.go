@@ -101,7 +101,11 @@ func (s *Setup) Run(ctx ken.Context) (err error) {
 				fmt.Sprintf("Deceptionist count (%d) cannot exceed available roles (%d)", decepCount, len(rolePool)))
 		}
 	} else {
-		decepts := getDeceptionist(ctx.GetSession(), ctx.GetEvent().GuildID)
+		decepts, err := getDeceptionist(ctx.GetSession(), ctx.GetEvent().GuildID)
+		if err != nil {
+			logger.Get().Error().Err(err).Msg("failed to resolve deceptionist members")
+			return discord.AlexError(ctx, "failed to resolve deceptionist members")
+		}
 		decepCount = len(decepts)
 	}
 
@@ -116,8 +120,14 @@ func (*Setup) Version() string {
 }
 
 // Finds all players within the server that contain Deceiptionist role
-func getDeceptionist(s *discordgo.Session, gID string) []*discordgo.User {
-	guildRoles, _ := s.GuildRoles(gID)
+func getDeceptionist(s *discordgo.Session, gID string) ([]*discordgo.User, error) {
+	if s == nil {
+		return nil, fmt.Errorf("discord session unavailable")
+	}
+	guildRoles, err := s.GuildRoles(gID)
+	if err != nil {
+		return nil, err
+	}
 	var decRole *discordgo.Role
 	for _, r := range guildRoles {
 		if r.Name == "Deceptionist" {
@@ -125,9 +135,18 @@ func getDeceptionist(s *discordgo.Session, gID string) []*discordgo.User {
 			break
 		}
 	}
+	if decRole == nil {
+		return nil, fmt.Errorf("Deceptionist role not found")
+	}
 	var deceptionists []*discordgo.User
-	members, _ := s.GuildMembers(gID, "", 1000)
+	members, err := s.GuildMembers(gID, "", 1000)
+	if err != nil {
+		return nil, err
+	}
 	for _, m := range members {
+		if m == nil || m.User == nil {
+			continue
+		}
 		for _, r := range m.Roles {
 			if r == decRole.ID {
 				deceptionists = append(deceptionists, m.User)
@@ -135,7 +154,7 @@ func getDeceptionist(s *discordgo.Session, gID string) []*discordgo.User {
 			}
 		}
 	}
-	return deceptionists
+	return deceptionists, nil
 }
 
 // Will find all active roles listed for the game

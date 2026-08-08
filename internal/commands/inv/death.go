@@ -1,8 +1,8 @@
 package inv
 
 import (
-	"github.com/mccune1224/betrayal/internal/logger"
 	"context"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"math/rand"
 
 	"github.com/bwmarrin/discordgo"
@@ -99,7 +99,7 @@ func (i *Inv) setAlive(ctx ken.SubCommandContext) (err error) {
 	}
 
 	playerLifeStatuses, _ := q.ListPlayerLifeboard(context.Background())
-	msg, err := channels.UserLifeboardMessageBuilder(ctx.GetSession(), playerLifeStatuses)
+	msg, err := channels.UserLifeboardMessageBuilder(ctx.GetSession(), ctx.GetEvent().GuildID, playerLifeStatuses)
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to build user lifeboard message")
@@ -144,7 +144,7 @@ func (i *Inv) setDead(ctx ken.SubCommandContext) (err error) {
 	}
 
 	playerLifeStatuses, _ := q.ListPlayerLifeboard(context.Background())
-	msg, err := channels.UserLifeboardMessageBuilder(ctx.GetSession(), playerLifeStatuses)
+	msg, err := channels.UserLifeboardMessageBuilder(ctx.GetSession(), ctx.GetEvent().GuildID, playerLifeStatuses)
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to build user lifeboard message")
@@ -153,7 +153,7 @@ func (i *Inv) setDead(ctx ken.SubCommandContext) (err error) {
 	inv, err := h.FetchInventory()
 	if err != nil {
 		ctx.GetSession().ChannelMessageEditEmbed(lifeboard.ChannelID, lifeboard.MessageID, msg)
-		return discord.SuccessfulMessage(ctx, "Player Dead", "Player is now dead\n" + getRandomItem(playerSetDeadMessages) + "\n\n**Make sure to check for Lucky Coin**")
+		return discord.SuccessfulMessage(ctx, "Player Dead", "Player is now dead\n"+getRandomItem(playerSetDeadMessages)+"\n\n**Make sure to check for Lucky Coin**")
 	}
 
 	hasLuckyCoin := false
