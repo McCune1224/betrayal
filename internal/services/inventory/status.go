@@ -1,10 +1,15 @@
 package inventory
 
 import (
+	"errors"
+
 	"github.com/mccune1224/betrayal/internal/models"
 )
 
 func (ih *InventoryHandler) AddStatus(statusName string, quantity int32) (*models.Status, error) {
+	if quantity <= 0 {
+		return nil, errors.New("quantity must be positive")
+	}
 	ctx, cancel := dbCtx()
 	defer cancel()
 
@@ -27,6 +32,9 @@ func (ih *InventoryHandler) AddStatus(statusName string, quantity int32) (*model
 }
 
 func (ih *InventoryHandler) RemoveStatus(statusName string, quantity int32) (*models.Status, error) {
+	if quantity <= 0 {
+		return nil, errors.New("quantity must be positive")
+	}
 	ctx, cancel := dbCtx()
 	defer cancel()
 
@@ -50,7 +58,7 @@ func (ih *InventoryHandler) RemoveStatus(statusName string, quantity int32) (*mo
 				_, err = query.UpdatePlayerStatusQuantity(ctx, models.UpdatePlayerStatusQuantityParams{
 					PlayerID: ih.player.ID,
 					StatusID: status.ID,
-					Quantity: i.Quantity - 1,
+					Quantity: i.Quantity - quantity,
 				})
 			}
 			break

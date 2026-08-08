@@ -1,20 +1,26 @@
 package inventory
 
 import (
-	"context"
 	"errors"
-	"log"
 
 	"github.com/mccune1224/betrayal/internal/models"
 )
 
 func (ih *InventoryHandler) AddAbility(abilityName string, quantity int32) (*models.AbilityInfo, error) {
+	if quantity < 0 {
+		return nil, errors.New("quantity must not be negative")
+	}
+	ctx, cancel := dbCtx()
+	defer cancel()
 	query := models.New(ih.pool)
-	ability, err := query.GetAbilityInfoByFuzzy(context.Background(), abilityName)
+	ability, err := query.GetAbilityInfoByFuzzy(ctx, abilityName)
 	if err != nil {
 		return nil, err
 	}
-	currentAbilityIds, _ := query.ListPlayerAbilityJoin(context.Background(), ih.player.ID)
+	currentAbilityIds, err := query.ListPlayerAbilityJoin(ctx, ih.player.ID)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, abilityId := range currentAbilityIds {
 		if ability.ID == abilityId.AbilityID {
@@ -26,7 +32,7 @@ func (ih *InventoryHandler) AddAbility(abilityName string, quantity int32) (*mod
 		quantity = ability.DefaultCharges
 	}
 
-	_, err = query.CreatePlayerAbilityJoin(context.Background(), models.CreatePlayerAbilityJoinParams{
+	_, err = query.CreatePlayerAbilityJoin(ctx, models.CreatePlayerAbilityJoinParams{
 		PlayerID:  ih.player.ID,
 		AbilityID: ability.ID,
 		Quantity:  quantity,
@@ -39,12 +45,14 @@ func (ih *InventoryHandler) AddAbility(abilityName string, quantity int32) (*mod
 }
 
 func (ih *InventoryHandler) RemoveAbility(abilityName string) (*models.AbilityInfo, error) {
+	ctx, cancel := dbCtx()
+	defer cancel()
 	query := models.New(ih.pool)
-	ability, err := query.GetAbilityInfoByFuzzy(context.Background(), abilityName)
+	ability, err := query.GetAbilityInfoByFuzzy(ctx, abilityName)
 	if err != nil {
 		return nil, err
 	}
-	err = query.DeletePlayerAbility(context.Background(), models.DeletePlayerAbilityParams{
+	err = query.DeletePlayerAbility(ctx, models.DeletePlayerAbilityParams{
 		PlayerID:  ih.player.ID,
 		AbilityID: ability.ID,
 	})
@@ -52,15 +60,22 @@ func (ih *InventoryHandler) RemoveAbility(abilityName string) (*models.AbilityIn
 }
 
 func (ih *InventoryHandler) UpdateAbility(abilityName string, quantity int32) (*models.AbilityInfo, error) {
+	if quantity < 0 {
+		return nil, errors.New("quantity must not be negative")
+	}
+	ctx, cancel := dbCtx()
+	defer cancel()
 	query := models.New(ih.pool)
-	ability, err := query.GetAbilityInfoByFuzzy(context.Background(), abilityName)
+	ability, err := query.GetAbilityInfoByFuzzy(ctx, abilityName)
 	if err != nil {
 		return nil, err
 	}
 
-	currentAbilityList, _ := query.ListPlayerAbilityJoin(context.Background(), ih.player.ID)
-	log.Println(currentAbilityList)
-	targetAbility := &models.PlayerAbility{}
+	currentAbilityList, err := query.ListPlayerAbilityJoin(ctx, ih.player.ID)
+	if err != nil {
+		return nil, err
+	}
+	var targetAbility *models.PlayerAbility
 	for _, abJoin := range currentAbilityList {
 		if ability.ID == abJoin.AbilityID {
 			targetAbility = &abJoin
@@ -69,10 +84,7 @@ func (ih *InventoryHandler) UpdateAbility(abilityName string, quantity int32) (*
 	if targetAbility == nil {
 		return nil, errors.New("ability not found")
 	}
-	if quantity < 0 {
-		quantity = 0
-	}
-	_, err = query.UpdatePlayerAbilityQuantity(context.Background(), models.UpdatePlayerAbilityQuantityParams{
+	_, err = query.UpdatePlayerAbilityQuantity(ctx, models.UpdatePlayerAbilityQuantityParams{
 		Quantity:  int32(quantity),
 		PlayerID:  ih.player.ID,
 		AbilityID: ability.ID,

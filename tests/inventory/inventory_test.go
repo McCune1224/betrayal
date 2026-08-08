@@ -61,6 +61,10 @@ func (s *InventoryServiceSuite) SetupTest() {
 		Name: "Silver Dagger", Description: "Stabby", Rarity: models.RarityRARE, Cost: 50,
 	})
 	s.Require().NoError(err)
+	_, err = s.Q.CreateStatus(ctx, models.CreateStatusParams{
+		Name: "Poisoned", Description: "Toxic",
+	})
+	s.Require().NoError(err)
 }
 
 func (s *InventoryServiceSuite) handler() *inventory.InventoryHandler {
@@ -135,6 +139,35 @@ func (s *InventoryServiceSuite) TestAddItemUpsertsQuantity() {
 	s.Equal(int32(2), items[0].Quantity)
 }
 
+func (s *InventoryServiceSuite) TestAddItemRejectsNonPositiveQuantity() {
+	handler := s.handler()
+	for _, quantity := range []int32{0, -1} {
+		_, err := handler.AddItem("Silver Dagger", quantity)
+		s.EqualError(err, "quantity must be positive")
+	}
+}
+
+func (s *InventoryServiceSuite) TestAddStatusRejectsNonPositiveQuantity() {
+	handler := s.handler()
+	for _, quantity := range []int32{0, -1} {
+		_, err := handler.AddStatus("Poisoned", quantity)
+		s.EqualError(err, "quantity must be positive")
+	}
+}
+
+func (s *InventoryServiceSuite) TestAddAbilityRejectsNegativeQuantityButZeroUsesDefaultCharges() {
+	handler := s.handler()
+	_, err := handler.AddAbility("Shadow Step", -1)
+	s.EqualError(err, "quantity must not be negative")
+
+	_, err = handler.AddAbility("Shadow Step", 0)
+	s.Require().NoError(err)
+	rows, err := s.Q.ListPlayerAbilityJoin(context.Background(), s.player.ID)
+	s.Require().NoError(err)
+	s.Require().Len(rows, 1)
+	s.Equal(int32(2), rows[0].Quantity)
+}
+
 func (s *InventoryServiceSuite) TestRemoveItemDecrementsThenDeletes() {
 	handler := s.handler()
 	_, err := handler.AddItem("Silver Dagger", 2)
@@ -154,6 +187,137 @@ func (s *InventoryServiceSuite) TestRemoveItemDecrementsThenDeletes() {
 	items, err = s.Q.ListPlayerItemInventory(context.Background(), s.player.ID)
 	s.Require().NoError(err)
 	s.Empty(items)
+}
+
+func (s *InventoryServiceSuite) TestRemoveItemRejectsNonPositiveQuantity() {
+	handler := s.handler()
+	_, err := handler.AddItem("Silver Dagger", 2)
+	s.Require().NoError(err)
+	for _, quantity := range []int32{0, -1} {
+		_, err = handler.RemoveItem("Silver Dagger", quantity)
+		s.EqualError(err, "quantity must be positive")
+	}
+	items, err := s.Q.ListPlayerItemInventory(context.Background(), s.player.ID)
+	s.Require().NoError(err)
+	s.Equal(int32(2), items[0].Quantity)
+}
+
+func (s *InventoryServiceSuite) TestRemoveItemDecrementsByRequestedQuantity() {
+	handler := s.handler()
+	_, err := handler.AddItem("Silver Dagger", 5)
+	s.Require().NoError(err)
+
+	_, err = handler.RemoveItem("Silver Dagger", 2)
+	s.Require().NoError(err)
+
+	items, err := s.Q.ListPlayerItemInventory(context.Background(), s.player.ID)
+	s.Require().NoError(err)
+	s.Require().Len(items, 1)
+	s.Equal(int32(3), items[0].Quantity)
+}
+
+func (s *InventoryServiceSuite) TestRemoveItemMoreThanOwnedDeletesJoin() {
+	handler := s.handler()
+	_, err := handler.AddItem("Silver Dagger", 2)
+	s.Require().NoError(err)
+
+	_, err = handler.RemoveItem("Silver Dagger", 3)
+	s.Require().NoError(err)
+
+	items, err := s.Q.ListPlayerItemInventory(context.Background(), s.player.ID)
+	s.Require().NoError(err)
+	s.Empty(items, "over-removal follows the existing contract of deleting the join")
+}
+
+func (s *InventoryServiceSuite) TestRemoveStatusDecrementsByRequestedQuantity() {
+	handler := s.handler()
+	_, err := handler.AddStatus("Poisoned", 5)
+	s.Require().NoError(err)
+
+	_, err = handler.RemoveStatus("Poisoned", 2)
+	s.Require().NoError(err)
+
+	statuses, err := s.Q.ListPlayerStatusInventory(context.Background(), s.player.ID)
+	s.Require().NoError(err)
+	s.Require().Len(statuses, 1)
+	s.Equal(int32(3), statuses[0].Quantity)
+}
+
+func (s *InventoryServiceSuite) TestRemoveStatusRejectsNonPositiveQuantity() {
+	handler := s.handler()
+	_, err := handler.AddStatus("Poisoned", 2)
+	s.Require().NoError(err)
+	for _, quantity := range []int32{0, -1} {
+		_, err = handler.RemoveStatus("Poisoned", quantity)
+		s.EqualError(err, "quantity must be positive")
+	}
+	statuses, err := s.Q.ListPlayerStatusInventory(context.Background(), s.player.ID)
+	s.Require().NoError(err)
+	s.Equal(int32(2), statuses[0].Quantity)
+}
+
+func (s *InventoryServiceSuite) TestUpdatePlayerNoteUsesRequestedPosition() {
+	handler := s.handler()
+	_, err := handler.CreatePlayerNote(s.player.ID, "first")
+	s.Require().NoError(err)
+	_, err = handler.CreatePlayerNote(s.player.ID, "second")
+	s.Require().NoError(err)
+
+	note, err := handler.UpdatePlayerNote(s.player.ID, 1, "updated first")
+	s.Require().NoError(err)
+	s.Equal(int32(1), note.Position)
+	s.Equal("updated first", note.Info)
+
+	note, err = handler.GetPlayerNote(s.player.ID, 2)
+	s.Require().NoError(err)
+	s.Equal("second", note.Info)
+}
+
+func (s *InventoryServiceSuite) TestCreatePlayerNoteUsesNextAvailablePositionAfterDeletion() {
+	handler := s.handler()
+	_, err := handler.CreatePlayerNote(s.player.ID, "first")
+	s.Require().NoError(err)
+	_, err = handler.CreatePlayerNote(s.player.ID, "second")
+	s.Require().NoError(err)
+	err = handler.DeletePlayerNote(s.player.ID, 1)
+	s.Require().NoError(err)
+
+	note, err := handler.CreatePlayerNote(s.player.ID, "third")
+	s.Require().NoError(err)
+	s.Equal(int32(3), note.Position)
+}
+
+func (s *InventoryServiceSuite) TestDeletePlayerNoteUsesRequestedPosition() {
+	handler := s.handler()
+	_, err := handler.CreatePlayerNote(s.player.ID, "first")
+	s.Require().NoError(err)
+	_, err = handler.CreatePlayerNote(s.player.ID, "second")
+	s.Require().NoError(err)
+
+	err = handler.DeletePlayerNote(s.player.ID, 1)
+	s.Require().NoError(err)
+
+	_, err = handler.GetPlayerNote(s.player.ID, 1)
+	s.Error(err)
+	note, err := handler.GetPlayerNote(s.player.ID, 2)
+	s.Require().NoError(err)
+	s.Equal("second", note.Info)
+}
+
+func (s *InventoryServiceSuite) TestUpdateAbilityReturnsNotFoundWhenNotOwned() {
+	handler := s.handler()
+
+	_, err := handler.UpdateAbility("Shadow Step", 5)
+	s.EqualError(err, "ability not found")
+}
+
+func (s *InventoryServiceSuite) TestUpdateAbilityRejectsNegativeQuantity() {
+	handler := s.handler()
+	_, err := handler.AddAbility("Shadow Step", 1)
+	s.Require().NoError(err)
+
+	_, err = handler.UpdateAbility("Shadow Step", -1)
+	s.EqualError(err, "quantity must not be negative")
 }
 
 func (s *InventoryServiceSuite) TestFetchInventory() {
