@@ -1,9 +1,9 @@
 package inv
 
 import (
-	"github.com/mccune1224/betrayal/internal/logger"
 	"context"
 	"fmt"
+	"github.com/mccune1224/betrayal/internal/logger"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mccune1224/betrayal/internal/discord"
@@ -120,7 +120,7 @@ func (i *Inv) removeStatus(ctx ken.SubCommandContext) (err error) {
 	if quantityArg, ok := ctx.Options().GetByNameOptional("quantity"); ok {
 		quantity = int(quantityArg.IntValue())
 	}
-	h.RemoveStatus(statusNameArg, int32(quantity))
+	_, err = h.RemoveStatus(statusNameArg, int32(quantity))
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to remove status")

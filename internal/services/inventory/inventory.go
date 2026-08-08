@@ -313,40 +313,47 @@ func (ih *InventoryHandler) UpdateInventoryMessage(sesh *discordgo.Session) (err
 //     1b. Has a whitelisted admin role AND is in the owners's confessional channel
 //  2. If the caller is an admin and is in a whitelisted channel
 func (ih *InventoryHandler) InventoryAuthorized(ctx ken.SubCommandContext) (bool, error) {
+	dbContext, cancel := dbCtx()
+	defer cancel()
 	event := ctx.GetEvent()
 	invokeChannelID := event.ChannelID
 	invoker := event.Member
 	query := models.New(ih.pool)
-	playerConf, err := query.GetPlayerConfessional(context.Background(), ih.player.ID)
+	playerConf, err := query.GetPlayerConfessional(dbContext, ih.player.ID)
 	if err != nil {
 		return false, err
 	}
 
-	// Base case of user is in confessional channel and is the owner of the inventory
-	if util.Itoa64(ih.player.ID) == invoker.User.ID && util.Itoa64(playerConf.ChannelID) == invokeChannelID {
-		return true, nil
+	whitelistChannels, err := query.ListAdminChannel(dbContext)
+	if err != nil {
+		return false, err
 	}
+	return inventoryAuthorizationDecision(invoker.User.ID, invoker.Roles, ih.player.ID, util.Itoa64(playerConf.ChannelID), invokeChannelID, whitelistChannels), nil
+}
 
-	// If not in confessional channel, check if in whitelist
-	whitelistChannels, _ := query.ListAdminChannel(context.Background())
-	if invokeChannelID != util.Itoa64(playerConf.ChannelID) {
-		for _, whitelistChannelID := range whitelistChannels {
-			if whitelistChannelID == invokeChannelID {
-				return true, nil
-			}
-		}
-		return false, nil
-	}
-
-	// Go through and make sure user has one of the allowed roles:
-	for _, role := range invoker.Roles {
+func inventoryAuthorizationDecision(invokerID string, invokerRoles []string, playerID int64, confessionalChannelID, invokeChannelID string, whitelistChannels []string) bool {
+	admin := false
+	for _, role := range invokerRoles {
 		for _, allowedRole := range discord.AdminRoles {
 			if role == allowedRole {
-				return true, nil
+				admin = true
+				break
 			}
 		}
 	}
-	return true, nil
+
+	if invokeChannelID == confessionalChannelID {
+		return invokerID == util.Itoa64(playerID) || admin
+	}
+	if !admin {
+		return false
+	}
+	for _, whitelistChannelID := range whitelistChannels {
+		if whitelistChannelID == invokeChannelID {
+			return true
+		}
+	}
+	return false
 }
 
 // Get player but will fetch from DB first to ensure accurate data
