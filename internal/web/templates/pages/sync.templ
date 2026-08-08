@@ -1,0 +1,328 @@
+package pages
+
+import (
+	"strconv"
+	"time"
+
+	"github.com/mccune1224/betrayal/internal/web/templates/layouts"
+)
+
+// SyncRunView is one sync_run audit row for the UI.
+type SyncRunView struct {
+	SourceName   string
+	Status       string // "preview" | "applied" | "failed"
+	Counts       map[string]int
+	RunBy        string
+	ErrorMessage string
+	StartedAt    time.Time
+}
+
+// SyncSourceView is one spreadsheet source for the UI.
+type SyncSourceView struct {
+	ID        int32
+	Name      string
+	Kind      string // "roles" | "items"
+	Alignment string
+	Url       string
+	Enabled   bool
+	LastRun   *SyncRunView
+}
+
+// DiffEntry is one flat diff row (role/item, or nested ability/passive).
+type DiffEntry struct {
+	Kind    string // "role" | "item" | "ability" | "passive"
+	Name    string
+	Action  string // "create" | "update" | "skip"
+	Changes []string
+	Nested  bool
+}
+
+// SourceDiff is the full diff for one source.
+type SourceDiff struct {
+	SourceID   int32
+	SourceName string
+	Kind       string
+	Entries    []DiffEntry
+	Counts     map[string]int
+	Warnings   []string
+	Error      string // fetch/parse/plan failure message
+}
+
+// SyncPageData is the view model for /sync.
+type SyncPageData struct {
+	Sources        []SyncSourceView
+	Diffs          []SourceDiff
+	Runs           []SyncRunView
+	IsProd         bool
+	AllowMutations bool
+}
+
+// SyncPage renders the full /sync page.
+templ SyncPage(data SyncPageData) {
+	@layouts.Base("Spreadsheet Sync", "/sync") {
+		<h1 class="page-title mb-6">SPREADSHEET SYNC</h1>
+		@SyncContent(data)
+	}
+}
+
+// SyncContent is the swappable page body (mutations return this and replace
+// #sync-page). It is also rendered inside SyncPage on first load.
+templ SyncContent(data SyncPageData) {
+	<div id="sync-page" class="space-y-6">
+		<!-- Callout: this workflow is a pre-game, once-per-game operation -->
+		<div class="card border-l-4 border-amber-500">
+			<div class="p-4 text-sm text-dust">
+				<span class="font-semibold text-wood">&#9888; Before a game:</span> these syncs pull the latest roles and items from the
+				Google Sheets. They're normally run <span class="font-semibold text-wood">once before a game starts</span> and not
+				re-run mid-game — always <span class="font-semibold">preview before applying</span>.
+			</div>
+		</div>
+
+		if data.IsProd {
+			<div class="card border-l-4 border-rust">
+				<div class="p-4 text-sm text-rust">
+					&#9888; Connected to the <span class="font-semibold">PRODUCTION</span> database.
+					if !data.AllowMutations {
+						Apply is <span class="font-semibold">blocked</span> — set <code class="text-wood">WEB_ALLOW_PROD_MUTATIONS=true</code> to enable it here.
+					} else {
+						Apply is enabled via <code class="text-wood">WEB_ALLOW_PROD_MUTATIONS=true</code>.
+					}
+				</div>
+			</div>
+		}
+
+		@SyncSourcesCard(data)
+
+		@SyncDiffCard(data)
+
+		@SyncRunHistoryCard(data)
+	</div>
+}
+
+// SyncSourcesCard lists the four sources with inline URL/enabled editing and
+// the fetch+preview control.
+templ SyncSourcesCard(data SyncPageData) {
+	<div class="card">
+		<div class="p-4 border-b border-dust/30 flex items-center justify-between gap-3">
+			<h2 class="font-semibold text-wood">SOURCES</h2>
+			<button
+				class="btn-primary font-western tracking-wide"
+				hx-post="/sync/preview"
+				hx-target="#sync-page"
+				hx-swap="outerHTML"
+				hx-indicator="#sync-spinner"
+			>
+				FETCH &amp; PREVIEW CHANGES
+			</button>
+		</div>
+		<div id="sync-spinner" class="htmx-indicator p-2 text-sm text-dust">Fetching sheets &amp; diffing…</div>
+		<div class="divide-y divide-dust/20">
+			for _, src := range data.Sources {
+				<div class="p-4">
+					<form
+						class="flex flex-col md:flex-row md:items-center gap-3"
+						hx-post={ "/sync/sources/" + strconv.FormatInt(int64(src.ID), 10) }
+						hx-target="#sync-page"
+						hx-swap="outerHTML"
+					>
+						<div class="w-full md:w-44 shrink-0">
+							<div class="font-semibold text-wood">{ src.Name }</div>
+							<div class="text-xs text-dust">
+								{ src.Kind }
+								if src.Alignment != "" {
+									· <span class={ "badge", templ.KV("badge-good", src.Alignment == "GOOD"), templ.KV("badge-evil", src.Alignment == "EVIL"), templ.KV("badge-neutral", src.Alignment == "NEUTRAL") }>{ src.Alignment }</span>
+								}
+							</div>
+						</div>
+						<input
+							type="url"
+							name="url"
+							value={ src.Url }
+							placeholder="Google Sheets CSV export URL"
+							class="input flex-1 min-w-0"
+							aria-label={ "CSV URL for " + src.Name }
+						/>
+						<label class="flex items-center gap-2 text-sm text-dust shrink-0">
+							<input type="checkbox" name="enabled" class="accent-amber-500" checked?={ src.Enabled } />
+							Enabled
+						</label>
+						<button type="submit" class="btn-ghost shrink-0">SAVE</button>
+					</form>
+					if src.LastRun != nil {
+						<div class="mt-2 text-xs text-dust">
+							Last run: <span class={ runStatusClass(src.LastRun.Status) }>{ src.LastRun.Status }</span>
+							· { src.LastRun.StartedAt.Format("Jan 02 15:04") }
+							· { formatCounts(src.LastRun.Counts) }
+							if src.LastRun.ErrorMessage != "" {
+								<span class="text-rust"> — { src.LastRun.ErrorMessage }</span>
+							}
+						</div>
+					} else {
+						<div class="mt-2 text-xs text-dust">Never run.</div>
+					}
+				</div>
+			}
+		</div>
+	</div>
+}
+
+// SyncDiffCard shows the fetched diff (or the empty state), with per-source
+// apply buttons.
+templ SyncDiffCard(data SyncPageData) {
+	<div class="card">
+		<div class="p-4 border-b border-dust/30">
+			<h2 class="font-semibold text-wood">PREVIEWED CHANGES</h2>
+		</div>
+		if len(data.Diffs) == 0 {
+			<div class="p-6 text-sm text-dust">
+				Nothing previewed yet. Click <span class="font-semibold text-wood">Fetch &amp; Preview Changes</span> to diff the
+				sheets against the database — you can validate every create/update before anything is written.
+			</div>
+		} else {
+			<div class="divide-y divide-dust/20">
+				for _, d := range data.Diffs {
+					<div class="p-4">
+						if d.Error != "" {
+							<div class="text-sm text-rust font-semibold">&#9888; { d.SourceName }: { d.Error }</div>
+						} else {
+							<div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+								<div>
+									<span class="font-semibold text-wood">{ d.SourceName }</span>
+									<span class="ml-2 text-xs">
+										<span class="text-sage">{ strconv.Itoa(d.Counts["create"]) } new</span>
+										<span class="text-dust"> · </span>
+										<span class="text-amber-500">{ strconv.Itoa(d.Counts["update"]) } updated</span>
+										<span class="text-dust"> · </span>
+										<span class="text-dust">{ strconv.Itoa(d.Counts["skip"]) } unchanged</span>
+									</span>
+								</div>
+								<button
+									class="btn-ghost shrink-0"
+									hx-post="/sync/apply"
+									hx-vals={ `{"source_id": "` + strconv.FormatInt(int64(d.SourceID), 10) + `"}` }
+									hx-target="#sync-page"
+									hx-swap="outerHTML"
+									hx-confirm={ "Apply " + d.SourceName + " changes to the database?" }
+									disabled?={ data.IsProd && !data.AllowMutations }
+								>
+									APPLY
+								</button>
+							</div>
+							if len(d.Warnings) > 0 {
+								<div class="mb-3 text-xs text-amber-500 space-y-1">
+									for _, w := range d.Warnings {
+										<div>&#9888; { w }</div>
+									}
+								</div>
+							}
+							<div class="space-y-1">
+								for _, e := range d.Entries {
+									if e.Action != "skip" {
+										<div class={ "flex flex-col gap-0.5", templ.KV("pl-5", e.Nested) }>
+											<div class="flex items-center gap-2 text-sm">
+												<span class={ actionBadgeClass(e.Action) }>{ e.Action }</span>
+												<span class={ entryNameClass(e.Nested) }>{ e.Name }</span>
+												<span class="text-xs text-dust uppercase tracking-wide">{ e.Kind }</span>
+											</div>
+											for _, ch := range e.Changes {
+												<div class="text-xs text-dust pl-2">&rarr; { ch }</div>
+											}
+										</div>
+									}
+								}
+							</div>
+						}
+					</div>
+				}
+			</div>
+		}
+	</div>
+}
+
+// SyncRunHistoryCard lists recent sync_run audit rows.
+templ SyncRunHistoryCard(data SyncPageData) {
+	<div class="card">
+		<div class="p-4 border-b border-dust/30">
+			<h2 class="font-semibold text-wood">RUN HISTORY</h2>
+		</div>
+		if len(data.Runs) == 0 {
+			<div class="p-6 text-sm text-dust">No sync runs recorded yet.</div>
+		} else {
+			<div class="overflow-x-auto">
+				<table class="w-full text-sm">
+					<thead>
+						<tr class="text-left text-xs uppercase tracking-wide text-dust border-b border-dust/20">
+							<th class="p-3">When</th>
+							<th class="p-3">Source</th>
+							<th class="p-3">Status</th>
+							<th class="p-3">Changes</th>
+							<th class="p-3">By</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-dust/10">
+						for _, r := range data.Runs {
+							<tr>
+								<td class="p-3 text-dust whitespace-nowrap">{ r.StartedAt.Format("Jan 02 15:04") }</td>
+								<td class="p-3 text-wood">{ r.SourceName }</td>
+								<td class="p-3"><span class={ runStatusClass(r.Status) }>{ r.Status }</span></td>
+								<td class="p-3 text-dust">{ formatCounts(r.Counts) }</td>
+								<td class="p-3 text-dust">{ r.RunBy }</td>
+							</tr>
+							if r.ErrorMessage != "" {
+								<tr>
+									<td colspan="5" class="p-3 pt-0 text-xs text-rust">{ r.ErrorMessage }</td>
+								</tr>
+							}
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	</div>
+}
+
+// --- helpers (package-local; helpers do not leak across packages) ---
+
+func actionBadgeClass(action string) string {
+	switch action {
+	case "create":
+		return "badge badge-good"
+	case "update":
+		return "badge badge-neutral"
+	default:
+		return "badge"
+	}
+}
+
+func entryNameClass(nested bool) string {
+	if nested {
+		return "text-dust"
+	}
+	return "text-wood font-semibold"
+}
+
+func runStatusClass(status string) string {
+	switch status {
+	case "applied":
+		return "badge badge-good"
+	case "preview":
+		return "badge badge-neutral"
+	default:
+		return "badge badge-evil"
+	}
+}
+
+func formatCounts(counts map[string]int) string {
+	parts := ""
+	sep := ""
+	for _, key := range []string{"create", "update", "skip"} {
+		if v, ok := counts[key]; ok && v > 0 {
+			parts += sep + key + ":" + strconv.Itoa(v)
+			sep = " "
+		}
+	}
+	if parts == "" {
+		return "—"
+	}
+	return parts
+}

@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/mccune1224/betrayal/internal/services/datasync"
 	"github.com/mccune1224/betrayal/internal/web/handlers"
 	webmiddleware "github.com/mccune1224/betrayal/internal/web/middleware"
 	"github.com/mccune1224/betrayal/internal/web/railway"
@@ -39,6 +40,17 @@ type Config struct {
 	AdminPassword string
 	SessionSecret string // For cookie encryption (REQUIRED — server refuses to start without it)
 
+	// DatabaseURL is the DSN the server's DB pool was built from. Used by the
+	// production guard: destructive actions (sync apply, migrations) are
+	// hard-blocked when it points at the prod pooler.
+	DatabaseURL string
+	// AllowProdMutations (WEB_ALLOW_PROD_MUTATIONS=true) lifts that block.
+	AllowProdMutations bool
+
+	// SyncEnvURLs maps sync source names to their CSV URLs from the
+	// environment, used to seed the sync_source table (empty for tests).
+	SyncEnvURLs map[string]string
+
 	// Railway API configuration
 	RailwayToken     string
 	RailwayProjectID string
@@ -55,6 +67,7 @@ type Server struct {
 	config         Config
 	sessionStore   *sessions.CookieStore
 	railwayClient  *railway.Client
+	syncService    *datasync.Service
 }
 
 // New creates a new web server. Returns an error (refusing to start) when
@@ -96,6 +109,13 @@ func New(pool *pgxpool.Pool, discord *discordgo.Session, logger zerolog.Logger, 
 		config:         cfg,
 		sessionStore:   store,
 		railwayClient:  railwayClient,
+		syncService:    datasync.New(pool, cfg.SyncEnvURLs),
+	}
+
+	// Seed the canonical sync sources (URLs only when rows still have the
+	// placeholder). Non-fatal: the panel still works for configured sources.
+	if err := s.syncService.SeedSources(context.Background()); err != nil {
+		s.logger.Warn().Err(err).Msg("failed to seed sync sources")
 	}
 
 	s.setupMiddleware()
@@ -156,6 +176,7 @@ func (s *Server) setupRoutes() {
 	channelsHandler := handlers.NewChannelsHandler(s.dbPool, s.discordSession)
 	playerEditHandler := handlers.NewPlayerEditHandler(s.dbPool)
 	catalogHandler := handlers.NewCatalogHandler(s.dbPool)
+	syncHandler := handlers.NewSyncHandler(s.dbPool, s.syncService, IsProdDSN(s.config.DatabaseURL), s.config.AllowProdMutations)
 
 	// Auth middleware
 	authMiddleware := webmiddleware.NewAuthMiddleware(s.sessionStore)
@@ -197,6 +218,19 @@ func (s *Server) setupRoutes() {
 	protected.POST("/admin/redeploy", adminHandler.Redeploy, middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
 		Store: redeployLimiter,
 	}))
+
+	// Sync routes. Preview fetches remote sheets (slow, network-bound) and
+	// apply writes to the database — both get a shared burst limiter.
+	syncLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
+		Rate:      0.5, // 1 request / 2s sustained
+		Burst:     4,
+		ExpiresIn: 10 * time.Minute,
+	})
+	limiter := middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{Store: syncLimiter})
+	protected.GET("/sync", syncHandler.Page)
+	protected.POST("/sync/preview", syncHandler.Preview, limiter)
+	protected.POST("/sync/apply", syncHandler.Apply, limiter)
+	protected.POST("/sync/sources/:id", syncHandler.UpdateSource)
 
 	// Role routes
 	protected.GET("/roles", rolesHandler.List)

@@ -4,11 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mccune1224/betrayal/internal/models"
 )
+
+// EnvURLsFromEnv builds the source-name → CSV URL map from the environment
+// (GOOD_ROLES_CSV / EVIL_ROLES_CSV / NEUTRAL_ROLES_CSV / ITEM_CSV). Used by
+// the web server startup seeding and the archived CLI.
+func EnvURLsFromEnv() map[string]string {
+	out := make(map[string]string, len(envKeys))
+	for name, key := range envKeys {
+		out[name] = os.Getenv(key)
+	}
+	return out
+}
 
 // SeedSources upserts the four canonical sources from the environment. A URL
 // is only written when the row still has the empty placeholder, so URLs the

@@ -34,6 +34,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/logger"
 	"github.com/mccune1224/betrayal/internal/models"
+	"github.com/mccune1224/betrayal/internal/services/datasync"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/mccune1224/betrayal/internal/web"
 	"github.com/rs/zerolog"
@@ -56,6 +57,9 @@ type config struct {
 		port          string
 		adminPassword string
 		sessionSecret string
+		// allowProdMutations (WEB_ALLOW_PROD_MUTATIONS=true) lifts the
+		// hard-block on destructive panel actions against the prod DB.
+		allowProdMutations bool
 		// Railway API
 		railwayToken     string
 		railwayProjectID string
@@ -115,6 +119,7 @@ func main() {
 	}
 	cfg.web.adminPassword = os.Getenv("ADMIN_PASSWORD")
 	cfg.web.sessionSecret = os.Getenv("SESSION_SECRET")
+	cfg.web.allowProdMutations = strings.EqualFold(os.Getenv("WEB_ALLOW_PROD_MUTATIONS"), "true")
 	cfg.web.railwayToken = os.Getenv("RAILWAY_API_TOKEN")
 	cfg.web.railwayProjectID = os.Getenv("RAILWAY_BETRAYAL_PROJECT_ID")
 	cfg.web.railwayServiceID = os.Getenv("RAILWAY_BETRAYAL_SERVICE_ID")
@@ -263,13 +268,16 @@ func main() {
 	if cfg.web.adminPassword != "" {
 		var err error
 		webServer, err = web.New(pools, bot, appLogger, web.Config{
-			Port:             cfg.web.port,
-			AdminPassword:    cfg.web.adminPassword,
-			SessionSecret:    cfg.web.sessionSecret,
-			RailwayToken:     cfg.web.railwayToken,
-			RailwayProjectID: cfg.web.railwayProjectID,
-			RailwayServiceID: cfg.web.railwayServiceID,
-			RailwayEnvID:     cfg.web.railwayEnvID,
+			Port:                cfg.web.port,
+			AdminPassword:       cfg.web.adminPassword,
+			SessionSecret:       cfg.web.sessionSecret,
+			DatabaseURL:         cfg.database.dsn,
+			AllowProdMutations:  cfg.web.allowProdMutations,
+			SyncEnvURLs:         datasync.EnvURLsFromEnv(),
+			RailwayToken:        cfg.web.railwayToken,
+			RailwayProjectID:    cfg.web.railwayProjectID,
+			RailwayServiceID:    cfg.web.railwayServiceID,
+			RailwayEnvID:        cfg.web.railwayEnvID,
 		})
 		if err != nil {
 			// Refuse to start without required security config (e.g. SESSION_SECRET).

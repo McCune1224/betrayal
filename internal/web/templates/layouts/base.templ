@@ -67,6 +67,7 @@ templ DesktopNav(currentPath string) {
 						<a href="/players" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/players"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/players") }>PLAYERS</a>
 						<a href="/roles" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/roles"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/roles") }>ROLES</a>
 						<a href="/items" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/items"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/items") }>ITEMS</a>
+					<a href="/sync" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/sync"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/sync") }>SYNC</a>
 						<a href="/cycle" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/cycle"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/cycle") }>CYCLE</a>
 						<a href="/channels" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/channels"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/channels") }>CHANNELS</a>
 						<a href="/votes" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/votes"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/votes") }>VOTES</a>
@@ -101,7 +102,11 @@ templ MobileNav(currentPath string) {
 			<span class="text-xl mb-1">&#x0023;</span>
 			<span class="text-xs">CHANNELS</span>
 		</a>
-		<a href="/roles" class={ "bottom-nav-item", templ.KV("active", currentPath == "/roles") }>
+		<a href="/sync" class={ "bottom-nav-item", templ.KV("active", currentPath == "/sync") }>
+		<span class="text-xl mb-1">&#x21C4;</span>
+		<span class="text-xs">SYNC</span>
+	</a>
+	<a href="/roles" class={ "bottom-nav-item", templ.KV("active", currentPath == "/roles") }>
 			<span class="text-xl mb-1">&#x2606;</span>
 			<span class="text-xs">ROLES</span>
 		</a>
