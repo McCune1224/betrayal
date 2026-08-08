@@ -42,6 +42,8 @@ const advisoryLockKey = int64(0xB374A9A1)
 // between tests. game_cycle is included and re-seeded afterwards because its
 // Day-0 row is inserted by migration 000023.
 var allTables = []string{
+	"sync_run",
+	"sync_source",
 	"vote",
 	"command_audit",
 	"logs",

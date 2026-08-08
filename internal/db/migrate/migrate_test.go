@@ -132,6 +132,6 @@ func TestStatusNamesAndOrder(t *testing.T) {
 			require.Greater(t, m.Version, st[i-1].Version, "ascending order")
 		}
 	}
-	require.Equal(t, uint(31), st[len(st)-1].Version, "latest migration is 000031")
-	require.Equal(t, "sync_run", st[len(st)-1].Name)
+	require.Equal(t, uint(32), st[len(st)-1].Version, "latest migration is 000032")
+	require.Equal(t, "catalog_name_uniqueness", st[len(st)-1].Name)
 }

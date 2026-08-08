@@ -1,5 +1,6 @@
 -- name: CreateRoleAbilityJoin :exec
-insert into role_ability (role_id, ability_id) values ($1, $2);
+insert into role_ability (role_id, ability_id) values ($1, $2)
+on conflict do nothing;
 
 -- name: DeleteRoleAbilityJoin :exec
 DELETE FROM role_ability

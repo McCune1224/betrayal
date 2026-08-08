@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -86,8 +87,9 @@ func (s *RollTestSuite) TestGetRandomAnyAbilityByRarity() {
 func (s *RollTestSuite) TestGetRandomAnyAbilityByMinimumRarity() {
 	ctx := context.Background()
 	created := []models.AbilityInfo{}
+	// Distinct names: ability_info.name is unique (migration 000032).
 	for i := 0; i < 3; i++ {
-		created = append(created, s.seedAnyAbility("roll-test-min-rare", models.RarityRARE))
+		created = append(created, s.seedAnyAbility(fmt.Sprintf("roll-test-min-rare-%d", i), models.RarityRARE))
 	}
 	created = append(created, s.seedAnyAbility("roll-test-min-mythical", models.RarityMYTHICAL))
 	// Must never be returned by the roll:

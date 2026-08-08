@@ -11,6 +11,7 @@ import (
 
 const createItemCategoryJoin = `-- name: CreateItemCategoryJoin :exec
 INSERT INTO item_category (item_id, category_id) VALUES ($1, $2)
+ON CONFLICT DO NOTHING
 `
 
 type CreateItemCategoryJoinParams struct {

@@ -284,6 +284,29 @@ type Status struct {
 	HourDuration int32  `json:"hour_duration"`
 }
 
+type SyncRun struct {
+	ID           int64              `json:"id"`
+	SourceID     pgtype.Int4        `json:"source_id"`
+	SourceName   string             `json:"source_name"`
+	Status       string             `json:"status"`
+	ActionCounts []byte             `json:"action_counts"`
+	RunBy        string             `json:"run_by"`
+	ErrorMessage string             `json:"error_message"`
+	StartedAt    pgtype.Timestamptz `json:"started_at"`
+	FinishedAt   pgtype.Timestamptz `json:"finished_at"`
+}
+
+type SyncSource struct {
+	ID        int32              `json:"id"`
+	Name      string             `json:"name"`
+	Kind      string             `json:"kind"`
+	Alignment string             `json:"alignment"`
+	Url       string             `json:"url"`
+	Enabled   bool               `json:"enabled"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Vote struct {
 	ID            int32            `json:"id"`
 	VoterID       int64            `json:"voter_id"`

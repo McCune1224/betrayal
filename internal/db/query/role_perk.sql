@@ -1,5 +1,6 @@
 -- name: CreateRolePerkJoin :exec
-INSERT INTO role_perk (role_id, perk_id) VALUES ($1, $2);
+INSERT INTO role_perk (role_id, perk_id) VALUES ($1, $2)
+ON CONFLICT DO NOTHING;
 
 -- name: DeleteRolePerkJoin :exec
 DELETE FROM role_perk
