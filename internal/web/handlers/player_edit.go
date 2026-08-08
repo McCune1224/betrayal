@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -234,6 +235,10 @@ func (h *PlayerEditHandler) RemoveNote(c echo.Context) error {
 		return h.toastError(c, "Invalid note")
 	}
 	if err = h.notes.DeleteByID(ctx, playernotes.WebAdminAuthorization(), id, int32(noteID)); err != nil {
+		if errors.Is(err, playernotes.ErrNotFound) {
+			c.Response().Header().Set("HX-Trigger", toastTrigger("Note not found", "error"))
+			return c.String(http.StatusNotFound, "Note not found")
+		}
 		return h.toastError(c, "Failed to delete note")
 	}
 	c.Response().Header().Set("HX-Trigger", toastTrigger("Note removed", "success"))

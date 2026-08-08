@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/models"
+	"github.com/mccune1224/betrayal/internal/services/playernotes"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
@@ -80,6 +81,7 @@ func (ih *InventoryHandler) FetchInventory() (*PlayerInventory, error) {
 	defer cancel()
 
 	query := models.New(ih.pool)
+	notesService := playernotes.New(ih.pool)
 
 	ih.SyncPlayer()
 	abilityChan := make(chan []models.ListPlayerAbilityInventoryRow, 1)
@@ -115,7 +117,7 @@ func (ih *InventoryHandler) FetchInventory() (*PlayerInventory, error) {
 	})
 
 	go util.DbTask(ctx, notesChan, func() ([]models.PlayerNote, error) {
-		return query.ListPlayerNote(ctx, ih.player.ID)
+		return notesService.List(ctx, playernotes.DiscordAdminAuthorization(), ih.player.ID)
 	})
 
 	inv := &PlayerInventory{Player: ih.player}

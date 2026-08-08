@@ -11,6 +11,7 @@ import (
 )
 
 var ErrUnauthorized = errors.New("player notes authorization required")
+var ErrNotFound = errors.New("player note not found")
 
 // Authorization identifies the already-authenticated transport principal.
 // The service accepts only explicit principals so callers cannot accidentally
@@ -128,6 +129,9 @@ func (s *Service) Save(ctx context.Context, auth Authorization, playerID int64, 
 		return nil, err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+	if _, err := tx.Exec(ctx, "select pg_advisory_xact_lock($1)", playerID); err != nil {
+		return nil, fmt.Errorf("lock player notes: %w", err)
+	}
 	q := models.New(tx)
 	note, err := q.UpdatePlayerNoteByPosition(ctx, models.UpdatePlayerNoteByPositionParams{
 		PlayerID: playerID, Position: int32(position), Info: info,
@@ -166,6 +170,13 @@ func (s *Service) Delete(ctx context.Context, auth Authorization, playerID int64
 
 func (s *Service) DeleteByID(ctx context.Context, auth Authorization, playerID int64, noteID int32) error {
 	if err := authorize(auth); err != nil {
+		return err
+	}
+	if _, err := models.New(s.pool).GetPlayerNote(ctx, models.GetPlayerNoteParams{
+		PlayerID: playerID, NoteID: noteID,
+	}); errors.Is(err, pgx.ErrNoRows) {
+		return ErrNotFound
+	} else if err != nil {
 		return err
 	}
 	return models.New(s.pool).DeletePlayerNote(ctx, models.DeletePlayerNoteParams{
