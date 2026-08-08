@@ -58,6 +58,8 @@ Public: `GET /login`, `POST /login`, `GET /health`. Everything else requires a s
 | POST | `/sync/sources/:id` | sync | Edit source URL / enabled flag |
 | GET | `/admin/migrations` | migrations | Embedded-migration status table + up/rollback controls |
 | POST | `/admin/migrations/up` · `/admin/migrations/down` | migrations | Apply pending / roll back N (prod-guarded, rate-limited; rollback requires typing the migration name) |
+| GET | `/admin/reset` | reset | Guided new-game reset preview with current row counts |
+| POST | `/admin/reset` | reset | Atomically clear game state/catalog and reload all four CSV sources; requires explicit confirmation |
 
 ## Environment Variables
 

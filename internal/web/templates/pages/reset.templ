@@ -1,0 +1,129 @@
+package pages
+
+import (
+	"strconv"
+
+	"github.com/mccune1224/betrayal/internal/services/gamereset"
+	"github.com/mccune1224/betrayal/internal/web/templates/layouts"
+)
+
+type ResetPageData struct {
+	Summary      gamereset.Summary
+	Sources      []ResetSourceData
+	IsProd       bool
+	Confirmation string
+	Error        string
+}
+
+type ResetSourceData struct {
+	Name  string
+	Ready bool
+	Note  string
+}
+
+type ResetResultData struct {
+	Summary gamereset.Summary
+	Sources []string
+}
+
+templ ResetPage(data ResetPageData) {
+	@layouts.Base("Reset Game", "/admin/reset") {
+		<div class="max-w-4xl mx-auto space-y-6">
+			<div>
+				<p class="text-xs uppercase tracking-[0.25em] text-rust font-bold mb-2">GAME RESET</p>
+				<h1 class="page-title">START FRESH</h1>
+				<p class="text-silver mt-2 max-w-2xl">Use this when you are starting a new game. It clears the old game and reloads the latest roles, abilities, passives, and items from the saved spreadsheets.</p>
+			</div>
+			if data.IsProd {
+				<div class="card border-l-4 border-rust bg-rust/10">
+					<p class="font-bold text-rust">LIVE GAME DATABASE</p>
+					<p class="text-silver text-sm mt-1">This reset affects the live game immediately. Discord channels and source URLs are kept, but all players, votes, day state, history, and imported catalog data are replaced.</p>
+				</div>
+			}
+			if data.Error != "" {
+				<div class="card border-l-4 border-rust"><p class="text-rust">Could not read the current database counts: { data.Error }</p></div>
+			}
+			<div class="card">
+				<h2 class="font-semibold text-wood mb-4">WHAT WILL HAPPEN</h2>
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+					@ResetAction("CLEAR", "All players and their inventory, abilities, statuses, immunities, notes, and confessionals", "text-rust")
+					@ResetAction("RESET", "Votes and game day state back to Day 0", "text-rust")
+					@ResetAction("RELOAD", "Roles, abilities, passives, items, and catalog relationships from all four CSV sources", "text-accent-bright")
+					@ResetAction("KEEP", "Discord channel setup, sync source URLs, game defaults, built-in statuses, and categories", "text-teal-300")
+				</div>
+			</div>
+			<div class="card">
+				<h2 class="font-semibold text-wood mb-3">CSV SOURCES</h2>
+				<div class="space-y-2">
+					for _, source := range data.Sources {
+						<div class="flex items-center justify-between gap-3 rounded border border-dust/20 p-3">
+							<div><p class="font-semibold text-ice">{ source.Name }</p><p class="text-xs text-dust">{ source.Note }</p></div>
+							if source.Ready {
+								<span class="text-xs text-teal-300 font-bold">READY</span>
+							} else {
+								<span class="text-xs text-rust font-bold">NOT READY</span>
+							}
+						</div>
+					}
+				</div>
+				<p class="text-xs text-dust mt-3">Need to change a source? <a href="/sync" class="table-link">Open Sync</a></p>
+			</div>
+			<div class="card">
+				<h2 class="font-semibold text-wood mb-3">CURRENT DATA TO BE CLEARED</h2>
+				<div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+					@ResetCount("Players", data.Summary.Players)
+					@ResetCount("Votes", data.Summary.Votes)
+					@ResetCount("Items", data.Summary.Items)
+					@ResetCount("Roles", data.Summary.Roles)
+					@ResetCount("Day rows", data.Summary.CycleRows)
+				</div>
+				<p class="text-xs text-dust mt-4">Logs, command history, sync history, abilities, and passives are cleared too.</p>
+			</div>
+			<div class="card border-2 border-rust/60">
+				<h2 class="font-semibold text-rust mb-2">RESET THE GAME</h2>
+				<p class="text-sm text-silver mb-4">This cannot be undone. The reset will not start until every CSV source has been fetched and parsed successfully.</p>
+				<form method="POST" action="/admin/reset" class="space-y-4" onsubmit="return confirm('This will erase the current game and reload the spreadsheets. Continue?');">
+					<label class="flex items-start gap-3 text-sm text-silver"><input class="mt-1" type="checkbox" name="understand" value="on" required/> <span>I understand this erases the current game and cannot be undone.</span></label>
+					<label for="reset-confirm" class="block text-sm text-ice">Type <code class="text-wood">{ data.Confirmation }</code> to enable the reset.</label>
+					<input id="reset-confirm" class="input" name="confirm" autocomplete="off" placeholder={ data.Confirmation } required/>
+					<button type="submit" class="btn-danger w-full sm:w-auto">CLEAR GAME &amp; RELOAD CSV DATA</button>
+				</form>
+			</div>
+		</div>
+	}
+}
+
+templ ResetAction(label string, detail string, color string) {
+	<div class="rounded border border-dust/20 p-3"><p class={ "font-bold", color }>{ label }</p><p class="text-dust mt-1">{ detail }</p></div>
+}
+
+templ ResetCount(label string, count int64) {
+	<div class="rounded border border-dust/20 p-3"><p class="text-2xl font-bold text-ice">{ strconv.FormatInt(count, 10) }</p><p class="text-xs text-dust uppercase">{ label }</p></div>
+}
+
+templ ResetResult(data ResetResultData) {
+	@layouts.Base("Reset Complete", "/admin/reset") {
+		<div class="max-w-3xl mx-auto space-y-6">
+			<div class="card border-l-4 border-teal-400">
+				<p class="text-xs uppercase tracking-[0.25em] text-teal-300 font-bold">COMPLETE</p>
+				<h1 class="page-title mt-2">NEW GAME READY</h1>
+				<p class="text-silver mt-2">The old game was cleared, Day 0 was restored, and the latest CSV data was imported successfully.</p>
+			</div>
+			<div class="card">
+				<h2 class="font-semibold text-wood mb-3">IMPORTED SOURCES</h2>
+				<ul class="list-disc list-inside text-silver">
+					for _, source := range data.Sources {
+						<li>{ source }</li>
+					}
+				</ul>
+			</div>
+			<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+				@ResetCount("Players cleared", data.Summary.Players)
+				@ResetCount("Votes cleared", data.Summary.Votes)
+				@ResetCount("Roles replaced", data.Summary.Roles)
+				@ResetCount("Items replaced", data.Summary.Items)
+			</div>
+			<div class="flex flex-wrap gap-3"><a class="btn-primary" href="/players">OPEN PLAYERS</a><a class="btn-ghost" href="/cycle">CHECK DAY 0</a><a class="btn-ghost" href="/sync">VIEW SYNC HISTORY</a></div>
+		</div>
+	}
+}

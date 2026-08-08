@@ -17,6 +17,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	dbmigrate "github.com/mccune1224/betrayal/internal/db/migrate"
 	"github.com/mccune1224/betrayal/internal/services/datasync"
+	"github.com/mccune1224/betrayal/internal/services/gamereset"
 	"github.com/mccune1224/betrayal/internal/web/handlers"
 	webmiddleware "github.com/mccune1224/betrayal/internal/web/middleware"
 	"github.com/mccune1224/betrayal/internal/web/railway"
@@ -220,6 +221,7 @@ func (s *Server) setupRoutes() {
 	migrationsHandler := handlers.NewMigrationsHandler(s.getMigrateRunner, isProd, s.config.AllowProdMutations)
 	setupHandler := handlers.NewSetupHandler(s.dbPool, s.discordSession)
 	playerCreateHandler := handlers.NewPlayerCreateHandler(s.dbPool)
+	resetHandler := handlers.NewResetHandler(gamereset.New(s.dbPool, s.syncService), isProd)
 
 	// Auth middleware
 	authMiddleware := webmiddleware.NewAuthMiddleware(s.sessionStore)
@@ -281,6 +283,8 @@ func (s *Server) setupRoutes() {
 	protected.GET("/admin/migrations", migrationsHandler.Page)
 	protected.POST("/admin/migrations/up", migrationsHandler.Up, migrateRate)
 	protected.POST("/admin/migrations/down", migrationsHandler.Down, migrateRate)
+	protected.GET("/admin/reset", resetHandler.Page)
+	protected.POST("/admin/reset", resetHandler.Execute, migrateRate)
 
 	// Redeploy is a state-changing, cost-incurring action: rate limit it.
 	redeployLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{

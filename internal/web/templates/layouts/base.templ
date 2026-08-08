@@ -74,6 +74,7 @@ templ DesktopNav(currentPath string) {
 						<a href="/votes" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/votes"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/votes") }>VOTES</a>
 						<a href="/admin/audit" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/admin/audit"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/admin/audit") }>LOGS</a>
 					<a href="/admin/migrations" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/admin/migrations"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/admin/migrations") }>MIGRATE</a>
+					<a href="/admin/reset" class={ "px-4 py-2 text-base font-medium transition-colors text-rust", templ.KV("bg-rust/15", currentPath == "/admin/reset") }>RESET</a>
 					</div>
 				</div>
 				<form action="/logout" method="POST">
@@ -124,6 +125,10 @@ templ MobileNav(currentPath string) {
 		<a href="/admin/migrations" class={ "bottom-nav-item", templ.KV("active", currentPath == "/admin/migrations") }>
 			<span class="text-xl mb-1">&#x21B5;</span>
 			<span class="text-xs">MIGRATE</span>
+		</a>
+		<a href="/admin/reset" class={ "bottom-nav-item text-rust", templ.KV("active", currentPath == "/admin/reset") }>
+			<span class="text-xl mb-1">&#x26A0;</span>
+			<span class="text-xs">RESET</span>
 		</a>
 		</nav>
 }

@@ -23,6 +23,15 @@ func ApplyRoles(ctx context.Context, pool *pgxpool.Pool, plan *RoleSourcePlan) e
 		return err
 	}
 	defer tx.Rollback(ctx)
+	if err := ApplyRolesTx(ctx, tx, plan); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+// ApplyRolesTx applies a role plan using the caller's transaction. This is
+// used by the all-or-nothing game reset flow as well as the normal sync page.
+func ApplyRolesTx(ctx context.Context, tx models.DBTX, plan *RoleSourcePlan) error {
 	q := models.New(tx)
 
 	for _, rp := range plan.Roles {
@@ -62,7 +71,7 @@ func ApplyRoles(ctx context.Context, pool *pgxpool.Pool, plan *RoleSourcePlan) e
 			}
 		}
 	}
-	return tx.Commit(ctx)
+	return nil
 }
 
 // ApplyItems executes an item source plan inside ONE transaction. Like
@@ -74,6 +83,14 @@ func ApplyItems(ctx context.Context, pool *pgxpool.Pool, plan *ItemSourcePlan) e
 		return err
 	}
 	defer tx.Rollback(ctx)
+	if err := ApplyItemsTx(ctx, tx, plan); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+// ApplyItemsTx applies an item plan using the caller's transaction.
+func ApplyItemsTx(ctx context.Context, tx models.DBTX, plan *ItemSourcePlan) error {
 	q := models.New(tx)
 
 	for _, ip := range plan.Items {
@@ -89,7 +106,7 @@ func ApplyItems(ctx context.Context, pool *pgxpool.Pool, plan *ItemSourcePlan) e
 			return fmt.Errorf("link categories for item %q: %w", ip.Doc.Name, err)
 		}
 	}
-	return tx.Commit(ctx)
+	return nil
 }
 
 func upsertRole(ctx context.Context, q *models.Queries, rp RolePlan) (int32, error) {
