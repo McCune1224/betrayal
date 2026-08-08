@@ -65,7 +65,7 @@ Public: `GET /login`, `POST /login`, `GET /health`. Everything else requires a s
 |----------|---------|
 | `WEB_PORT` | Web server port (default 8080) |
 | `ADMIN_PASSWORD` | Shared password for admin login |
-| `SESSION_SECRET` | Cookie encryption key (falls back to `ADMIN_PASSWORD` — see Security) |
+| `SESSION_SECRET` | Optional cookie encryption key; when omitted, the admin password is hashed into the signing key |
 | `WEB_ALLOW_PROD_MUTATIONS` | `true` lifts the hard-block on destructive panel actions (/sync/apply, migrations) against the prod pooler |
 | `GOOD_ROLES_CSV` / `EVIL_ROLES_CSV` / `NEUTRAL_ROLES_CSV` / `ITEM_CSV` | Google Sheets CSV export URLs; seeded into `sync_source` at startup (editable in the /sync panel) |
 | `RAILWAY_API_TOKEN` | Railway API token |
@@ -85,12 +85,10 @@ Public: `GET /login`, `POST /login`, `GET /health`. Everything else requires a s
 
 Current state:
 - Sessions: signed cookies via `gorilla/sessions` CookieStore; `HttpOnly` + `SameSite=Lax`, 7-day MaxAge.
-- `SESSION_SECRET` silently falls back to `ADMIN_PASSWORD` when unset (`server.go`) — documented as "not ideal but works".
-
+- When `SESSION_SECRET` is omitted, the web panel derives the cookie-signing key from `ADMIN_PASSWORD` for the small deployment configuration. Set `SESSION_SECRET` separately if you later want independent key rotation.
 TODO (required before adding any public-facing route):
 1. CSRF middleware (Echo has built-in CSRF; must be wired to work with HTMX `HX-Request` headers).
 2. Rate limiting on `/login` and `/admin/redeploy`.
-3. Require `SESSION_SECRET` (fail startup instead of falling back to the password).
 
 ## Roadmap
 

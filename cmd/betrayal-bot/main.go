@@ -268,29 +268,31 @@ func main() {
 	if cfg.web.adminPassword != "" {
 		var err error
 		webServer, err = web.New(pools, bot, appLogger, web.Config{
-			Port:                cfg.web.port,
-			AdminPassword:       cfg.web.adminPassword,
-			SessionSecret:       cfg.web.sessionSecret,
-			DatabaseURL:         cfg.database.dsn,
-			Environment:         env,
-			AllowProdMutations:  cfg.web.allowProdMutations,
-			SyncEnvURLs:         datasync.EnvURLsFromEnv(),
-			RailwayToken:        cfg.web.railwayToken,
-			RailwayProjectID:    cfg.web.railwayProjectID,
-			RailwayServiceID:    cfg.web.railwayServiceID,
-			RailwayEnvID:        cfg.web.railwayEnvID,
+			Port:               cfg.web.port,
+			AdminPassword:      cfg.web.adminPassword,
+			SessionSecret:      cfg.web.sessionSecret,
+			DatabaseURL:        cfg.database.dsn,
+			Environment:        env,
+			AllowProdMutations: cfg.web.allowProdMutations,
+			SyncEnvURLs:        datasync.EnvURLsFromEnv(),
+			RailwayToken:       cfg.web.railwayToken,
+			RailwayProjectID:   cfg.web.railwayProjectID,
+			RailwayServiceID:   cfg.web.railwayServiceID,
+			RailwayEnvID:       cfg.web.railwayEnvID,
 		})
 		if err != nil {
-			// Refuse to start without required security config (e.g. SESSION_SECRET).
-			appLogger.Fatal().Err(err).Msg("Failed to initialize web server")
+			// The Discord bot can still run when the optional web panel has
+			// incomplete configuration; do not dereference a nil server after
+			// reporting the configuration error.
+			appLogger.Error().Err(err).Msg("Failed to initialize web server; web admin disabled")
+		} else {
+			go func() {
+				if err := webServer.Start(); err != nil {
+					appLogger.Error().Err(err).Msg("Web server error")
+				}
+			}()
+			appLogger.Info().Str("port", cfg.web.port).Msg("Web admin server started")
 		}
-
-		go func() {
-			if err := webServer.Start(); err != nil {
-				appLogger.Error().Err(err).Msg("Web server error")
-			}
-		}()
-		appLogger.Info().Str("port", cfg.web.port).Msg("Web admin server started")
 	} else {
 		appLogger.Warn().Msg("ADMIN_PASSWORD not set, web admin server disabled")
 	}

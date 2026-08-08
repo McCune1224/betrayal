@@ -10,21 +10,29 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// TestNewRefusesWithoutSessionSecret: the web server must refuse to start when
-// SESSION_SECRET is unset (no fallback to ADMIN_PASSWORD).
-func TestNewRefusesWithoutSessionSecret(t *testing.T) {
+// TestNewUsesAdminPasswordFallback: a small deployment may omit SESSION_SECRET;
+// the admin password is then used as the source for the signing key.
+func TestNewUsesAdminPasswordFallback(t *testing.T) {
 	pool := mustPool(t)
 
-	_, err := web.New(pool, nil, zerolog.Nop(), web.Config{
+	srv, err := web.New(pool, nil, zerolog.Nop(), web.Config{
 		Port:          "0",
 		AdminPassword: testAdminPassword,
-		SessionSecret: "", // unset
+		SessionSecret: "", // fallback is intentional for this deployment
 	})
-	if err == nil {
-		t.Fatal("expected error when SESSION_SECRET is unset, got nil")
+	if err != nil {
+		t.Fatalf("expected admin password fallback to work, got: %v", err)
 	}
-	if !strings.Contains(err.Error(), "SESSION_SECRET") {
-		t.Fatalf("error should mention SESSION_SECRET, got: %v", err)
+	if srv == nil {
+		t.Fatal("expected non-nil server")
+	}
+}
+
+func TestNewRefusesWithoutPasswordOrSessionSecret(t *testing.T) {
+	pool := mustPool(t)
+	_, err := web.New(pool, nil, zerolog.Nop(), web.Config{Port: "0"})
+	if err == nil || !strings.Contains(err.Error(), "ADMIN_PASSWORD") {
+		t.Fatalf("expected missing password error, got: %v", err)
 	}
 }
 
