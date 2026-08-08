@@ -53,9 +53,20 @@ func (h *ChannelsHandler) Update(c echo.Context) error {
 	case "vote":
 		err = q.UpsertVoteChannel(ctx, channelID)
 	case "action":
-		err = q.WipeActionChannel(ctx)
+		tx, txErr := h.dbPool.Begin(ctx)
+		if txErr != nil {
+			err = txErr
+			break
+		}
+		txq := models.New(tx)
+		err = txq.WipeActionChannel(ctx)
 		if err == nil {
-			err = q.UpsertActionChannel(ctx, channelID)
+			err = txq.UpsertActionChannel(ctx, channelID)
+		}
+		if err == nil {
+			err = tx.Commit(ctx)
+		} else {
+			_ = tx.Rollback(ctx)
 		}
 	case "log":
 		_, err = q.SetCommandLogChannel(ctx, channelID)
@@ -66,8 +77,20 @@ func (h *ChannelsHandler) Update(c echo.Context) error {
 		if messageID == "" {
 			return c.String(http.StatusBadRequest, "lifeboard message ID is required")
 		}
-		if err = q.DeletePlayerLifeboard(ctx); err == nil {
-			_, err = q.CreatePlayerLifeboard(ctx, models.CreatePlayerLifeboardParams{ChannelID: channelID, MessageID: messageID})
+		tx, txErr := h.dbPool.Begin(ctx)
+		if txErr != nil {
+			err = txErr
+			break
+		}
+		txq := models.New(tx)
+		err = txq.DeletePlayerLifeboard(ctx)
+		if err == nil {
+			_, err = txq.CreatePlayerLifeboard(ctx, models.CreatePlayerLifeboardParams{ChannelID: channelID, MessageID: messageID})
+		}
+		if err == nil {
+			err = tx.Commit(ctx)
+		} else {
+			_ = tx.Rollback(ctx)
 		}
 	default:
 		return c.String(http.StatusBadRequest, "unknown channel type")
@@ -76,8 +99,7 @@ func (h *ChannelsHandler) Update(c echo.Context) error {
 		c.Response().Header().Set("HX-Trigger", toastTrigger("Channel update failed", "error"))
 		return c.String(http.StatusInternalServerError, "channel update failed")
 	}
-	c.Response().Header().Set("HX-Trigger", toastTrigger("Channel configuration updated", "success"))
-	return h.Page(c)
+	return c.Redirect(http.StatusSeeOther, "/channels")
 }
 
 func (h *ChannelsHandler) DeleteAdmin(c echo.Context) error {
@@ -90,8 +112,7 @@ func (h *ChannelsHandler) DeleteAdmin(c echo.Context) error {
 	if err := models.New(h.dbPool).DeleteAdminChannel(ctx, id); err != nil {
 		return c.String(http.StatusInternalServerError, "failed to remove admin channel")
 	}
-	c.Response().Header().Set("HX-Trigger", toastTrigger("Admin channel removed", "success"))
-	return h.Page(c)
+	return c.Redirect(http.StatusSeeOther, "/channels")
 }
 
 // Page handles GET /channels

@@ -55,6 +55,9 @@ type Config struct {
 	// SyncEnvURLs maps sync source names to their CSV URLs from the
 	// environment, used to seed the sync_source table (empty for tests).
 	SyncEnvURLs map[string]string
+	// AllowUnsafeSyncURLs is intended only for localhost fixture tests. It
+	// permits HTTP/private hosts; production configuration must leave it false.
+	AllowUnsafeSyncURLs bool
 
 	// Railway API configuration
 	RailwayToken     string
@@ -112,6 +115,8 @@ func New(pool *pgxpool.Pool, discord *discordgo.Session, logger zerolog.Logger, 
 		cfg.RailwayEnvID,
 	)
 
+	syncService := datasync.New(pool, cfg.SyncEnvURLs)
+	syncService.SetAllowUnsafeURLs(cfg.AllowUnsafeSyncURLs)
 	s := &Server{
 		echo:           e,
 		dbPool:         pool,
@@ -120,7 +125,7 @@ func New(pool *pgxpool.Pool, discord *discordgo.Session, logger zerolog.Logger, 
 		config:         cfg,
 		sessionStore:   store,
 		railwayClient:  railwayClient,
-		syncService:    datasync.New(pool, cfg.SyncEnvURLs),
+		syncService:    syncService,
 	}
 
 	// Seed the canonical sync sources (URLs only when rows still have the
@@ -257,7 +262,7 @@ func (s *Server) setupRoutes() {
 	protected.POST("/players/:id/immunities/remove", playerEditHandler.RemoveImmunity)
 	protected.POST("/players/:id/notes/add", playerEditHandler.AddNote)
 	protected.POST("/players/:id/notes/remove", playerEditHandler.RemoveNote)
- 	protected.GET("/votes", votesHandler.Votes)
+	protected.GET("/votes", votesHandler.Votes)
 	protected.GET("/votes/tally", votesHandler.VoteTally)
 	protected.GET("/admin/audit", adminHandler.AuditLogs)
 
@@ -316,18 +321,6 @@ func (s *Server) setupRoutes() {
 	protected.GET("/channels", channelsHandler.Page)
 	protected.POST("/channels/update", channelsHandler.Update)
 	protected.POST("/channels/admin/delete", channelsHandler.DeleteAdmin)
-
-	// Player edit routes
-	protected.GET("/players/:id/edit", playerEditHandler.Edit)
-	protected.POST("/players/:id/edit", playerEditHandler.UpdateStats)
-	protected.POST("/players/:id/items/add", playerEditHandler.AddItem)
-	protected.POST("/players/:id/items/remove", playerEditHandler.RemoveItem)
-	protected.POST("/players/:id/abilities/add", playerEditHandler.AddAbility)
-	protected.POST("/players/:id/abilities/remove", playerEditHandler.RemoveAbility)
-	protected.POST("/players/:id/statuses/add", playerEditHandler.AddStatus)
-	protected.POST("/players/:id/statuses/remove", playerEditHandler.RemoveStatus)
-	protected.POST("/players/:id/perks/add", playerEditHandler.AddPerk)
-	protected.POST("/players/:id/perks/remove", playerEditHandler.RemovePerk)
 
 	// Catalog (items / abilities / statuses) routes
 	protected.GET("/items", catalogHandler.Items)

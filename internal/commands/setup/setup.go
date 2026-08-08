@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/models"
+	"github.com/mccune1224/betrayal/internal/services/roledraft"
 	"github.com/zekrotja/ken"
 )
 
@@ -139,14 +140,7 @@ func getDeceptionist(s *discordgo.Session, gID string) []*discordgo.User {
 
 // Will find all active roles listed for the game
 func generateRoleSelectPool(m *pgxpool.Pool) ([]models.Role, error) {
-	q := models.New(m)
-	dbCtx := context.Background()
-	roles, err := q.ListRolesByName(dbCtx, activeRoleList)
-	if err != nil {
-		return nil, err
-	}
-
-	return roles, nil
+	return roledraft.LoadRoles(context.Background(), m)
 }
 
 type rolePool struct {
@@ -157,32 +151,11 @@ type rolePool struct {
 }
 
 func generateRolePools(roles []models.Role, playerCount, decepCount int) *rolePool {
-	goodRoles, badRoles, neutralRoles := groupRoles(roles)
-	rp := &rolePool{}
-
-	// Cap deceptionist count to available roles in each category
-	maxDeceptions := decepCount
-	if maxDeceptions > len(goodRoles) {
-		maxDeceptions = len(goodRoles)
+	generated, err := roledraft.Generate(roles, playerCount, decepCount)
+	if err != nil {
+		return &rolePool{}
 	}
-	if maxDeceptions > len(badRoles) {
-		maxDeceptions = len(badRoles)
-	}
-	if maxDeceptions > len(neutralRoles) {
-		maxDeceptions = len(neutralRoles)
-	}
-
-	gPerm := rand.Perm(len(goodRoles))
-	bPerm := rand.Perm(len(badRoles))
-	nPerm := rand.Perm(len(neutralRoles))
-	for i := 0; i < maxDeceptions; i++ {
-		rp.deceptionOptions = append(rp.deceptionOptions, []models.Role{goodRoles[gPerm[i]], neutralRoles[nPerm[i]], badRoles[bPerm[i]]})
-	}
-	rPerm := rand.Perm(len(roles))
-	for i := 0; i < playerCount; i++ {
-		rp.randomPool = append(rp.randomPool, roles[rPerm[i]])
-	}
-	return rp
+	return &rolePool{deceptionOptions: generated.DeceptionOptions, randomPool: generated.RandomPool}
 }
 
 func roleSetupEmbed(rp *rolePool) *discordgo.MessageEmbed {

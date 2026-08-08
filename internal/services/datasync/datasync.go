@@ -15,6 +15,8 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -134,18 +136,19 @@ var CanonicalSources = []struct {
 
 // envKeys maps each canonical source to the env var holding its CSV URL.
 var envKeys = map[string]string{
-	"good_roles":   "GOOD_ROLES_CSV",
-	"evil_roles":   "EVIL_ROLES_CSV",
+	"good_roles":    "GOOD_ROLES_CSV",
+	"evil_roles":    "EVIL_ROLES_CSV",
 	"neutral_roles": "NEUTRAL_ROLES_CSV",
-	"items":        "ITEM_CSV",
+	"items":         "ITEM_CSV",
 }
 
 // Service ties the sync engine to a database pool. envURLs maps source name →
 // CSV URL from the environment (used only to seed/backfill empty URLs).
 type Service struct {
-	pool    *pgxpool.Pool
-	envURLs map[string]string
-	client  *http.Client
+	pool            *pgxpool.Pool
+	envURLs         map[string]string
+	client          *http.Client
+	allowUnsafeURLs bool
 }
 
 // New creates a Service. envURLs is the map built from GOOD_ROLES_CSV /
@@ -157,6 +160,11 @@ func New(pool *pgxpool.Pool, envURLs map[string]string) *Service {
 		client:  &http.Client{Timeout: 30 * time.Second},
 	}
 }
+
+// SetAllowUnsafeURLs exists for localhost fixture tests only. Production
+// callers must leave it false so arbitrary admin-entered URLs cannot become
+// an SSRF primitive.
+func (s *Service) SetAllowUnsafeURLs(allow bool) { s.allowUnsafeURLs = allow }
 
 // ChargesDisplay renders the DB charge encoding for the UI ("∞" for
 // infiniteCharges, otherwise the number).
@@ -191,6 +199,13 @@ func itoa(n int64) string {
 
 // Fetch downloads the CSV for a source. The caller closes the returned reader.
 func (s *Service) Fetch(ctx context.Context, src Source) (io.ReadCloser, error) {
+	parsed, err := url.Parse(src.Url)
+	if err != nil || parsed.Scheme == "" || parsed.Hostname() == "" {
+		return nil, &URLPolicyError{Reason: "invalid URL"}
+	}
+	if !s.allowUnsafeURLs && !allowedSyncURL(parsed) {
+		return nil, &URLPolicyError{Reason: "URL must be an HTTPS Google Sheets export"}
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, src.Url, nil)
 	if err != nil {
 		return nil, err
@@ -205,6 +220,20 @@ func (s *Service) Fetch(ctx context.Context, src Source) (io.ReadCloser, error) 
 	}
 	return resp.Body, nil
 }
+
+// allowedSyncURL permits only the Google export hosts used by configured
+// spreadsheet sources. Unsafe fixture URLs are enabled explicitly in tests.
+func allowedSyncURL(u *url.URL) bool {
+	if u.Scheme != "https" {
+		return false
+	}
+	host := strings.ToLower(u.Hostname())
+	return host == "docs.google.com" || host == "docs.googleusercontent.com" || host == "sheets.googleapis.com"
+}
+
+type URLPolicyError struct{ Reason string }
+
+func (e *URLPolicyError) Error() string { return "sync URL rejected: " + e.Reason }
 
 // HTTPError reports a non-200 CSV fetch.
 type HTTPError struct{ Status int }

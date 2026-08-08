@@ -40,7 +40,7 @@ templ Channels(data ChannelsData) {
 		</p>
 		<div class="card mb-6">
 			<h2 class="font-semibold text-wood mb-3">UPDATE CHANNEL CONFIG</h2>
-			<form class="grid grid-cols-1 sm:grid-cols-4 gap-2" hx-post="/channels/update" hx-target="body">
+			<form method="POST" action="/channels/update" class="grid grid-cols-1 sm:grid-cols-4 gap-2">
 				<select name="kind" class="input"><option value="vote">VOTE</option><option value="action">ACTION</option><option value="lifeboard">LIFEBOARD</option><option value="admin">ADMIN</option><option value="log">COMMAND LOG</option></select>
 				<input name="channel_id" class="input" placeholder="Discord channel ID" required/>
 				<input name="message_id" class="input" placeholder="Lifeboard message ID (lifeboard only)"/>

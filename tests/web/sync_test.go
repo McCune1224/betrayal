@@ -45,6 +45,7 @@ func syncTestServer(t *testing.T, pool *pgxpool.Pool, envURLs map[string]string,
 		DatabaseURL:         dsn,
 		AllowProdMutations:  false,
 		SyncEnvURLs:         envURLs,
+		AllowUnsafeSyncURLs: true,
 	})
 	if err != nil {
 		t.Fatalf("web.New: %v", err)
