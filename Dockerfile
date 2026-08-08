@@ -5,7 +5,7 @@ FROM golang:1.23
 WORKDIR /app
 
 # Install templ CLI
-RUN go install github.com/a-h/templ/cmd/templ@latest
+RUN go install github.com/a-h/templ/cmd/templ@v0.3.960
 
 # Install Tailwind CSS v4 standalone CLI
 RUN curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.2/tailwindcss-linux-x64 \
