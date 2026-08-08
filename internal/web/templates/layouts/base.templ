@@ -65,6 +65,7 @@ templ DesktopNav(currentPath string) {
 					<div class="flex space-x-1">
 						<a href="/" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/") }>HOME</a>
 						<a href="/players" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/players"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/players") }>PLAYERS</a>
+						<a href="/setup" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/setup"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/setup") }>SETUP</a>
 						<a href="/roles" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/roles"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/roles") }>ROLES</a>
 						<a href="/items" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/items"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/items") }>ITEMS</a>
 					<a href="/sync" class={ "px-4 py-2 text-base font-medium transition-colors", templ.KV("text-ice bg-accent/15", currentPath == "/sync"), templ.KV("text-silver hover:text-ice hover:bg-white/10", currentPath != "/sync") }>SYNC</a>
@@ -95,6 +96,7 @@ templ MobileNav(currentPath string) {
 			<span class="text-xl mb-1">&#x2605;</span>
 			<span class="text-xs">PLAYERS</span>
 		</a>
+		<a href="/setup" class={ "bottom-nav-item", templ.KV("active", currentPath == "/setup") }><span class="text-xl mb-1">&#x2699;</span><span class="text-xs">SETUP</span></a>
 		<a href="/cycle" class={ "bottom-nav-item", templ.KV("active", currentPath == "/cycle") }>
 			<span class="text-xl mb-1">&#x263C;</span>
 			<span class="text-xs">CYCLE</span>

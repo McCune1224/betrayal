@@ -208,6 +208,7 @@ func (s *Server) setupRoutes() {
 	isProd := IsProd(s.config.DatabaseURL, s.config.Environment)
 	syncHandler := handlers.NewSyncHandler(s.dbPool, s.syncService, isProd, s.config.AllowProdMutations)
 	migrationsHandler := handlers.NewMigrationsHandler(s.getMigrateRunner, isProd, s.config.AllowProdMutations)
+	setupHandler := handlers.NewSetupHandler(s.dbPool, s.discordSession)
 
 	// Auth middleware
 	authMiddleware := webmiddleware.NewAuthMiddleware(s.sessionStore)
@@ -236,6 +237,8 @@ func (s *Server) setupRoutes() {
 	protected.GET("/players", playersHandler.List)
 	protected.GET("/players/table", playersHandler.Table)
 	protected.GET("/players/:id", playersHandler.Detail)
+	protected.GET("/setup", setupHandler.Page)
+	protected.POST("/setup/generate", setupHandler.Generate)
 	protected.GET("/players/:id/edit", playerEditHandler.Edit)
 	protected.POST("/players/:id/edit", playerEditHandler.UpdateStats)
 	protected.POST("/players/:id/state", playerEditHandler.UpdateState)
