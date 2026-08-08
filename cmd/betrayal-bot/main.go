@@ -44,7 +44,8 @@ import (
 
 // config struct to hold env variables and any other config settings
 type config struct {
-	discord struct {
+	environment string
+	discord     struct {
 		clientID       string
 		clientSecret   string
 		botToken       string
@@ -66,6 +67,48 @@ type config struct {
 		railwayServiceID string
 		railwayEnvID     string
 	}
+}
+
+// loadConfig reads the process environment without exposing secret values.
+// Only production may select the pooler DSN; local development must provide
+// DATABASE_URL explicitly.
+func loadConfig(getenv func(string) string) (config, error) {
+	env := strings.ToLower(strings.TrimSpace(getenv("ENVIRONMENT")))
+	if env == "" {
+		env = "local"
+	}
+	var dsnKey string
+	switch env {
+	case "local":
+		dsnKey = "DATABASE_URL"
+	case "production":
+		dsnKey = "DATABASE_POOLER_URL"
+	default:
+		return config{}, fmt.Errorf("ENVIRONMENT must be local or production (got %q)", env)
+	}
+	dsn := getenv(dsnKey)
+	if dsn == "" {
+		return config{}, fmt.Errorf("%s is required for ENVIRONMENT=%s", dsnKey, env)
+	}
+	var cfg config
+	cfg.environment = env
+	cfg.discord.botToken = getenv("DISCORD_BOT_TOKEN")
+	cfg.discord.clientID = getenv("DISCORD_CLIENT_ID")
+	cfg.discord.clientSecret = getenv("DISCORD_CLIENT_SECRET")
+	cfg.discord.disableDiscord = strings.EqualFold(getenv("DISABLE_DISCORD"), "true")
+	cfg.database.dsn = dsn
+	cfg.web.port = getenv("WEB_PORT")
+	if cfg.web.port == "" {
+		cfg.web.port = "8080"
+	}
+	cfg.web.adminPassword = getenv("ADMIN_PASSWORD")
+	cfg.web.sessionSecret = getenv("SESSION_SECRET")
+	cfg.web.allowProdMutations = strings.EqualFold(getenv("WEB_ALLOW_PROD_MUTATIONS"), "true")
+	cfg.web.railwayToken = getenv("RAILWAY_API_TOKEN")
+	cfg.web.railwayProjectID = getenv("RAILWAY_BETRAYAL_PROJECT_ID")
+	cfg.web.railwayServiceID = getenv("RAILWAY_BETRAYAL_SERVICE_ID")
+	cfg.web.railwayEnvID = getenv("RAILWAY_BETRAYAL_ENVIRONMENT_ID")
+	return cfg, nil
 }
 
 // Global app struct
@@ -100,30 +143,11 @@ func (a *app) RegisterBetrayalCommands(commands ...BetrayalCommand) int {
 }
 
 func main() {
-	env := os.Getenv("ENVIRONMENT")
-	if env == "" {
-		env = "local"
+	cfg, err := loadConfig(os.Getenv)
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	var cfg config
-	cfg.discord.botToken = os.Getenv("DISCORD_BOT_TOKEN")
-	cfg.discord.clientID = os.Getenv("DISCORD_CLIENT_ID")
-	cfg.discord.clientSecret = os.Getenv("DISCORD_CLIENT_SECRET")
-	cfg.discord.disableDiscord = strings.EqualFold(os.Getenv("DISABLE_DISCORD"), "true")
-	cfg.database.dsn = os.Getenv("DATABASE_POOLER_URL")
-
-	// Web admin configuration
-	cfg.web.port = os.Getenv("WEB_PORT")
-	if cfg.web.port == "" {
-		cfg.web.port = "8080"
-	}
-	cfg.web.adminPassword = os.Getenv("ADMIN_PASSWORD")
-	cfg.web.sessionSecret = os.Getenv("SESSION_SECRET")
-	cfg.web.allowProdMutations = strings.EqualFold(os.Getenv("WEB_ALLOW_PROD_MUTATIONS"), "true")
-	cfg.web.railwayToken = os.Getenv("RAILWAY_API_TOKEN")
-	cfg.web.railwayProjectID = os.Getenv("RAILWAY_BETRAYAL_PROJECT_ID")
-	cfg.web.railwayServiceID = os.Getenv("RAILWAY_BETRAYAL_SERVICE_ID")
-	cfg.web.railwayEnvID = os.Getenv("RAILWAY_BETRAYAL_ENVIRONMENT_ID")
+	env := cfg.environment
 
 	// Create the database pool before the logger so the logger can write to it.
 	pools, err := pgxpool.New(context.Background(), cfg.database.dsn)
