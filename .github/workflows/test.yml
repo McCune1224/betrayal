@@ -74,5 +74,5 @@ jobs:
       - name: Build container without secrets
         run: docker build -t betrayal:local-build-test .
 
-      - name: Inspect container history for secret baking
-        run: docker history --no-trunc betrayal:local-build-test
+      - name: Inspect container history and contents for secret baking
+        run: ./scripts/validate-dependency-container.sh --image betrayal:local-build-test
