@@ -18,19 +18,19 @@ sql:
 
 # Database migrations
 migrate-up:
-	migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migration up
+	migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migrate/migrations up
 
 migrate-down:
-	migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migration down
+	migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migrate/migrations down
 
 migrate-sync:
-	migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migration down && migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migration up
+	migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migrate/migrations down && migrate -database $(call env-value,DATABASE_POOLER_URL) -path internal/db/migrate/migrations up
 
 mock-migrate-up:
-	migrate -database $(call env-value,MOCK_DATABASE) -path internal/db/migration up
+	migrate -database $(call env-value,MOCK_DATABASE) -path internal/db/migrate/migrations up
 
 mock-migrate-down:
-	migrate -database $(call env-value,MOCK_DATABASE) -path internal/db/migration down
+	migrate -database $(call env-value,MOCK_DATABASE) -path internal/db/migrate/migrations down
 
 # Templ template generation
 templ-generate:

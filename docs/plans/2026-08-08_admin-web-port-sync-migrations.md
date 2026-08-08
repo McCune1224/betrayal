@@ -215,6 +215,7 @@ protected.POST("/sync/run/:id/rerun", syncHandler.RerunSource) // re-preview sin
 - Create: `internal/web/templates/partials/sync_diff_templ.go`, `sync_sources_templ.go`, `sync_run_history_templ.go`
 
 Page layout (mobile-first, obsidian-glass):
+- **Callout banner** (top, amber info styling): "These syncs pull the latest roles/items from the Google Sheets. They're normally run **once before a game starts** and not re-run mid-game — preview before applying." (User note, 2026-08-08.)
 - **Sources card:** 4 rows (Good/Evil/Neutral Roles, Items) — name, kind, alignment badge, enabled toggle, URL (editable inline via `hx-post`), last run status (latest `sync_run` per source).
 - **Preview card:** "Fetch & Preview Changes" button → HTMX-swapped diff table: per-source group headers with counts (🟢 N new / 🟡 M updated / ⚪ S skipped), expandable rows (`<details>`) showing old→new values; a per-source "Apply" button + one "Apply All".
 - **History card:** last N `sync_run` rows (time, source, status badge, counts JSON rendered as chips, run_by).
@@ -379,9 +380,14 @@ protected.POST("/setup/generate", setupHandler.Generate) // returns partial with
 
 ## Risks, Tradeoffs, Open Questions
 
-1. **Prod-pooler hazard** — `make run-web` hits prod. Sync apply + migrations down are now one click from a browser pointed at prod. Mitigation: loud prod banner, confirmation phrases, rate limits, and the existing startup warning. **Open question:** should `/sync/apply` and `/admin/migrations/down` be *hard-blocked* when DSN contains `roundhouse.proxy.rlwy.net` unless an env opt-out (`WEB_ALLOW_PROD_MUTATIONS=true`) is set?
-2. **Sync semantics change** — the tool becomes upsert (updates propagate from the sheet). That's the point ("validate the changes and see things"), but it changes behavior: previously a sheet edit did nothing. Confirm overwriting existing rows from the sheet is desired (vs. only creating new).
-3. **`cmd/data-entry` future** — kept as an archive CLI wrapper. Fine, or should it be deleted once the UI is proven? (Recommend: keep, it's 30 lines.)
-4. **Admin `/roll`** — port the admin-forced roll surface or leave it Discord-only for now? (Recommend: leave; rolls are interactive/random and end-user-facing mostly.)
-5. **Lifeboard rebuild** requires Discord (pin/rebuild). Web-only mode can only store the channel. Acceptable, or defer lifeboard set to Discord-only and just validate?
-6. **Migrations embedded vs on-disk** — moving `internal/db/migration/*.sql` into `internal/db/migrate/migrations/` changes Makefile + testutil paths. Confirm the move is OK (recommended, DRY) vs. keeping files on disk and pointing `iofs` at a subdirectory of the repo (embed can't escape the package dir without a `//go:embed` at repo root — the move is the clean option).
+**Resolved (2026-08-08, user-approved):**
+1. **Prod guard** — destructive web actions (`/sync/apply`, `/admin/migrations/down`, `/admin/migrations/up`) are **hard-blocked** when the DSN contains `roundhouse.proxy.rlwy.net` unless `WEB_ALLOW_PROD_MUTATIONS=true` is set. The sync page also carries a callout: **"Syncs are normally run once before a game starts to pull the latest from the Google Sheets — they're not re-run mid-game."**
+2. **Sync semantics** — upsert: sheet edits propagate to existing rows (that's the point of preview/validate/apply).
+3. **`cmd/data-entry`** — kept as a thin CLI wrapper (archive mode).
+4. **Admin `/roll`** — NOT ported; rolls stay Discord-only for now.
+5. **Lifeboard** — web sets the stored channel; the Discord-side rebuild+pin stays a bot operation (page flags it when Discord is disabled).
+6. **Migrations embedded** — SQL files move to `internal/db/migrate/migrations/` (single source of truth); Makefile + testutil updated.
+
+**Remaining watch items:**
+- **Prod-pooler hazard** — `make run-web` hits prod. The prod banner + hard-block above mitigate; keep the startup warning.
+- **Migration move** touches Makefile/testutil paths — do it in the same commit as the embed so nothing is ever broken in between.

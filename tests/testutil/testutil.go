@@ -38,7 +38,7 @@ import (
 // (go test ./... runs package binaries concurrently). Arbitrary constant.
 const advisoryLockKey = int64(0xB374A9A1)
 
-// allTables is the full table inventory (from internal/db/migration) truncated
+// allTables is the full table inventory (from internal/db/migrate/migrations) truncated
 // between tests. game_cycle is included and re-seeded afterwards because its
 // Day-0 row is inserted by migration 000023.
 var allTables = []string{
@@ -219,10 +219,10 @@ func Bootstrap(m *testing.M) int {
 	return m.Run()
 }
 
-// migrateUp applies all migrations in internal/db/migration. Idempotent: it is
-// a no-op when the schema is already at the latest version.
+// migrateUp applies all migrations in internal/db/migrate/migrations.
+// Idempotent: it is a no-op when the schema is already at the latest version.
 func migrateUp(dbURL string) error {
-	sourceURL := "file://" + filepath.ToSlash(filepath.Join(repoRoot(), "internal", "db", "migration"))
+	sourceURL := "file://" + filepath.ToSlash(filepath.Join(repoRoot(), "internal", "db", "migrate", "migrations"))
 	m, err := migrate.New(sourceURL, dbURL)
 	if err != nil {
 		return err
