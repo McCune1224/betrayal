@@ -91,6 +91,22 @@ func TestIsAdminMemberMatchesRoleNamesToMemberRoleIDs(t *testing.T) {
 	}
 }
 
+func TestResolveAdminStatusPreservesGuildRoleLookupFailure(t *testing.T) {
+	member := &discordgo.Member{Roles: []string{"role-host"}}
+	lookupErr := errors.New("discord unavailable")
+
+	got, err := resolveAdminStatus(member, func() ([]*discordgo.Role, error) {
+		return nil, lookupErr
+	})
+
+	if got != nil {
+		t.Fatalf("admin status = %v, want unknown", *got)
+	}
+	if !errors.Is(err, lookupErr) {
+		t.Fatalf("role lookup error = %v, want %v", err, lookupErr)
+	}
+}
+
 func TestExtractCommandArgumentsPreservesResolvedOptionIDsSafely(t *testing.T) {
 	got := ExtractCommandArguments(nil, []*discordgo.ApplicationCommandInteractionDataOption{
 		{Name: "user", Type: discordgo.ApplicationCommandOptionUser, Value: "user-1"},

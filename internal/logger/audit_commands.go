@@ -3,6 +3,7 @@ package logger
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"sync"
 	"time"
 
@@ -15,19 +16,21 @@ import (
 
 // CommandAudit represents a command execution record
 type CommandAudit struct {
-	CorrelationID    string                 `json:"correlation_id"`
-	CommandName      string                 `json:"command_name"`
-	UserID           string                 `json:"user_id"`
-	Username         string                 `json:"username"`
-	UserRoles        []string               `json:"user_roles"`
-	GuildID          string                 `json:"guild_id"`
-	ChannelID        string                 `json:"channel_id"`
-	IsAdmin          bool                   `json:"is_admin"`
-	CommandArguments map[string]interface{} `json:"command_arguments"`
-	Status           string                 `json:"status"` // 'success', 'error', 'cancelled'
-	ErrorMessage     *string                `json:"error_message,omitempty"`
-	ExecutionTimeMs  int64                  `json:"execution_time_ms"`
-	Environment      string                 `json:"environment"`
+	CorrelationID            string                 `json:"correlation_id"`
+	CommandName              string                 `json:"command_name"`
+	UserID                   string                 `json:"user_id"`
+	Username                 string                 `json:"username"`
+	UserRoles                []string               `json:"user_roles"`
+	GuildID                  string                 `json:"guild_id"`
+	ChannelID                string                 `json:"channel_id"`
+	IsAdmin                  bool                   `json:"is_admin"`
+	IsAdminKnown             bool                   `json:"is_admin_known"`
+	AdminRoleResolutionError *string                `json:"admin_role_resolution_error,omitempty"`
+	CommandArguments         map[string]interface{} `json:"command_arguments"`
+	Status                   string                 `json:"status"` // 'success', 'error', 'cancelled'
+	ErrorMessage             *string                `json:"error_message,omitempty"`
+	ExecutionTimeMs          int64                  `json:"execution_time_ms"`
+	Environment              string                 `json:"environment"`
 }
 
 // AuditWriter handles async writing of command audits to the database
@@ -141,7 +144,7 @@ func (aw *AuditWriter) insertBatch(batch []CommandAudit) {
 			audit.UserRoles,
 			audit.GuildID,
 			audit.ChannelID,
-			audit.IsAdmin,
+			adminAuditValue(audit),
 			argumentsJSON,
 			audit.Status,
 			audit.ErrorMessage,
@@ -152,6 +155,13 @@ func (aw *AuditWriter) insertBatch(batch []CommandAudit) {
 			zerolog.DefaultContextLogger.Error().Err(err).Msg("Failed to insert command audit")
 		}
 	}
+}
+
+func adminAuditValue(audit CommandAudit) interface{} {
+	if !audit.IsAdminKnown {
+		return nil
+	}
+	return audit.IsAdmin
 }
 
 // Close gracefully shuts down the audit writer and flushes pending audits
@@ -249,17 +259,29 @@ func optionID(opt *discordgo.ApplicationCommandInteractionDataOption) (string, b
 }
 
 func isAdminMember(member *discordgo.Member, guildRoles []*discordgo.Role) bool {
+	status, _ := resolveAdminStatus(member, func() ([]*discordgo.Role, error) { return guildRoles, nil })
+	return status != nil && *status
+}
+
+func resolveAdminStatus(member *discordgo.Member, lookup func() ([]*discordgo.Role, error)) (*bool, error) {
 	if member == nil {
-		return false
+		status := false
+		return &status, nil
+	}
+	guildRoles, err := lookup()
+	if err != nil {
+		return nil, err
 	}
 	for _, memberRoleID := range member.Roles {
 		for _, role := range guildRoles {
 			if role != nil && memberRoleID == role.ID && containsString(discord.AdminRoles, role.Name) {
-				return true
+				status := true
+				return &status, nil
 			}
 		}
 	}
-	return false
+	status := false
+	return &status, nil
 }
 
 func containsString(values []string, want string) bool {
@@ -274,16 +296,26 @@ func containsString(values []string, want string) bool {
 // CreateAuditFromContext builds a CommandAudit from Ken context.
 func CreateAuditFromContext(ctx *ken.Ctx, session *discordgo.Session, startTime time.Time) CommandAudit {
 	var guildRoles []*discordgo.Role
+	var roleErr error
 	if session != nil {
-		guildRoles, _ = session.GuildRoles(ctx.GetEvent().GuildID)
+		guildRoles, roleErr = session.GuildRoles(ctx.GetEvent().GuildID)
+	} else {
+		roleErr = errors.New("discord session unavailable")
 	}
-	return CreateAuditFromContextWithRoles(ctx, session, guildRoles, startTime, time.Now())
+	if roleErr != nil {
+		zerolog.DefaultContextLogger.Error().Err(roleErr).Msg("failed to resolve guild roles for command audit")
+	}
+	return createAuditFromContextWithRoleResolution(ctx, session, guildRoles, roleErr, startTime, time.Now())
 }
 
 // CreateAuditFromContextWithRoles builds the final audit record using the
 // resolved role IDs from the interaction guild. Keeping role resolution as an
 // input makes the classification seam deterministic and avoids cache guesses.
 func CreateAuditFromContextWithRoles(ctx *ken.Ctx, session *discordgo.Session, guildRoles []*discordgo.Role, startTime, endTime time.Time) CommandAudit {
+	return createAuditFromContextWithRoleResolution(ctx, session, guildRoles, nil, startTime, endTime)
+}
+
+func createAuditFromContextWithRoleResolution(ctx *ken.Ctx, session *discordgo.Session, guildRoles []*discordgo.Role, roleErr error, startTime, endTime time.Time) CommandAudit {
 	event := ctx.GetEvent()
 	executionTime := endTime.Sub(startTime).Milliseconds()
 	if executionTime < 1 {
@@ -295,7 +327,8 @@ func CreateAuditFromContextWithRoles(ctx *ken.Ctx, session *discordgo.Session, g
 		userRoles = event.Member.Roles
 	}
 	cmdData := event.ApplicationCommandData()
-	return CommandAudit{
+	adminStatus, _ := resolveAdminStatus(event.Member, func() ([]*discordgo.Role, error) { return guildRoles, roleErr })
+	audit := CommandAudit{
 		CorrelationID:    GenerateCorrelationID().String(),
 		CommandName:      cmdData.Name,
 		UserID:           memberUserID(event.Member),
@@ -303,11 +336,19 @@ func CreateAuditFromContextWithRoles(ctx *ken.Ctx, session *discordgo.Session, g
 		UserRoles:        userRoles,
 		GuildID:          event.GuildID,
 		ChannelID:        event.ChannelID,
-		IsAdmin:          isAdminMember(event.Member, guildRoles),
+		IsAdminKnown:     adminStatus != nil,
 		CommandArguments: ExtractCommandArguments(session, cmdData.Options),
 		Status:           "success",
 		ExecutionTimeMs:  executionTime,
 	}
+	if adminStatus != nil {
+		audit.IsAdmin = *adminStatus
+	}
+	if roleErr != nil {
+		message := roleErr.Error()
+		audit.AdminRoleResolutionError = &message
+	}
+	return audit
 }
 
 // AuditSink is the small seam used by the lifecycle middleware and tests.
@@ -370,10 +411,14 @@ func (m *CommandAuditMiddleware) After(ctx *ken.Ctx, commandErr error) error {
 		start = m.lifecycle.Start()
 	}
 	var roles []*discordgo.Role
+	var roleErr error
 	if session := ctx.GetSession(); session != nil {
-		roles, _ = session.GuildRoles(ctx.GetEvent().GuildID)
+		roles, roleErr = session.GuildRoles(ctx.GetEvent().GuildID)
 	}
-	audit := CreateAuditFromContextWithRoles(ctx, ctx.GetSession(), roles, start, m.lifecycle.now())
+	if roleErr != nil {
+		zerolog.DefaultContextLogger.Error().Err(roleErr).Msg("failed to resolve guild roles for command audit")
+	}
+	audit := createAuditFromContextWithRoleResolution(ctx, ctx.GetSession(), roles, roleErr, start, m.lifecycle.now())
 	m.lifecycle.Finish(audit, start, commandErr)
 	return nil
 }
