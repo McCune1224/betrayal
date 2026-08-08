@@ -98,8 +98,137 @@ func (h *PlayerEditHandler) UpdateStats(c echo.Context) error {
 		return h.toastError(c, "Failed to reload player")
 	}
 
-	c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Stats updated", "type": "success"}}`)
+	c.Response().Header().Set("HX-Trigger", toastTrigger("Stats updated", "success"))
 	return render(c, http.StatusOK, pages.PlayerEditStats(playerID, int(updated.Coins), int(updated.Luck)))
+}
+
+// UpdateState handles the administrative fields that are not inventory rows.
+func (h *PlayerEditHandler) UpdateState(c echo.Context) error {
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cancel()
+	id, ok := parsePlayerID(c)
+	if !ok {
+		return c.String(http.StatusBadRequest, "Invalid player ID")
+	}
+	q := models.New(h.dbPool)
+	if _, err := q.GetPlayer(ctx, id); err != nil {
+		return c.String(http.StatusNotFound, "Player not found")
+	}
+	aliveRaw := c.FormValue("alive")
+	if aliveRaw != "true" && aliveRaw != "false" {
+		return h.toastError(c, "Alive must be true or false")
+	}
+	alive := aliveRaw == "true"
+	alignment := models.Alignment(c.FormValue("alignment"))
+	if alignment != models.AlignmentGOOD && alignment != models.AlignmentEVIL && alignment != models.AlignmentNEUTRAL {
+		return h.toastError(c, "Invalid alignment")
+	}
+	itemLimit, err := strconv.ParseInt(c.FormValue("item_limit"), 10, 32)
+	if err != nil || itemLimit < 0 {
+		return h.toastError(c, "Item limit must be non-negative")
+	}
+	if _, err = q.UpdatePlayerAlive(ctx, models.UpdatePlayerAliveParams{ID: id, Alive: alive}); err != nil {
+		return h.toastError(c, "Failed to update alive status")
+	}
+	if _, err = q.UpdatePlayerAlignment(ctx, models.UpdatePlayerAlignmentParams{ID: id, Alignment: alignment}); err != nil {
+		return h.toastError(c, "Failed to update alignment")
+	}
+	if _, err = q.UpdatePlayerItemLimit(ctx, models.UpdatePlayerItemLimitParams{ID: id, ItemLimit: int32(itemLimit)}); err != nil {
+		return h.toastError(c, "Failed to update item limit")
+	}
+	p, err := q.GetPlayer(ctx, id)
+	if err != nil {
+		return h.toastError(c, "Failed to reload player")
+	}
+	c.Response().Header().Set("HX-Trigger", toastTrigger("Player state updated", "success"))
+	return render(c, http.StatusOK, pages.PlayerEditState(id, p.Alive, string(p.Alignment), int(p.ItemLimit)))
+}
+
+func (h *PlayerEditHandler) AddImmunity(c echo.Context) error {
+	return h.mutateInventory(c, "immunities", func(ih *inventory.InventoryHandler) error {
+		name := c.FormValue("immunity_name")
+		if name == "" {
+			return fmt.Errorf("immunity name is required")
+		}
+		q := models.New(h.dbPool)
+		ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+		defer cancel()
+		status, err := q.GetStatusByFuzzy(ctx, name)
+		if err != nil {
+			return fmt.Errorf("immunity not found: %s", name)
+		}
+		rows, err := q.ListPlayerImmunity(ctx, ih.GetPlayer().ID)
+		if err != nil {
+			return err
+		}
+		for _, row := range rows {
+			if row.ID == status.ID {
+				return fmt.Errorf("immunity already exists")
+			}
+		}
+		_, err = q.CreateOneTimePlayerImmunityJoin(ctx, models.CreateOneTimePlayerImmunityJoinParams{PlayerID: ih.GetPlayer().ID, StatusID: status.ID, OneTime: c.FormValue("one_time") == "true"})
+		return err
+	})
+}
+
+func (h *PlayerEditHandler) RemoveImmunity(c echo.Context) error {
+	return h.mutateInventory(c, "immunities", func(ih *inventory.InventoryHandler) error {
+		name := c.FormValue("immunity_name")
+		if name == "" {
+			return fmt.Errorf("immunity name is required")
+		}
+		q := models.New(h.dbPool)
+		ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+		defer cancel()
+		status, err := q.GetStatusByFuzzy(ctx, name)
+		if err != nil {
+			return fmt.Errorf("immunity not found: %s", name)
+		}
+		return q.DeletePlayerImmunity(ctx, models.DeletePlayerImmunityParams{PlayerID: ih.GetPlayer().ID, StatusID: status.ID})
+	})
+}
+
+func (h *PlayerEditHandler) AddNote(c echo.Context) error {
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cancel()
+	id, ok := parsePlayerID(c)
+	if !ok {
+		return c.String(http.StatusBadRequest, "Invalid player ID")
+	}
+	position, err := strconv.ParseInt(c.FormValue("position"), 10, 32)
+	if err != nil || position < 1 {
+		return h.toastError(c, "Position must be positive")
+	}
+	info := c.FormValue("info")
+	if info == "" {
+		return h.toastError(c, "Note cannot be empty")
+	}
+	q := models.New(h.dbPool)
+	if _, err = q.UpdatePlayerNoteByPosition(ctx, models.UpdatePlayerNoteByPositionParams{PlayerID: id, Position: int32(position), Info: info}); err != nil {
+		if _, err = q.CreatePlayerNote(ctx, models.CreatePlayerNoteParams{PlayerID: id, Position: int32(position), Info: info}); err != nil {
+			return h.toastError(c, "Failed to save note")
+		}
+	}
+	c.Response().Header().Set("HX-Trigger", toastTrigger("Note saved", "success"))
+	return h.renderSection(c, ctx, "notes", id)
+}
+
+func (h *PlayerEditHandler) RemoveNote(c echo.Context) error {
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cancel()
+	id, ok := parsePlayerID(c)
+	if !ok {
+		return c.String(http.StatusBadRequest, "Invalid player ID")
+	}
+	noteID, err := strconv.ParseInt(c.FormValue("note_id"), 10, 32)
+	if err != nil {
+		return h.toastError(c, "Invalid note")
+	}
+	if err = models.New(h.dbPool).DeletePlayerNote(ctx, models.DeletePlayerNoteParams{PlayerID: id, NoteID: int32(noteID)}); err != nil {
+		return h.toastError(c, "Failed to delete note")
+	}
+	c.Response().Header().Set("HX-Trigger", toastTrigger("Note removed", "success"))
+	return h.renderSection(c, ctx, "notes", id)
 }
 
 // AddItem handles POST /players/:id/items/add
@@ -241,11 +370,11 @@ func (h *PlayerEditHandler) mutateInventory(c echo.Context, section string, muta
 
 	ih := inventory.NewManualInventoryHandler(player, h.dbPool)
 	if err := mutate(ih); err != nil {
-		c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "`+err.Error()+`", "type": "error"}}`)
+		c.Response().Header().Set("HX-Trigger", toastTrigger(err.Error(), "error"))
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
-	c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Inventory updated", "type": "success"}}`)
+	c.Response().Header().Set("HX-Trigger", toastTrigger("Inventory updated", "success"))
 	return h.renderSection(c, ctx, section, playerID)
 }
 
@@ -345,17 +474,37 @@ func (h *PlayerEditHandler) loadEditData(ctx context.Context, player models.Play
 	for i, pk := range perks {
 		perkRows[i] = pages.PlayerEditPerkRow{ID: pk.ID, Name: pk.Name}
 	}
+	immunities, err := q.ListPlayerImmunity(ctx, player.ID)
+	if err != nil {
+		return pages.PlayerEditData{}, err
+	}
+	immunityRows := make([]pages.PlayerEditImmunityRow, len(immunities))
+	for i, x := range immunities {
+		immunityRows[i] = pages.PlayerEditImmunityRow{ID: x.ID, Name: x.Name, OneTime: x.OneTime}
+	}
+	notes, err := q.ListPlayerNote(ctx, player.ID)
+	if err != nil {
+		return pages.PlayerEditData{}, err
+	}
+	noteRows := make([]pages.PlayerEditNoteRow, len(notes))
+	for i, x := range notes {
+		noteRows[i] = pages.PlayerEditNoteRow{ID: x.NoteID, Position: x.Position, Info: x.Info}
+	}
 
 	return pages.PlayerEditData{
-		ID:        player.ID,
-		Role:      roleName,
-		Alive:     player.Alive,
-		Coins:     int(player.Coins),
-		Luck:      int(player.Luck),
-		Items:     itemRows,
-		Abilities: abilityRows,
-		Statuses:  statusRows,
-		Perks:     perkRows,
+		ID:         player.ID,
+		Role:       roleName,
+		Alive:      player.Alive,
+		Coins:      int(player.Coins),
+		Luck:       int(player.Luck),
+		Items:      itemRows,
+		Abilities:  abilityRows,
+		Statuses:   statusRows,
+		Perks:      perkRows,
+		Immunities: immunityRows,
+		Notes:      noteRows,
+		Alignment:  string(player.Alignment),
+		ItemLimit:  int(player.ItemLimit),
 	}, nil
 }
 
@@ -379,6 +528,6 @@ func parseQuantity(raw string, def int32) int32 {
 }
 
 func (h *PlayerEditHandler) toastError(c echo.Context, msg string) error {
-	c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "`+msg+`", "type": "error"}}`)
+	c.Response().Header().Set("HX-Trigger", toastTrigger(msg, "error"))
 	return c.String(http.StatusBadRequest, msg)
 }

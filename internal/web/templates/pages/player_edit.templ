@@ -31,6 +31,9 @@ type PlayerEditPerkRow struct {
 	Name string
 }
 
+type PlayerEditImmunityRow struct { ID int32; Name string; OneTime bool }
+type PlayerEditNoteRow struct { ID int32; Position int32; Info string }
+
 // PlayerEditData is the view model for the /players/:id/edit page
 type PlayerEditData struct {
 	ID        int64
@@ -42,6 +45,10 @@ type PlayerEditData struct {
 	Abilities []PlayerEditAbilityRow
 	Statuses  []PlayerEditStatusRow
 	Perks     []PlayerEditPerkRow
+	Immunities []PlayerEditImmunityRow
+	Notes []PlayerEditNoteRow
+	Alignment string
+	ItemLimit int
 }
 
 templ PlayerEdit(data PlayerEditData) {
@@ -66,6 +73,7 @@ templ PlayerEdit(data PlayerEditData) {
 		</div>
 
 		<div class="space-y-6">
+			<div id="edit-state">@PlayerEditState(data.ID, data.Alive, data.Alignment, data.ItemLimit)</div>
 			<!-- Coins & Luck -->
 			<div id="edit-stats">
 				@PlayerEditStats(data.ID, data.Coins, data.Luck)
@@ -90,8 +98,69 @@ templ PlayerEdit(data PlayerEditData) {
 			<div id="edit-perks">
 				@PlayerEditPerks(data.ID, data.Perks)
 			</div>
+			<div id="edit-immunities">@PlayerEditImmunities(data.ID, data.Immunities)</div>
+			<div id="edit-notes">@PlayerEditNotes(data.ID, data.Notes)</div>
 		</div>
 	}
+}
+
+// PlayerEditState is the non-inventory player state card.
+templ PlayerEditState(playerID int64, alive bool, alignment string, itemLimit int) {
+	<div class="card">
+		<div class="p-4 border-b border-dust/30"><h2 class="font-semibold text-wood">PLAYER STATE</h2></div>
+		<form class="p-4 space-y-3" hx-post={ "/players/" + strconv.FormatInt(playerID,10) + "/state" } hx-target="#edit-state" hx-swap="outerHTML">
+			<p class="text-xs text-dust">Current: { stateLabel(alive) } · { alignment }</p>
+			<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+				<input class="input" name="alive" value={ strconv.FormatBool(alive) } placeholder="alive: true or false"/>
+				<input class="input" name="alignment" value={ alignment } placeholder="GOOD / EVIL / NEUTRAL"/>
+				<input class="input" type="number" min="0" name="item_limit" value={ strconv.Itoa(itemLimit) }/>
+			</div>
+			<button class="btn-primary" type="submit">SAVE STATE</button>
+		</form>
+	</div>
+}
+
+func stateLabel(alive bool) string {
+	if alive { return "ALIVE" }
+	return "DEAD"
+}
+
+templ PlayerEditImmunities(playerID int64, rows []PlayerEditImmunityRow) {
+	@PlayerEditSection("IMMUNITIES", len(rows), PlayerEditImmunityAddForm(playerID)) {
+		for _, row := range rows {
+			<div class="flex justify-between px-3 py-2 bg-parchment-dark rounded-lg">
+				<span class="text-sm text-wood">{ row.Name }
+					if row.OneTime {
+						<span class="text-xs text-dust">(one time)</span>
+					}
+				</span>
+				<form hx-post={ "/players/"+strconv.FormatInt(playerID,10)+"/immunities/remove" } hx-target="#edit-immunities" hx-swap="outerHTML">
+					<input type="hidden" name="immunity_name" value={ row.Name }/><button class="btn-danger btn-sm">REMOVE</button>
+				</form>
+			</div>
+		}
+	}
+}
+
+templ PlayerEditImmunityAddForm(playerID int64) {
+	<form class="flex gap-2" hx-post={ "/players/"+strconv.FormatInt(playerID,10)+"/immunities/add" } hx-target="#edit-immunities" hx-swap="outerHTML">
+		<input class="input flex-1" name="immunity_name" placeholder="Immunity/status name" required/>
+		<label class="text-xs text-dust"><input type="checkbox" name="one_time" value="true"/> one time</label><button class="btn-ghost">ADD</button>
+	</form>
+}
+
+templ PlayerEditNotes(playerID int64, rows []PlayerEditNoteRow) {
+	@PlayerEditSection("NOTES", len(rows), PlayerEditNoteAddForm(playerID)) {
+		for _, row := range rows {
+			<div class="flex justify-between gap-3 px-3 py-2 bg-parchment-dark rounded-lg"><span class="text-sm text-wood">#{ strconv.Itoa(int(row.Position)) }: { row.Info }</span>
+				<form hx-post={ "/players/"+strconv.FormatInt(playerID,10)+"/notes/remove" } hx-target="#edit-notes" hx-swap="outerHTML"><input type="hidden" name="note_id" value={ strconv.Itoa(int(row.ID)) }/><button class="btn-danger btn-sm">REMOVE</button></form>
+			</div>
+		}
+	}
+}
+
+templ PlayerEditNoteAddForm(playerID int64) {
+	<form class="flex flex-col sm:flex-row gap-2" hx-post={ "/players/"+strconv.FormatInt(playerID,10)+"/notes/add" } hx-target="#edit-notes" hx-swap="outerHTML"><input class="input w-full sm:w-24" type="number" min="1" name="position" placeholder="#" required/><input class="input flex-1" name="info" placeholder="Note" required/><button class="btn-ghost">SAVE NOTE</button></form>
 }
 
 // PlayerEditStats is the coins/luck form card
