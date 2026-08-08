@@ -1,5 +1,5 @@
 .SILENT:
-.PHONY: run run-web sql migrate-local-up migrate-local-down migrate-production-up migrate-production-down migrate-production-sync mock-migrate-up mock-migrate-down templ-generate templ-watch tailwind-build tailwind-watch build generate env-link worktree db-up db-down clean
+.PHONY: run run-web sql migrate-up migrate-down migrate-sync migrate-local-up migrate-local-down migrate-production-up migrate-production-down migrate-production-sync mock-migrate-up mock-migrate-down test-migration-targets templ-generate templ-watch tailwind-build tailwind-watch build generate env-link worktree db-up db-down clean
 
 # Extract a value from .env (handles quotes and '=' inside values, e.g. sslmode=disable)
 env-value = $(shell grep -E '^$(1)=' .env | head -n1 | cut -d '=' -f2- | tr -d '"' | tr -d "'")
@@ -22,6 +22,18 @@ migrate-local-up:
 
 migrate-local-down:
 	migrate -database $(call env-value,DATABASE_URL) -path internal/db/migrate/migrations down
+
+# Compatibility aliases: preserve the historical production target names, but
+# delegate to recipes that require explicit confirmation.
+migrate-up: migrate-production-up
+
+migrate-down: migrate-production-down
+
+migrate-sync: migrate-production-sync
+
+# Validate migration target compatibility and production refusal without running migrations.
+test-migration-targets:
+	./scripts/test-migration-targets.sh
 
 # Production migrations are intentionally named and require an explicit opt-in:
 #   make migrate-production-up CONFIRM_PRODUCTION_MIGRATION=YES
