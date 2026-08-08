@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/models"
+	"github.com/mccune1224/betrayal/internal/services/playernotes"
 	"github.com/mccune1224/betrayal/internal/util"
 	"github.com/zekrotja/ken"
 )
@@ -246,13 +247,16 @@ func (l *List) listNotes(ctx ken.SubCommandContext) (err error) {
 	if err != nil {
 		return discord.AlexError(ctx, "Failed to get players")
 	}
-	allNotes, err := q.ListAllPlayerNotes(context.Background())
-	if err != nil {
-		return discord.AlexError(ctx, "Failed to get notes")
-	}
 	groupedNotes := make(map[int64][]models.PlayerNote)
-	for _, note := range allNotes {
-		groupedNotes[note.PlayerID] = append(groupedNotes[note.PlayerID], note)
+	notesService := playernotes.New(l.dbPool)
+	for _, player := range players {
+		notes, err := notesService.List(context.Background(), playernotes.DiscordAdminAuthorization(), player.ID)
+		if err != nil {
+			return discord.AlexError(ctx, "Failed to get notes")
+		}
+		if len(notes) > 0 {
+			groupedNotes[player.ID] = notes
+		}
 	}
 	fields := []*discordgo.MessageEmbedField{}
 	for playerID, notes := range groupedNotes {

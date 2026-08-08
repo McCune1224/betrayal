@@ -215,7 +215,7 @@ func (h *PlayerEditHandler) AddNote(c echo.Context) error {
 	if info == "" {
 		return h.toastError(c, "Note cannot be empty")
 	}
-	if _, err = h.notes.Save(ctx, playernotes.Authorization{IsAdmin: true}, id, int(position), info); err != nil {
+	if _, err = h.notes.Save(ctx, playernotes.WebAdminAuthorization(), id, int(position), info); err != nil {
 		return h.toastError(c, "Failed to save note")
 	}
 	c.Response().Header().Set("HX-Trigger", toastTrigger("Note saved", "success"))
@@ -233,7 +233,7 @@ func (h *PlayerEditHandler) RemoveNote(c echo.Context) error {
 	if err != nil {
 		return h.toastError(c, "Invalid note")
 	}
-	if err = h.notes.DeleteByID(ctx, playernotes.Authorization{IsAdmin: true}, id, int32(noteID)); err != nil {
+	if err = h.notes.DeleteByID(ctx, playernotes.WebAdminAuthorization(), id, int32(noteID)); err != nil {
 		return h.toastError(c, "Failed to delete note")
 	}
 	c.Response().Header().Set("HX-Trigger", toastTrigger("Note removed", "success"))
@@ -433,7 +433,7 @@ func (h *PlayerEditHandler) renderSection(c echo.Context, ctx context.Context, s
 		}
 		return render(c, http.StatusOK, pages.PlayerEditPerks(playerID, rows))
 	case "notes":
-		notes, err := h.notes.List(ctx, playernotes.Authorization{IsAdmin: true}, playerID)
+		notes, err := h.notes.List(ctx, playernotes.WebAdminAuthorization(), playerID)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, "Failed to load notes")
 		}
@@ -501,7 +501,7 @@ func (h *PlayerEditHandler) loadEditData(ctx context.Context, player models.Play
 	for i, x := range immunities {
 		immunityRows[i] = pages.PlayerEditImmunityRow{ID: x.ID, Name: x.Name, OneTime: x.OneTime}
 	}
-	notes, err := h.notes.List(ctx, playernotes.Authorization{IsAdmin: true}, player.ID)
+	notes, err := h.notes.List(ctx, playernotes.WebAdminAuthorization(), player.ID)
 	if err != nil {
 		return pages.PlayerEditData{}, err
 	}
