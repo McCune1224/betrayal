@@ -1,9 +1,9 @@
 package channels
 
 import (
-	"github.com/mccune1224/betrayal/internal/logger"
 	"context"
 	"fmt"
+	"github.com/mccune1224/betrayal/internal/logger"
 	"sort"
 	"strings"
 
@@ -55,7 +55,7 @@ func (c *Channel) setLifeboardChannel(ctx ken.SubCommandContext) (err error) {
 		q.DeletePlayerLifeboard(dbCtx)
 	}
 
-	msg, err := UserLifeboardMessageBuilder(ctx.GetSession(), playerStatuses)
+	msg, err := UserLifeboardMessageBuilder(ctx.GetSession(), ctx.GetEvent().GuildID, playerStatuses)
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
 		return discord.AlexError(ctx, "Failed to build user lifeboard message")
@@ -85,7 +85,7 @@ func (c *Channel) setLifeboardChannel(ctx ken.SubCommandContext) (err error) {
 	return discord.SuccessfulMessage(ctx, "Lifeboard Channel Set", fmt.Sprintf("Lifeboard set in %s", targetChannel.Mention()))
 }
 
-func UserLifeboardMessageBuilder(sesh *discordgo.Session, playerStatuses []models.ListPlayerLifeboardRow) (*discordgo.MessageEmbed, error) {
+func UserLifeboardMessageBuilder(sesh *discordgo.Session, guildID string, playerStatuses []models.ListPlayerLifeboardRow) (*discordgo.MessageEmbed, error) {
 	aliveTally := 0
 	fields := []*discordgo.MessageEmbedField{}
 
@@ -96,7 +96,7 @@ func UserLifeboardMessageBuilder(sesh *discordgo.Session, playerStatuses []model
 	}
 	activePlayers := []MemberAlive{}
 	for _, s := range playerStatuses {
-		dgMember, _ := sesh.GuildMember(discord.BetraylGuildID, util.Itoa64(s.ID))
+		dgMember, _ := sesh.GuildMember(guildID, util.Itoa64(s.ID))
 		activePlayers = append(activePlayers, MemberAlive{dgMember, s.Alive})
 	}
 

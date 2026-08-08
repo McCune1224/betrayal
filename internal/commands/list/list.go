@@ -259,7 +259,7 @@ func (l *List) listNotes(ctx ken.SubCommandContext) (err error) {
 		fieldName := ""
 		for _, player := range players {
 			if player.ID == playerID {
-				discordPlayer, _ := ctx.GetSession().GuildMember(discord.BetraylGuildID, util.Itoa64(player.ID))
+				discordPlayer, _ := ctx.GetSession().GuildMember(ctx.GetEvent().GuildID, util.Itoa64(player.ID))
 				fieldName = discordPlayer.DisplayName()
 				break
 			}

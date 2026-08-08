@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -214,17 +213,6 @@ func main() {
 					Err(errMsg).
 					Str("options", cmdArg).
 					Msg("Command execution failed")
-
-				// Log to audit for failed commands
-				auditWriter := logger.GetAuditWriter()
-				if auditWriter != nil && ctx.GetEvent().Member != nil && ctx.GetEvent().Member.User != nil {
-					audit := logger.CreateAuditFromContext(ctx, bot, time.Now())
-					audit.Status = "error"
-					errorMsg := errMsg.Error()
-					audit.ErrorMessage = &errorMsg
-					audit.ExecutionTimeMs = 0 // Unknown for error case
-					auditWriter.LogCommand(audit)
-				}
 			},
 			OnEventError: func(context string, errMsg error) {
 				appLogger.Error().
@@ -258,7 +246,9 @@ func main() {
 		)
 
 		application.betrayalManager.Session().AddHandler(application.logHandler)
-		application.betrayalManager.Session().AddHandler(auditHandler)
+		if err := application.betrayalManager.RegisterMiddlewares(logger.NewCommandAuditMiddleware(logger.GetAuditWriter())); err != nil {
+			appLogger.Fatal().Err(err).Msg("Failed to register audit middleware")
+		}
 		application.betrayalManager.Session().AddHandler(paginationHandler)
 		defer application.betrayalManager.Unregister()
 
@@ -432,47 +422,6 @@ func formatOption(s *discordgo.Session, o *discordgo.ApplicationCommandInteracti
 		return ""
 	}
 	// new info
-}
-
-// auditHandler logs all successful slash commands to the database for audit trail
-func auditHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	if i.Type != discordgo.InteractionApplicationCommand {
-		return
-	}
-
-	// Only log successful command executions (those without errors are handled after completion)
-	// This handler catches the interaction before processing
-	auditWriter := logger.GetAuditWriter()
-	if auditWriter == nil || i.Member == nil || i.Member.User == nil {
-		return
-	}
-
-	cmdData := i.ApplicationCommandData()
-	arguments := logger.ExtractCommandArguments(s, cmdData.Options)
-
-	userRoles := i.Member.Roles
-	isAdmin := false
-	for _, roleID := range userRoles {
-		if slices.Contains(discord.AdminRoles, roleID) {
-			isAdmin = true
-		}
-	}
-
-	audit := logger.CommandAudit{
-		CorrelationID:    logger.GenerateCorrelationID().String(),
-		CommandName:      cmdData.Name,
-		UserID:           i.Member.User.ID,
-		Username:         i.Member.User.Username,
-		UserRoles:        userRoles,
-		GuildID:          i.GuildID,
-		ChannelID:        i.ChannelID,
-		IsAdmin:          isAdmin,
-		CommandArguments: arguments,
-		Status:           "success",
-		ExecutionTimeMs:  0, // Will be updated if we can track it
-	}
-
-	auditWriter.LogCommand(audit)
 }
 
 // paginationHandler handles pagination button interactions for search results

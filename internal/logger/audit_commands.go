@@ -271,25 +271,30 @@ func containsString(values []string, want string) bool {
 	return false
 }
 
-// CreateAuditFromContext builds a CommandAudit from Ken context
+// CreateAuditFromContext builds a CommandAudit from Ken context.
 func CreateAuditFromContext(ctx *ken.Ctx, session *discordgo.Session, startTime time.Time) CommandAudit {
+	var guildRoles []*discordgo.Role
+	if session != nil {
+		guildRoles, _ = session.GuildRoles(ctx.GetEvent().GuildID)
+	}
+	return CreateAuditFromContextWithRoles(ctx, session, guildRoles, startTime, time.Now())
+}
+
+// CreateAuditFromContextWithRoles builds the final audit record using the
+// resolved role IDs from the interaction guild. Keeping role resolution as an
+// input makes the classification seam deterministic and avoids cache guesses.
+func CreateAuditFromContextWithRoles(ctx *ken.Ctx, session *discordgo.Session, guildRoles []*discordgo.Role, startTime, endTime time.Time) CommandAudit {
 	event := ctx.GetEvent()
-	execution_time := time.Since(startTime).Milliseconds()
+	executionTime := endTime.Sub(startTime).Milliseconds()
+	if executionTime < 1 {
+		executionTime = 1
+	}
 
 	userRoles := []string{}
 	if event.Member != nil {
 		userRoles = event.Member.Roles
 	}
-
-	var guildRoles []*discordgo.Role
-	if session != nil {
-		guildRoles, _ = session.GuildRoles(event.GuildID)
-	}
-	isAdmin := isAdminMember(event.Member, guildRoles)
-
 	cmdData := event.ApplicationCommandData()
-	arguments := ExtractCommandArguments(session, cmdData.Options)
-
 	return CommandAudit{
 		CorrelationID:    GenerateCorrelationID().String(),
 		CommandName:      cmdData.Name,
@@ -298,11 +303,79 @@ func CreateAuditFromContext(ctx *ken.Ctx, session *discordgo.Session, startTime 
 		UserRoles:        userRoles,
 		GuildID:          event.GuildID,
 		ChannelID:        event.ChannelID,
-		IsAdmin:          isAdmin,
-		CommandArguments: arguments,
+		IsAdmin:          isAdminMember(event.Member, guildRoles),
+		CommandArguments: ExtractCommandArguments(session, cmdData.Options),
 		Status:           "success",
-		ExecutionTimeMs:  execution_time,
+		ExecutionTimeMs:  executionTime,
 	}
+}
+
+// AuditSink is the small seam used by the lifecycle middleware and tests.
+type AuditSink interface {
+	LogCommand(CommandAudit)
+}
+
+type commandAuditLifecycle struct {
+	sink AuditSink
+	now  func() time.Time
+}
+
+func newCommandAuditLifecycle(sink AuditSink, now func() time.Time) *commandAuditLifecycle {
+	if now == nil {
+		now = time.Now
+	}
+	return &commandAuditLifecycle{sink: sink, now: now}
+}
+
+func (l *commandAuditLifecycle) Start() time.Time { return l.now() }
+
+func (l *commandAuditLifecycle) Finish(audit CommandAudit, start time.Time, commandErr error) {
+	if commandErr != nil {
+		audit.Status = "error"
+		message := commandErr.Error()
+		audit.ErrorMessage = &message
+	} else {
+		audit.Status = "success"
+		audit.ErrorMessage = nil
+	}
+	audit.ExecutionTimeMs = l.now().Sub(start).Milliseconds()
+	if audit.ExecutionTimeMs < 1 {
+		audit.ExecutionTimeMs = 1
+	}
+	if l.sink != nil {
+		l.sink.LogCommand(audit)
+	}
+}
+
+const commandAuditStartKey = "betrayal.command_audit.start"
+
+// CommandAuditMiddleware records exactly one final audit after command
+// execution, regardless of whether Ken reports an error.
+type CommandAuditMiddleware struct {
+	lifecycle *commandAuditLifecycle
+}
+
+func NewCommandAuditMiddleware(sink AuditSink) *CommandAuditMiddleware {
+	return &CommandAuditMiddleware{lifecycle: newCommandAuditLifecycle(sink, time.Now)}
+}
+
+func (m *CommandAuditMiddleware) Before(ctx *ken.Ctx) (bool, error) {
+	ctx.Set(commandAuditStartKey, m.lifecycle.Start())
+	return true, nil
+}
+
+func (m *CommandAuditMiddleware) After(ctx *ken.Ctx, commandErr error) error {
+	start, ok := ctx.Get(commandAuditStartKey).(time.Time)
+	if !ok {
+		start = m.lifecycle.Start()
+	}
+	var roles []*discordgo.Role
+	if session := ctx.GetSession(); session != nil {
+		roles, _ = session.GuildRoles(ctx.GetEvent().GuildID)
+	}
+	audit := CreateAuditFromContextWithRoles(ctx, ctx.GetSession(), roles, start, m.lifecycle.now())
+	m.lifecycle.Finish(audit, start, commandErr)
+	return nil
 }
 
 func memberUserID(member *discordgo.Member) string {

@@ -1,11 +1,71 @@
 package logger
 
 import (
+	"errors"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
+
+type auditSinkFake struct{ audits []CommandAudit }
+
+func (f *auditSinkFake) LogCommand(audit CommandAudit) { f.audits = append(f.audits, audit) }
+
+func TestCommandAuditLifecycleRecordsOneSuccessfulFinalAuditWithDuration(t *testing.T) {
+	sink := new(auditSinkFake)
+	clock := &fakeAuditClock{now: time.Unix(100, 0)}
+	lifecycle := newCommandAuditLifecycle(sink, clock.Now)
+	start := lifecycle.Start()
+	clock.now = start.Add(25 * time.Millisecond)
+
+	lifecycle.Finish(CommandAudit{CommandName: "roll"}, start, nil)
+
+	if len(sink.audits) != 1 {
+		t.Fatalf("audit records = %d, want 1", len(sink.audits))
+	}
+	got := sink.audits[0]
+	if got.Status != "success" || got.ExecutionTimeMs != 25 {
+		t.Fatalf("final success audit = %+v, want success with 25ms", got)
+	}
+}
+
+func TestCommandAuditLifecycleRecordsOneFailedFinalAuditWithDuration(t *testing.T) {
+	sink := new(auditSinkFake)
+	clock := &fakeAuditClock{now: time.Unix(100, 0)}
+	lifecycle := newCommandAuditLifecycle(sink, clock.Now)
+	start := lifecycle.Start()
+	clock.now = start.Add(7 * time.Millisecond)
+
+	lifecycle.Finish(CommandAudit{CommandName: "roll"}, start, errors.New("command failed"))
+
+	if len(sink.audits) != 1 {
+		t.Fatalf("audit records = %d, want 1", len(sink.audits))
+	}
+	got := sink.audits[0]
+	if got.Status != "error" || got.ExecutionTimeMs != 7 || got.ErrorMessage == nil || *got.ErrorMessage != "command failed" {
+		t.Fatalf("final error audit = %+v, want error with 7ms and message", got)
+	}
+}
+
+func TestCommandAuditLifecycleClampsSubMillisecondDurationToOne(t *testing.T) {
+	sink := new(auditSinkFake)
+	clock := &fakeAuditClock{now: time.Unix(100, 0)}
+	lifecycle := newCommandAuditLifecycle(sink, clock.Now)
+	start := lifecycle.Start()
+	clock.now = start
+
+	lifecycle.Finish(CommandAudit{CommandName: "roll"}, start, nil)
+
+	if sink.audits[0].ExecutionTimeMs != 1 {
+		t.Fatalf("duration = %d, want minimum 1ms", sink.audits[0].ExecutionTimeMs)
+	}
+}
+
+type fakeAuditClock struct{ now time.Time }
+
+func (c *fakeAuditClock) Now() time.Time { return c.now }
 
 func TestExtractCommandArgumentsSkipsMalformedOptions(t *testing.T) {
 	got := ExtractCommandArguments(nil, []*discordgo.ApplicationCommandInteractionDataOption{
