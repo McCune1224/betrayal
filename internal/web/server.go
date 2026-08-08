@@ -308,6 +308,8 @@ func (s *Server) setupRoutes() {
 
 	// Channel config routes
 	protected.GET("/channels", channelsHandler.Page)
+	protected.POST("/channels/update", channelsHandler.Update)
+	protected.POST("/channels/admin/delete", channelsHandler.DeleteAdmin)
 
 	// Player edit routes
 	protected.GET("/players/:id/edit", playerEditHandler.Edit)

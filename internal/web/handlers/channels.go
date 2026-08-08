@@ -34,6 +34,66 @@ func NewChannelsHandler(pool *pgxpool.Pool, discordSession *discordgo.Session) *
 	return &ChannelsHandler{dbPool: pool, discordSession: discordSession}
 }
 
+// Update handles channel configuration mutations from the web panel.
+func (h *ChannelsHandler) Update(c echo.Context) error {
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cancel()
+	kind, channelID := c.FormValue("kind"), c.FormValue("channel_id")
+	if channelID == "" {
+		return c.String(http.StatusBadRequest, "channel ID is required")
+	}
+	if h.discordSession != nil {
+		if _, err := h.discordSession.Channel(channelID); err != nil {
+			return c.String(http.StatusBadRequest, "Discord channel was not found")
+		}
+	}
+	q := models.New(h.dbPool)
+	var err error
+	switch kind {
+	case "vote":
+		err = q.UpsertVoteChannel(ctx, channelID)
+	case "action":
+		err = q.WipeActionChannel(ctx)
+		if err == nil {
+			err = q.UpsertActionChannel(ctx, channelID)
+		}
+	case "log":
+		_, err = q.SetCommandLogChannel(ctx, channelID)
+	case "admin":
+		_, err = q.CreateAdminChannel(ctx, channelID)
+	case "lifeboard":
+		messageID := c.FormValue("message_id")
+		if messageID == "" {
+			return c.String(http.StatusBadRequest, "lifeboard message ID is required")
+		}
+		if err = q.DeletePlayerLifeboard(ctx); err == nil {
+			_, err = q.CreatePlayerLifeboard(ctx, models.CreatePlayerLifeboardParams{ChannelID: channelID, MessageID: messageID})
+		}
+	default:
+		return c.String(http.StatusBadRequest, "unknown channel type")
+	}
+	if err != nil {
+		c.Response().Header().Set("HX-Trigger", toastTrigger("Channel update failed", "error"))
+		return c.String(http.StatusInternalServerError, "channel update failed")
+	}
+	c.Response().Header().Set("HX-Trigger", toastTrigger("Channel configuration updated", "success"))
+	return h.Page(c)
+}
+
+func (h *ChannelsHandler) DeleteAdmin(c echo.Context) error {
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cancel()
+	id := c.FormValue("channel_id")
+	if id == "" {
+		return c.String(http.StatusBadRequest, "channel ID is required")
+	}
+	if err := models.New(h.dbPool).DeleteAdminChannel(ctx, id); err != nil {
+		return c.String(http.StatusInternalServerError, "failed to remove admin channel")
+	}
+	c.Response().Header().Set("HX-Trigger", toastTrigger("Admin channel removed", "success"))
+	return h.Page(c)
+}
+
 // Page handles GET /channels
 func (h *ChannelsHandler) Page(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
