@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/mccune1224/betrayal/internal/models"
 	"github.com/mccune1224/betrayal/internal/services/inventory"
+	"github.com/mccune1224/betrayal/internal/services/playernotes"
 	"github.com/mccune1224/betrayal/internal/web/templates/pages"
 )
 
@@ -20,11 +22,12 @@ import (
 // edits go through the same game rules.
 type PlayerEditHandler struct {
 	dbPool *pgxpool.Pool
+	notes  *playernotes.Service
 }
 
 // NewPlayerEditHandler creates a new PlayerEditHandler
 func NewPlayerEditHandler(pool *pgxpool.Pool) *PlayerEditHandler {
-	return &PlayerEditHandler{dbPool: pool}
+	return &PlayerEditHandler{dbPool: pool, notes: playernotes.New(pool)}
 }
 
 // Edit handles GET /players/:id/edit — full edit page
@@ -213,11 +216,8 @@ func (h *PlayerEditHandler) AddNote(c echo.Context) error {
 	if info == "" {
 		return h.toastError(c, "Note cannot be empty")
 	}
-	q := models.New(h.dbPool)
-	if _, err = q.UpdatePlayerNoteByPosition(ctx, models.UpdatePlayerNoteByPositionParams{PlayerID: id, Position: int32(position), Info: info}); err != nil {
-		if _, err = q.CreatePlayerNote(ctx, models.CreatePlayerNoteParams{PlayerID: id, Position: int32(position), Info: info}); err != nil {
-			return h.toastError(c, "Failed to save note")
-		}
+	if _, err = h.notes.Save(ctx, playernotes.WebAdminAuthorization(), id, int(position), info); err != nil {
+		return h.toastError(c, "Failed to save note")
 	}
 	c.Response().Header().Set("HX-Trigger", toastTrigger("Note saved", "success"))
 	return h.renderSection(c, ctx, "notes", id)
@@ -234,7 +234,11 @@ func (h *PlayerEditHandler) RemoveNote(c echo.Context) error {
 	if err != nil {
 		return h.toastError(c, "Invalid note")
 	}
-	if err = models.New(h.dbPool).DeletePlayerNote(ctx, models.DeletePlayerNoteParams{PlayerID: id, NoteID: int32(noteID)}); err != nil {
+	if err = h.notes.DeleteByID(ctx, playernotes.WebAdminAuthorization(), id, int32(noteID)); err != nil {
+		if errors.Is(err, playernotes.ErrNotFound) {
+			c.Response().Header().Set("HX-Trigger", toastTrigger("Note not found", "error"))
+			return c.String(http.StatusNotFound, "Note not found")
+		}
 		return h.toastError(c, "Failed to delete note")
 	}
 	c.Response().Header().Set("HX-Trigger", toastTrigger("Note removed", "success"))
@@ -433,6 +437,16 @@ func (h *PlayerEditHandler) renderSection(c echo.Context, ctx context.Context, s
 			rows[i] = pages.PlayerEditPerkRow{ID: pk.ID, Name: pk.Name}
 		}
 		return render(c, http.StatusOK, pages.PlayerEditPerks(playerID, rows))
+	case "notes":
+		notes, err := h.notes.List(ctx, playernotes.WebAdminAuthorization(), playerID)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Failed to load notes")
+		}
+		rows := make([]pages.PlayerEditNoteRow, len(notes))
+		for i, note := range notes {
+			rows[i] = pages.PlayerEditNoteRow{ID: note.NoteID, Position: note.Position, Info: note.Info}
+		}
+		return render(c, http.StatusOK, pages.PlayerEditNotes(playerID, rows))
 	default:
 		return c.String(http.StatusInternalServerError, "Unknown section")
 	}
@@ -492,7 +506,7 @@ func (h *PlayerEditHandler) loadEditData(ctx context.Context, player models.Play
 	for i, x := range immunities {
 		immunityRows[i] = pages.PlayerEditImmunityRow{ID: x.ID, Name: x.Name, OneTime: x.OneTime}
 	}
-	notes, err := q.ListPlayerNote(ctx, player.ID)
+	notes, err := h.notes.List(ctx, playernotes.WebAdminAuthorization(), player.ID)
 	if err != nil {
 		return pages.PlayerEditData{}, err
 	}

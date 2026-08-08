@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/mccune1224/betrayal/internal/models"
+	"github.com/mccune1224/betrayal/internal/services/playernotes"
 	"github.com/mccune1224/betrayal/internal/web/templates/pages"
 	"github.com/mccune1224/betrayal/internal/web/templates/partials"
 )
@@ -157,8 +158,11 @@ func (h *PlayersHandler) Detail(c echo.Context) error {
 		immunityNames[i] = imm.Name
 	}
 
-	// Get notes
-	notes, _ := q.ListPlayerNote(ctx, player.ID)
+	// Get notes through the shared notes service so web reads match Discord.
+	notes, err := playernotes.New(h.dbPool).List(ctx, playernotes.WebAdminAuthorization(), player.ID)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to load notes")
+	}
 	noteTexts := make([]string, len(notes))
 	for i, note := range notes {
 		noteTexts[i] = note.Info

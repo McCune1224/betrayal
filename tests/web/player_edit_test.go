@@ -43,6 +43,20 @@ func TestPlayerEditPage(t *testing.T) {
 	}
 }
 
+func TestPlayerEditRemoveMissingNoteReturnsNotFound(t *testing.T) {
+	pool := mustPool(t)
+	seedPlayer(t, pool, testPlayerID)
+	client := newTestClient(t, testServer(t, pool))
+	client.login()
+
+	resp := client.do(http.MethodPost, "/players/"+strconv.FormatInt(testPlayerID, 10)+"/notes/remove", url.Values{
+		"note_id": {"999"},
+	}, nil)
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("POST missing note: expected 404, got %d", resp.StatusCode)
+	}
+}
+
 func TestPlayerEditStats(t *testing.T) {
 	pool := mustPool(t)
 	seedPlayer(t, pool, testPlayerID)
