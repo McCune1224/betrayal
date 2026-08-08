@@ -33,8 +33,10 @@ type Migration struct {
 }
 
 // Runner wraps a golang-migrate instance bound to a single database URL.
-// The connection is opened lazily by the postgres driver and held for the
-// lifetime of the Runner; call Close when done.
+// New opens a connection eagerly (the postgres driver pings and ensures the
+// schema_migrations table at construction); subsequent operations reuse it.
+// Call Close when done. Server-side, construct lazily so a briefly-down DB
+// doesn't block startup.
 type Runner struct {
 	m *migrate.Migrate
 }

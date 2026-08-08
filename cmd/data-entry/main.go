@@ -76,6 +76,9 @@ func runAll(ctx context.Context, pool *pgxpool.Pool, svc *datasync.Service) {
 	}
 
 	failed := false
+	recordFailed := func(src models.SyncSource, err error) {
+		_ = svc.RecordRun(ctx, &src.ID, src.Name, datasync.RunStatusFailed, "cli", err.Error(), nil)
+	}
 	for _, src := range sources {
 		if !src.Enabled {
 			fmt.Printf("⚠ skipping %s (disabled)\n", src.Name)
@@ -93,6 +96,7 @@ func runAll(ctx context.Context, pool *pgxpool.Pool, svc *datasync.Service) {
 		case "roles":
 			body, err := svc.Fetch(ctx, src)
 			if err != nil {
+				recordFailed(src, err)
 				fail(src.Name, err)
 				failed = true
 				continue
@@ -100,12 +104,14 @@ func runAll(ctx context.Context, pool *pgxpool.Pool, svc *datasync.Service) {
 			docs, warnings, err := datasync.ParseRolesCSV(body, models.Alignment(src.Alignment))
 			body.Close()
 			if err != nil {
+				recordFailed(src, err)
 				fail(src.Name, err)
 				failed = true
 				continue
 			}
 			plan, err := datasync.PlanRoles(ctx, q, models.Alignment(src.Alignment), docs)
 			if err != nil {
+				recordFailed(src, err)
 				fail(src.Name, err)
 				failed = true
 				continue
@@ -128,6 +134,7 @@ func runAll(ctx context.Context, pool *pgxpool.Pool, svc *datasync.Service) {
 		case "items":
 			body, err := svc.Fetch(ctx, src)
 			if err != nil {
+				recordFailed(src, err)
 				fail(src.Name, err)
 				failed = true
 				continue
@@ -135,12 +142,14 @@ func runAll(ctx context.Context, pool *pgxpool.Pool, svc *datasync.Service) {
 			docs, warnings, err := datasync.ParseItemsCSV(body)
 			body.Close()
 			if err != nil {
+				recordFailed(src, err)
 				fail(src.Name, err)
 				failed = true
 				continue
 			}
 			plan, err := datasync.PlanItems(ctx, q, docs)
 			if err != nil {
+				recordFailed(src, err)
 				fail(src.Name, err)
 				failed = true
 				continue

@@ -125,13 +125,14 @@ func TestStatusNamesAndOrder(t *testing.T) {
 	st, err := r.Status()
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(st), 31, "at least the 31 known migrations")
-	// Versions ascending, names non-empty.
+	// Versions ascending, names non-empty; the highest version is the count
+	// (this repo numbers migrations sequentially 1..N).
 	for i, m := range st {
 		require.NotEmpty(t, m.Name)
 		if i > 0 {
 			require.Greater(t, m.Version, st[i-1].Version, "ascending order")
 		}
 	}
-	require.Equal(t, uint(32), st[len(st)-1].Version, "latest migration is 000032")
+	require.Equal(t, uint(len(st)), st[len(st)-1].Version, "latest migration version matches the count")
 	require.Equal(t, "catalog_name_uniqueness", st[len(st)-1].Name)
 }

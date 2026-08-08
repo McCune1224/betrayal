@@ -69,6 +69,84 @@ func TestPlanRolesDiff(t *testing.T) {
 	require.Equal(t, datasync.ActionCreate, b.Perks[0].Action)
 }
 
+func TestApplyLinksExistingAbilityToNewRole(t *testing.T) {
+	// BLOCKER regression: a NEW role referencing an ability that already
+	// exists UNCHANGED must still get its role_ability join (the plan marks
+	// the ability "skip", but the link is still required).
+	pool := mustPool(t)
+	ctx := context.Background()
+	q := models.New(pool)
+
+	_, err := q.CreateAbilityInfo(ctx, models.CreateAbilityInfoParams{
+		Name: "Ability One", Description: "Does a thing", DefaultCharges: 3,
+		AnyAbility: true, Rarity: models.RarityCOMMON,
+	})
+	require.NoError(t, err)
+
+	docs, _, err := datasync.ParseRolesCSV(strings.NewReader(roleCSV), models.AlignmentGOOD)
+	require.NoError(t, err)
+	plan, err := datasync.PlanRoles(ctx, q, models.AlignmentGOOD, docs)
+	require.NoError(t, err)
+	require.Equal(t, datasync.ActionSkip, plan.Roles[0].Abilities[0].Action, "ability is unchanged → skip")
+
+	require.NoError(t, datasync.ApplyRoles(ctx, pool, plan))
+
+	role, err := q.GetRoleByName(ctx, "RoleA")
+	require.NoError(t, err)
+	links, err := q.ListRoleAbilityForRole(ctx, role.ID)
+	require.NoError(t, err)
+	require.Len(t, links, 2, "new role links both sheet abilities (one pre-existing, one new)")
+	names := map[string]bool{}
+	for _, l := range links {
+		names[l.Name] = true
+	}
+	require.True(t, names["Ability One"], "pre-existing unchanged ability got its join")
+	require.True(t, names["Ability Two"], "new ability got its join")
+}
+
+func TestApplyItemsNewCategoryOnUnchangedItem(t *testing.T) {
+	// Regression: an unchanged item gaining a new category in the sheet must
+	// still get the item_category join even though its action is "skip".
+	pool := mustPool(t)
+	ctx := context.Background()
+	q := models.New(pool)
+
+	_, err := q.CreateItem(ctx, models.CreateItemParams{
+		Name: "Sword of Testing", Description: "Stabby sword",
+		Rarity: models.RarityRARE, Cost: 50,
+	})
+	require.NoError(t, err)
+	_, err = q.CreateCategory(ctx, "Weapons")
+	require.NoError(t, err)
+
+	docs, _, err := datasync.ParseItemsCSV(strings.NewReader(itemCSV))
+	require.NoError(t, err)
+	plan, err := datasync.PlanItems(ctx, q, docs)
+	require.NoError(t, err)
+	require.Equal(t, datasync.ActionSkip, plan.Items[0].Action, "item unchanged → skip")
+
+	require.NoError(t, datasync.ApplyItems(ctx, pool, plan))
+
+	item, err := q.GetItemByName(ctx, "Sword of Testing")
+	require.NoError(t, err)
+	// Weapons category join exists for the unchanged item.
+	var linked bool
+	for _, cat := range []string{"Weapons", "Melee"} {
+		c, err := q.GetCategoryByName(ctx, cat)
+		if err != nil {
+			continue
+		}
+		var count int
+		require.NoError(t, pool.QueryRow(ctx,
+			"SELECT count(*) FROM item_category WHERE item_id = $1 AND category_id = $2", item.ID, c.ID).Scan(&count))
+		if cat == "Weapons" {
+			require.Equal(t, 1, count, "unchanged item picked up the new Weapons category link")
+			linked = true
+		}
+	}
+	require.True(t, linked)
+}
+
 func TestPlanRolesSkipWhenUnchanged(t *testing.T) {
 	pool := mustPool(t)
 	ctx := context.Background()

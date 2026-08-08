@@ -45,6 +45,12 @@ Public: `GET /login`, `POST /login`, `GET /health`. Everything else requires a s
 | GET | `/roles/:id/perks` · PUT `/roles/:id/perks/:perkId` · DELETE `/roles/:id/perks/:perkId` | roles | Perk sub-resources |
 | POST | `/admin/redeploy` | admin | Trigger Railway redeploy |
 | GET | `/admin/audit` | admin | Command audit log viewer |
+| GET | `/sync` | sync | Spreadsheet sync page (sources, preview, history) |
+| POST | `/sync/preview` | sync | Fetch + diff all enabled sources (read-only; rate-limited) |
+| POST | `/sync/apply` | sync | Apply one source's diff (prod-guarded, rate-limited) |
+| POST | `/sync/sources/:id` | sync | Edit source URL / enabled flag |
+| GET | `/admin/migrations` | migrations | Embedded-migration status table + up/rollback controls |
+| POST | `/admin/migrations/up` · `/admin/migrations/down` | migrations | Apply pending / roll back N (prod-guarded, rate-limited; rollback requires typing the migration name) |
 
 ## Environment Variables
 
@@ -53,6 +59,8 @@ Public: `GET /login`, `POST /login`, `GET /health`. Everything else requires a s
 | `WEB_PORT` | Web server port (default 8080) |
 | `ADMIN_PASSWORD` | Shared password for admin login |
 | `SESSION_SECRET` | Cookie encryption key (falls back to `ADMIN_PASSWORD` — see Security) |
+| `WEB_ALLOW_PROD_MUTATIONS` | `true` lifts the hard-block on destructive panel actions (/sync/apply, migrations) against the prod pooler |
+| `GOOD_ROLES_CSV` / `EVIL_ROLES_CSV` / `NEUTRAL_ROLES_CSV` / `ITEM_CSV` | Google Sheets CSV export URLs; seeded into `sync_source` at startup (editable in the /sync panel) |
 | `RAILWAY_API_TOKEN` | Railway API token |
 | `RAILWAY_BETRAYAL_PROJECT_ID` | Railway project ID |
 | `RAILWAY_BETRAYAL_SERVICE_ID` | Railway service ID |

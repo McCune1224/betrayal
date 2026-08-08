@@ -77,6 +77,53 @@ func TestParseRolesCSV(t *testing.T) {
 	require.Equal(t, "Passive Two", b.Perks[0].Name)
 }
 
+func TestParseRolesCSV_NoLeadingSORow(t *testing.T) {
+	// Sheets without the leading "so,,,,,," row must not lose their first role.
+	csv := `,Name ,Description,,,,
+,RoleFirst,First role desc,,,,
+,Abilities:,Charges,Type,Description,Categories,Rarity (if AA)
+,Passives:,Description,,,,
+`
+	docs, warnings, err := datasync.ParseRolesCSV(strings.NewReader(csv), models.AlignmentGOOD)
+	require.NoError(t, err)
+	require.Empty(t, warnings)
+	require.Len(t, docs, 1, "first role survives without the so row")
+	require.Equal(t, "RoleFirst", docs[0].Name)
+}
+
+func TestParseRolesCSV_TrailingBlankRowNoWarning(t *testing.T) {
+	csv := `so,,,,,,
+,Name ,Description,,,,
+,RoleA,Role description A,,,,
+,Abilities:,Charges,Type,Description,Categories,Rarity (if AA)
+,Passives:,Description,,,,
+,,,,,,
+`
+	docs, warnings, err := datasync.ParseRolesCSV(strings.NewReader(csv), models.AlignmentGOOD)
+	require.NoError(t, err)
+	require.Empty(t, warnings, "trailing blank separator must not produce a chunk warning")
+	require.Len(t, docs, 1)
+	require.Equal(t, "RoleA", docs[0].Name)
+}
+
+func TestParseRolesCSV_TrimsNames(t *testing.T) {
+	csv := `so,,,,,,
+,Name ,Description,,,,
+,RoleA ,Role description A,,,,
+,Abilities:,Charges,Type,Description,Categories,Rarity (if AA)
+,Ability One ,3,*,Does a thing,Stealth/Combat,COMMON
+,Passives:,Description,,,,
+,Passive One ,Passive desc one,,,,
+`
+	docs, warnings, err := datasync.ParseRolesCSV(strings.NewReader(csv), models.AlignmentGOOD)
+	require.NoError(t, err)
+	require.Empty(t, warnings)
+	require.Len(t, docs, 1)
+	require.Equal(t, "RoleA", docs[0].Name, "trailing whitespace trimmed from role name")
+	require.Equal(t, "Ability One", docs[0].Abilities[0].Name, "trailing whitespace trimmed from ability name")
+	require.Equal(t, "Passive One", docs[0].Perks[0].Name, "trailing whitespace trimmed from perk name")
+}
+
 func TestParseRolesCSV_UnknownRarityWarnsAndSkips(t *testing.T) {
 	csv := `so,,,,,,
 ,Name ,Description,,,,

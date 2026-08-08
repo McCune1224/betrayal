@@ -272,6 +272,7 @@ func main() {
 			AdminPassword:       cfg.web.adminPassword,
 			SessionSecret:       cfg.web.sessionSecret,
 			DatabaseURL:         cfg.database.dsn,
+			Environment:         env,
 			AllowProdMutations:  cfg.web.allowProdMutations,
 			SyncEnvURLs:         datasync.EnvURLsFromEnv(),
 			RailwayToken:        cfg.web.railwayToken,

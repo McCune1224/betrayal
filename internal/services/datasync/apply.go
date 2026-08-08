@@ -12,8 +12,11 @@ import (
 
 // ApplyRoles executes a role source plan inside ONE transaction. Sheet edits
 // propagate (upsert by name), new rows are created, and nothing is deleted.
-// Missing categories are skipped (they were already flagged as warnings in
-// the preview plan).
+// Every role's abilities/perks are upserted and linked REGARDLESS of the
+// plan's action: an unchanged ability referenced by a NEW role must still get
+// its role_ability join, and the join queries are ON CONFLICT DO NOTHING so
+// re-applies are idempotent. Missing categories are skipped (they were
+// already flagged as warnings in the preview plan).
 func ApplyRoles(ctx context.Context, pool *pgxpool.Pool, plan *RoleSourcePlan) error {
 	tx, err := pool.Begin(ctx)
 	if err != nil {
@@ -29,9 +32,6 @@ func ApplyRoles(ctx context.Context, pool *pgxpool.Pool, plan *RoleSourcePlan) e
 		}
 
 		for _, ap := range rp.Abilities {
-			if ap.Action == ActionSkip {
-				continue
-			}
 			abilityID, err := upsertAbility(ctx, q, ap.Doc)
 			if err != nil {
 				return err
@@ -51,9 +51,6 @@ func ApplyRoles(ctx context.Context, pool *pgxpool.Pool, plan *RoleSourcePlan) e
 		}
 
 		for _, pp := range rp.Perks {
-			if pp.Action == ActionSkip {
-				continue
-			}
 			perkID, err := upsertPerk(ctx, q, pp.Doc)
 			if err != nil {
 				return err
@@ -68,7 +65,9 @@ func ApplyRoles(ctx context.Context, pool *pgxpool.Pool, plan *RoleSourcePlan) e
 	return tx.Commit(ctx)
 }
 
-// ApplyItems executes an item source plan inside ONE transaction.
+// ApplyItems executes an item source plan inside ONE transaction. Like
+// ApplyRoles, items are upserted and category-linked regardless of the plan
+// action so unchanged items still pick up new category links from the sheet.
 func ApplyItems(ctx context.Context, pool *pgxpool.Pool, plan *ItemSourcePlan) error {
 	tx, err := pool.Begin(ctx)
 	if err != nil {
@@ -78,9 +77,6 @@ func ApplyItems(ctx context.Context, pool *pgxpool.Pool, plan *ItemSourcePlan) e
 	q := models.New(tx)
 
 	for _, ip := range plan.Items {
-		if ip.Action == ActionSkip {
-			continue
-		}
 		itemID, err := upsertItem(ctx, q, ip.Doc)
 		if err != nil {
 			return err

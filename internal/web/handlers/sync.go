@@ -88,7 +88,7 @@ func (h *SyncHandler) Preview(c echo.Context) error {
 // time, so the latest sheet state wins). Prod-guarded.
 func (h *SyncHandler) Apply(c echo.Context) error {
 	if h.isProd && !h.allowMutations {
-		c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Blocked: connected to the PRODUCTION database. Set WEB_ALLOW_PROD_MUTATIONS=true to enable sync applies here.", "type": "error"}}`)
+		c.Response().Header().Set("HX-Trigger", toastTrigger("Blocked: connected to the PRODUCTION database. Set WEB_ALLOW_PROD_MUTATIONS=true to enable sync applies here.", "error"))
 		return c.String(http.StatusForbidden, "sync apply blocked against production")
 	}
 
@@ -113,19 +113,22 @@ func (h *SyncHandler) Apply(c echo.Context) error {
 	if target.ID == 0 {
 		return h.badRequest(c, "Unknown source")
 	}
+	if !target.Enabled {
+		return h.badRequest(c, "Source is disabled — enable it in the Sources card first")
+	}
 
-	diff, err := h.buildDiff(ctx, pages.SyncSourceView{ID: target.ID, Name: target.Name, Kind: target.Kind, Alignment: target.Alignment, Url: target.Url, Enabled: target.Enabled})
-	if err != nil {
+	if _, err := h.buildDiff(ctx, pages.SyncSourceView{ID: target.ID, Name: target.Name, Kind: target.Kind, Alignment: target.Alignment, Url: target.Url, Enabled: target.Enabled}); err != nil {
 		_ = h.svc.RecordRun(ctx, &target.ID, target.Name, datasync.RunStatusFailed, "web", err.Error(), nil)
 		return h.syncError(c, "Preview failed before apply: "+err.Error())
 	}
 
-	if err := h.applyDiff(ctx, target); err != nil {
+	appliedCounts, err := h.applyDiff(ctx, target)
+	if err != nil {
 		_ = h.svc.RecordRun(ctx, &target.ID, target.Name, datasync.RunStatusFailed, "web", err.Error(), nil)
 		return h.syncError(c, "Apply failed: "+err.Error())
 	}
 
-	_ = h.svc.RecordRun(ctx, &target.ID, target.Name, datasync.RunStatusApplied, "web", "", actionCounts(diff.Counts))
+	_ = h.svc.RecordRun(ctx, &target.ID, target.Name, datasync.RunStatusApplied, "web", "", actionCounts(appliedCounts))
 
 	data, err := h.loadPageData(ctx)
 	if err != nil {
@@ -133,7 +136,7 @@ func (h *SyncHandler) Apply(c echo.Context) error {
 	}
 	data.IsProd = h.isProd
 	data.AllowMutations = h.allowMutations || !h.isProd
-	c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Applied "+`+strconv.Quote(target.Name)+` — see run history", "type": "success"}}`)
+	c.Response().Header().Set("HX-Trigger", toastTrigger("Applied "+target.Name+" — see run history", "success"))
 	return render(c, http.StatusOK, pages.SyncContent(data))
 }
 
@@ -163,7 +166,7 @@ func (h *SyncHandler) UpdateSource(c echo.Context) error {
 	}
 	data.IsProd = h.isProd
 	data.AllowMutations = h.allowMutations || !h.isProd
-	c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Source updated", "type": "success"}}`)
+	c.Response().Header().Set("HX-Trigger", toastTrigger("Source updated", "success"))
 	return render(c, http.StatusOK, pages.SyncContent(data))
 }
 
@@ -234,11 +237,13 @@ func (h *SyncHandler) buildDiff(ctx context.Context, src pages.SyncSourceView) (
 	return diff, nil
 }
 
-// applyDiff re-derives the plan for a source and applies it.
-func (h *SyncHandler) applyDiff(ctx context.Context, src models.SyncSource) error {
+// applyDiff re-derives the plan for a source and applies it, returning the
+// counts that were actually applied (so the recorded sync_run matches what
+// really happened if the sheet changed between preview and apply).
+func (h *SyncHandler) applyDiff(ctx context.Context, src models.SyncSource) (map[string]int, error) {
 	body, err := h.svc.Fetch(ctx, src)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer body.Close()
 
@@ -247,25 +252,31 @@ func (h *SyncHandler) applyDiff(ctx context.Context, src models.SyncSource) erro
 	case "roles":
 		docs, _, err := datasync.ParseRolesCSV(body, models.Alignment(src.Alignment))
 		if err != nil {
-			return err
+			return nil, err
 		}
 		plan, err := datasync.PlanRoles(ctx, q, models.Alignment(src.Alignment), docs)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		return datasync.ApplyRoles(ctx, h.dbPool, plan)
+		if err := datasync.ApplyRoles(ctx, h.dbPool, plan); err != nil {
+			return nil, err
+		}
+		return countsToStrings(plan.Counts), nil
 	case "items":
 		docs, _, err := datasync.ParseItemsCSV(body)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		plan, err := datasync.PlanItems(ctx, q, docs)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		return datasync.ApplyItems(ctx, h.dbPool, plan)
+		if err := datasync.ApplyItems(ctx, h.dbPool, plan); err != nil {
+			return nil, err
+		}
+		return countsToStrings(plan.Counts), nil
 	}
-	return nil
+	return map[string]int{}, nil
 }
 
 // loadPageData assembles the sources + run history for the page.
@@ -331,11 +342,11 @@ func actionCounts(in map[string]int) map[datasync.Action]int {
 }
 
 func (h *SyncHandler) badRequest(c echo.Context, msg string) error {
-	c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "`+msg+`", "type": "error"}}`)
+	c.Response().Header().Set("HX-Trigger", toastTrigger(msg, "error"))
 	return c.String(http.StatusBadRequest, msg)
 }
 
 func (h *SyncHandler) syncError(c echo.Context, msg string) error {
-	c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "`+msg+`", "type": "error"}}`)
+	c.Response().Header().Set("HX-Trigger", toastTrigger(msg, "error"))
 	return c.String(http.StatusInternalServerError, msg)
 }

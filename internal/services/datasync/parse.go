@@ -43,9 +43,11 @@ func ParseRolesCSV(r io.Reader, alignment models.Alignment) ([]RoleDoc, []string
 }
 
 // readRoleChunks splits the CSV into role chunks on rows with an empty second
-// column. Empty chunks ARE appended (faithful to the original tool): sheets
-// open with a row like "so,,,,,," that yields an empty first chunk, which the
-// caller drops via chunks[1:]. Without this, the first role would be lost.
+// column. Real sheets open with a row like "so,,,,,," whose empty first column
+// yields an empty leading chunk, which is dropped. Sheets WITHOUT that row
+// keep their first chunk (a real role would otherwise be lost). Any other
+// empty chunks (stray blank rows mid-sheet or at EOF) are dropped too, since
+// they carry no role data.
 func readRoleChunks(r io.Reader) ([][][]string, error) {
 	reader := csv.NewReader(r)
 	var chunks [][][]string
@@ -69,10 +71,15 @@ func readRoleChunks(r io.Reader) ([][][]string, error) {
 			curr = append(curr, record)
 		}
 	}
-	if len(chunks) > 0 {
-		chunks = chunks[1:] // leading empty chunk (or sheet header)
+
+	out := make([][][]string, 0, len(chunks))
+	for _, chunk := range chunks {
+		if len(chunk) == 0 {
+			continue // leading "so" row, stray blank, or trailing EOF — no role data
+		}
+		out = append(out, chunk)
 	}
-	return chunks, nil
+	return out, nil
 }
 
 // parseRoleChunk turns one chunk (role header + abilities + passives) into a
@@ -85,8 +92,8 @@ func parseRoleChunk(chunk [][]string, alignment models.Alignment) (RoleDoc, []st
 	if len(chunk) < 2 || len(chunk[1]) < 3 {
 		return doc, nil, errors.New("role header row too short")
 	}
-	doc.Name = chunk[1][1]
-	doc.Description = chunk[1][2]
+	doc.Name = strings.TrimSpace(chunk[1][1])
+	doc.Description = strings.TrimSpace(chunk[1][2])
 	doc.Alignment = alignment
 
 	// Abilities run from row 3 until the "Passives:" marker row.
@@ -111,7 +118,10 @@ func parseRoleChunk(chunk [][]string, alignment models.Alignment) (RoleDoc, []st
 		if len(row) < 3 {
 			continue
 		}
-		doc.Perks = append(doc.Perks, PerkDoc{Name: row[1], Description: row[2]})
+		doc.Perks = append(doc.Perks, PerkDoc{
+			Name:        strings.TrimSpace(row[1]),
+			Description: strings.TrimSpace(row[2]),
+		})
 	}
 	return doc, warnings, nil
 }
@@ -124,8 +134,8 @@ func parseAbility(row []string) (AbilityDoc, []string, error) {
 	if len(row) < 7 {
 		return doc, nil, fmt.Errorf("expected >=7 columns, got %d", len(row))
 	}
-	doc.Name = row[1]
-	doc.Description = row[4]
+	doc.Name = strings.TrimSpace(row[1])
+	doc.Description = strings.TrimSpace(row[4])
 
 	// Charges: "∞" → 999999, otherwise an integer.
 	doc.DefaultCharges = infiniteCharges
@@ -200,8 +210,8 @@ func ParseItemsCSV(r io.Reader) ([]ItemDoc, []string, error) {
 		}
 
 		docs = append(docs, ItemDoc{
-			Name:        entry[2],
-			Description: entry[5],
+			Name:        strings.TrimSpace(entry[2]),
+			Description: strings.TrimSpace(entry[5]),
 			Rarity:      rarity,
 			Cost:        cost,
 			Categories:  splitCategories(entry[4]),

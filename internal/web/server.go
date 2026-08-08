@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -13,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	dbmigrate "github.com/mccune1224/betrayal/internal/db/migrate"
 	"github.com/mccune1224/betrayal/internal/services/datasync"
 	"github.com/mccune1224/betrayal/internal/web/handlers"
 	webmiddleware "github.com/mccune1224/betrayal/internal/web/middleware"
@@ -44,6 +46,9 @@ type Config struct {
 	// production guard: destructive actions (sync apply, migrations) are
 	// hard-blocked when it points at the prod pooler.
 	DatabaseURL string
+	// Environment (ENVIRONMENT env var) is also treated as production for the
+	// guard, so a renamed pooler host cannot disable it.
+	Environment string
 	// AllowProdMutations (WEB_ALLOW_PROD_MUTATIONS=true) lifts that block.
 	AllowProdMutations bool
 
@@ -68,6 +73,12 @@ type Server struct {
 	sessionStore   *sessions.CookieStore
 	railwayClient  *railway.Client
 	syncService    *datasync.Service
+
+	// migrateRunner is built lazily on first use (the embedded runner opens a
+	// connection eagerly, so constructing it at startup would add a blocking
+	// connect to boot and an unused connection for web-only runs).
+	migrateRunner     *dbmigrate.Runner
+	migrateRunnerOnce sync.Once
 }
 
 // New creates a new web server. Returns an error (refusing to start) when
@@ -124,6 +135,24 @@ func New(pool *pgxpool.Pool, discord *discordgo.Session, logger zerolog.Logger, 
 	return s, nil
 }
 
+// getMigrateRunner lazily builds the embedded migrations runner bound to the
+// configured DatabaseURL. Returns nil when the DSN is unset or the runner
+// fails to initialize (the page renders an "unavailable" state).
+func (s *Server) getMigrateRunner() *dbmigrate.Runner {
+	s.migrateRunnerOnce.Do(func() {
+		if s.config.DatabaseURL == "" {
+			return
+		}
+		r, err := dbmigrate.New(s.config.DatabaseURL)
+		if err != nil {
+			s.logger.Warn().Err(err).Msg("failed to init embedded migrations runner")
+			return
+		}
+		s.migrateRunner = r
+	})
+	return s.migrateRunner
+}
+
 func (s *Server) setupMiddleware() {
 	// Recovery middleware
 	s.echo.Use(middleware.Recover())
@@ -176,7 +205,9 @@ func (s *Server) setupRoutes() {
 	channelsHandler := handlers.NewChannelsHandler(s.dbPool, s.discordSession)
 	playerEditHandler := handlers.NewPlayerEditHandler(s.dbPool)
 	catalogHandler := handlers.NewCatalogHandler(s.dbPool)
-	syncHandler := handlers.NewSyncHandler(s.dbPool, s.syncService, IsProdDSN(s.config.DatabaseURL), s.config.AllowProdMutations)
+	isProd := IsProd(s.config.DatabaseURL, s.config.Environment)
+	syncHandler := handlers.NewSyncHandler(s.dbPool, s.syncService, isProd, s.config.AllowProdMutations)
+	migrationsHandler := handlers.NewMigrationsHandler(s.getMigrateRunner, isProd, s.config.AllowProdMutations)
 
 	// Auth middleware
 	authMiddleware := webmiddleware.NewAuthMiddleware(s.sessionStore)
@@ -208,6 +239,17 @@ func (s *Server) setupRoutes() {
 	protected.GET("/votes", votesHandler.Votes)
 	protected.GET("/votes/tally", votesHandler.VoteTally)
 	protected.GET("/admin/audit", adminHandler.AuditLogs)
+
+	// Migrations: destructive + schema-changing → the redeploy-style limiter.
+	migrateLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
+		Rate:      redeployRate,
+		Burst:     redeployRateBurst,
+		ExpiresIn: 10 * time.Minute,
+	})
+	migrateRate := middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{Store: migrateLimiter})
+	protected.GET("/admin/migrations", migrationsHandler.Page)
+	protected.POST("/admin/migrations/up", migrationsHandler.Up, migrateRate)
+	protected.POST("/admin/migrations/down", migrationsHandler.Down, migrateRate)
 
 	// Redeploy is a state-changing, cost-incurring action: rate limit it.
 	redeployLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
