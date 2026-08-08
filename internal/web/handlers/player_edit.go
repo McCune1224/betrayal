@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/mccune1224/betrayal/internal/models"
@@ -135,6 +136,15 @@ func (h *PlayerEditHandler) UpdateState(c echo.Context) error {
 	}
 	if _, err = q.UpdatePlayerItemLimit(ctx, models.UpdatePlayerItemLimitParams{ID: id, ItemLimit: int32(itemLimit)}); err != nil {
 		return h.toastError(c, "Failed to update item limit")
+	}
+	if roleName := c.FormValue("role_name"); roleName != "" {
+		role, roleErr := q.GetRoleByFuzzy(ctx, roleName)
+		if roleErr != nil {
+			return h.toastError(c, "Role not found")
+		}
+		if _, roleErr = q.UpdatePlayerRole(ctx, models.UpdatePlayerRoleParams{ID: id, RoleID: pgtype.Int4{Int32: role.ID, Valid: true}}); roleErr != nil {
+			return h.toastError(c, "Failed to update role")
+		}
 	}
 	p, err := q.GetPlayer(ctx, id)
 	if err != nil {

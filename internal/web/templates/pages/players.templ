@@ -20,7 +20,7 @@ templ Players(players []PlayerRow) {
 	@layouts.Base("Players", "/players") {
 		<div class="flex justify-between items-center mb-6">
 			<h1 class="page-title">PLAYERS</h1>
-			<span class="text-silver text-base font-medium">{ strconv.Itoa(len(players)) } TOTAL</span>
+			<div class="flex items-center gap-3"><a class="btn-primary" href="/players/new">NEW PLAYER</a><span class="text-silver text-base font-medium">{ strconv.Itoa(len(players)) } TOTAL</span></div>
 		</div>
 		
 		<!-- Mobile Card View -->

@@ -110,9 +110,10 @@ templ PlayerEditState(playerID int64, alive bool, alignment string, itemLimit in
 		<div class="p-4 border-b border-dust/30"><h2 class="font-semibold text-wood">PLAYER STATE</h2></div>
 		<form class="p-4 space-y-3" hx-post={ "/players/" + strconv.FormatInt(playerID,10) + "/state" } hx-target="#edit-state" hx-swap="outerHTML">
 			<p class="text-xs text-dust">Current: { stateLabel(alive) } · { alignment }</p>
-			<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+			<div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
 				<input class="input" name="alive" value={ strconv.FormatBool(alive) } placeholder="alive: true or false"/>
 				<input class="input" name="alignment" value={ alignment } placeholder="GOOD / EVIL / NEUTRAL"/>
+				<input class="input" name="role_name" placeholder="role name (optional)"/>
 				<input class="input" type="number" min="0" name="item_limit" value={ strconv.Itoa(itemLimit) }/>
 			</div>
 			<button class="btn-primary" type="submit">SAVE STATE</button>

@@ -1,0 +1,15 @@
+package pages
+
+import "github.com/mccune1224/betrayal/internal/web/templates/layouts"
+
+templ PlayerCreate() {
+	@layouts.Base("Create Player", "/players") {
+		<h1 class="page-title mb-2">CREATE PLAYER</h1>
+		<p class="text-dust text-sm mb-6">Create a player with the configured game defaults, then use the editor to assign inventory and notes.</p>
+		<div class="card max-w-xl"><form method="POST" action="/players">
+			<label class="block text-sm text-wood mb-1">DISCORD USER ID<input class="input" name="player_id" placeholder="Numeric Discord user ID" required/></label>
+			<label class="block text-sm text-wood mt-3 mb-1">ROLE NAME<input class="input" name="role_name" placeholder="Role name" required/></label>
+			<button class="btn-primary mt-4" type="submit">CREATE PLAYER</button>
+		</form></div>
+	}
+}
