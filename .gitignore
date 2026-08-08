@@ -53,3 +53,4 @@ todo.txt
 
 # Hermes agent workspace (plans, session state)
 .hermes/
+data-entry
