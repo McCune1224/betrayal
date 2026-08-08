@@ -57,7 +57,10 @@ func (c *Channel) updateLogChannel(ctx ken.SubCommandContext) (err error) {
 	if !discord.IsAdminRole(ctx, discord.AdminRoles...) {
 		return discord.NotAdminError(ctx)
 	}
-	newChannel := ctx.Options().GetByName("channel").ChannelValue(ctx)
+	newChannel, err := commandLogChannel(ctx.Options().GetByName("channel"))
+	if err != nil {
+		return discord.ErrorMessage(ctx, "Invalid log channel", err.Error())
+	}
 	q := models.New(c.dbPool)
 	dbCtx := context.Background()
 
@@ -67,6 +70,17 @@ func (c *Channel) updateLogChannel(ctx ken.SubCommandContext) (err error) {
 		return discord.ErrorMessage(ctx, "Failed to update log channel", err.Error())
 	}
 	return discord.SuccessfulMessage(ctx, "Log Channel Updated", fmt.Sprintf("Command logging channel updated to %s", discord.MentionChannel(channelID)))
+}
+
+func commandLogChannel(option *ken.CommandOption) (*discordgo.Channel, error) {
+	if option == nil || option.ApplicationCommandInteractionDataOption == nil || option.Type != discordgo.ApplicationCommandOptionChannel {
+		return nil, errors.New("a channel option is required")
+	}
+	channelID, ok := option.Value.(string)
+	if !ok || channelID == "" {
+		return nil, errors.New("channel option has an invalid value")
+	}
+	return &discordgo.Channel{ID: channelID}, nil
 }
 
 func (c *Channel) viewLogChannel(ctx ken.SubCommandContext) (err error) {

@@ -95,7 +95,10 @@ func GetChannelsWithinCategory(s *discordgo.Session, e *discordgo.InteractionCre
 
 // Wrapper ontop of discordgo.GuildChannelCreate to create a hidden channel besided for the user and the admin
 func CreateHiddenChannel(s *discordgo.Session, e *discordgo.InteractionCreate, channelName string, whitelistIds ...string) (*discordgo.Channel, error) {
-	adminIDs := GetAdminRoleUsers(s, e, AdminRoles...)
+	adminIDs, err := GetAdminRoleUsers(s, e, AdminRoles...)
+	if err != nil {
+		return nil, err
+	}
 	whiteListed := append(adminIDs, whitelistIds...)
 
 	channel, err := s.GuildChannelCreate(e.GuildID, channelName, discordgo.ChannelTypeGuildText)
@@ -168,7 +171,10 @@ func GetChannelMembers(s *discordgo.Session, e *discordgo.InteractionCreate, cha
 	}
 
 	allowedMembers := []*discordgo.Member{}
-	guildRoles, _ := s.GuildRoles(e.GuildID)
+	guildRoles, err := s.GuildRoles(e.GuildID)
+	if err != nil {
+		return nil, err
+	}
 	for _, member := range members {
 		if permissions&discordgo.PermissionViewChannel == discordgo.PermissionViewChannel {
 			for _, rid := range member.Roles {
