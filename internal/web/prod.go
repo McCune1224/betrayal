@@ -3,8 +3,7 @@ package web
 import "strings"
 
 // prodHostMarker identifies the Railway production pooler in a DSN. The
-// admin panel's destructive actions (sync apply, migrations) are hard-blocked
-// against prod; see Config.
+// admin panel's production banner and operational context.
 const prodHostMarker = "roundhouse.proxy.rlwy.net"
 
 // IsProdDSN reports whether a database DSN points at the production pooler.

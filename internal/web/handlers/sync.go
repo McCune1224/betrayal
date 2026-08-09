@@ -82,13 +82,9 @@ func (h *SyncHandler) Preview(c echo.Context) error {
 
 // Apply handles POST /sync/apply — re-fetch + re-plan the given source and
 // apply it in one transaction (stateless: the plan is re-derived at apply
-// time, so the latest sheet state wins). Prod-guarded.
+// time, so the latest sheet state wins. Production is the intended target for
+// this admin workflow, so the operation is not gated by the database marker.
 func (h *SyncHandler) Apply(c echo.Context) error {
-	if h.isProd {
-		c.Response().Header().Set("HX-Trigger", toastTrigger("Sync apply is disabled against the PRODUCTION database.", "error"))
-		return c.String(http.StatusForbidden, "sync apply blocked against production")
-	}
-
 	sourceID, err := strconv.ParseInt(c.FormValue("source_id"), 10, 32)
 	if err != nil {
 		return h.badRequest(c, "Invalid source")

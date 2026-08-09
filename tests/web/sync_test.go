@@ -153,14 +153,30 @@ func TestSyncPreviewAndApply(t *testing.T) {
 	require.True(t, applied, "an applied sync_run row exists")
 }
 
-func TestSyncApplyBlockedInProd(t *testing.T) {
+func TestSyncApplyAllowedInProdWithoutOverride(t *testing.T) {
 	pool := mustPool(t)
-	srv := syncTestServer(t, pool, nil, true) // fake prod DSN
+	csvServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/csv")
+		fmt.Fprint(w, syncRoleCSV)
+	}))
+	defer csvServer.Close()
+	srv := syncTestServer(t, pool, map[string]string{"good_roles": csvServer.URL}, true)
 	client := newTestClient(t, srv)
 	client.login()
 
-	resp := client.do(http.MethodPost, "/sync/apply", url.Values{"source_id": {"1"}}, nil)
-	require.Equal(t, http.StatusForbidden, resp.StatusCode, "apply is hard-blocked against prod")
+	sources, err := models.New(pool).ListSyncSources(context.Background())
+	require.NoError(t, err)
+	var good models.SyncSource
+	for _, s := range sources {
+		if s.Name == "good_roles" {
+			good = s
+		}
+	}
+	require.NotZero(t, good.ID)
+
+	resp := client.do(http.MethodPost, "/sync/apply", url.Values{"source_id": {fmt.Sprintf("%d", good.ID)}}, nil)
+	require.NotEqual(t, http.StatusForbidden, resp.StatusCode, "production sync apply is a supported operation")
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestSyncApplyUnknownSource(t *testing.T) {

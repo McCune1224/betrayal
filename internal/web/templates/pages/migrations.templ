@@ -49,7 +49,7 @@ templ MigrationsContent(data MigrationsPageData) {
 			if data.IsProd {
 				<div class="card border-l-4 border-rust">
 					<div class="p-4 text-sm text-rust">
-						&#9888; Connected to the <span class="font-semibold">PRODUCTION</span> database. Apply/rollback are <span class="font-semibold">disabled</span> in production.
+						&#9888; Connected to the <span class="font-semibold">PRODUCTION</span> database. Migration controls are enabled for the production deployment.
 					</div>
 				</div>
 			}
@@ -78,7 +78,7 @@ templ MigrationsContent(data MigrationsPageData) {
 							hx-post="/admin/migrations/up"
 							hx-target="#migrations-page"
 							hx-swap="outerHTML"
-							disabled?={ !data.HasPending || data.IsProd }
+							disabled?={ !data.HasPending }
 						>
 							APPLY PENDING
 						</button>
@@ -120,7 +120,7 @@ templ MigrationsContent(data MigrationsPageData) {
 						<button
 							type="submit"
 							class="btn-ghost shrink-0"
-							disabled?={ data.LastAppliedName == "" || data.IsProd }
+							disabled?={ data.LastAppliedName == "" }
 						>
 							ROLL BACK
 						</button>

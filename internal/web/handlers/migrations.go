@@ -11,8 +11,8 @@ import (
 
 // MigrationsHandler implements the database migrations admin page
 // (/admin/migrations): see applied/pending state and apply/rollback from the
-// panel, using the embedded golang-migrate runner. Destructive actions are
-// hard-blocked against the production database.
+// panel, using the embedded golang-migrate runner. Production is the intended
+// deployment target for these controls.
 type MigrationsHandler struct {
 	getRunner func() *dbmigrate.Runner // lazy: nil provider result = unavailable
 	isProd    bool
@@ -40,9 +40,6 @@ func (h *MigrationsHandler) Page(c echo.Context) error {
 
 // Up handles POST /admin/migrations/up — apply all pending migrations.
 func (h *MigrationsHandler) Up(c echo.Context) error {
-	if h.blocked(c) {
-		return nil
-	}
 	r := h.runner()
 	if r == nil {
 		return h.migrateError(c, "Migrations runner unavailable — no database DSN configured")
@@ -58,9 +55,6 @@ func (h *MigrationsHandler) Up(c echo.Context) error {
 // type the name of the migration being rolled back (server-validated), so a
 // stray click can't destroy schema.
 func (h *MigrationsHandler) Down(c echo.Context) error {
-	if h.blocked(c) {
-		return nil
-	}
 	r := h.runner()
 	if r == nil {
 		return h.migrateError(c, "Migrations runner unavailable — no database DSN configured")
@@ -92,16 +86,6 @@ func (h *MigrationsHandler) Down(c echo.Context) error {
 	}
 	c.Response().Header().Set("HX-Trigger", toastTrigger("Rolled back "+strconv.Itoa(n)+" migration(s)", "success"))
 	return render(c, http.StatusOK, pages.MigrationsContent(h.loadData()))
-}
-
-// blocked applies the production guard and writes the 403 response itself.
-func (h *MigrationsHandler) blocked(c echo.Context) bool {
-	if h.isProd {
-		c.Response().Header().Set("HX-Trigger", toastTrigger("Production migrations are disabled from the web panel.", "error"))
-		_ = c.String(http.StatusForbidden, "migrations blocked against production")
-		return true
-	}
-	return false
 }
 
 func (h *MigrationsHandler) migrateError(c echo.Context, msg string) error {

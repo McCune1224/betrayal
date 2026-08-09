@@ -119,7 +119,7 @@ func MigrationsContent(data MigrationsPageData) templ.Component {
 			}
 		} else {
 			if data.IsProd {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"card border-l-4 border-rust\"><div class=\"p-4 text-sm text-rust\">&#9888; Connected to the <span class=\"font-semibold\">PRODUCTION</span> database. Apply/rollback are <span class=\"font-semibold\">disabled</span> in production.</div></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"card border-l-4 border-rust\"><div class=\"p-4 text-sm text-rust\">&#9888; Connected to the <span class=\"font-semibold\">PRODUCTION</span> database. Migration controls are enabled for the production deployment.</div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -186,7 +186,7 @@ func MigrationsContent(data MigrationsPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if !data.HasPending || data.IsProd {
+			if !data.HasPending {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, " disabled")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -222,7 +222,7 @@ func MigrationsContent(data MigrationsPageData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if data.LastAppliedName == "" || data.IsProd {
+			if data.LastAppliedName == "" {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, " disabled")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err

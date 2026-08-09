@@ -80,7 +80,7 @@ templ SyncContent(data SyncPageData) {
 		if data.IsProd {
 			<div class="card border-l-4 border-rust">
 				<div class="p-4 text-sm text-rust">
-					&#9888; Connected to the <span class="font-semibold">PRODUCTION</span> database. Apply is <span class="font-semibold">disabled</span> in production.
+					&#9888; Connected to the <span class="font-semibold">PRODUCTION</span> database. This page is the production sync workflow.
 				</div>
 			</div>
 		}
@@ -197,8 +197,7 @@ templ SyncDiffCard(data SyncPageData) {
 									hx-target="#sync-page"
 									hx-swap="outerHTML"
 									hx-confirm={ "Apply " + d.SourceName + " changes to the database?" }
-									disabled?={ data.IsProd }
-								>
+									>
 									APPLY
 								</button>
 							</div>

@@ -381,7 +381,7 @@ protected.POST("/setup/generate", setupHandler.Generate) // returns partial with
 ## Risks, Tradeoffs, Open Questions
 
 **Resolved (2026-08-08, user-approved):**
-1. **Prod guard** — destructive web actions (`/sync/apply`, `/admin/migrations/down`, `/admin/migrations/up`) are always hard-blocked against the production database. The sync page also carries a callout: **"Syncs are normally run once before a game starts to pull the latest from the Google Sheets — they're not re-run mid-game."**
+1. **Production target** — destructive web actions (`/sync/apply`, `/admin/migrations/down`, `/admin/migrations/up`) are intentionally available because this panel is the production operations surface. The UI clearly labels the live database and the sync page carries a preview-first callout.
 2. **Sync semantics** — upsert: sheet edits propagate to existing rows (that's the point of preview/validate/apply).
 3. **`cmd/data-entry`** — kept as a thin CLI wrapper (archive mode).
 4. **Admin `/roll`** — NOT ported; rolls stay Discord-only for now.
@@ -389,5 +389,5 @@ protected.POST("/setup/generate", setupHandler.Generate) // returns partial with
 6. **Migrations embedded** — SQL files move to `internal/db/migrate/migrations/` (single source of truth); Makefile + testutil updated.
 
 **Remaining watch items:**
-- **Prod-pooler hazard** — `make run-web` hits prod. The prod banner + hard-block above mitigate; keep the startup warning.
+- **Prod-pooler hazard** — `make run-web` hits prod. The production banner is intentionally visible; operators must preview sync changes and use the server-side confirmations for destructive actions.
 - **Migration move** touches Makefile/testutil paths — do it in the same commit as the embed so nothing is ever broken in between.

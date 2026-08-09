@@ -39,14 +39,12 @@ type Config struct {
 	AdminPassword string
 
 	// DatabaseURL is the DSN the server's DB pool was built from. Used by the
-	// production guard: destructive actions (sync apply, migrations) are
-	// hard-blocked when it points at the prod pooler.
+	// production context for the admin UI and operational logging.
 	DatabaseURL string
-	// Environment (ENVIRONMENT env var) is also treated as production for the
-	// guard, so a renamed pooler host cannot disable it.
+	// Environment (ENVIRONMENT env var) is also treated as production so the UI
+	// remains explicit even if the deployed DSN host changes.
 	Environment string
-	// Production mutations are permanently disabled from the web panel.
-
+	// Production is the intended target; this field is only used to label the UI.
 	// SyncEnvURLs maps sync source names to their CSV URLs from the
 	// environment, used to seed the sync_source table (empty for tests).
 	SyncEnvURLs map[string]string

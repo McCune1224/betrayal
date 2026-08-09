@@ -36,6 +36,20 @@ func localDSN(t *testing.T) string {
 	return dsn
 }
 
+func productionMigrationsTestServer(t *testing.T, pool *pgxpool.Pool, dsn string) *web.Server {
+	t.Helper()
+	srv, err := web.New(pool, nil, zerolog.Nop(), web.Config{
+		Port:          "0",
+		AdminPassword: testAdminPassword,
+		DatabaseURL:   dsn,
+		Environment:   "production",
+	})
+	if err != nil {
+		t.Fatalf("web.New: %v", err)
+	}
+	return srv
+}
+
 func TestMigrationsPage(t *testing.T) {
 	pool := mustPool(t)
 	srv := migrationsTestServer(t, pool, localDSN(t))
@@ -84,18 +98,14 @@ func TestMigrationsDownRequiresConfirmation(t *testing.T) {
 	// in internal/db/migrate.
 }
 
-func TestMigrationsBlockedInProd(t *testing.T) {
+func TestMigrationsAllowedInProdWithoutOverride(t *testing.T) {
 	pool := mustPool(t)
-	srv := migrationsTestServer(t, pool, prodDSN) // fake prod DSN; runner never touched (blocked first)
+	srv := productionMigrationsTestServer(t, pool, localDSN(t))
 	client := newTestClient(t, srv)
 	client.login()
 
 	resp := client.do(http.MethodPost, "/admin/migrations/up", nil, nil)
-	require.Equal(t, http.StatusForbidden, resp.StatusCode, "migrations up is hard-blocked against prod")
-
-	resp = client.do(http.MethodPost, "/admin/migrations/down",
-		url.Values{"steps": {"1"}, "confirm": {"whatever"}}, nil)
-	require.Equal(t, http.StatusForbidden, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode, "production migrations are a supported operation")
 }
 
 func TestMigrationsCSRFGate(t *testing.T) {
