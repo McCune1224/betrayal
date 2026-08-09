@@ -157,6 +157,18 @@ Documented gaps from the 2026-08 admin analysis (tracked under WT-5/WT-6 — don
 4. Discord interaction changes: `make run` against a **dev guild** with a dev bot token (see `scripts/smoke.sh` when it lands); guild-scoped registration propagates instantly. Never run the prod bot as a test instance.
 5. Web changes: `make run-web` + browser; handlers are httptest-able.
 
+## Non-negotiable engineering gate
+
+- Use strict test-driven development for bug fixes and features: write the
+  regression test first, run it and confirm it fails for the intended reason,
+  implement the smallest root-cause fix, then run the focused test and full
+  verification suite.
+- Never push a production change while any test, vet check, build, migration
+  check, or required verification is failing. A deploy must fail before serving
+  traffic rather than start successfully and return unexplained 500s.
+- For web/database changes, test the real request or database seam whenever
+  practical; a generic error-page assertion is not sufficient.
+
 ## Task Tracking & Documentation
 
 When completing significant structural/organizational changes (per AGENTS.md history):

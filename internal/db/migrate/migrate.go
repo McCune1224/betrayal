@@ -41,6 +41,18 @@ type Runner struct {
 	m *migrate.Migrate
 }
 
+// EnsureUpToDate applies every embedded migration before the application
+// starts serving requests. A deploy must not advertise a healthy web server
+// while a required table such as sync_source is absent.
+func EnsureUpToDate(dsn string) error {
+	r, err := New(dsn)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+	return r.Up()
+}
+
 // New creates a Runner for dsn (postgres://...). No connection is opened
 // until the first operation.
 func New(dsn string) (*Runner, error) {

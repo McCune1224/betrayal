@@ -89,6 +89,9 @@ Public: `GET /login`, `POST /login`, `GET /health`. Everything else requires a s
 Current state:
 - Sessions: signed cookies via `gorilla/sessions` CookieStore; `HttpOnly` + `SameSite=Lax`, 7-day MaxAge.
 - Session cookies are signed using a hash of `ADMIN_PASSWORD`; no second session credential is required.
+- Startup applies all embedded migrations before the bot/web server begins
+  serving requests. If migrations fail, startup fails closed instead of
+  exposing routes backed by a partial schema.
 TODO (required before adding any public-facing route):
 1. CSRF middleware (Echo has built-in CSRF; must be wired to work with HTMX `HX-Request` headers).
 2. Rate limiting on `/login` and `/admin/redeploy`.

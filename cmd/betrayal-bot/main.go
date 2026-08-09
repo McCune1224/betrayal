@@ -30,6 +30,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/commands/tarot"
 	"github.com/mccune1224/betrayal/internal/commands/view"
 	"github.com/mccune1224/betrayal/internal/commands/vote"
+	dbmigrate "github.com/mccune1224/betrayal/internal/db/migrate"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/logger"
 	"github.com/mccune1224/betrayal/internal/models"
@@ -154,6 +155,10 @@ func main() {
 		log.Fatalf("Failed to create database connection pool: %v", err)
 	}
 	defer pools.Close()
+
+	if err := dbmigrate.EnsureUpToDate(cfg.database.dsn); err != nil {
+		log.Fatalf("Failed to apply database migrations before startup: %v", err)
+	}
 
 	// Initialize the logger exactly once, with database support.
 	appLogger, err := logger.Init(logger.Config{
