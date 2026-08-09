@@ -258,6 +258,44 @@ func (h *PlayerEditHandler) AddItem(c echo.Context) error {
 	})
 }
 
+// BuyItem ports the admin use of /buy into the player editor.
+func (h *PlayerEditHandler) BuyItem(c echo.Context) error {
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cancel()
+	id, ok := parsePlayerID(c)
+	if !ok {
+		return c.String(http.StatusBadRequest, "Invalid player ID")
+	}
+	q := models.New(h.dbPool)
+	player, err := q.GetPlayer(ctx, id)
+	if err != nil {
+		return c.String(http.StatusNotFound, "Player not found")
+	}
+	name := c.FormValue("item_name")
+	if name == "" {
+		return h.toastError(c, "Item name is required")
+	}
+	item, err := q.GetItemByFuzzy(ctx, name)
+	if err != nil {
+		return h.toastError(c, "Item not found")
+	}
+	if item.Cost <= 0 {
+		return h.toastError(c, "That item is not for sale")
+	}
+	if player.Coins < item.Cost {
+		return h.toastError(c, fmt.Sprintf("Not enough coins (need %d, have %d)", item.Cost, player.Coins))
+	}
+	ih := inventory.NewManualInventoryHandler(player, h.dbPool)
+	if _, err := ih.AddItem(item.Name, 1); err != nil {
+		return h.toastError(c, "Failed to add purchased item")
+	}
+	if _, err := q.UpdatePlayerCoins(ctx, models.UpdatePlayerCoinsParams{ID: id, Coins: player.Coins - item.Cost}); err != nil {
+		return h.toastError(c, "Item added, but payment failed — check the player stats")
+	}
+	c.Response().Header().Set("HX-Trigger", toastTrigger("Purchased "+item.Name, "success"))
+	return h.renderSection(c, ctx, "items", id)
+}
+
 // RemoveItem handles POST /players/:id/items/remove (removes one at a time)
 func (h *PlayerEditHandler) RemoveItem(c echo.Context) error {
 	return h.mutateInventory(c, "items", func(ih *inventory.InventoryHandler) error {

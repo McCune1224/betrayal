@@ -214,6 +214,13 @@ templ PlayerEditItems(playerID int64, items []PlayerEditItemRow) {
 			</div>
 		}
 	}
+	<div class="mt-3 border-t border-dust/30 pt-3">
+		<p class="text-xs text-dust mb-2">BUY FROM SHOP (charges the player's coins)</p>
+		<form class="flex flex-col sm:flex-row gap-2" hx-post={ "/players/" + strconv.FormatInt(playerID, 10) + "/items/buy" } hx-target="#edit-items" hx-swap="outerHTML">
+			<input type="text" name="item_name" placeholder="Shop item name" class="input flex-1" required/>
+			<button type="submit" class="btn-ghost shrink-0">BUY ITEM</button>
+		</form>
+	</div>
 }
 
 templ PlayerEditItemAddForm(playerID int64) {

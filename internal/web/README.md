@@ -32,12 +32,13 @@ Public: `GET /login`, `POST /login`, `GET /health`. Everything else requires a s
 | POST | `/logout` | auth | Clear session |
 | GET | `/` | dashboard | Dashboard |
 | GET | `/health/status` | health | HTMX health partial |
+| GET | `/healthcheck` | readiness | Casual-user game readiness check (admin channels, funnels, players, cycle, lifeboard) |
 | GET | `/players` | players | Player list page |
 | GET | `/players/table` | players | HTMX player-table partial (search/filter) |
 | GET | `/players/:id` | players | Player detail |
 | GET | `/players/:id/edit` | players | Administrative player/inventory editor |
 | POST | `/players/:id/edit` · `/players/:id/state` | players | Update stats and player state |
-| POST | `/players/:id/{items,abilities,statuses,perks,immunities,notes}/*` | players | Inventory/immunity/note mutations |
+| POST | `/players/:id/{items,abilities,statuses,perks,immunities,notes}/*` | players | Inventory/immunity/note mutations, including shop purchase |
 | GET | `/setup` | setup | Game role-pool generator |
 | POST | `/setup/generate` | setup | Generate deceptionist options + random pool |
 | GET | `/channels` | channels | Channel validation + configuration page |

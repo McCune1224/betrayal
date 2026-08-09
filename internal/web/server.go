@@ -213,6 +213,7 @@ func (s *Server) setupRoutes() {
 	syncHandler := handlers.NewSyncHandler(s.dbPool, s.syncService, isProd, s.config.AllowProdMutations)
 	migrationsHandler := handlers.NewMigrationsHandler(s.getMigrateRunner, isProd, s.config.AllowProdMutations)
 	setupHandler := handlers.NewSetupHandler(s.dbPool, s.discordSession)
+	readinessHandler := handlers.NewGameReadinessHandler(s.dbPool, s.discordSession)
 	playerCreateHandler := handlers.NewPlayerCreateHandler(s.dbPool)
 	resetHandler := handlers.NewResetHandler(gamereset.New(s.dbPool, s.syncService), isProd)
 
@@ -240,6 +241,7 @@ func (s *Server) setupRoutes() {
 	protected.POST("/logout", authHandler.Logout)
 	protected.GET("/", dashboardHandler.Dashboard)
 	protected.GET("/health/status", healthHandler.HealthStatusPartial)
+	protected.GET("/healthcheck", readinessHandler.Page)
 	protected.GET("/players", playersHandler.List)
 	protected.GET("/players/new", playerCreateHandler.Page)
 	protected.POST("/players", playerCreateHandler.Create)
@@ -251,6 +253,7 @@ func (s *Server) setupRoutes() {
 	protected.POST("/players/:id/edit", playerEditHandler.UpdateStats)
 	protected.POST("/players/:id/state", playerEditHandler.UpdateState)
 	protected.POST("/players/:id/items/add", playerEditHandler.AddItem)
+	protected.POST("/players/:id/items/buy", playerEditHandler.BuyItem)
 	protected.POST("/players/:id/items/remove", playerEditHandler.RemoveItem)
 	protected.POST("/players/:id/abilities/add", playerEditHandler.AddAbility)
 	protected.POST("/players/:id/abilities/remove", playerEditHandler.RemoveAbility)
