@@ -23,8 +23,6 @@ import (
 )
 
 const (
-	// 48 bytes — satisfies the >= 32 byte SESSION_SECRET requirement
-	testSessionSecret = "0123456789abcdef0123456789abcdef0123456789abcdef"
 	testAdminPassword = "hunter2-test-password"
 )
 
@@ -47,13 +45,13 @@ func mustPool(t *testing.T) *pgxpool.Pool {
 }
 
 // testServer builds a web server wired to the test pool with a fixed admin
-// password + session secret. No Discord session (web-only mode).
+// password. The password also signs the session cookie. No Discord session
+// (web-only mode).
 func testServer(t *testing.T, pool *pgxpool.Pool) *web.Server {
 	t.Helper()
 	srv, err := web.New(pool, nil, zerolog.Nop(), web.Config{
 		Port:          "0",
 		AdminPassword: testAdminPassword,
-		SessionSecret: testSessionSecret,
 	})
 	if err != nil {
 		t.Fatalf("web.New: %v", err)

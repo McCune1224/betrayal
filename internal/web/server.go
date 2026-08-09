@@ -3,6 +3,7 @@ package web
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"net/http"
 	"sync"
@@ -23,10 +24,6 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// Session secret minimum length. gorilla/securecookie panics when the hash key
-// is shorter than 32 bytes, so we refuse to start instead of crashing later.
-const minSessionSecretLen = 32
-
 // Login rate limiting: allows a short burst of attempts, then throttles to a
 // trickle per IP. Generous for a solo admin panel, hostile to brute force.
 const (
@@ -40,7 +37,6 @@ const (
 type Config struct {
 	Port          string
 	AdminPassword string
-	SessionSecret string // For cookie encryption (REQUIRED — server refuses to start without it)
 
 	// DatabaseURL is the DSN the server's DB pool was built from. Used by the
 	// production guard: destructive actions (sync apply, migrations) are
@@ -84,21 +80,20 @@ type Server struct {
 	migrateRunnerOnce sync.Once
 }
 
-// New creates a new web server. SESSION_SECRET is always explicit and is
-// never derived from ADMIN_PASSWORD.
+// New creates a new web server. The admin password is also the sole source for
+// the signed session cookie key, keeping deployment configuration to one
+// credential as intended for this small private admin panel.
 func New(pool *pgxpool.Pool, discord *discordgo.Session, logger zerolog.Logger, cfg Config) (*Server, error) {
-	if cfg.SessionSecret == "" {
-		return nil, fmt.Errorf("SESSION_SECRET must be set explicitly; refusing to derive it from ADMIN_PASSWORD")
+	if cfg.AdminPassword == "" {
+		return nil, fmt.Errorf("ADMIN_PASSWORD must be set to enable the web admin")
 	}
-	if len(cfg.SessionSecret) < minSessionSecretLen {
-		return nil, fmt.Errorf("SESSION_SECRET must be at least %d bytes (got %d): refusing to start the web server", minSessionSecretLen, len(cfg.SessionSecret))
-	}
+	signingKey := sha256.Sum256([]byte(cfg.AdminPassword))
 
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
 
-	store := sessions.NewCookieStore([]byte(cfg.SessionSecret))
+	store := sessions.NewCookieStore(signingKey[:])
 	store.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   86400 * 7, // 7 days

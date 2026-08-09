@@ -56,7 +56,6 @@ type config struct {
 	web struct {
 		port          string
 		adminPassword string
-		sessionSecret string
 		// allowProdMutations (WEB_ALLOW_PROD_MUTATIONS=true) lifts the
 		// hard-block on destructive panel actions against the prod DB.
 		allowProdMutations bool
@@ -101,7 +100,6 @@ func loadConfig(getenv func(string) string) (config, error) {
 		cfg.web.port = "8080"
 	}
 	cfg.web.adminPassword = getenv("ADMIN_PASSWORD")
-	cfg.web.sessionSecret = getenv("SESSION_SECRET")
 	cfg.web.allowProdMutations = strings.EqualFold(getenv("WEB_ALLOW_PROD_MUTATIONS"), "true")
 	cfg.web.railwayToken = getenv("RAILWAY_API_TOKEN")
 	cfg.web.railwayProjectID = getenv("RAILWAY_BETRAYAL_PROJECT_ID")
@@ -284,7 +282,6 @@ func main() {
 		webServer, err = web.New(pools, bot, appLogger, web.Config{
 			Port:               cfg.web.port,
 			AdminPassword:      cfg.web.adminPassword,
-			SessionSecret:      cfg.web.sessionSecret,
 			DatabaseURL:        cfg.database.dsn,
 			Environment:        env,
 			AllowProdMutations: cfg.web.allowProdMutations,

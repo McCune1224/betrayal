@@ -9,7 +9,7 @@
 
 ## Mission
 
-Make local development structurally unable to default to the production database, make production migrations explicit, and establish one authoritative session-secret contract.
+Make local development structurally unable to default to the production database and make production migrations explicit.
 
 ## Scope
 
@@ -32,7 +32,7 @@ Do not modify inventory/domain logic, Dockerfile, CI workflow, or Discord comman
 4. Production startup fails if the production DSN is absent.
 5. Production migration commands require explicit confirmation.
 6. Test bootstrap remains local-only and strips/ignores production DSNs.
-7. The chosen `SESSION_SECRET` policy is enforced and documented consistently.
+
 8. Worktree doctor validates the environment contract without printing secret values.
 
 Run each focused test red before implementing.

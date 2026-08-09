@@ -23,7 +23,6 @@ import (
 
 const (
 	testPassword = "test-admin-password"
-	testSecret   = "test-session-secret-0123456789abcdef"
 )
 
 // WebServerSuite drives the real Echo routes with httptest against the LOCAL
@@ -44,7 +43,6 @@ func (s *WebServerSuite) SetupSuite() {
 	s.server, err = web.New(s.DB, nil, zerolog.Nop(), web.Config{
 		Port:          "0",
 		AdminPassword: testPassword,
-		SessionSecret: testSecret,
 	})
 	s.Require().NoError(err)
 	s.ts = httptest.NewServer(s.server.Handler())

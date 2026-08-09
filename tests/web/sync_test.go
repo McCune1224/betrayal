@@ -39,9 +39,9 @@ func syncTestServer(t *testing.T, pool *pgxpool.Pool, envURLs map[string]string,
 		dsn = prodDSN
 	}
 	srv, err := web.New(pool, nil, zerolog.Nop(), web.Config{
-		Port:                "0",
-		AdminPassword:       testAdminPassword,
-		SessionSecret:       testSessionSecret,
+		Port:          "0",
+		AdminPassword: testAdminPassword,
+
 		DatabaseURL:         dsn,
 		AllowProdMutations:  false,
 		SyncEnvURLs:         envURLs,

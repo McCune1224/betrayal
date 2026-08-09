@@ -57,7 +57,7 @@
 **Gaps vs. its own plan (`WEB_ADMIN_PLAN.md` "Security Considerations"):**
 - ❌ No CSRF middleware (Echo has it built in; must be wired for HTMX).
 - ❌ No rate limiting on `/login` or `/admin/redeploy`.
-- ⚠️ Single shared `ADMIN_PASSWORD`; `SESSION_SECRET` silently falls back to the admin password (`server.go:50-54` — comment says "not ideal but works").
+- ⚠️ Single shared `ADMIN_PASSWORD` signs both login sessions and the admin password check.
 - ❌ No admin tooling for the actual game state: cycle control, channel-config validation, player management (edit coins/items/status), item/ability/status CRUD (only roles so far).
 - ❌ Zero handler tests (Echo `httptest` makes these cheap once DB is abstracted).
 
@@ -106,7 +106,7 @@ Each workstream below is sized so it can live on its own branch/worktree without
 
 **Solution — single source of truth + symlink:**
 
-1. **Canonical env lives outside the repo:** `~/.config/betrayal/env` (gitignored by nature). Contains the full env: prod `DATABASE_POOLER_URL`, `DISCORD_BOT_TOKEN`, Railway vars, `ADMIN_PASSWORD`, `SESSION_SECRET`, plus local `DATABASE_URL` and `MOCK_DATABASE`.
+1. **Canonical env lives outside the repo:** `~/.config/betrayal/env` (gitignored by nature). Contains the full env: prod `DATABASE_POOLER_URL`, `DISCORD_BOT_TOKEN`, Railway vars, `ADMIN_PASSWORD`, plus local `DATABASE_URL` and `MOCK_DATABASE`.
 2. **Each worktree's `.env` is a symlink** to that file. godotenv autoload reads `./.env`, so everything (bot, web, tests, Makefile) keeps working untouched.
 3. **`scripts/dev-env.sh`** (committed):
    - `link` — create `.env` symlink (or copy `~/.config/betrayal/env` if missing: `cp .env.example ...`).
@@ -155,7 +155,7 @@ Do after WT-4 so fixes are testable:
 1. **Security (from WEB_ADMIN_PLAN.md, never done):**
    - Echo CSRF middleware (token in cookie + HTMX `HX-Request` header handling).
    - Rate limiting on `/login` (e.g. `golang.org/x/time/rate` per-IP or echo middleware) and a confirm-step on `/admin/redeploy`.
-   - Fail startup (or refuse to start web) when `SESSION_SECRET` is unset instead of falling back to the password.
+
 2. **Game-state admin pages (the real "admin tooling" ask):**
    - `/cycle` — view/advance/set phase from the web (mirror `/cycle` commands).
    - `/channels` — config validation page: list vote/action/admin/lifeboard channels, mark missing/orphaned (implements the long-standing "Missing Features" list in AGENTS.md: `/admin health` equivalent as a page).
@@ -199,7 +199,7 @@ Do after WT-4 so fixes are testable:
 | `DATABASE_POOLER_URL` | prod DB pool (app) | tests must NEVER use this |
 | `DATABASE_URL` | **local** test DB (new) | WT-2 adds |
 | `MOCK_DATABASE` | `make mock-migrate-*` | local DB for migrations |
-| `WEB_PORT`, `ADMIN_PASSWORD`, `SESSION_SECRET` | web panel | require SESSION_SECRET after WT-6 |
+| `WEB_PORT`, `ADMIN_PASSWORD` | web panel | shared admin login/password-derived sessions |
 | `RAILWAY_API_TOKEN`, `RAILWAY_*_ID` | redeploy button | rotate after WT-1 |
 | `ENVIRONMENT` | logger mode (`local` vs `production`) | tests force `local` |
 | `EVIL_ROLES_CSV`, `GOOD_ROLES_CSV`, `NEUTRAL_ROLES_CSV`, `ITEM_CSV` | `/setup` data entry | Google Sheets URLs — lives in `setup.go:251` "TODO: find me a better home" |
@@ -298,8 +298,8 @@ Admin roles (role.go): Host, Co-Host, Bot Developer — check with
   Both run via `make generate`. CSS source is Tailwind v4 (`@import "tailwindcss"`
   in input.css; theme tokens in `@theme` — "Dusty Western" palette).
 - Theme: warm, non-corporate, mobile-first. Keep it that way.
-- Security TODOs (do before adding public-facing routes): CSRF middleware,
-  login rate limiting, require SESSION_SECRET (no password fallback).
+- Security TODOs (do before adding public-facing routes): CSRF middleware and
+  login rate limiting.
 
 ## Known jank register (fix under WT-5, don't perpetuate)
 - main.go:136 sets Intents from a permission constant — verify/fix intents.
@@ -362,7 +362,7 @@ signature, `Jank()` → `NewManualInventoryHandler` fallout. `go vet` +
 
 **Before deploying merged main to Railway:** run `make migrate-up` on prod
 (migrations 000028 `command_log_channel`, 000029 `game_config`) and set
-`SESSION_SECRET` (≥32 bytes) in the Railway env — `web.New` refuses to start
-without it. `make run-web` connects to `DATABASE_POOLER_URL` (prod) unless
+`ADMIN_PASSWORD` in the Railway env — it is also used to derive the signed
+session-cookie key. `make run-web` connects to `DATABASE_POOLER_URL` (prod) unless
 overridden with the local `DATABASE_URL`; the WT-6 pages added after WT-9's
 theme pass (items/statuses/abilities/cycle/channels) need a glass-theme polish.

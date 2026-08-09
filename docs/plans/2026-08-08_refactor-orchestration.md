@@ -45,7 +45,7 @@ If the vulnerability command is unavailable due to network/toolchain issues, rep
 ### Foundation / safety first
 - **WT-1 inventory-correctness**: authorization and inventory/note correctness. Lowest collision risk; immediately reduces player-state risk.
 - **WT-2 dependency-container**: vulnerable dependencies, Docker secret handling, gofmt/tidy gates. Shared build files owned here.
-- **WT-3 environment-operations**: local/prod DSN selection, safe migration commands, session-secret contract. Owns `main.go`, Makefile, `.env.example`, operations docs.
+- **WT-3 environment-operations**: local/prod DSN selection and safe migration commands. Owns `main.go`, Makefile, `.env.example`, operations docs.
 
 ### Then architectural extraction
 - **WT-4 discord-boundary**: Discord context/guild/config/audit boundaries. Must follow WT-3's environment contract; owns `internal/discord`, selected command adapters, and Discord-specific tests.

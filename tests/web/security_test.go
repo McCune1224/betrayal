@@ -10,22 +10,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// TestNewRequiresExplicitSessionSecret: session signing must use a dedicated,
-// explicit secret rather than deriving one from the admin password.
-func TestNewRequiresExplicitSessionSecret(t *testing.T) {
-	pool := mustPool(t)
-
-	_, err := web.New(pool, nil, zerolog.Nop(), web.Config{
-		Port:          "0",
-		AdminPassword: testAdminPassword,
-		SessionSecret: "",
-	})
-	if err == nil || !strings.Contains(err.Error(), "SESSION_SECRET") {
-		t.Fatalf("expected explicit session secret error, got: %v", err)
-	}
-}
-
-func TestNewRefusesWithoutPasswordOrSessionSecret(t *testing.T) {
+func TestNewRefusesWithoutAdminPassword(t *testing.T) {
 	pool := mustPool(t)
 	_, err := web.New(pool, nil, zerolog.Nop(), web.Config{Port: "0"})
 	if err == nil || !strings.Contains(err.Error(), "ADMIN_PASSWORD") {
@@ -33,29 +18,14 @@ func TestNewRefusesWithoutPasswordOrSessionSecret(t *testing.T) {
 	}
 }
 
-// TestNewRefusesShortSessionSecret: gorilla/securecookie panics on keys shorter
-// than 32 bytes — the server must refuse instead of crashing at runtime.
-func TestNewRefusesShortSessionSecret(t *testing.T) {
-	pool := mustPool(t)
-
-	_, err := web.New(pool, nil, zerolog.Nop(), web.Config{
-		Port:          "0",
-		AdminPassword: testAdminPassword,
-		SessionSecret: "too-short", // 10 bytes
-	})
-	if err == nil {
-		t.Fatal("expected error for short SESSION_SECRET, got nil")
-	}
-}
-
-// TestNewAcceptsValidConfig: a 32+ byte secret starts cleanly.
+// TestNewAcceptsPasswordOnlyConfig: the admin password is sufficient to sign
+// sessions and start the web panel.
 func TestNewAcceptsValidConfig(t *testing.T) {
 	pool := mustPool(t)
 
 	srv, err := web.New(pool, nil, zerolog.Nop(), web.Config{
 		Port:          "0",
 		AdminPassword: testAdminPassword,
-		SessionSecret: testSessionSecret,
 	})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)

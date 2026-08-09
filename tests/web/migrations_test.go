@@ -18,9 +18,9 @@ import (
 func migrationsTestServer(t *testing.T, pool *pgxpool.Pool, dsn string) *web.Server {
 	t.Helper()
 	srv, err := web.New(pool, nil, zerolog.Nop(), web.Config{
-		Port:               "0",
-		AdminPassword:      testAdminPassword,
-		SessionSecret:      testSessionSecret,
+		Port:          "0",
+		AdminPassword: testAdminPassword,
+
 		DatabaseURL:        dsn,
 		AllowProdMutations: false,
 	})
