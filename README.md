@@ -38,7 +38,9 @@ The Betrayal bot uses a production-grade structured logging system powered by [z
 
 ### Configuration
 
-Set the `ENVIRONMENT` environment variable to control logging behavior:
+Set `ENVIRONMENT=local` only for local development. If omitted, the app uses
+production mode and `DATABASE_POOLER_URL`; this prevents a deployed process
+from silently connecting through `DATABASE_URL`:
 
 ```bash
 # Development (debug output, no database)

@@ -33,6 +33,18 @@ func TestLoadConfigSelectsProductionPoolerURL(t *testing.T) {
 	}
 }
 
+func TestLoadConfigDefaultsToProductionPoolerURL(t *testing.T) {
+	cfg, err := loadConfig(func(key string) string {
+		return map[string]string{"DATABASE_URL": "postgres://local/db", "DATABASE_POOLER_URL": "postgres://production/db"}[key]
+	})
+	if err != nil {
+		t.Fatalf("load default config: %v", err)
+	}
+	if cfg.environment != "production" || cfg.database.dsn != "postgres://production/db" {
+		t.Fatalf("default config selected environment=%q dsn=%q; want production pooler", cfg.environment, cfg.database.dsn)
+	}
+}
+
 func TestLoadConfigFailsClosedWhenRequiredDatabaseURLIsMissing(t *testing.T) {
 	_, err := loadConfig(func(key string) string {
 		return map[string]string{"ENVIRONMENT": "local", "DATABASE_POOLER_URL": "postgres://production/db"}[key]

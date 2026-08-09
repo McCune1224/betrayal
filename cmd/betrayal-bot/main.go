@@ -73,7 +73,9 @@ type config struct {
 func loadConfig(getenv func(string) string) (config, error) {
 	env := strings.ToLower(strings.TrimSpace(getenv("ENVIRONMENT")))
 	if env == "" {
-		env = "local"
+		// A deployed process must never silently select DATABASE_URL. Local
+		// development opts into the direct local database explicitly.
+		env = "production"
 	}
 	var dsnKey string
 	switch env {
