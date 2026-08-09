@@ -22,18 +22,14 @@ import (
 // transactionally. Mirrors the archived cmd/data-entry CLI, but with a
 // validate-before-apply flow and a sync_run audit trail.
 type SyncHandler struct {
-	dbPool         *pgxpool.Pool
-	svc            *datasync.Service
-	isProd         bool
-	allowMutations bool // WEB_ALLOW_PROD_MUTATIONS=true overrides the prod block
-	logger         zerolog.Logger
+	dbPool *pgxpool.Pool
+	svc    *datasync.Service
+	isProd bool
+	logger zerolog.Logger
 }
 
-// NewSyncHandler creates a SyncHandler. isProd/allowMutations implement the
-// production guard: apply is hard-blocked on the prod pooler unless explicitly
-// allowed.
-func NewSyncHandler(pool *pgxpool.Pool, svc *datasync.Service, isProd, allowMutations bool, logger zerolog.Logger) *SyncHandler {
-	return &SyncHandler{dbPool: pool, svc: svc, isProd: isProd, allowMutations: allowMutations, logger: logger}
+func NewSyncHandler(pool *pgxpool.Pool, svc *datasync.Service, isProd bool, logger zerolog.Logger) *SyncHandler {
+	return &SyncHandler{dbPool: pool, svc: svc, isProd: isProd, logger: logger}
 }
 
 // Page handles GET /sync — sources + run history (no diff until preview).
@@ -46,7 +42,6 @@ func (h *SyncHandler) Page(c echo.Context) error {
 		return h.syncError(c, "Failed to load sync page: "+err.Error())
 	}
 	data.IsProd = h.isProd
-	data.AllowMutations = h.allowMutations || !h.isProd
 	return render(c, http.StatusOK, pages.SyncPage(data))
 }
 
@@ -82,7 +77,6 @@ func (h *SyncHandler) Preview(c echo.Context) error {
 	}
 
 	data.IsProd = h.isProd
-	data.AllowMutations = h.allowMutations || !h.isProd
 	return render(c, http.StatusOK, pages.SyncContent(data))
 }
 
@@ -90,8 +84,8 @@ func (h *SyncHandler) Preview(c echo.Context) error {
 // apply it in one transaction (stateless: the plan is re-derived at apply
 // time, so the latest sheet state wins). Prod-guarded.
 func (h *SyncHandler) Apply(c echo.Context) error {
-	if h.isProd && !h.allowMutations {
-		c.Response().Header().Set("HX-Trigger", toastTrigger("Blocked: connected to the PRODUCTION database. Set WEB_ALLOW_PROD_MUTATIONS=true to enable sync applies here.", "error"))
+	if h.isProd {
+		c.Response().Header().Set("HX-Trigger", toastTrigger("Sync apply is disabled against the PRODUCTION database.", "error"))
 		return c.String(http.StatusForbidden, "sync apply blocked against production")
 	}
 
@@ -138,7 +132,6 @@ func (h *SyncHandler) Apply(c echo.Context) error {
 		return h.syncError(c, "Failed to reload sync page: "+err.Error())
 	}
 	data.IsProd = h.isProd
-	data.AllowMutations = h.allowMutations || !h.isProd
 	c.Response().Header().Set("HX-Trigger", toastTrigger("Applied "+target.Name+" — see run history", "success"))
 	return render(c, http.StatusOK, pages.SyncContent(data))
 }
@@ -168,7 +161,6 @@ func (h *SyncHandler) UpdateSource(c echo.Context) error {
 		return h.syncError(c, "Failed to reload sync page: "+err.Error())
 	}
 	data.IsProd = h.isProd
-	data.AllowMutations = h.allowMutations || !h.isProd
 	c.Response().Header().Set("HX-Trigger", toastTrigger("Source updated", "success"))
 	return render(c, http.StatusOK, pages.SyncContent(data))
 }

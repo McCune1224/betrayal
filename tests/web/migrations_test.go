@@ -21,8 +21,7 @@ func migrationsTestServer(t *testing.T, pool *pgxpool.Pool, dsn string) *web.Ser
 		Port:          "0",
 		AdminPassword: testAdminPassword,
 
-		DatabaseURL:        dsn,
-		AllowProdMutations: false,
+		DatabaseURL: dsn,
 	})
 	if err != nil {
 		t.Fatalf("web.New: %v", err)

@@ -12,17 +12,16 @@ import (
 // MigrationsHandler implements the database migrations admin page
 // (/admin/migrations): see applied/pending state and apply/rollback from the
 // panel, using the embedded golang-migrate runner. Destructive actions are
-// hard-blocked against the prod pooler unless WEB_ALLOW_PROD_MUTATIONS=true.
+// hard-blocked against the production database.
 type MigrationsHandler struct {
-	getRunner       func() *dbmigrate.Runner // lazy: nil provider result = unavailable
-	isProd          bool
-	allowMutations  bool
+	getRunner func() *dbmigrate.Runner // lazy: nil provider result = unavailable
+	isProd    bool
 }
 
 // NewMigrationsHandler creates a MigrationsHandler. getRunner may return nil
 // (the page then renders an "unavailable" state).
-func NewMigrationsHandler(getRunner func() *dbmigrate.Runner, isProd, allowMutations bool) *MigrationsHandler {
-	return &MigrationsHandler{getRunner: getRunner, isProd: isProd, allowMutations: allowMutations}
+func NewMigrationsHandler(getRunner func() *dbmigrate.Runner, isProd bool) *MigrationsHandler {
+	return &MigrationsHandler{getRunner: getRunner, isProd: isProd}
 }
 
 // runner returns the embedded runner or nil when unavailable.
@@ -97,8 +96,8 @@ func (h *MigrationsHandler) Down(c echo.Context) error {
 
 // blocked applies the production guard and writes the 403 response itself.
 func (h *MigrationsHandler) blocked(c echo.Context) bool {
-	if h.isProd && !h.allowMutations {
-		c.Response().Header().Set("HX-Trigger", toastTrigger("Blocked: connected to the PRODUCTION database. Set WEB_ALLOW_PROD_MUTATIONS=true to run migrations here.", "error"))
+	if h.isProd {
+		c.Response().Header().Set("HX-Trigger", toastTrigger("Production migrations are disabled from the web panel.", "error"))
 		_ = c.String(http.StatusForbidden, "migrations blocked against production")
 		return true
 	}
@@ -127,8 +126,7 @@ func (h *MigrationsHandler) lastApplied(r *dbmigrate.Runner) (*dbmigrate.Migrati
 // loadData builds the page view model.
 func (h *MigrationsHandler) loadData() pages.MigrationsPageData {
 	data := pages.MigrationsPageData{
-		IsProd:         h.isProd,
-		AllowMutations: h.allowMutations || !h.isProd,
+		IsProd: h.isProd,
 	}
 	r := h.runner()
 	if r == nil {

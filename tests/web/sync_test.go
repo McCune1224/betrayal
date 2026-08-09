@@ -43,7 +43,6 @@ func syncTestServer(t *testing.T, pool *pgxpool.Pool, envURLs map[string]string,
 		AdminPassword: testAdminPassword,
 
 		DatabaseURL:         dsn,
-		AllowProdMutations:  false,
 		SyncEnvURLs:         envURLs,
 		AllowUnsafeSyncURLs: true,
 	})

@@ -381,7 +381,7 @@ protected.POST("/setup/generate", setupHandler.Generate) // returns partial with
 ## Risks, Tradeoffs, Open Questions
 
 **Resolved (2026-08-08, user-approved):**
-1. **Prod guard** — destructive web actions (`/sync/apply`, `/admin/migrations/down`, `/admin/migrations/up`) are **hard-blocked** when the DSN contains `roundhouse.proxy.rlwy.net` unless `WEB_ALLOW_PROD_MUTATIONS=true` is set. The sync page also carries a callout: **"Syncs are normally run once before a game starts to pull the latest from the Google Sheets — they're not re-run mid-game."**
+1. **Prod guard** — destructive web actions (`/sync/apply`, `/admin/migrations/down`, `/admin/migrations/up`) are always hard-blocked against the production database. The sync page also carries a callout: **"Syncs are normally run once before a game starts to pull the latest from the Google Sheets — they're not re-run mid-game."**
 2. **Sync semantics** — upsert: sheet edits propagate to existing rows (that's the point of preview/validate/apply).
 3. **`cmd/data-entry`** — kept as a thin CLI wrapper (archive mode).
 4. **Admin `/roll`** — NOT ported; rolls stay Discord-only for now.

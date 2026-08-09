@@ -57,9 +57,6 @@ type config struct {
 	web struct {
 		port          string
 		adminPassword string
-		// allowProdMutations (WEB_ALLOW_PROD_MUTATIONS=true) lifts the
-		// hard-block on destructive panel actions against the prod DB.
-		allowProdMutations bool
 		// Railway API
 		railwayToken     string
 		railwayProjectID string
@@ -103,7 +100,6 @@ func loadConfig(getenv func(string) string) (config, error) {
 		cfg.web.port = "8080"
 	}
 	cfg.web.adminPassword = getenv("ADMIN_PASSWORD")
-	cfg.web.allowProdMutations = strings.EqualFold(getenv("WEB_ALLOW_PROD_MUTATIONS"), "true")
 	cfg.web.railwayToken = getenv("RAILWAY_API_TOKEN")
 	cfg.web.railwayProjectID = getenv("RAILWAY_BETRAYAL_PROJECT_ID")
 	cfg.web.railwayServiceID = getenv("RAILWAY_BETRAYAL_SERVICE_ID")
@@ -287,16 +283,15 @@ func main() {
 	if cfg.web.adminPassword != "" {
 		var err error
 		webServer, err = web.New(pools, bot, appLogger, web.Config{
-			Port:               cfg.web.port,
-			AdminPassword:      cfg.web.adminPassword,
-			DatabaseURL:        cfg.database.dsn,
-			Environment:        env,
-			AllowProdMutations: cfg.web.allowProdMutations,
-			SyncEnvURLs:        datasync.EnvURLsFromEnv(),
-			RailwayToken:       cfg.web.railwayToken,
-			RailwayProjectID:   cfg.web.railwayProjectID,
-			RailwayServiceID:   cfg.web.railwayServiceID,
-			RailwayEnvID:       cfg.web.railwayEnvID,
+			Port:             cfg.web.port,
+			AdminPassword:    cfg.web.adminPassword,
+			DatabaseURL:      cfg.database.dsn,
+			Environment:      env,
+			SyncEnvURLs:      datasync.EnvURLsFromEnv(),
+			RailwayToken:     cfg.web.railwayToken,
+			RailwayProjectID: cfg.web.railwayProjectID,
+			RailwayServiceID: cfg.web.railwayServiceID,
+			RailwayEnvID:     cfg.web.railwayEnvID,
 		})
 		if err != nil {
 			// The Discord bot can still run when the optional web panel has

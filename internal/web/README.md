@@ -69,7 +69,6 @@ Public: `GET /login`, `POST /login`, `GET /health`. Everything else requires a s
 | `WEB_PORT` | Web server port (default 8080) |
 | `ADMIN_PASSWORD` | Shared password for admin login |
 
-| `WEB_ALLOW_PROD_MUTATIONS` | `true` lifts the hard-block on destructive panel actions (/sync/apply, migrations) against the prod pooler |
 | `GOOD_ROLES_CSV` / `EVIL_ROLES_CSV` / `NEUTRAL_ROLES_CSV` / `ITEM_CSV` | Google Sheets CSV export URLs; seeded into `sync_source` at startup (editable in the /sync panel) |
 | `RAILWAY_API_TOKEN` | Railway API token |
 | `RAILWAY_BETRAYAL_PROJECT_ID` | Railway project ID |

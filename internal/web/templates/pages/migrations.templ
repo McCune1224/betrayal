@@ -21,7 +21,6 @@ type MigrationsPageData struct {
 	HasPending      bool
 	LastAppliedName string // name the user must type to confirm a rollback
 	IsProd          bool
-	AllowMutations  bool
 	Unavailable     bool   // runner could not be built (no DSN configured)
 	Error           string // status query failure
 }
@@ -50,12 +49,7 @@ templ MigrationsContent(data MigrationsPageData) {
 			if data.IsProd {
 				<div class="card border-l-4 border-rust">
 					<div class="p-4 text-sm text-rust">
-						&#9888; Connected to the <span class="font-semibold">PRODUCTION</span> database.
-						if !data.AllowMutations {
-							Apply/rollback are <span class="font-semibold">blocked</span> — set <code class="text-wood">WEB_ALLOW_PROD_MUTATIONS=true</code> to enable them here.
-						} else {
-							Apply/rollback are enabled via <code class="text-wood">WEB_ALLOW_PROD_MUTATIONS=true</code>.
-						}
+						&#9888; Connected to the <span class="font-semibold">PRODUCTION</span> database. Apply/rollback are <span class="font-semibold">disabled</span> in production.
 					</div>
 				</div>
 			}
@@ -84,7 +78,7 @@ templ MigrationsContent(data MigrationsPageData) {
 							hx-post="/admin/migrations/up"
 							hx-target="#migrations-page"
 							hx-swap="outerHTML"
-							disabled?={ !data.HasPending || (data.IsProd && !data.AllowMutations) }
+							disabled?={ !data.HasPending || data.IsProd }
 						>
 							APPLY PENDING
 						</button>
@@ -126,7 +120,7 @@ templ MigrationsContent(data MigrationsPageData) {
 						<button
 							type="submit"
 							class="btn-ghost shrink-0"
-							disabled?={ data.LastAppliedName == "" || (data.IsProd && !data.AllowMutations) }
+							disabled?={ data.LastAppliedName == "" || data.IsProd }
 						>
 							ROLL BACK
 						</button>

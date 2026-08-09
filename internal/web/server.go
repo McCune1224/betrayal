@@ -45,8 +45,7 @@ type Config struct {
 	// Environment (ENVIRONMENT env var) is also treated as production for the
 	// guard, so a renamed pooler host cannot disable it.
 	Environment string
-	// AllowProdMutations (WEB_ALLOW_PROD_MUTATIONS=true) lifts that block.
-	AllowProdMutations bool
+	// Production mutations are permanently disabled from the web panel.
 
 	// SyncEnvURLs maps sync source names to their CSV URLs from the
 	// environment, used to seed the sync_source table (empty for tests).
@@ -211,8 +210,8 @@ func (s *Server) setupRoutes() {
 	playerEditHandler := handlers.NewPlayerEditHandler(s.dbPool)
 	catalogHandler := handlers.NewCatalogHandler(s.dbPool)
 	isProd := IsProd(s.config.DatabaseURL, s.config.Environment)
-	syncHandler := handlers.NewSyncHandler(s.dbPool, s.syncService, isProd, s.config.AllowProdMutations, s.logger)
-	migrationsHandler := handlers.NewMigrationsHandler(s.getMigrateRunner, isProd, s.config.AllowProdMutations)
+	syncHandler := handlers.NewSyncHandler(s.dbPool, s.syncService, isProd, s.logger)
+	migrationsHandler := handlers.NewMigrationsHandler(s.getMigrateRunner, isProd)
 	setupHandler := handlers.NewSetupHandler(s.dbPool, s.discordSession)
 	readinessHandler := handlers.NewGameReadinessHandler(s.dbPool, s.discordSession)
 	playerCreateHandler := handlers.NewPlayerCreateHandler(s.dbPool)
