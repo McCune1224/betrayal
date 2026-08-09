@@ -50,6 +50,20 @@ func EnsureUpToDate(dsn string) error {
 		return err
 	}
 	defer r.Close()
+	version, dirty, err := r.Version()
+	if err != nil && err != migrate.ErrNilVersion {
+		return fmt.Errorf("dbmigrate: inspect version: %w", err)
+	}
+	if dirty {
+		if version != 32 {
+			return fmt.Errorf("dbmigrate: dirty database version %d requires manual recovery", version)
+		}
+		// Migration 32 originally dirtied production while creating catalog
+		// indexes. The repaired migration reconciles duplicates before retrying.
+		if err := r.Force(31); err != nil {
+			return fmt.Errorf("dbmigrate: recover dirty version 32: %w", err)
+		}
+	}
 	return r.Up()
 }
 
@@ -78,6 +92,16 @@ func (r *Runner) Up() error {
 	err := r.m.Up()
 	if err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("dbmigrate: up: %w", err)
+	}
+	return nil
+}
+
+// Force changes the recorded schema version without running SQL. It is only
+// used by narrowly-scoped recovery code after the replacement migration has
+// been verified safe to rerun.
+func (r *Runner) Force(version uint) error {
+	if err := r.m.Force(int(version)); err != nil {
+		return fmt.Errorf("dbmigrate: force %d: %w", version, err)
 	}
 	return nil
 }
