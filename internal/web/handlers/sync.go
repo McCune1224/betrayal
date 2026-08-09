@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/models"
 	"github.com/mccune1224/betrayal/internal/services/datasync"
 	"github.com/mccune1224/betrayal/internal/web/templates/pages"
+	"github.com/rs/zerolog"
 )
 
 // SyncHandler implements the spreadsheet sync page (/sync): fetch the four
@@ -20,17 +22,18 @@ import (
 // transactionally. Mirrors the archived cmd/data-entry CLI, but with a
 // validate-before-apply flow and a sync_run audit trail.
 type SyncHandler struct {
-	dbPool          *pgxpool.Pool
-	svc             *datasync.Service
-	isProd          bool
-	allowMutations  bool // WEB_ALLOW_PROD_MUTATIONS=true overrides the prod block
+	dbPool         *pgxpool.Pool
+	svc            *datasync.Service
+	isProd         bool
+	allowMutations bool // WEB_ALLOW_PROD_MUTATIONS=true overrides the prod block
+	logger         zerolog.Logger
 }
 
 // NewSyncHandler creates a SyncHandler. isProd/allowMutations implement the
 // production guard: apply is hard-blocked on the prod pooler unless explicitly
 // allowed.
-func NewSyncHandler(pool *pgxpool.Pool, svc *datasync.Service, isProd, allowMutations bool) *SyncHandler {
-	return &SyncHandler{dbPool: pool, svc: svc, isProd: isProd, allowMutations: allowMutations}
+func NewSyncHandler(pool *pgxpool.Pool, svc *datasync.Service, isProd, allowMutations bool, logger zerolog.Logger) *SyncHandler {
+	return &SyncHandler{dbPool: pool, svc: svc, isProd: isProd, allowMutations: allowMutations, logger: logger}
 }
 
 // Page handles GET /sync — sources + run history (no diff until preview).
@@ -347,6 +350,30 @@ func (h *SyncHandler) badRequest(c echo.Context, msg string) error {
 }
 
 func (h *SyncHandler) syncError(c echo.Context, msg string) error {
+	hint := syncDatabaseErrorHint(errors.New(msg))
+	entry := h.logger.Error().
+		Str("operation", "sync").
+		Str("route", c.Path()).
+		Str("method", c.Request().Method).
+		Err(errors.New(msg))
+	if hint != "" {
+		entry = entry.Str("hint", hint)
+	}
+	entry.Msg("sync request failed")
+	if hint != "" {
+		msg += " — " + hint
+	}
 	c.Response().Header().Set("HX-Trigger", toastTrigger(msg, "error"))
 	return c.String(http.StatusInternalServerError, msg)
+}
+
+func syncDatabaseErrorHint(err error) string {
+	if err == nil {
+		return ""
+	}
+	message := err.Error()
+	if strings.Contains(message, `relation "sync_source" does not exist`) || strings.Contains(message, `relation "sync_run" does not exist`) {
+		return "sync tables are missing; apply migrations 000030 and 000031 from /admin/migrations"
+	}
+	return ""
 }
