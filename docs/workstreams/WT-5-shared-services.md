@@ -1,5 +1,7 @@
 # WT-5 — Shared Application Services
 
+> **Historical / superseded:** This workstream predates the completed SvelteKit migration. References to legacy web handlers are retained only as historical implementation context.
+
 ## Branch/worktree
 
 - Branch: `wt-shared-services`
