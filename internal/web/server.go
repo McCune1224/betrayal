@@ -199,8 +199,6 @@ func (s *Server) setupMiddleware() {
 		},
 	}))
 
-	// Static files
-	s.echo.Static("/static", "web/static")
 }
 
 func (s *Server) setupRoutes() {
@@ -306,7 +304,7 @@ func (s *Server) setupRoutes() {
 	apiSync.GET("/sources", apiSyncHandler.Sources)
 	apiSync.POST("/preview", apiSyncHandler.Preview, apiMigrateRate)
 	apiSync.POST("/apply", apiSyncHandler.Apply, apiMigrateRate)
-	apiSync.PUT("/sources/:id", apiSyncHandler.UpdateSource)
+	apiSync.PUT("/sources/:id", apiSyncHandler.UpdateSource, apiMigrateRate)
 
 	serveUI := func(c echo.Context) error { ui.Handler(c.Response(), c.Request()); return nil }
 	s.echo.GET("/login", serveUI)
