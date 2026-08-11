@@ -12,12 +12,12 @@ import (
 	"time"
 )
 
-//go:embed dist dist/* dist/assets/*
+//go:embed all:dist
 var files embed.FS
 
-var hashedAsset = regexp.MustCompile(`(?:^|/)[^/]+\.[0-9a-f]{8,}\.[^/]+$`)
+var hashedAsset = regexp.MustCompile(`(?:^|/)[^/]+\.[A-Za-z0-9_-]{8,}\.[^/]+$`)
 
-// Handler serves embedded UI assets and falls back to the SPA index.
+// Handler serves embedded UI assets and falls back to SvelteKit's static entry.
 func Handler(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
 	if name != "" {
@@ -30,10 +30,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	index, err := fs.ReadFile(files, "dist/index.html")
+	index, err := fs.ReadFile(files, "dist/200.html")
 	if err != nil {
-		http.Error(w, "embedded UI index is unavailable", http.StatusInternalServerError)
-		return
+		// The temporary fixture remains useful before the frontend has been built.
+		index, err = fs.ReadFile(files, "dist/index.html")
+		if err != nil {
+			http.Error(w, "embedded UI entry is unavailable", http.StatusInternalServerError)
+			return
+		}
 	}
 	w.Header().Set("Cache-Control", "no-cache")
 	http.ServeContent(w, r, "index.html", time.Time{}, bytes.NewReader(index))

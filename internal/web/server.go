@@ -379,12 +379,15 @@ func (s *Server) setupRoutes() {
 
 	// The temporary SvelteKit shell owns the root and client-side routes. Keep
 	// this fallback last so explicit API and legacy routes retain precedence.
+	// The legacy login form remains the authentication entry point until its
+	// SvelteKit replacement lands, so shell routes stay behind the established
+	// session middleware.
 	serveUI := func(c echo.Context) error {
 		ui.Handler(c.Response(), c.Request())
 		return nil
 	}
-	s.echo.GET("/", serveUI)
-	s.echo.GET("/*", serveUI)
+	s.echo.GET("/", serveUI, authMiddleware.RequireAuth)
+	s.echo.GET("/*", serveUI, authMiddleware.RequireAuth)
 }
 
 // Handler exposes the underlying Echo router as a plain http.Handler.

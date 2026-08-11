@@ -3,6 +3,7 @@ package web_test
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"testing"
 )
 
@@ -10,7 +11,13 @@ func TestAPIShell(t *testing.T) {
 	pool := mustPool(t)
 	client := newTestClient(t, testServer(t, pool))
 
-	t.Run("serves the embedded UI index for the root and client routes", func(t *testing.T) {
+	t.Run("serves the embedded UI entry for authenticated root and client routes", func(t *testing.T) {
+		csrf := client.get("/api/v1/auth/csrf")
+		if csrf.StatusCode != http.StatusOK {
+			t.Fatalf("GET csrf: status = %d, want %d", csrf.StatusCode, http.StatusOK)
+		}
+		loginAPI(t, client)
+
 		for _, path := range []string{"/", "/ui/client-route"} {
 			resp := client.get(path)
 			if resp.StatusCode != http.StatusOK {
@@ -28,8 +35,17 @@ func TestAPIShell(t *testing.T) {
 		}
 	})
 
-	t.Run("serves hash-named assets with immutable caching", func(t *testing.T) {
-		resp := client.get("/assets/app.12345678.js")
+	t.Run("serves generated SvelteKit assets with immutable caching", func(t *testing.T) {
+		entry := client.get("/")
+		if entry.StatusCode != http.StatusOK {
+			t.Fatalf("entry status = %d, want %d", entry.StatusCode, http.StatusOK)
+		}
+		matches := regexp.MustCompile(`(?:src|href)="([^"]*_app/[^"]+\.js)"`).FindStringSubmatch(client.body(entry))
+		if len(matches) != 2 {
+			t.Fatal("embedded UI entry does not reference a SvelteKit JavaScript asset")
+		}
+
+		resp := client.get(matches[1])
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("asset status = %d, want %d", resp.StatusCode, http.StatusOK)
 		}

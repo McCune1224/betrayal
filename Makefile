@@ -1,5 +1,5 @@
 .SILENT:
-.PHONY: run run-web sql migrate-up migrate-down migrate-sync migrate-local-up migrate-local-down migrate-production-up migrate-production-down migrate-production-sync mock-migrate-up mock-migrate-down test-migration-targets templ-generate templ-watch tailwind-build tailwind-watch build generate env-link worktree db-up db-down clean
+.PHONY: run run-web sql migrate-up migrate-down migrate-sync migrate-local-up migrate-local-down migrate-production-up migrate-production-down migrate-production-sync mock-migrate-up mock-migrate-down test-migration-targets templ-generate templ-watch tailwind-build tailwind-watch frontend-build build generate env-link worktree db-up db-down clean
 
 # Extract a value from .env (handles quotes and '=' inside values, e.g. sslmode=disable)
 env-value = $(shell grep -E '^$(1)=' .env | head -n1 | cut -d '=' -f2- | tr -d '"' | tr -d "'")
@@ -69,8 +69,13 @@ tailwind-build:
 tailwind-watch:
 	tailwindcss -i ./web/static/css/input.css -o ./web/static/css/output.css --watch
 
-# Generate all (templ + tailwind)
-generate: templ-generate tailwind-build
+# Generate the static SvelteKit application that Go embeds and serves.
+frontend-build:
+	npm --prefix frontend ci
+	npm --prefix frontend run build
+
+# Generate all (templ + tailwind + SvelteKit static output)
+generate: templ-generate tailwind-build frontend-build
 
 # Build the binary (generates templates and CSS first)
 build: generate

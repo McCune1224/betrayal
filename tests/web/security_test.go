@@ -96,8 +96,8 @@ func TestLoginFlow(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("GET / authenticated: expected 200, got %d", resp.StatusCode)
 	}
-	if !strings.Contains(client.body(resp), "DASHBOARD") {
-		t.Fatal("dashboard should render after login")
+	if !strings.Contains(client.body(resp), "data-sveltekit-preload-data") {
+		t.Fatal("SvelteKit shell should render after login")
 	}
 
 	// Logout
