@@ -23,7 +23,7 @@ export class ApiError extends Error {
   }
 }
 
-export function createApiClient({ fetcher = fetch, csrfPath = '/api/csrf' }: ApiClientOptions = {}) {
+export function createApiClient({ fetcher = fetch, csrfPath = '/api/v1/auth/csrf' }: ApiClientOptions = {}) {
   async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const method = (init.method ?? 'GET').toUpperCase();
     const headers = new Headers(init.headers);
