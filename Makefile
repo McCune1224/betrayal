@@ -73,6 +73,7 @@ tailwind-watch:
 frontend-build:
 	npm --prefix frontend ci
 	npm --prefix frontend run build
+	node -e "const fs=require('fs');const p='internal/web/ui/dist/200.html';fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace(/[\	 ]+$$/gm,''))"
 
 # Generate all (templ + tailwind + SvelteKit static output)
 generate: templ-generate tailwind-build frontend-build

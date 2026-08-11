@@ -6,6 +6,7 @@ COPY frontend/package.json frontend/package-lock.json ./frontend/
 RUN npm --prefix frontend ci
 COPY . .
 RUN npm --prefix frontend run build
+RUN node -e "const fs=require('fs');const p='internal/web/ui/dist/200.html';fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace(/[\t ]+$/gm,''))"
 
 # Use an official Golang runtime as a parent image
 FROM golang:1.25
