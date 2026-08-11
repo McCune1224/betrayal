@@ -17,9 +17,11 @@ import (
 	dbmigrate "github.com/mccune1224/betrayal/internal/db/migrate"
 	"github.com/mccune1224/betrayal/internal/services/datasync"
 	"github.com/mccune1224/betrayal/internal/services/gamereset"
+	"github.com/mccune1224/betrayal/internal/web/api"
 	"github.com/mccune1224/betrayal/internal/web/handlers"
 	webmiddleware "github.com/mccune1224/betrayal/internal/web/middleware"
 	"github.com/mccune1224/betrayal/internal/web/railway"
+	"github.com/mccune1224/betrayal/internal/web/ui"
 	"github.com/rs/zerolog"
 	"golang.org/x/time/rate"
 )
@@ -198,7 +200,6 @@ func (s *Server) setupRoutes() {
 	// Create handlers
 	healthHandler := handlers.NewHealthHandler(s.dbPool, s.discordSession)
 	authHandler := handlers.NewAuthHandler(s.sessionStore, s.config.AdminPassword)
-	dashboardHandler := handlers.NewDashboardHandler(s.dbPool)
 	playersHandler := handlers.NewPlayersHandler(s.dbPool)
 	adminHandler := handlers.NewAdminHandler(s.dbPool, s.railwayClient)
 	votesHandler := handlers.NewVotesHandler(s.dbPool)
@@ -220,6 +221,17 @@ func (s *Server) setupRoutes() {
 
 	// Public routes
 	s.echo.GET("/health", healthHandler.Health)
+	apiV1 := s.echo.Group("/api/v1")
+	apiV1.GET("/health", func(c echo.Context) error {
+		api.Health(c.Response(), c.Request())
+		return nil
+	})
+	apiNotFound := func(c echo.Context) error {
+		api.NotFound(c.Response(), c.Request())
+		return nil
+	}
+	apiV1.GET("", apiNotFound)
+	apiV1.RouteNotFound("/*", apiNotFound)
 	s.echo.GET("/login", authHandler.LoginPage)
 
 	// Login is the brute-force surface: rate limit by IP (a burst of attempts,
@@ -237,7 +249,6 @@ func (s *Server) setupRoutes() {
 	// Protected routes
 	protected := s.echo.Group("", authMiddleware.RequireAuth)
 	protected.POST("/logout", authHandler.Logout)
-	protected.GET("/", dashboardHandler.Dashboard)
 	protected.GET("/health/status", healthHandler.HealthStatusPartial)
 	protected.GET("/healthcheck", readinessHandler.Page)
 	protected.GET("/players", playersHandler.List)
@@ -344,6 +355,15 @@ func (s *Server) setupRoutes() {
 	protected.GET("/statuses/:id", catalogHandler.StatusDetail)
 	protected.POST("/statuses/:id", catalogHandler.UpdateStatus)
 	protected.POST("/statuses/:id/delete", catalogHandler.DeleteStatus)
+
+	// The temporary SvelteKit shell owns the root and client-side routes. Keep
+	// this fallback last so explicit API and legacy routes retain precedence.
+	serveUI := func(c echo.Context) error {
+		ui.Handler(c.Response(), c.Request())
+		return nil
+	}
+	s.echo.GET("/", serveUI)
+	s.echo.GET("/*", serveUI)
 }
 
 // Handler exposes the underlying Echo router as a plain http.Handler.
