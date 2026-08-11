@@ -211,6 +211,10 @@ func (s *Server) setupRoutes() {
 	apiAuthHandler := api.NewAuthHandler(s.sessionStore, s.config.AdminPassword)
 	apiDashboardHandler := api.NewDashboardHandler(s.dbPool)
 	apiPlayersHandler := api.NewPlayersHandler(s.dbPool)
+	apiCycleHandler := api.NewCycleHandler(s.dbPool)
+	apiChannelsHandler := api.NewChannelsHandler(s.dbPool, s.discordSession)
+	apiVotesHandler := api.NewVotesHandler(s.dbPool)
+	apiReadinessHandler := api.NewReadinessHandler(s.dbPool, s.discordSession)
 	playersHandler := handlers.NewPlayersHandler(s.dbPool)
 	adminHandler := handlers.NewAdminHandler(s.dbPool, s.railwayClient)
 	votesHandler := handlers.NewVotesHandler(s.dbPool)
@@ -268,6 +272,10 @@ func (s *Server) setupRoutes() {
 	apiV1.POST("/auth/logout", apiAuthHandler.Logout, apiAuthMiddleware.RequireAuth)
 	apiV1.GET("/dashboard", apiDashboardHandler.Dashboard, apiAuthMiddleware.RequireAuth)
 	apiV1.GET("/players", apiPlayersHandler.List, apiAuthMiddleware.RequireAuth)
+	apiV1.GET("/ops/cycle", apiCycleHandler.Get, apiAuthMiddleware.RequireAuth)
+	apiV1.GET("/ops/channels", apiChannelsHandler.Get, apiAuthMiddleware.RequireAuth)
+	apiV1.GET("/ops/votes", apiVotesHandler.Get, apiAuthMiddleware.RequireAuth)
+	apiV1.GET("/ops/healthcheck", apiReadinessHandler.Get, apiAuthMiddleware.RequireAuth)
 
 	// Protected routes
 	protected := s.echo.Group("", authMiddleware.RequireAuth)
