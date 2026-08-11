@@ -1,0 +1,7 @@
+<script lang="ts">
+ import { onMount } from 'svelte'; import { createApiClient } from '$lib/api/client';
+ type Source={id:number;name:string;kind:string;url:string;enabled:boolean}; let sources=$state<Source[]>([]); let error=$state(''); let preview=$state('');
+ onMount(async()=>{try{const d=await createApiClient().get<{sources:Source[]}>('/api/v1/sync/sources'); sources=d.sources;}catch(e){error=e instanceof Error?e.message:'Could not load sync sources';}});
+ async function doPreview(){try{const d=await createApiClient().post<{status:string}>('/api/v1/sync/preview',{});preview=d.status;}catch(e){error=e instanceof Error?e.message:'Preview failed';}}
+</script>
+<svelte:head><title>Sync | Betrayal Admin</title></svelte:head><main class="min-h-screen bg-slate-950 p-6 text-slate-100"><div class="mx-auto max-w-5xl"><h1 class="text-3xl font-semibold">Data sync</h1><p class="mt-2 text-slate-400">Preview is read-only; apply remains guarded by the server.</p><button class="mt-5 border border-slate-600 px-4 py-2" onclick={doPreview}>Preview</button>{#if preview}<p role="status" class="mt-3">{preview}</p>{/if}{#if error}<p role="alert" class="mt-4 text-red-300">{error}</p>{/if}<div class="mt-8 space-y-3">{#each sources as source (source.id)}<article class="border border-slate-700 p-4"><h2>{source.name}</h2><p class="text-sm text-slate-400">{source.kind} · {source.enabled?'enabled':'disabled'}</p></article>{/each}</div></div></main>
