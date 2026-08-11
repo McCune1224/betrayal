@@ -216,6 +216,8 @@ func (s *Server) setupRoutes() {
 	apiChannelsHandler := api.NewChannelsHandler(s.dbPool, s.discordSession)
 	apiVotesHandler := api.NewVotesHandler(s.dbPool)
 	apiReadinessHandler := api.NewReadinessHandler(s.dbPool, s.discordSession)
+	apiAdminHandler := api.NewAdminHandler(s.dbPool, s.railwayClient, s.getMigrateRunner, gamereset.New(s.dbPool, s.syncService))
+	apiSyncHandler := api.NewSyncHandler(s.syncService)
 	playersHandler := handlers.NewPlayersHandler(s.dbPool)
 	adminHandler := handlers.NewAdminHandler(s.dbPool, s.railwayClient)
 	votesHandler := handlers.NewVotesHandler(s.dbPool)
@@ -239,6 +241,8 @@ func (s *Server) setupRoutes() {
 	// Public routes
 	s.echo.GET("/health", healthHandler.Health)
 	apiV1 := s.echo.Group("/api/v1")
+	apiMigrateLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{Rate: redeployRate, Burst: redeployRateBurst, ExpiresIn: 10 * time.Minute})
+	apiMigrateRate := middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{Store: apiMigrateLimiter})
 	apiV1.GET("/health", func(c echo.Context) error {
 		api.Health(c.Response(), c.Request())
 		return nil
@@ -302,6 +306,19 @@ func (s *Server) setupRoutes() {
 	apiV1.GET("/ops/channels", apiChannelsHandler.Get, apiAuthMiddleware.RequireAuth)
 	apiV1.GET("/ops/votes", apiVotesHandler.Get, apiAuthMiddleware.RequireAuth)
 	apiV1.GET("/ops/healthcheck", apiReadinessHandler.Get, apiAuthMiddleware.RequireAuth)
+	apiAdmin := apiV1.Group("/admin", apiAuthMiddleware.RequireAuth)
+	apiAdmin.GET("/audit", apiAdminHandler.Audit)
+	apiAdmin.GET("/migrations", apiAdminHandler.Migrations)
+	apiAdmin.POST("/migrations/up", apiAdminHandler.MigrationUp, apiMigrateRate)
+	apiAdmin.POST("/migrations/down", apiAdminHandler.MigrationDown, apiMigrateRate)
+	apiAdmin.GET("/reset", apiAdminHandler.ResetPreview)
+	apiAdmin.POST("/reset", apiAdminHandler.ResetExecute, apiMigrateRate)
+	apiAdmin.POST("/redeploy", apiAdminHandler.Redeploy, middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{Store: middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{Rate: redeployRate, Burst: redeployRateBurst, ExpiresIn: 10 * time.Minute})}))
+	apiSync := apiV1.Group("/sync", apiAuthMiddleware.RequireAuth)
+	apiSync.GET("/sources", apiSyncHandler.Sources)
+	apiSync.POST("/preview", apiSyncHandler.Preview, apiMigrateRate)
+	apiSync.POST("/apply", apiSyncHandler.Apply, apiMigrateRate)
+	apiSync.PUT("/sources/:id", apiSyncHandler.UpdateSource)
 
 	// Protected routes
 	protected := s.echo.Group("", authMiddleware.RequireAuth)
