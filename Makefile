@@ -1,5 +1,5 @@
 .SILENT:
-.PHONY: run run-web sql migrate-up migrate-down migrate-sync migrate-local-up migrate-local-down migrate-production-up migrate-production-down migrate-production-sync mock-migrate-up mock-migrate-down test-migration-targets templ-generate templ-watch tailwind-build tailwind-watch frontend-build build generate env-link worktree db-up db-down clean
+.PHONY: run run-web sql migrate-up migrate-down migrate-sync migrate-local-up migrate-local-down migrate-production-up migrate-production-down migrate-production-sync mock-migrate-up mock-migrate-down test-migration-targets frontend-build build generate env-link worktree db-up db-down clean
 
 # Extract a value from .env (handles quotes and '=' inside values, e.g. sslmode=disable)
 env-value = $(shell grep -E '^$(1)=' .env | head -n1 | cut -d '=' -f2- | tr -d '"' | tr -d "'")
@@ -55,30 +55,16 @@ mock-migrate-up:
 mock-migrate-down:
 	migrate -database $(call env-value,MOCK_DATABASE) -path internal/db/migrate/migrations down
 
-# Templ template generation
-templ-generate:
-	templ generate
-
-templ-watch:
-	templ generate --watch
-
-# Tailwind CSS (requires tailwindcss standalone CLI)
-tailwind-build:
-	tailwindcss -i ./web/static/css/input.css -o ./web/static/css/output.css --minify
-
-tailwind-watch:
-	tailwindcss -i ./web/static/css/input.css -o ./web/static/css/output.css --watch
-
 # Generate the static SvelteKit application that Go embeds and serves.
 frontend-build:
 	npm --prefix frontend ci
 	npm --prefix frontend run build
-	node -e "const fs=require('fs');const p='internal/web/ui/dist/200.html';fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace(/[\	 ]+$$/gm,''))"
+	node -e "const fs=require('fs');const p='internal/web/ui/dist/200.html';fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace(/[\\	 ]+$$/gm,''))"
 
-# Generate all (templ + tailwind + SvelteKit static output)
-generate: templ-generate tailwind-build frontend-build
+# Generate the static frontend.
+generate: frontend-build
 
-# Build the binary (generates templates and CSS first)
+# Build the binary after generating the SvelteKit frontend.
 build: generate
 	go build -o ./bin/betrayal-bot ./cmd/betrayal-bot/
 

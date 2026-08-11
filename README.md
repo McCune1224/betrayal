@@ -9,7 +9,7 @@ Welcome to the Betrayal Discord Bot - your go-to companion for immersive Betraya
 
 ## Overview 🌐
 
-The Betrayal Discord Bot, crafted with ❤️ in Go, is designed to assist with the game management for the game Betrayal. This dynamic bot seamlessly integrates with Discord, managing game events, characters, and more, all powered by a robust PostgreSQL database. It also ships a web admin panel (Echo + templ + HTMX) for operational control. **Production is hosted on Railway** (deploys are env-driven; the legacy Fly workflow was removed).
+The Betrayal Discord Bot, crafted with ❤️ in Go, is designed to assist with the game management for the game Betrayal. This dynamic bot seamlessly integrates with Discord, managing game events, characters, and more, all powered by a robust PostgreSQL database. It also ships a SvelteKit web admin panel with Go-owned JSON APIs for operational control. **Production is hosted on Railway** (deploys are env-driven; the legacy Fly workflow was removed).
 
 ## Features 🚀
 

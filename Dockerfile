@@ -14,14 +14,6 @@ FROM golang:1.25
 # Set the working directory to /app
 WORKDIR /app
 
-# Install templ CLI
-RUN go install github.com/a-h/templ/cmd/templ@v0.3.960
-
-# Install Tailwind CSS v4 standalone CLI
-RUN curl -sLO https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.2/tailwindcss-linux-x64 \
-    && chmod +x tailwindcss-linux-x64 \
-    && mv tailwindcss-linux-x64 /usr/local/bin/tailwindcss
-
 # Copy go mod and sum files
 COPY go.mod go.sum ./
 
@@ -31,12 +23,6 @@ RUN go mod download
 # Copy the source code from the current directory and subdirectories to the working directory inside the container
 COPY . .
 COPY --from=frontend-build /app/internal/web/ui/dist ./internal/web/ui/dist
-
-# Generate templ templates
-RUN templ generate
-
-# Build Tailwind CSS
-RUN tailwindcss -i ./web/static/css/input.css -o ./web/static/css/output.css --minify
 
 # Build the application
 RUN go build -o ./bin/main /app/cmd/betrayal-bot/

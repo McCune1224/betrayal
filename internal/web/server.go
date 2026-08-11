@@ -19,7 +19,6 @@ import (
 	"github.com/mccune1224/betrayal/internal/services/datasync"
 	"github.com/mccune1224/betrayal/internal/services/gamereset"
 	"github.com/mccune1224/betrayal/internal/web/api"
-	"github.com/mccune1224/betrayal/internal/web/handlers"
 	webmiddleware "github.com/mccune1224/betrayal/internal/web/middleware"
 	"github.com/mccune1224/betrayal/internal/web/railway"
 	"github.com/mccune1224/betrayal/internal/web/ui"
@@ -205,12 +204,10 @@ func (s *Server) setupMiddleware() {
 }
 
 func (s *Server) setupRoutes() {
-	// Create handlers
-	healthHandler := handlers.NewHealthHandler(s.dbPool, s.discordSession)
-	authHandler := handlers.NewAuthHandler(s.sessionStore, s.config.AdminPassword)
 	apiAuthHandler := api.NewAuthHandler(s.sessionStore, s.config.AdminPassword)
 	apiDashboardHandler := api.NewDashboardHandler(s.dbPool)
 	apiPlayersHandler := api.NewPlayersHandler(s.dbPool)
+	apiPlayersAdminHandler := api.NewPlayersHandler(s.dbPool)
 	apiCatalogHandler := api.NewCatalogHandler(s.dbPool)
 	apiCycleHandler := api.NewCycleHandler(s.dbPool)
 	apiChannelsHandler := api.NewChannelsHandler(s.dbPool, s.discordSession)
@@ -219,83 +216,46 @@ func (s *Server) setupRoutes() {
 	apiReadinessHandler := api.NewReadinessHandler(s.dbPool, s.discordSession)
 	apiAdminHandler := api.NewAdminHandler(s.dbPool, s.railwayClient, s.getMigrateRunner, gamereset.New(s.dbPool, s.syncService))
 	apiSyncHandler := api.NewSyncHandler(s.syncService)
-	playersHandler := handlers.NewPlayersHandler(s.dbPool)
-	adminHandler := handlers.NewAdminHandler(s.dbPool, s.railwayClient)
-	votesHandler := handlers.NewVotesHandler(s.dbPool)
-	rolesHandler := handlers.NewRolesHandler(s.dbPool)
-	cycleHandler := handlers.NewCycleHandler(s.dbPool)
-	channelsHandler := handlers.NewChannelsHandler(s.dbPool, s.discordSession)
-	playerEditHandler := handlers.NewPlayerEditHandler(s.dbPool)
-	catalogHandler := handlers.NewCatalogHandler(s.dbPool)
-	isProd := IsProd(s.config.DatabaseURL, s.config.Environment)
-	syncHandler := handlers.NewSyncHandler(s.dbPool, s.syncService, isProd, s.logger)
-	migrationsHandler := handlers.NewMigrationsHandler(s.getMigrateRunner, isProd)
-	setupHandler := handlers.NewSetupHandler(s.dbPool, s.discordSession)
-	readinessHandler := handlers.NewGameReadinessHandler(s.dbPool, s.discordSession)
-	playerCreateHandler := handlers.NewPlayerCreateHandler(s.dbPool)
-	resetHandler := handlers.NewResetHandler(gamereset.New(s.dbPool, s.syncService), isProd)
-
-	// Auth middleware
-	authMiddleware := webmiddleware.NewAuthMiddleware(s.sessionStore)
 	apiAuthMiddleware := api.NewAuthMiddleware(s.sessionStore)
+	browserAuth := webmiddleware.NewAuthMiddleware(s.sessionStore)
 
-	// Public routes
-	s.echo.GET("/health", healthHandler.Health)
-	apiV1 := s.echo.Group("/api/v1")
-	apiMigrateLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{Rate: redeployRate, Burst: redeployRateBurst, ExpiresIn: 10 * time.Minute})
-	apiMigrateRate := middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{Store: apiMigrateLimiter})
-	apiV1.GET("/health", func(c echo.Context) error {
+	s.echo.GET("/health", func(c echo.Context) error {
 		api.Health(c.Response(), c.Request())
 		return nil
 	})
-	apiV1.GET("/auth/session", apiAuthHandler.Session)
-	apiV1.GET("/auth/csrf", apiAuthHandler.CSRF)
-	apiNotFound := func(c echo.Context) error {
-		api.NotFound(c.Response(), c.Request())
-		return nil
-	}
+	apiV1 := s.echo.Group("/api/v1")
+	apiMigrateLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{Rate: redeployRate, Burst: redeployRateBurst, ExpiresIn: 10 * time.Minute})
+	apiMigrateRate := middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{Store: apiMigrateLimiter})
+	apiNotFound := func(c echo.Context) error { api.NotFound(c.Response(), c.Request()); return nil }
 	apiV1.GET("", apiNotFound)
 	apiV1.RouteNotFound("/*", apiNotFound)
-	// The SvelteKit login page is public; authentication is performed through
-	// /api/v1/auth/login. Keep the legacy POST handler during the migration so
-	// older clients do not lose access, but do not serve templ for GET /login.
-	// then ~1/sec). Note: behind a proxy this buckets by proxy IP unless a
-	// trusted-proxy extractor is configured — still throttles global brute force.
-	loginLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
-		Rate:      loginRateLimit,
-		Burst:     loginRateBurst,
-		ExpiresIn: 10 * time.Minute,
-	})
-	s.echo.POST("/login", authHandler.Login, middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
-		Store: loginLimiter,
-	}))
-	apiV1.POST("/auth/login", apiAuthHandler.Login, middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
-		Store: loginLimiter,
-	}))
-	// Apply API auth to individual protected endpoints. A nested group with an
-	// empty prefix makes Echo apply its middleware to unmatched /api/v1 routes,
-	// incorrectly turning their JSON 404s into 401s.
+	apiV1.GET("/health", func(c echo.Context) error { api.Health(c.Response(), c.Request()); return nil })
+	apiV1.GET("/auth/session", apiAuthHandler.Session)
+	apiV1.GET("/auth/csrf", apiAuthHandler.CSRF)
+	loginLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{Rate: loginRateLimit, Burst: loginRateBurst, ExpiresIn: 10 * time.Minute})
+	apiV1.POST("/auth/login", apiAuthHandler.Login, middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{Store: loginLimiter}))
 	apiV1.POST("/auth/logout", apiAuthHandler.Logout, apiAuthMiddleware.RequireAuth)
 	apiV1.GET("/dashboard", apiDashboardHandler.Dashboard, apiAuthMiddleware.RequireAuth)
 	apiV1.GET("/players", apiPlayersHandler.List, apiAuthMiddleware.RequireAuth)
-	apiV1.GET("/players/:id", apiPlayersHandler.Detail, apiAuthMiddleware.RequireAuth)
-	apiV1.POST("/players", apiPlayersHandler.Create, apiAuthMiddleware.RequireAuth)
-	apiV1.PUT("/players/:id", apiPlayersHandler.Update, apiAuthMiddleware.RequireAuth)
-	apiV1.PATCH("/players/:id", apiPlayersHandler.Update, apiAuthMiddleware.RequireAuth)
-	apiV1.PUT("/players/:id/stats", apiPlayersHandler.UpdateStats, apiAuthMiddleware.RequireAuth)
-	apiV1.PUT("/players/:id/state", apiPlayersHandler.UpdateState, apiAuthMiddleware.RequireAuth)
+	apiV1.GET("/players/:id", apiPlayersAdminHandler.Detail, apiAuthMiddleware.RequireAuth)
+	apiV1.POST("/players", apiPlayersAdminHandler.Create, apiAuthMiddleware.RequireAuth)
+	apiV1.PUT("/players/:id", apiPlayersAdminHandler.Update, apiAuthMiddleware.RequireAuth)
+	apiV1.PATCH("/players/:id", apiPlayersAdminHandler.Update, apiAuthMiddleware.RequireAuth)
+	apiV1.PUT("/players/:id/stats", apiPlayersAdminHandler.UpdateStats, apiAuthMiddleware.RequireAuth)
+	apiV1.PUT("/players/:id/state", apiPlayersAdminHandler.UpdateState, apiAuthMiddleware.RequireAuth)
 	apiPlayers := apiV1.Group("/players/:id", apiAuthMiddleware.RequireAuth)
-	apiPlayers.POST("/items/add", apiPlayersHandler.ItemAdd)
-	apiPlayers.POST("/items/remove", apiPlayersHandler.ItemRemove)
-	apiPlayers.POST("/items/buy", apiPlayersHandler.ItemBuy)
-	apiPlayers.POST("/abilities/add", apiPlayersHandler.AbilityAdd)
-	apiPlayers.POST("/abilities/remove", apiPlayersHandler.AbilityRemove)
-	apiPlayers.POST("/statuses/add", apiPlayersHandler.StatusAdd)
-	apiPlayers.POST("/statuses/remove", apiPlayersHandler.StatusRemove)
-	apiPlayers.POST("/immunities/add", apiPlayersHandler.ImmunityAdd)
-	apiPlayers.POST("/immunities/remove", apiPlayersHandler.ImmunityRemove)
-	apiPlayers.POST("/notes/add", apiPlayersHandler.NoteAdd)
-	apiPlayers.POST("/notes/remove", apiPlayersHandler.NoteRemove)
+	apiPlayers.POST("/items/add", apiPlayersAdminHandler.ItemAdd)
+	apiPlayers.POST("/items/remove", apiPlayersAdminHandler.ItemRemove)
+	apiPlayers.POST("/items/buy", apiPlayersAdminHandler.ItemBuy)
+	apiPlayers.POST("/abilities/add", apiPlayersAdminHandler.AbilityAdd)
+	apiPlayers.POST("/abilities/remove", apiPlayersAdminHandler.AbilityRemove)
+	apiPlayers.POST("/statuses/add", apiPlayersAdminHandler.StatusAdd)
+	apiPlayers.POST("/statuses/remove", apiPlayersAdminHandler.StatusRemove)
+	apiPlayers.POST("/immunities/add", apiPlayersAdminHandler.ImmunityAdd)
+	apiPlayers.POST("/immunities/remove", apiPlayersAdminHandler.ImmunityRemove)
+	apiPlayers.POST("/notes/add", apiPlayersAdminHandler.NoteAdd)
+	apiPlayers.POST("/notes/remove", apiPlayersAdminHandler.NoteRemove)
+
 	apiCatalog := apiV1.Group("/catalog", apiAuthMiddleware.RequireAuth)
 	apiCatalog.GET("/roles", apiCatalogHandler.ListRoles)
 	apiCatalog.GET("/roles/search", apiCatalogHandler.ListRoles)
@@ -321,17 +281,19 @@ func (s *Server) setupRoutes() {
 	apiCatalog.POST("/statuses", apiCatalogHandler.CreateStatus)
 	apiCatalog.PUT("/statuses/:id", apiCatalogHandler.UpdateStatus)
 	apiCatalog.DELETE("/statuses/:id", apiCatalogHandler.DeleteStatus)
-	apiV1.GET("/ops/cycle", apiCycleHandler.Get, apiAuthMiddleware.RequireAuth)
-	apiV1.POST("/ops/cycle/advance", apiCycleHandler.Advance, apiAuthMiddleware.RequireAuth)
-	apiV1.POST("/ops/cycle/set", apiCycleHandler.Set, apiAuthMiddleware.RequireAuth)
-	apiV1.GET("/ops/setup", apiSetupHandler.Get, apiAuthMiddleware.RequireAuth)
-	apiV1.POST("/ops/setup", apiSetupHandler.Generate, apiAuthMiddleware.RequireAuth)
-	apiV1.GET("/ops/channels", apiChannelsHandler.Get, apiAuthMiddleware.RequireAuth)
-	apiV1.POST("/ops/channels", apiChannelsHandler.Mutate, apiAuthMiddleware.RequireAuth)
-	apiV1.POST("/ops/channels/update", apiChannelsHandler.Mutate, apiAuthMiddleware.RequireAuth)
-	apiV1.DELETE("/ops/channels/:kind/:id", apiChannelsHandler.Delete, apiAuthMiddleware.RequireAuth)
-	apiV1.GET("/ops/votes", apiVotesHandler.Get, apiAuthMiddleware.RequireAuth)
-	apiV1.GET("/ops/healthcheck", apiReadinessHandler.Get, apiAuthMiddleware.RequireAuth)
+
+	s.echo.GET("/api/v1/ops/cycle", apiCycleHandler.Get, apiAuthMiddleware.RequireAuth)
+	s.echo.POST("/api/v1/ops/cycle/advance", apiCycleHandler.Advance, apiAuthMiddleware.RequireAuth)
+	s.echo.POST("/api/v1/ops/cycle/set", apiCycleHandler.Set, apiAuthMiddleware.RequireAuth)
+	s.echo.GET("/api/v1/ops/setup", apiSetupHandler.Get, apiAuthMiddleware.RequireAuth)
+	s.echo.POST("/api/v1/ops/setup", apiSetupHandler.Generate, apiAuthMiddleware.RequireAuth)
+	s.echo.GET("/api/v1/ops/channels", apiChannelsHandler.Get, apiAuthMiddleware.RequireAuth)
+	s.echo.POST("/api/v1/ops/channels", apiChannelsHandler.Mutate, apiAuthMiddleware.RequireAuth)
+	s.echo.POST("/api/v1/ops/channels/update", apiChannelsHandler.Mutate, apiAuthMiddleware.RequireAuth)
+	s.echo.DELETE("/api/v1/ops/channels/:kind/:id", apiChannelsHandler.Delete, apiAuthMiddleware.RequireAuth)
+	s.echo.GET("/api/v1/ops/votes", apiVotesHandler.Get, apiAuthMiddleware.RequireAuth)
+	s.echo.GET("/api/v1/ops/healthcheck", apiReadinessHandler.Get, apiAuthMiddleware.RequireAuth)
+
 	apiAdmin := apiV1.Group("/admin", apiAuthMiddleware.RequireAuth)
 	apiAdmin.GET("/audit", apiAdminHandler.Audit)
 	apiAdmin.GET("/migrations", apiAdminHandler.Migrations)
@@ -339,132 +301,17 @@ func (s *Server) setupRoutes() {
 	apiAdmin.POST("/migrations/down", apiAdminHandler.MigrationDown, apiMigrateRate)
 	apiAdmin.GET("/reset", apiAdminHandler.ResetPreview)
 	apiAdmin.POST("/reset", apiAdminHandler.ResetExecute, apiMigrateRate)
-	apiAdmin.POST("/redeploy", apiAdminHandler.Redeploy, middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{Store: middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{Rate: redeployRate, Burst: redeployRateBurst, ExpiresIn: 10 * time.Minute})}))
+	apiAdmin.POST("/redeploy", apiAdminHandler.Redeploy, apiMigrateRate)
 	apiSync := apiV1.Group("/sync", apiAuthMiddleware.RequireAuth)
 	apiSync.GET("/sources", apiSyncHandler.Sources)
 	apiSync.POST("/preview", apiSyncHandler.Preview, apiMigrateRate)
 	apiSync.POST("/apply", apiSyncHandler.Apply, apiMigrateRate)
 	apiSync.PUT("/sources/:id", apiSyncHandler.UpdateSource)
 
-	// Protected routes
-	protected := s.echo.Group("", authMiddleware.RequireAuth)
-	protected.POST("/logout", authHandler.Logout)
-	protected.GET("/health/status", healthHandler.HealthStatusPartial)
-	protected.GET("/healthcheck", readinessHandler.Page)
-	protected.GET("/players", playersHandler.List)
-	protected.GET("/players/new", playerCreateHandler.Page)
-	protected.POST("/players", playerCreateHandler.Create)
-	protected.GET("/players/table", playersHandler.Table)
-	protected.GET("/players/:id", playersHandler.Detail)
-	protected.GET("/setup", setupHandler.Page)
-	protected.POST("/setup/generate", setupHandler.Generate)
-	protected.GET("/players/:id/edit", playerEditHandler.Edit)
-	protected.POST("/players/:id/edit", playerEditHandler.UpdateStats)
-	protected.POST("/players/:id/state", playerEditHandler.UpdateState)
-	protected.POST("/players/:id/items/add", playerEditHandler.AddItem)
-	protected.POST("/players/:id/items/buy", playerEditHandler.BuyItem)
-	protected.POST("/players/:id/items/remove", playerEditHandler.RemoveItem)
-	protected.POST("/players/:id/abilities/add", playerEditHandler.AddAbility)
-	protected.POST("/players/:id/abilities/remove", playerEditHandler.RemoveAbility)
-	protected.POST("/players/:id/statuses/add", playerEditHandler.AddStatus)
-	protected.POST("/players/:id/statuses/remove", playerEditHandler.RemoveStatus)
-	protected.POST("/players/:id/perks/add", playerEditHandler.AddPerk)
-	protected.POST("/players/:id/perks/remove", playerEditHandler.RemovePerk)
-	protected.POST("/players/:id/immunities/add", playerEditHandler.AddImmunity)
-	protected.POST("/players/:id/immunities/remove", playerEditHandler.RemoveImmunity)
-	protected.POST("/players/:id/notes/add", playerEditHandler.AddNote)
-	protected.POST("/players/:id/notes/remove", playerEditHandler.RemoveNote)
-	protected.GET("/votes", votesHandler.Votes)
-	protected.GET("/votes/tally", votesHandler.VoteTally)
-	protected.GET("/admin/audit", adminHandler.AuditLogs)
-
-	// Migrations: destructive + schema-changing → the redeploy-style limiter.
-	migrateLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
-		Rate:      redeployRate,
-		Burst:     redeployRateBurst,
-		ExpiresIn: 10 * time.Minute,
-	})
-	migrateRate := middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{Store: migrateLimiter})
-	protected.GET("/admin/migrations", migrationsHandler.Page)
-	protected.POST("/admin/migrations/up", migrationsHandler.Up, migrateRate)
-	protected.POST("/admin/migrations/down", migrationsHandler.Down, migrateRate)
-	protected.GET("/admin/reset", resetHandler.Page)
-	protected.POST("/admin/reset", resetHandler.Execute, migrateRate)
-
-	// Redeploy is a state-changing, cost-incurring action: rate limit it.
-	redeployLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
-		Rate:      redeployRate,
-		Burst:     redeployRateBurst,
-		ExpiresIn: 10 * time.Minute,
-	})
-	protected.POST("/admin/redeploy", adminHandler.Redeploy, middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
-		Store: redeployLimiter,
-	}))
-
-	// Sync routes. Preview fetches remote sheets (slow, network-bound) and
-	// apply writes to the database — both get a shared burst limiter.
-	syncLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
-		Rate:      0.5, // 1 request / 2s sustained
-		Burst:     4,
-		ExpiresIn: 10 * time.Minute,
-	})
-	limiter := middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{Store: syncLimiter})
-	protected.GET("/sync", syncHandler.Page)
-	protected.POST("/sync/preview", syncHandler.Preview, limiter)
-	protected.POST("/sync/apply", syncHandler.Apply, limiter)
-	protected.POST("/sync/sources/:id", syncHandler.UpdateSource)
-
-	// Role routes
-	protected.GET("/roles", rolesHandler.List)
-	protected.GET("/roles/search", rolesHandler.Search)
-	protected.GET("/roles/:id", rolesHandler.Detail)
-	protected.PUT("/roles/:id", rolesHandler.Update)
-	protected.GET("/roles/:id/abilities", rolesHandler.ListAbilities)
-	protected.PUT("/roles/:id/abilities/:abilityId", rolesHandler.UpdateAbility)
-	protected.DELETE("/roles/:id/abilities/:abilityId", rolesHandler.RemoveAbility)
-	protected.GET("/roles/:id/perks", rolesHandler.ListPerks)
-	protected.PUT("/roles/:id/perks/:perkId", rolesHandler.UpdatePerk)
-	protected.DELETE("/roles/:id/perks/:perkId", rolesHandler.RemovePerk)
-
-	// Cycle routes
-	protected.GET("/cycle", cycleHandler.Page)
-	protected.POST("/cycle/advance", cycleHandler.Advance)
-	protected.POST("/cycle/set", cycleHandler.Set)
-
-	// Channel config routes
-	protected.GET("/channels", channelsHandler.Page)
-	protected.POST("/channels/update", channelsHandler.Update)
-	protected.POST("/channels/admin/delete", channelsHandler.DeleteAdmin)
-
-	// Catalog (items / abilities / statuses) routes
-	protected.GET("/items", catalogHandler.Items)
-	protected.GET("/items/search", catalogHandler.SearchItems)
-	protected.POST("/items", catalogHandler.CreateItem)
-	protected.GET("/items/:id", catalogHandler.ItemDetail)
-	protected.POST("/items/:id", catalogHandler.UpdateItem)
-	protected.POST("/items/:id/delete", catalogHandler.DeleteItem)
-	protected.GET("/abilities", catalogHandler.Abilities)
-	protected.GET("/abilities/search", catalogHandler.SearchAbilities)
-	protected.POST("/abilities", catalogHandler.CreateAbility)
-	protected.GET("/abilities/:id", catalogHandler.AbilityDetail)
-	protected.POST("/abilities/:id", catalogHandler.UpdateAbility)
-	protected.POST("/abilities/:id/delete", catalogHandler.DeleteAbility)
-	protected.GET("/statuses", catalogHandler.Statuses)
-	protected.GET("/statuses/search", catalogHandler.SearchStatuses)
-	protected.POST("/statuses", catalogHandler.CreateStatus)
-	protected.GET("/statuses/:id", catalogHandler.StatusDetail)
-	protected.POST("/statuses/:id", catalogHandler.UpdateStatus)
-	protected.POST("/statuses/:id/delete", catalogHandler.DeleteStatus)
-
-	// The temporary SvelteKit shell owns the root and client-side routes. Keep
-	// this fallback last so explicit API and legacy routes retain precedence.
-	serveUI := func(c echo.Context) error {
-		ui.Handler(c.Response(), c.Request())
-		return nil
-	}
+	serveUI := func(c echo.Context) error { ui.Handler(c.Response(), c.Request()); return nil }
 	s.echo.GET("/login", serveUI)
-	s.echo.GET("/", serveUI, authMiddleware.RequireAuth)
-	s.echo.GET("/*", serveUI, authMiddleware.RequireAuth)
+	s.echo.GET("/", serveUI, browserAuth.RequireAuth)
+	s.echo.GET("/*", serveUI, browserAuth.RequireAuth)
 }
 
 // Handler exposes the underlying Echo router as a plain http.Handler.

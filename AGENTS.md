@@ -2,17 +2,17 @@
 
 ## What this bot is
 
-Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discordgo + zekroTJA/ken (slash commands), pgx/v5 + sqlc (`internal/models/`), Echo + templ + HTMX + Tailwind v4 web admin panel, zerolog logging with DB audit trail. Hosted on **Railway** (prod). The legacy Fly workflow was removed (2026-08) — do not reintroduce it.
+Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discordgo + zekroTJA/ken (slash commands), pgx/v5 + sqlc (`internal/models/`), Echo JSON APIs + SvelteKit static web admin panel, zerolog logging with DB audit trail. Hosted on **Railway** (prod). The legacy Fly workflow was removed (2026-08) — do not reintroduce it.
 
 ## Build & Run
 
-**Prereqs (one-time per machine):** `templ` CLI (pin v0.3.960: `go install github.com/a-h/templ/cmd/templ@v0.3.960`), Tailwind v4.1.2 standalone binary (`~/bin/tailwindcss`), golang-migrate CLI with the postgres driver (`go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.17.1`), and `$HOME/go/bin:$HOME/bin` on PATH.
+**Prereqs (one-time per machine):** Node.js/npm for the SvelteKit frontend, golang-migrate CLI with the postgres driver (`go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.17.1`), and `$HOME/go/bin` on PATH.
 
 - **Full bot** (Discord + web): `make run` — requires `.env` (see Worktrees & Env).
 - **Web panel only**: `make run-web` (sets `DISABLE_DISCORD=true`) — fastest way to iterate on the admin UI, no Discord needed.
-- **Build**: `make build` → templ generate + tailwind build + `go build` to `./bin/`.
-- **Generate assets**: `make generate` (templ + tailwind) — required after editing `*.templ` or `web/static/css/input.css`.
-- **Hot reload**: `air` is supported (`.air.toml` is gitignored); pair with `templ generate --watch` + `tailwindcss --watch` for template/CSS iteration.
+- **Build**: `make build` → SvelteKit static build + `go build` to `./bin/`.
+- **Generate assets**: `make generate` — required after editing frontend SvelteKit files.
+- **Hot reload**: use the SvelteKit Vite dev server for frontend iteration; production remains static output served by Go.
 - **Tests**: `go test ./...` — REQUIRES local Postgres (`make db-up` first; migrations are applied by the test bootstrap itself). Tests must never touch the production DB — a hard guard enforces it (see Testing Workflow).
 - **CI**: `.github/workflows/test.yml` — postgres service container + `go vet ./...` + `go test ./...` + `make build` on push/PR.
 - **Migrations**: `make migrate-up/down` (prod via `DATABASE_POOLER_URL`), `make mock-migrate-up/down` (local via `MOCK_DATABASE`). Never run migrate-up against prod casually.
@@ -39,7 +39,7 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 - `internal/models/` — sqlc-generated query code. Edit `internal/db/query/*.sql` and regenerate; do NOT hand-edit `*.sql.go`.
 - `internal/db/migrate/migrations/` — golang-migrate files, EMBEDDED via `//go:embed` (runner in `internal/db/migrate/`; the web panel's `/admin/migrations` page and the Makefile both operate on these). Name new ones `NNNN_name.up.sql` / `NNNN_name.down.sql` (legacy files 000016–000018 have inconsistent names; do not rename applied migrations).
 - `internal/discord/` — embed/error/component/channel helpers. (`channels.go` was renamed from the legacy `chanenls.go` typo.)
-- `internal/web/` — Echo server, handlers, middleware, Railway client, templ templates (see `internal/web/README.md`). Static assets in `web/static/` (Tailwind input/output.css, vendored `htmx.min.js`).
+- `internal/web/` — Echo server, JSON API handlers, session middleware, Railway client, and embedded SvelteKit output (see `internal/web/README.md`).
 - `tests/` — testify suites. DB suites use the shared bootstrap in `tests/testutil` (production guard + migrations + truncation); web handler tests drive the real Echo routes with httptest.
 - `scripts/dev-env.sh` — worktree/env tooling (see above).
 
@@ -97,9 +97,9 @@ Five channel types drive the game; all are configured via `/channel` (admin-only
 ## Web Admin Panel
 
 - Routes (`internal/web/server.go`): `/login`, `/` dashboard, `/health`, `/players` + `/players/:id` + `/players/:id/edit`, `/cycle` (+ `/cycle/advance`, `/cycle/set`), `/channels` (validation + mutations), `/setup` (role-pool generator), `/votes`, `/roles` CRUD, `/items` `/abilities` `/statuses` CRUD (search/create/detail/update/delete), `/sync` (spreadsheet sync: preview/apply/sources), `/admin/audit`, `/admin/migrations` (embedded runner: up/rollback with confirmation), `/admin/redeploy` (Railway). Session-auth protected except `/login` + `/health`. Full route table: `internal/web/README.md`.
-- Security: Echo CSRF (double-submit cookie, HTMX-compatible — the base layout injects `X-CSRF-Token` on `htmx:configRequest` and hidden `_csrf` inputs into plain forms), login + redeploy rate limiting, and password-derived signed sessions.
+- Security: Echo CSRF (double-submit cookie for JSON requests), login + redeploy rate limiting, and password-derived signed sessions.
 - **The app defaults to `DATABASE_POOLER_URL` (production)** — `ENVIRONMENT=local` is an explicit local-development opt-in. The panel's write routes (/cycle, player edit, catalog CRUD) therefore hit the LIVE game unless local mode is explicitly selected.
-- Editing templates requires `make generate` (commits `_templ.go`); Tailwind source is v4 CSS (`@import "tailwindcss"`, theme tokens in `@theme` — "Dark Obsidian Glass" palette: charcoal surfaces, frost-silver accent, teal/violet iridescent hints).
+- Frontend changes are made under `frontend/`; run `make generate` and commit the generated `internal/web/ui/dist` output.
 - Theme: dark, atmospheric obsidian-glass (game theme is "mirrors"), **mobile-first** — preserve this.
 - Handler tests live in `tests/web/` (httptest + local Postgres via `DATABASE_URL`; they seed + clean up their own data).
 
@@ -143,7 +143,7 @@ Documented gaps from the 2026-08 admin analysis (tracked under WT-5/WT-6 — don
 ## Deployment
 
 - Prod = **Railway** (env-driven; in-app redeploy button via `internal/web/railway`). `.github/workflows/fly-deploy.yml` was deleted 2026-08.
-- Dockerfile: single-stage today; builds templ + tailwind at image build; needs no `.env` at build (runtime env only).
+- Dockerfile: builds the SvelteKit static output in a Node stage, then compiles the Go server; needs no `.env` at build (runtime env only).
 - Never commit binaries (`betrayal-bot`, `bin/`) or `.env` files — `make clean` removes build artifacts.
 
 ## Testing Workflow (keep it fast)

@@ -143,13 +143,24 @@ func (c *testClient) csrfToken() string {
 	return ""
 }
 
-// login performs a successful admin login (requires the CSRF cookie first).
+// login performs a successful admin login through the JSON API.
 func (c *testClient) login() {
 	c.t.Helper()
-	c.get("/login") // sets the _csrf cookie
-	resp := c.do(http.MethodPost, "/login", url.Values{"password": {testAdminPassword}}, nil)
-	if resp.StatusCode != http.StatusSeeOther {
-		c.t.Fatalf("login: expected 303, got %d", resp.StatusCode)
+	c.get("/login")
+	req, err := http.NewRequest(http.MethodPost, c.base+"/api/v1/auth/login", strings.NewReader(`{"password":"`+testAdminPassword+`"}`))
+	if err != nil {
+		c.t.Fatalf("login request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-CSRF-Token", c.csrfToken())
+	client := &http.Client{Jar: c.jar, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	resp, err := client.Do(req)
+	if err != nil {
+		c.t.Fatalf("login: %v", err)
+	}
+	c.t.Cleanup(func() { resp.Body.Close() })
+	if resp.StatusCode != http.StatusOK {
+		c.t.Fatalf("login: expected 200, got %d: %s", resp.StatusCode, c.body(resp))
 	}
 }
 
