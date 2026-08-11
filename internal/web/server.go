@@ -260,8 +260,10 @@ func (s *Server) setupRoutes() {
 	apiV1.POST("/auth/login", apiAuthHandler.Login, middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
 		Store: loginLimiter,
 	}))
-	apiProtected := apiV1.Group("", apiAuthMiddleware.RequireAuth)
-	apiProtected.POST("/auth/logout", apiAuthHandler.Logout)
+	// Apply API auth to individual protected endpoints. A nested group with an
+	// empty prefix makes Echo apply its middleware to unmatched /api/v1 routes,
+	// incorrectly turning their JSON 404s into 401s.
+	apiV1.POST("/auth/logout", apiAuthHandler.Logout, apiAuthMiddleware.RequireAuth)
 
 	// Protected routes
 	protected := s.echo.Group("", authMiddleware.RequireAuth)
