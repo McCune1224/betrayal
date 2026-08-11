@@ -1,0 +1,66 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { createApiClient } from '$lib/api/client';
+  import type { CatalogKind, CatalogRecord } from './types';
+
+  let { kind, title }: { kind: CatalogKind; title: string } = $props();
+  let records = $state<CatalogRecord[] | null>(null);
+  let selected = $state<CatalogRecord | null>(null);
+  let error = $state<string | null>(null);
+  let loading = $state(true);
+  let saving = $state(false);
+  let draft = $state({ name: '', description: '', alignment: 'NEUTRAL', rarity: 'COMMON', cost: 0, default_charges: 0, any_ability: false, hour_duration: 0 });
+  const api = createApiClient();
+
+  const endpoint = () => `/api/v1/catalog/${kind}`;
+  function resetDraft() { selected = null; draft = { name: '', description: '', alignment: 'NEUTRAL', rarity: 'COMMON', cost: 0, default_charges: 0, any_ability: false, hour_duration: 0 }; }
+  async function load() {
+    loading = true; error = null;
+    try { records = await api.get<CatalogRecord[]>(endpoint()); }
+    catch (e) { error = e instanceof Error ? e.message : `Could not load ${title.toLowerCase()}`; }
+    finally { loading = false; }
+  }
+  async function edit(record: CatalogRecord) {
+    try {
+      selected = await api.get<CatalogRecord>(`${endpoint()}/${record.id}`);
+      draft = { name: selected.name, description: selected.description, alignment: selected.alignment ?? 'NEUTRAL', rarity: selected.rarity ?? 'COMMON', cost: selected.cost ?? 0, default_charges: selected.default_charges ?? 0, any_ability: selected.any_ability ?? false, hour_duration: selected.hour_duration ?? 0 };
+    } catch (e) { error = e instanceof Error ? e.message : 'Could not load record'; }
+  }
+  async function save() {
+    saving = true; error = null;
+    try {
+      const body = kind === 'roles' ? { name: draft.name, description: draft.description, alignment: draft.alignment } : kind === 'items' ? { name: draft.name, description: draft.description, rarity: draft.rarity, cost: draft.cost } : kind === 'abilities' ? { name: draft.name, description: draft.description, rarity: draft.rarity, default_charges: draft.default_charges, any_ability: draft.any_ability } : { name: draft.name, description: draft.description, hour_duration: draft.hour_duration };
+      if (selected) await api.put<CatalogRecord>(`${endpoint()}/${selected.id}`, { body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } });
+      else await api.post<CatalogRecord>(endpoint(), { body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } });
+      resetDraft(); await load();
+    } catch (e) { error = e instanceof Error ? e.message : 'Could not save record'; }
+    finally { saving = false; }
+  }
+  async function remove(record: CatalogRecord) {
+    try { await api.delete(`${endpoint()}/${record.id}`); await load(); }
+    catch (e) { error = e instanceof Error ? e.message : 'Could not delete record'; }
+  }
+  onMount(load);
+</script>
+
+<svelte:head><title>{title} | Betrayal Admin</title></svelte:head>
+<main class="min-h-screen bg-slate-950 p-6 text-slate-100">
+  <header class="mx-auto max-w-5xl border-b border-slate-700 pb-5"><p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Betrayal Admin</p><h1 class="mt-2 text-3xl font-semibold">{title}</h1></header>
+  <section class="mx-auto max-w-5xl py-6" aria-label={`${title} editor`}>
+    <form class="grid gap-3 border border-slate-700 p-4 md:grid-cols-2" onsubmit={(event) => { event.preventDefault(); save(); }}>
+      <h2 class="md:col-span-2 text-lg">{selected ? `Edit ${title.slice(0, -1)}` : `New ${title.slice(0, -1)}`}</h2>
+      <input aria-label="Name" bind:value={draft.name} placeholder="Name" required class="bg-slate-900 p-2" />
+      <input aria-label="Description" bind:value={draft.description} placeholder="Description" class="bg-slate-900 p-2" />
+      {#if kind === 'roles'}<select aria-label="Alignment" bind:value={draft.alignment} class="bg-slate-900 p-2"><option>GOOD</option><option>NEUTRAL</option><option>EVIL</option></select>{/if}
+      {#if kind === 'items' || kind === 'abilities'}<select aria-label="Rarity" bind:value={draft.rarity} class="bg-slate-900 p-2"><option>COMMON</option><option>UNCOMMON</option><option>RARE</option><option>EPIC</option><option>LEGENDARY</option><option>MYTHICAL</option><option>ROLE_SPECIFIC</option><option>UNIQUE</option></select>{/if}
+      {#if kind === 'items'}<input aria-label="Cost" type="number" bind:value={draft.cost} class="bg-slate-900 p-2" />{/if}
+      {#if kind === 'abilities'}<input aria-label="Default charges" type="number" bind:value={draft.default_charges} class="bg-slate-900 p-2" /><label><input type="checkbox" bind:checked={draft.any_ability} /> Any ability</label>{/if}
+      {#if kind === 'statuses'}<input aria-label="Hour duration" type="number" bind:value={draft.hour_duration} class="bg-slate-900 p-2" />{/if}
+      <div class="md:col-span-2 flex gap-2"><button type="submit" disabled={saving} aria-label={selected ? `Update ${title.slice(0, -1).toLowerCase()}` : `Create ${title.slice(0, -1).toLowerCase()}`} class="bg-indigo-600 px-4 py-2">{saving ? 'Saving…' : selected ? 'Save changes' : `Create ${title.slice(0, -1).toLowerCase()}`}</button>{#if selected}<button type="button" onclick={resetDraft} class="border border-slate-600 px-4 py-2">Cancel</button>{/if}</div>
+    </form>
+  </section>
+  {#if loading}<p class="mx-auto max-w-5xl py-10 text-slate-300" role="status">Loading {title.toLowerCase()}…</p>
+  {:else if error}<p class="mx-auto max-w-5xl py-10 text-red-300" role="alert">{error}</p>
+  {:else if records && records.length === 0}<p class="mx-auto max-w-5xl py-10 text-slate-300">No {title.toLowerCase()} are available.</p>
+  {:else if records}<div class="mx-auto max-w-5xl overflow-x-auto"><table class="w-full text-left" aria-label={title}><thead class="border-b border-slate-700 text-sm uppercase text-slate-400"><tr><th class="p-3">Name</th><th class="p-3">Description</th><th class="p-3">Details</th><th class="p-3">Actions</th></tr></thead><tbody>{#each records as record (record.id)}<tr class="border-b border-slate-800"><td class="p-3 font-semibold">{record.name}</td><td class="p-3">{record.description}</td><td class="p-3">{record.alignment ?? record.rarity ?? (record.hour_duration ? `${record.hour_duration}h` : '')}{#if kind === 'roles'} · {record.abilities?.length ?? 0} abilities · {record.perks?.length ?? 0} perks{/if}</td><td class="flex gap-2 p-3"><button type="button" onclick={() => edit(record)} class="border border-slate-600 px-3 py-1">Edit</button><button type="button" onclick={() => remove(record)} class="border border-red-700 px-3 py-1 text-red-300">Delete</button></td></tr>{/each}</tbody></table></div>{/if}
+</main>

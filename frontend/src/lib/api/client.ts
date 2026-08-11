@@ -45,6 +45,7 @@ export function createApiClient({ fetcher = fetch, csrfPath = '/api/v1/auth/csrf
     });
 
     const contentType = response.headers.get('content-type') ?? '';
+    if (response.status === 204) return undefined as T;
     if (!contentType.includes('application/json')) {
       throw new ApiError('Expected a JSON API response', response.status);
     }
@@ -63,6 +64,12 @@ export function createApiClient({ fetcher = fetch, csrfPath = '/api/v1/auth/csrf
     },
     post<T>(path: string, init: RequestInit = {}) {
       return request<T>(path, { ...init, method: 'POST' });
+    },
+    put<T>(path: string, init: RequestInit = {}) {
+      return request<T>(path, { ...init, method: 'PUT' });
+    },
+    delete<T = void>(path: string, init: RequestInit = {}) {
+      return request<T>(path, { ...init, method: 'DELETE' });
     }
   };
 }
