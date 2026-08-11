@@ -212,6 +212,10 @@ func (s *Server) setupRoutes() {
 	apiDashboardHandler := api.NewDashboardHandler(s.dbPool)
 	apiPlayersHandler := api.NewPlayersHandler(s.dbPool)
 	apiCatalogHandler := api.NewCatalogHandler(s.dbPool)
+	apiCycleHandler := api.NewCycleHandler(s.dbPool)
+	apiChannelsHandler := api.NewChannelsHandler(s.dbPool, s.discordSession)
+	apiVotesHandler := api.NewVotesHandler(s.dbPool)
+	apiReadinessHandler := api.NewReadinessHandler(s.dbPool, s.discordSession)
 	playersHandler := handlers.NewPlayersHandler(s.dbPool)
 	adminHandler := handlers.NewAdminHandler(s.dbPool, s.railwayClient)
 	votesHandler := handlers.NewVotesHandler(s.dbPool)
@@ -294,6 +298,10 @@ func (s *Server) setupRoutes() {
 	apiCatalog.POST("/statuses", apiCatalogHandler.CreateStatus)
 	apiCatalog.PUT("/statuses/:id", apiCatalogHandler.UpdateStatus)
 	apiCatalog.DELETE("/statuses/:id", apiCatalogHandler.DeleteStatus)
+	apiV1.GET("/ops/cycle", apiCycleHandler.Get, apiAuthMiddleware.RequireAuth)
+	apiV1.GET("/ops/channels", apiChannelsHandler.Get, apiAuthMiddleware.RequireAuth)
+	apiV1.GET("/ops/votes", apiVotesHandler.Get, apiAuthMiddleware.RequireAuth)
+	apiV1.GET("/ops/healthcheck", apiReadinessHandler.Get, apiAuthMiddleware.RequireAuth)
 
 	// Protected routes
 	protected := s.echo.Group("", authMiddleware.RequireAuth)
