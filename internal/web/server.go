@@ -211,6 +211,7 @@ func (s *Server) setupRoutes() {
 	apiReadinessHandler := api.NewReadinessHandler(s.dbPool, s.discordSession)
 	apiAdminHandler := api.NewAdminHandler(s.dbPool, s.railwayClient, s.getMigrateRunner, gamereset.New(s.dbPool, s.syncService))
 	apiSyncHandler := api.NewSyncHandler(s.dbPool, s.syncService)
+	apiDiscordResourceHandler := api.NewDiscordResourceHandler(s.discordSession)
 	apiAuthMiddleware := api.NewAuthMiddleware(s.sessionStore)
 	browserAuth := webmiddleware.NewAuthMiddleware(s.sessionStore)
 
@@ -230,6 +231,7 @@ func (s *Server) setupRoutes() {
 	loginLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{Rate: loginRateLimit, Burst: loginRateBurst, ExpiresIn: 10 * time.Minute})
 	apiV1.POST("/auth/login", apiAuthHandler.Login, middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{Store: loginLimiter}))
 	apiV1.POST("/auth/logout", apiAuthHandler.Logout, apiAuthMiddleware.RequireAuth)
+	apiV1.GET("/discord/resources", apiDiscordResourceHandler.Resources, apiAuthMiddleware.RequireAuth)
 	apiV1.GET("/dashboard", apiDashboardHandler.Dashboard, apiAuthMiddleware.RequireAuth)
 	apiV1.GET("/players", apiPlayersHandler.List, apiAuthMiddleware.RequireAuth)
 	apiV1.GET("/players/:id", apiPlayersAdminHandler.Detail, apiAuthMiddleware.RequireAuth)

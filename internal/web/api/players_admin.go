@@ -68,8 +68,8 @@ type playerDetailDTO struct {
 	Notes      []playerNoteDTO     `json:"notes"`
 }
 type playerCreateInput struct {
-	ID   int64  `json:"id"`
-	Role string `json:"role"`
+	ID   json.RawMessage `json:"id"`
+	Role string          `json:"role"`
 }
 type playerUpdateInput struct {
 	Coins     *int32  `json:"coins"`
@@ -86,6 +86,25 @@ type playerMutationInput struct {
 	Position int32  `json:"position"`
 	Info     string `json:"info"`
 	NoteID   int32  `json:"note_id"`
+}
+
+func parsePlayerID(raw json.RawMessage) (int64, error) {
+	if len(raw) == 0 {
+		return 0, fmt.Errorf("missing player ID")
+	}
+	var text string
+	if raw[0] == '"' {
+		if err := json.Unmarshal(raw, &text); err != nil {
+			return 0, err
+		}
+	} else {
+		text = string(raw)
+	}
+	id, err := strconv.ParseInt(strings.TrimSpace(text), 10, 64)
+	if err != nil || id <= 0 {
+		return 0, fmt.Errorf("invalid player ID")
+	}
+	return id, nil
 }
 
 func playerID(c echo.Context) (int64, bool) {
@@ -186,8 +205,9 @@ func (h *PlayersHandler) Create(c echo.Context) error {
 	if decodePlayer(c, &in) != nil {
 		return nil
 	}
-	if in.ID <= 0 || strings.TrimSpace(in.Role) == "" {
-		WriteError(c.Response(), 400, "invalid_player_input", "id and role are required", nil)
+	id, err := parsePlayerID(in.ID)
+	if err != nil || strings.TrimSpace(in.Role) == "" {
+		WriteError(c.Response(), 400, "invalid_player_input", "Discord member and role are required", nil)
 		return nil
 	}
 	ctx, cn := context.WithTimeout(c.Request().Context(), 10*time.Second)
@@ -207,7 +227,7 @@ func (h *PlayersHandler) Create(c echo.Context) error {
 			}
 		}
 	}
-	p, err := q.CreatePlayer(ctx, models.CreatePlayerParams{ID: in.ID, RoleID: pgtype.Int4{Int32: r.ID, Valid: true}, Alive: true, Coins: coins, CoinBonus: n, Luck: luck, ItemLimit: limit, Alignment: r.Alignment})
+	p, err := q.CreatePlayer(ctx, models.CreatePlayerParams{ID: id, RoleID: pgtype.Int4{Int32: r.ID, Valid: true}, Alive: true, Coins: coins, CoinBonus: n, Luck: luck, ItemLimit: limit, Alignment: r.Alignment})
 	if err != nil {
 		WriteError(c.Response(), 400, "player_create_failed", "could not create player", nil)
 		return nil
