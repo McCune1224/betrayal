@@ -4,7 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/gorilla/sessions"
+	"github.com/labstack/echo/v4"
+	webapi "github.com/mccune1224/betrayal/internal/web/api"
 )
 
 type apiAuthState struct {
@@ -26,6 +31,26 @@ type apiErrorResponse struct {
 func TestAPIAuth(t *testing.T) {
 	pool := mustPool(t)
 	client := newTestClient(t, testServer(t, pool))
+
+	t.Run("auth middleware rejects an unauthenticated protected endpoint as JSON without redirect", func(t *testing.T) {
+		e := echo.New()
+		protected := e.Group("", webapi.NewAuthMiddleware(sessions.NewCookieStore([]byte("test-signing-key"))).RequireAuth)
+		protected.GET("/protected", func(c echo.Context) error {
+			return c.NoContent(http.StatusNoContent)
+		})
+
+		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("protected endpoint: status = %d, want %d", rec.Code, http.StatusUnauthorized)
+		}
+		if location := rec.Header().Get("Location"); location != "" {
+			t.Errorf("protected endpoint: Location = %q, want no redirect", location)
+		}
+		assertAPIError(t, rec.Result(), "unauthorized")
+	})
 
 	t.Run("session reports unauthenticated JSON without redirect", func(t *testing.T) {
 		resp := client.get("/api/v1/auth/session")
@@ -57,6 +82,24 @@ func TestAPIAuth(t *testing.T) {
 		if body.Token != client.csrfToken() {
 			t.Errorf("GET csrf token does not match CSRF cookie")
 		}
+	})
+
+	t.Run("logout without a signed session returns a canonical JSON unauthorized response", func(t *testing.T) {
+		unauthenticated := newTestClient(t, testServer(t, pool))
+		csrf := unauthenticated.get("/api/v1/auth/csrf")
+		if csrf.StatusCode != http.StatusOK {
+			t.Fatalf("GET csrf: status = %d, want %d", csrf.StatusCode, http.StatusOK)
+		}
+		decodeAPIJSON(t, csrf, &apiCSRFToken{})
+
+		resp := apiRequest(t, unauthenticated, http.MethodPost, "/api/v1/auth/logout", nil, true)
+		if resp.StatusCode != http.StatusUnauthorized {
+			t.Fatalf("unauthenticated logout: status = %d, want %d", resp.StatusCode, http.StatusUnauthorized)
+		}
+		if location := resp.Header.Get("Location"); location != "" {
+			t.Errorf("unauthenticated logout: Location = %q, want no redirect", location)
+		}
+		assertAPIError(t, resp, "unauthorized")
 	})
 
 	t.Run("login rejects invalid JSON with a canonical JSON error", func(t *testing.T) {

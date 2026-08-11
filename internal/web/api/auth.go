@@ -1,6 +1,7 @@
 package api
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -51,7 +52,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		WriteError(c.Response(), http.StatusBadRequest, "invalid_request", "password is required", map[string]any{"password": "required"})
 		return nil
 	}
-	if request.Password != h.adminPassword {
+	if subtle.ConstantTimeCompare([]byte(request.Password), []byte(h.adminPassword)) != 1 {
 		WriteError(c.Response(), http.StatusUnauthorized, "invalid_credentials", "invalid password", map[string]any{})
 		return nil
 	}
