@@ -209,6 +209,7 @@ func (s *Server) setupRoutes() {
 	healthHandler := handlers.NewHealthHandler(s.dbPool, s.discordSession)
 	authHandler := handlers.NewAuthHandler(s.sessionStore, s.config.AdminPassword)
 	apiAuthHandler := api.NewAuthHandler(s.sessionStore, s.config.AdminPassword)
+	apiDashboardHandler := api.NewDashboardHandler(s.dbPool)
 	playersHandler := handlers.NewPlayersHandler(s.dbPool)
 	adminHandler := handlers.NewAdminHandler(s.dbPool, s.railwayClient)
 	votesHandler := handlers.NewVotesHandler(s.dbPool)
@@ -264,6 +265,7 @@ func (s *Server) setupRoutes() {
 	// empty prefix makes Echo apply its middleware to unmatched /api/v1 routes,
 	// incorrectly turning their JSON 404s into 401s.
 	apiV1.POST("/auth/logout", apiAuthHandler.Logout, apiAuthMiddleware.RequireAuth)
+	apiV1.GET("/dashboard", apiDashboardHandler.Dashboard, apiAuthMiddleware.RequireAuth)
 
 	// Protected routes
 	protected := s.echo.Group("", authMiddleware.RequireAuth)
