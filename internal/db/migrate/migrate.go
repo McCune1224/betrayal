@@ -55,13 +55,23 @@ func EnsureUpToDate(dsn string) error {
 		return fmt.Errorf("dbmigrate: inspect version: %w", err)
 	}
 	if dirty {
-		if version != 32 {
+		switch version {
+		case 32:
+			// Migration 32 originally dirtied production while creating catalog
+			// indexes. The repaired migration reconciles duplicates before retrying.
+			if err := r.Force(31); err != nil {
+				return fmt.Errorf("dbmigrate: recover dirty version 32: %w", err)
+			}
+		case 33:
+			// Version 33 was briefly deployed by the unreleased player-twin
+			// worktree. The current application does not depend on that schema;
+			// rewind only the migration marker, then apply the checked-in no-op
+			// compatibility migration so startup can recover cleanly.
+			if err := r.Force(32); err != nil {
+				return fmt.Errorf("dbmigrate: recover dirty version 33: %w", err)
+			}
+		default:
 			return fmt.Errorf("dbmigrate: dirty database version %d requires manual recovery", version)
-		}
-		// Migration 32 originally dirtied production while creating catalog
-		// indexes. The repaired migration reconciles duplicates before retrying.
-		if err := r.Force(31); err != nil {
-			return fmt.Errorf("dbmigrate: recover dirty version 32: %w", err)
 		}
 	}
 	return r.Up()

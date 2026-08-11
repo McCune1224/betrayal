@@ -1,5 +1,5 @@
 .SILENT:
-.PHONY: run run-web sql migrate-up migrate-down migrate-sync migrate-local-up migrate-local-down migrate-production-up migrate-production-down migrate-production-sync mock-migrate-up mock-migrate-down test-migration-targets frontend-build build generate env-link worktree db-up db-down clean
+.PHONY: run run-web sql migrate-up migrate-down migrate-sync migrate-local-up migrate-local-down migrate-production-up migrate-production-down migrate-production-sync mock-migrate-up mock-migrate-down test-migration-targets check-migrations test-release install-hooks frontend-build build generate env-link worktree db-up db-down clean
 
 # Extract a value from .env (handles quotes and '=' inside values, e.g. sslmode=disable)
 env-value = $(shell grep -E '^$(1)=' .env | head -n1 | cut -d '=' -f2- | tr -d '"' | tr -d "'")
@@ -35,6 +35,19 @@ migrate-sync: migrate-production-sync
 test-migration-targets:
 	./scripts/test-migration-targets.sh
 
+# Validate that every embedded migration has a matching reversible pair.
+check-migrations:
+	./scripts/check-migrations.sh
+
+# Release preflight: migration integrity before any container/deployment push.
+test-release: check-migrations
+	go test -p 1 ./internal/db/migrate
+
+# Enable the tracked pre-push release guard for this checkout.
+install-hooks:
+	git config core.hooksPath .githooks
+	chmod +x .githooks/pre-push scripts/check-migrations.sh
+
 # Production migrations are intentionally named and require an explicit opt-in:
 #   make migrate-production-up CONFIRM_PRODUCTION_MIGRATION=YES
 migrate-production-up:
@@ -65,7 +78,7 @@ frontend-build:
 generate: frontend-build
 
 # Build the binary after generating the SvelteKit frontend.
-build: generate
+build: check-migrations generate
 	go build -o ./bin/betrayal-bot ./cmd/betrayal-bot/
 
 # Local dev database (docker compose)

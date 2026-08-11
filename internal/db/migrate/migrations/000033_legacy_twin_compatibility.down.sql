@@ -1,0 +1,2 @@
+-- Compatibility marker; version 33 introduced no schema required by the
+-- current application.

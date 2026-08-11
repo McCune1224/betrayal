@@ -10,7 +10,8 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 
 - **Full bot** (Discord + web): `make run` — requires `.env` (see Worktrees & Env).
 - **Web panel only**: `make run-web` (sets `DISABLE_DISCORD=true`) — fastest way to iterate on the admin UI, no Discord needed.
-- **Build**: `make build` → SvelteKit static build + `go build` to `./bin/`.
+- **Build**: `make build` → validates migration pairs, builds the SvelteKit static output, then `go build` to `./bin/`.
+- **Release preflight**: run `make install-hooks` once per checkout to enable the tracked pre-push guard; it runs `make test-release` (migration-pair validation plus the migration recovery tests).
 - **Generate assets**: `make generate` — required after editing frontend SvelteKit files.
 - **Hot reload**: use the SvelteKit Vite dev server for frontend iteration; production remains static output served by Go.
 - **Tests**: `go test ./...` — REQUIRES local Postgres (`make db-up` first; migrations are applied by the test bootstrap itself). Tests must never touch the production DB — a hard guard enforces it (see Testing Workflow).

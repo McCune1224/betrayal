@@ -1,0 +1,3 @@
+-- Compatibility marker for databases that were previously advanced to version 33
+-- by the unreleased player-twin worktree. The current application does not use
+-- that feature, so no schema change is required to recognize the version.
