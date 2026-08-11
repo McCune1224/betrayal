@@ -1,6 +1,8 @@
 # Betrayal Refactoring Program
 
-**Status:** Active program plan
+> **Completed / historical:** This program plan covers the pre-SvelteKit refactor sequence. The SvelteKit migration and templ/HTMX cutover are complete; use the root `AGENTS.md` and [`internal/web/README.md`](../../internal/web/README.md) for current guidance.
+
+**Status:** Completed
 **Owner:** Project manager / main branch
 **Started:** 2026-08-08
 **Strategy:** TDD-first, isolated worktrees, verified merge gates

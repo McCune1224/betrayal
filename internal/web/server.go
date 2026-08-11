@@ -176,14 +176,11 @@ func (s *Server) setupMiddleware() {
 		},
 	}))
 
-	// CSRF protection — double-submit cookie pattern.
-	// - HTMX requests carry the token in the X-CSRF-Token header (the base
-	//   layout's htmx:configRequest handler reads the `_csrf` cookie and adds it).
-	// - Regular HTML forms include a hidden `_csrf` input, injected by the base
-	//   layout script. Token validation only applies to state-changing methods;
-	//   safe methods (GET/HEAD/OPTIONS/TRACE) are skipped by Echo.
-	// The cookie is intentionally NOT HttpOnly so client JS can read it — this is
-	// the standard HTMX-compatible double-submit setup.
+	// CSRF protection — double-submit cookie pattern. The SvelteKit client
+	// reads the cookie and sends it as X-CSRF-Token on JSON mutations.
+	// Token validation applies only to state-changing methods; safe methods
+	// (GET/HEAD/OPTIONS/TRACE) are skipped by Echo.
+	// The cookie is intentionally not HttpOnly so client JS can read it.
 	s.echo.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
 		TokenLookup:    "header:" + echo.HeaderXCSRFToken + ",form:_csrf",
 		CookieName:     "_csrf",

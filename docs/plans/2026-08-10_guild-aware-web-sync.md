@@ -1,5 +1,7 @@
 # Guild-aware web configuration and production sync sources
 
+> **Historical / superseded:** This worktree plan predates the completed SvelteKit migration. Current production sync/channel behavior is implemented under `internal/web/api/` and documented in [`internal/web/README.md`](../../internal/web/README.md).
+
 ## Goal
 
 Make the admin panel use the configured Discord guild as a source of truth for channel selectors and make production CSV-source configuration observable and reliable.

@@ -1,5 +1,7 @@
 # Betrayal Bot — Project Evaluation, Worktree Plan & Agent Notes
 
+> **Historical / superseded:** This evaluation describes the pre-SvelteKit codebase and its original worktree plan. The current contributor workflow is in the root `AGENTS.md`; current web architecture is in [`internal/web/README.md`](../../internal/web/README.md).
+
 > **For Hermes/agents:** This is a *planning + evaluation* document. It does three things: (1) reports the jank found in the codebase, (2) defines worktree-sized workstreams (WT-1…WT-8) you can branch off and tackle in parallel, and (3) contains the drafted replacement `AGENTS.md` so agents have correct workflow/context notes before touching the repo.
 >
 > **Status:** ✅ **Executing** (session 2026-08-05). Progress log at the bottom.

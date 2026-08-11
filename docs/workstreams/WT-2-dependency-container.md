@@ -1,5 +1,7 @@
 # WT-2 — Dependency and Container Hardening
 
+> **Historical / superseded:** This workstream predates the completed SvelteKit migration. Its templ/Tailwind dependency guidance is no longer applicable; use the current `go.mod`, `Dockerfile`, and `AGENTS.md`.
+
 ## Branch/worktree
 
 - Branch: `wt-dependency-container`

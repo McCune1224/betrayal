@@ -1,5 +1,7 @@
 # Betrayal Admin → Web Port, Migrations UI & Spreadsheet Sync UI — Implementation Plan
 
+> **Historical / superseded:** This plan describes the pre-SvelteKit Echo + templ + HTMX implementation. The migration is complete; current UI/API architecture is documented in [`internal/web/README.md`](../../internal/web/README.md). Keep this file as an implementation record, not as current build guidance.
+
 > **For Hermes:** Use subagent-driven-development to implement this plan task-by-task, in worktrees off `main`, with spec-compliance + code-quality review per task and headless verification (`go test ./...`, `make build`) — no game-window or Discord run-around.
 
 **Goal:** Move the admin surface of Betrayal onto the web panel: finish porting every admin slash command (player management, channel config, game setup), add a **database migrations UI** (apply/rollback/status from the browser), and give the **spreadsheet sync** (currently `cmd/data-entry`) a full web UI with fetch → **diff preview → validate → apply** flow. Discord slash commands become an archived layer for end users; admin commands stay registered but are no longer maintained.
