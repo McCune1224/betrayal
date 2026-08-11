@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -190,6 +191,13 @@ func (s *Server) setupMiddleware() {
 		CookieHTTPOnly: false, // readable by JS so htmx can attach it to every request
 		CookieSameSite: http.SameSiteLaxMode,
 		CookiePath:     "/",
+		ErrorHandler: func(err error, c echo.Context) error {
+			if strings.HasPrefix(c.Request().URL.Path, "/api/") {
+				api.WriteError(c.Response(), http.StatusForbidden, "csrf_token_invalid", "invalid CSRF token", map[string]any{})
+				return nil
+			}
+			return err
+		},
 	}))
 
 	// Static files
@@ -200,6 +208,7 @@ func (s *Server) setupRoutes() {
 	// Create handlers
 	healthHandler := handlers.NewHealthHandler(s.dbPool, s.discordSession)
 	authHandler := handlers.NewAuthHandler(s.sessionStore, s.config.AdminPassword)
+	apiAuthHandler := api.NewAuthHandler(s.sessionStore, s.config.AdminPassword)
 	playersHandler := handlers.NewPlayersHandler(s.dbPool)
 	adminHandler := handlers.NewAdminHandler(s.dbPool, s.railwayClient)
 	votesHandler := handlers.NewVotesHandler(s.dbPool)
@@ -218,6 +227,7 @@ func (s *Server) setupRoutes() {
 
 	// Auth middleware
 	authMiddleware := webmiddleware.NewAuthMiddleware(s.sessionStore)
+	apiAuthMiddleware := api.NewAuthMiddleware(s.sessionStore)
 
 	// Public routes
 	s.echo.GET("/health", healthHandler.Health)
@@ -226,6 +236,8 @@ func (s *Server) setupRoutes() {
 		api.Health(c.Response(), c.Request())
 		return nil
 	})
+	apiV1.GET("/auth/session", apiAuthHandler.Session)
+	apiV1.GET("/auth/csrf", apiAuthHandler.CSRF)
 	apiNotFound := func(c echo.Context) error {
 		api.NotFound(c.Response(), c.Request())
 		return nil
@@ -245,6 +257,11 @@ func (s *Server) setupRoutes() {
 	s.echo.POST("/login", authHandler.Login, middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
 		Store: loginLimiter,
 	}))
+	apiV1.POST("/auth/login", apiAuthHandler.Login, middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
+		Store: loginLimiter,
+	}))
+	apiProtected := apiV1.Group("", apiAuthMiddleware.RequireAuth)
+	apiProtected.POST("/auth/logout", apiAuthHandler.Logout)
 
 	// Protected routes
 	protected := s.echo.Group("", authMiddleware.RequireAuth)
