@@ -10,6 +10,27 @@ import (
 	"github.com/mccune1224/betrayal/internal/models"
 )
 
+func TestGameOpsCycleAdvanceAPIUsesJSONAndCSRF(t *testing.T) {
+	pool := mustPool(t)
+	resetCycle(t, pool)
+	client := newTestClient(t, testServer(t, pool))
+	client.login()
+	resp := client.do(http.MethodPost, "/api/v1/ops/cycle/advance", nil, nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("advance: expected 200, got %d", resp.StatusCode)
+	}
+}
+
+func TestGameOpsSetupAPIExists(t *testing.T) {
+	pool := mustPool(t)
+	client := newTestClient(t, testServer(t, pool))
+	client.login()
+	resp := client.get("/api/v1/ops/setup")
+	if resp.StatusCode == http.StatusNotFound {
+		t.Fatal("setup API route is missing")
+	}
+}
+
 func TestGameOpsCycleAPIRequiresAuthAndReturnsDTO(t *testing.T) {
 	pool := mustPool(t)
 	client := newTestClient(t, testServer(t, pool))

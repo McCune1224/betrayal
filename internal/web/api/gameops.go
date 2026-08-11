@@ -2,9 +2,12 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/mccune1224/betrayal/internal/services/roledraft"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -35,6 +38,119 @@ func (h *CycleHandler) Get(c echo.Context) error {
 		return nil
 	}
 	WriteJSON(c.Response(), http.StatusOK, cycleDTO(cycle))
+	return nil
+}
+
+func (h *CycleHandler) Advance(c echo.Context) error {
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cancel()
+	curr, err := models.New(h.pool).GetCycle(ctx)
+	if err != nil {
+		WriteError(c.Response(), 500, "cycle_unavailable", "could not load cycle", nil)
+		return nil
+	}
+	day, elimination := curr.Day, curr.IsElimination
+	if day == 0 {
+		day, elimination = 1, false
+	} else if elimination {
+		day, elimination = day+1, false
+	} else {
+		elimination = true
+	}
+	updated, err := models.New(h.pool).UpdateCycle(ctx, models.UpdateCycleParams{IsElimination: elimination, Day: day, ID: curr.ID})
+	if err != nil {
+		WriteError(c.Response(), 500, "cycle_update_failed", "could not advance cycle", nil)
+		return nil
+	}
+	WriteJSON(c.Response(), 200, cycleDTO(updated))
+	return nil
+}
+
+func (h *CycleHandler) Set(c echo.Context) error {
+	var req struct {
+		Phase string `json:"phase"`
+		Day   int32  `json:"day"`
+	}
+	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil || (req.Phase != "Day" && req.Phase != "Elimination") || req.Day < 0 {
+		WriteError(c.Response(), 400, "invalid_request", "phase must be Day or Elimination and day must be non-negative", nil)
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cancel()
+	curr, err := models.New(h.pool).GetCycle(ctx)
+	if err != nil {
+		WriteError(c.Response(), 500, "cycle_unavailable", "could not load cycle", nil)
+		return nil
+	}
+	updated, err := models.New(h.pool).UpdateCycle(ctx, models.UpdateCycleParams{IsElimination: req.Phase == "Elimination", Day: req.Day, ID: curr.ID})
+	if err != nil {
+		WriteError(c.Response(), 500, "cycle_update_failed", "could not set cycle", nil)
+		return nil
+	}
+	WriteJSON(c.Response(), 200, cycleDTO(updated))
+	return nil
+}
+
+type RoleDTO struct {
+	ID          int32  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Alignment   string `json:"alignment"`
+}
+type SetupPoolDTO struct {
+	DeceptionOptions [][]RoleDTO `json:"deception_options"`
+	RandomPool       []RoleDTO   `json:"random_pool"`
+}
+type SetupDTO struct {
+	DeceptionistDefault int           `json:"deceptionist_default"`
+	PlayerCount         int           `json:"player_count,omitempty"`
+	DeceptionistCount   int           `json:"deceptionist_count,omitempty"`
+	Pool                *SetupPoolDTO `json:"pool,omitempty"`
+}
+type SetupHandler struct{ pool *pgxpool.Pool }
+
+func NewSetupHandler(pool *pgxpool.Pool) *SetupHandler { return &SetupHandler{pool: pool} }
+func (h *SetupHandler) Get(c echo.Context) error {
+	WriteJSON(c.Response(), 200, SetupDTO{})
+	return nil
+}
+func setupPoolDTO(pool *roledraft.Pool) *SetupPoolDTO {
+	result := &SetupPoolDTO{}
+	for _, options := range pool.DeceptionOptions {
+		row := make([]RoleDTO, len(options))
+		for i, role := range options {
+			row[i] = RoleDTO{ID: role.ID, Name: role.Name, Description: role.Description, Alignment: string(role.Alignment)}
+		}
+		result.DeceptionOptions = append(result.DeceptionOptions, row)
+	}
+	for _, role := range pool.RandomPool {
+		result.RandomPool = append(result.RandomPool, RoleDTO{ID: role.ID, Name: role.Name, Description: role.Description, Alignment: string(role.Alignment)})
+	}
+	return result
+}
+
+func (h *SetupHandler) Generate(c echo.Context) error {
+	var req struct {
+		PlayerCount       int `json:"player_count"`
+		DeceptionistCount int `json:"deceptionist_count"`
+	}
+	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil {
+		WriteError(c.Response(), 400, "invalid_request", "invalid setup request", nil)
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cancel()
+	roles, err := roledraft.LoadRoles(ctx, h.pool)
+	if err != nil {
+		WriteError(c.Response(), 500, "setup_unavailable", "failed to load active roles", nil)
+		return nil
+	}
+	pool, err := roledraft.Generate(roles, req.PlayerCount, req.DeceptionistCount)
+	if err != nil {
+		WriteError(c.Response(), 400, "invalid_request", err.Error(), nil)
+		return nil
+	}
+	WriteJSON(c.Response(), 200, SetupDTO{PlayerCount: req.PlayerCount, DeceptionistCount: req.DeceptionistCount, Pool: setupPoolDTO(pool)})
 	return nil
 }
 
@@ -122,6 +238,90 @@ func (h *ChannelsHandler) Get(c echo.Context) error {
 		}
 	}
 	WriteJSON(c.Response(), http.StatusOK, ChannelsDTO{DiscordConnected: h.discord != nil, Entries: entries, Summary: summary})
+	return nil
+}
+
+func (h *ChannelsHandler) Mutate(c echo.Context) error {
+	var req struct {
+		Kind      string `json:"kind"`
+		ChannelID string `json:"channel_id"`
+		MessageID string `json:"message_id"`
+	}
+	if err := json.NewDecoder(c.Request().Body).Decode(&req); err != nil || req.ChannelID == "" {
+		WriteError(c.Response(), 400, "invalid_request", "channel_id is required", nil)
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cancel()
+	q := models.New(h.pool)
+	var err error
+	switch req.Kind {
+	case "vote":
+		err = q.UpsertVoteChannel(ctx, req.ChannelID)
+	case "action":
+		tx, e := h.pool.Begin(ctx)
+		if e != nil {
+			err = e
+		} else {
+			tq := models.New(tx)
+			err = tq.WipeActionChannel(ctx)
+			if err == nil {
+				err = tq.UpsertActionChannel(ctx, req.ChannelID)
+			}
+			if err == nil {
+				err = tx.Commit(ctx)
+			} else {
+				_ = tx.Rollback(ctx)
+			}
+		}
+	case "log":
+		_, err = q.SetCommandLogChannel(ctx, req.ChannelID)
+	case "admin":
+		_, err = q.CreateAdminChannel(ctx, req.ChannelID)
+	case "lifeboard":
+		if req.MessageID == "" {
+			WriteError(c.Response(), 400, "invalid_request", "message_id is required", nil)
+			return nil
+		}
+		tx, e := h.pool.Begin(ctx)
+		if e != nil {
+			err = e
+		} else {
+			tq := models.New(tx)
+			err = tq.DeletePlayerLifeboard(ctx)
+			if err == nil {
+				_, err = tq.CreatePlayerLifeboard(ctx, models.CreatePlayerLifeboardParams{ChannelID: req.ChannelID, MessageID: req.MessageID})
+			}
+			if err == nil {
+				err = tx.Commit(ctx)
+			} else {
+				_ = tx.Rollback(ctx)
+			}
+		}
+	default:
+		WriteError(c.Response(), 400, "invalid_request", "unknown channel kind", nil)
+		return nil
+	}
+	if err != nil {
+		WriteError(c.Response(), 500, "channel_update_failed", "could not update channel", nil)
+		return nil
+	}
+	h.Get(c)
+	return nil
+}
+func (h *ChannelsHandler) Delete(c echo.Context) error {
+	kind, id := c.Param("kind"), c.Param("id")
+	if kind != "admin" || id == "" {
+		WriteError(c.Response(), 400, "invalid_request", "only admin channels can be deleted", nil)
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cancel()
+	if err := models.New(h.pool).DeleteAdminChannel(ctx, id); err != nil {
+		WriteError(c.Response(), 500, "channel_delete_failed", "could not delete channel", nil)
+		return nil
+	}
+	WriteJSON(c.Response(), 204, nil)
 	return nil
 }
 
