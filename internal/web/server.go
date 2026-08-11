@@ -246,9 +246,9 @@ func (s *Server) setupRoutes() {
 	}
 	apiV1.GET("", apiNotFound)
 	apiV1.RouteNotFound("/*", apiNotFound)
-	s.echo.GET("/login", authHandler.LoginPage)
-
-	// Login is the brute-force surface: rate limit by IP (a burst of attempts,
+	// The SvelteKit login page is public; authentication is performed through
+	// /api/v1/auth/login. Keep the legacy POST handler during the migration so
+	// older clients do not lose access, but do not serve templ for GET /login.
 	// then ~1/sec). Note: behind a proxy this buckets by proxy IP unless a
 	// trusted-proxy extractor is configured — still throttles global brute force.
 	loginLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
@@ -381,13 +381,11 @@ func (s *Server) setupRoutes() {
 
 	// The temporary SvelteKit shell owns the root and client-side routes. Keep
 	// this fallback last so explicit API and legacy routes retain precedence.
-	// The legacy login form remains the authentication entry point until its
-	// SvelteKit replacement lands, so shell routes stay behind the established
-	// session middleware.
 	serveUI := func(c echo.Context) error {
 		ui.Handler(c.Response(), c.Request())
 		return nil
 	}
+	s.echo.GET("/login", serveUI)
 	s.echo.GET("/", serveUI, authMiddleware.RequireAuth)
 	s.echo.GET("/*", serveUI, authMiddleware.RequireAuth)
 }
