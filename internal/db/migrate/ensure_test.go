@@ -2,6 +2,7 @@ package dbmigrate_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -50,48 +51,23 @@ func TestMigration32ReconcilesDuplicateAbilityNames(t *testing.T) {
 	require.Equal(t, 1, count)
 }
 
-func TestEnsureUpToDateRecoversDirtyVersion32(t *testing.T) {
-	dsn := scratchDB(t)
-	r, err := dbmigrate.New(dsn)
-	require.NoError(t, err)
-	require.NoError(t, r.Up())
+func TestEnsureUpToDateRejectsDirtyVersion(t *testing.T) {
+	for _, version := range []uint{32, 33} {
+		t.Run(fmt.Sprintf("version_%d", version), func(t *testing.T) {
+			dsn := scratchDB(t)
+			r, err := dbmigrate.New(dsn)
+			require.NoError(t, err)
+			require.NoError(t, r.Up())
+			require.NoError(t, r.Close())
 
-	conn, err := pgx.Connect(context.Background(), dsn)
-	require.NoError(t, err)
-	_, err = conn.Exec(context.Background(), `UPDATE schema_migrations SET version = 32, dirty = true`)
-	require.NoError(t, err)
-	conn.Close(context.Background())
-	r.Close()
+			conn, err := pgx.Connect(context.Background(), dsn)
+			require.NoError(t, err)
+			_, err = conn.Exec(context.Background(), `UPDATE schema_migrations SET version = $1, dirty = true`, version)
+			require.NoError(t, err)
+			require.NoError(t, conn.Close(context.Background()))
 
-	require.NoError(t, dbmigrate.EnsureUpToDate(dsn))
-	r2, err := dbmigrate.New(dsn)
-	require.NoError(t, err)
-	t.Cleanup(func() { r2.Close() })
-	version, dirty, err := r2.Version()
-	require.NoError(t, err)
-	require.Equal(t, uint(33), version)
-	require.False(t, dirty)
-}
-
-func TestEnsureUpToDateRecoversDirtyVersion33CompatibilityMarker(t *testing.T) {
-	dsn := scratchDB(t)
-	r, err := dbmigrate.New(dsn)
-	require.NoError(t, err)
-	require.NoError(t, r.Up())
-
-	conn, err := pgx.Connect(context.Background(), dsn)
-	require.NoError(t, err)
-	_, err = conn.Exec(context.Background(), `UPDATE schema_migrations SET version = 33, dirty = true`)
-	require.NoError(t, err)
-	conn.Close(context.Background())
-	require.NoError(t, r.Close())
-
-	require.NoError(t, dbmigrate.EnsureUpToDate(dsn))
-	r2, err := dbmigrate.New(dsn)
-	require.NoError(t, err)
-	t.Cleanup(func() { r2.Close() })
-	version, dirty, err := r2.Version()
-	require.NoError(t, err)
-	require.Equal(t, uint(33), version)
-	require.False(t, dirty)
+			err = dbmigrate.EnsureUpToDate(dsn)
+			require.EqualError(t, err, fmt.Sprintf("dbmigrate: dirty database version %d requires manual recovery", version))
+		})
+	}
 }

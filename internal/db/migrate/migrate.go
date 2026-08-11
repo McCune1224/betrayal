@@ -55,24 +55,7 @@ func EnsureUpToDate(dsn string) error {
 		return fmt.Errorf("dbmigrate: inspect version: %w", err)
 	}
 	if dirty {
-		switch version {
-		case 32:
-			// Migration 32 originally dirtied production while creating catalog
-			// indexes. The repaired migration reconciles duplicates before retrying.
-			if err := r.Force(31); err != nil {
-				return fmt.Errorf("dbmigrate: recover dirty version 32: %w", err)
-			}
-		case 33:
-			// Version 33 was briefly deployed by the unreleased player-twin
-			// worktree. The current application does not depend on that schema;
-			// rewind only the migration marker, then apply the checked-in no-op
-			// compatibility migration so startup can recover cleanly.
-			if err := r.Force(32); err != nil {
-				return fmt.Errorf("dbmigrate: recover dirty version 33: %w", err)
-			}
-		default:
-			return fmt.Errorf("dbmigrate: dirty database version %d requires manual recovery", version)
-		}
+		return fmt.Errorf("dbmigrate: dirty database version %d requires manual recovery", version)
 	}
 	return r.Up()
 }
@@ -102,16 +85,6 @@ func (r *Runner) Up() error {
 	err := r.m.Up()
 	if err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("dbmigrate: up: %w", err)
-	}
-	return nil
-}
-
-// Force changes the recorded schema version without running SQL. It is only
-// used by narrowly-scoped recovery code after the replacement migration has
-// been verified safe to rerun.
-func (r *Runner) Force(version uint) error {
-	if err := r.m.Force(int(version)); err != nil {
-		return fmt.Errorf("dbmigrate: force %d: %w", version, err)
 	}
 	return nil
 }
