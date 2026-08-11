@@ -210,6 +210,7 @@ func (s *Server) setupRoutes() {
 	authHandler := handlers.NewAuthHandler(s.sessionStore, s.config.AdminPassword)
 	apiAuthHandler := api.NewAuthHandler(s.sessionStore, s.config.AdminPassword)
 	apiDashboardHandler := api.NewDashboardHandler(s.dbPool)
+	apiPlayersHandler := api.NewPlayersHandler(s.dbPool)
 	playersHandler := handlers.NewPlayersHandler(s.dbPool)
 	adminHandler := handlers.NewAdminHandler(s.dbPool, s.railwayClient)
 	votesHandler := handlers.NewVotesHandler(s.dbPool)
@@ -266,6 +267,7 @@ func (s *Server) setupRoutes() {
 	// incorrectly turning their JSON 404s into 401s.
 	apiV1.POST("/auth/logout", apiAuthHandler.Logout, apiAuthMiddleware.RequireAuth)
 	apiV1.GET("/dashboard", apiDashboardHandler.Dashboard, apiAuthMiddleware.RequireAuth)
+	apiV1.GET("/players", apiPlayersHandler.List, apiAuthMiddleware.RequireAuth)
 
 	// Protected routes
 	protected := s.echo.Group("", authMiddleware.RequireAuth)
