@@ -77,17 +77,56 @@ func (h *AdminHandler) MigrationUp(c echo.Context) error {
 	}
 	return h.Migrations(c)
 }
+
+type MigrationDownRequest struct {
+	Steps   int    `json:"steps"`
+	Confirm string `json:"confirm"`
+}
+
 func (h *AdminHandler) MigrationDown(c echo.Context) error {
 	r := h.runner()
 	if r == nil {
 		WriteError(c.Response(), 503, "migrations_unavailable", "migrations runner unavailable", nil)
 		return nil
 	}
-	if err := r.DownSteps(1); err != nil {
-		WriteError(c.Response(), 500, "migration_failed", "could not roll back migration", nil)
+	var req MigrationDownRequest
+	if err := c.Bind(&req); err != nil {
+		WriteError(c.Response(), 400, "invalid_request", "invalid JSON body", nil)
 		return nil
 	}
-	return h.Migrations(c)
+	if req.Steps <= 0 {
+		req.Steps = 1
+	}
+	if req.Steps > 10 {
+		WriteError(c.Response(), 400, "invalid_request", "steps must be between 1 and 10", nil)
+		return nil
+	}
+	status, err := r.Status()
+	if err != nil {
+		WriteError(c.Response(), 500, "migrations_unavailable", "could not determine current migration", nil)
+		return nil
+	}
+	last := ""
+	for i := len(status) - 1; i >= 0; i-- {
+		if status[i].Applied {
+			last = status[i].Name
+			break
+		}
+	}
+	if last == "" {
+		WriteError(c.Response(), 400, "migration_unavailable", "no migrations are applied", nil)
+		return nil
+	}
+	if req.Confirm != last {
+		WriteError(c.Response(), 400, "confirmation_required", "confirm the latest migration name", map[string]any{"latest_migration": last})
+		return nil
+	}
+	if err := r.DownSteps(req.Steps); err != nil {
+		WriteError(c.Response(), 500, "migration_failed", "could not roll back migrations", nil)
+		return nil
+	}
+	WriteJSON(c.Response(), 200, map[string]any{"status": "rolled_back", "steps": req.Steps, "migration": last})
+	return nil
 }
 
 type ResetRequest struct {

@@ -215,7 +215,7 @@ func (s *Server) setupRoutes() {
 	apiVotesHandler := api.NewVotesHandler(s.dbPool)
 	apiReadinessHandler := api.NewReadinessHandler(s.dbPool, s.discordSession)
 	apiAdminHandler := api.NewAdminHandler(s.dbPool, s.railwayClient, s.getMigrateRunner, gamereset.New(s.dbPool, s.syncService))
-	apiSyncHandler := api.NewSyncHandler(s.syncService)
+	apiSyncHandler := api.NewSyncHandler(s.dbPool, s.syncService)
 	apiAuthMiddleware := api.NewAuthMiddleware(s.sessionStore)
 	browserAuth := webmiddleware.NewAuthMiddleware(s.sessionStore)
 
