@@ -81,14 +81,34 @@ func (h *SyncHandler) UpdateSource(c echo.Context) error {
 	return nil
 }
 func (h *SyncHandler) Preview(c echo.Context) error {
-	ctx, cancel := context.WithTimeout(c.Request().Context(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 30*time.Second)
 	defer cancel()
 	sources, err := h.service.ListSources(ctx)
 	if err != nil {
 		WriteError(c.Response(), 500, "sync_unavailable", "could not load sync sources", nil)
 		return nil
 	}
-	WriteJSON(c.Response(), 200, map[string]any{"sources": sources, "read_only": true, "status": "preview_ready"})
+	previews := make([]map[string]any, 0, len(sources))
+	for _, source := range sources {
+		entry := map[string]any{"source": sourceDTO(source), "enabled": source.Enabled}
+		if !source.Enabled || strings.TrimSpace(source.Url) == "" {
+			entry["status"] = "skipped"
+			entry["reason"] = "source is disabled or has no URL"
+			previews = append(previews, entry)
+			continue
+		}
+		plan, counts, err := h.planSource(ctx, source)
+		if err != nil {
+			entry["status"] = "failed"
+			entry["error"] = err.Error()
+		} else {
+			entry["status"] = "ready"
+			entry["counts"] = actionCounts(counts)
+			entry["plan"] = plan
+		}
+		previews = append(previews, entry)
+	}
+	WriteJSON(c.Response(), 200, map[string]any{"previews": previews, "read_only": true, "status": "preview_ready"})
 	return nil
 }
 func (h *SyncHandler) Apply(c echo.Context) error {
@@ -130,6 +150,39 @@ func (h *SyncHandler) Apply(c echo.Context) error {
 	_ = h.service.RecordRun(ctx, &source.ID, source.Name, datasync.RunStatusApplied, "web", "", counts)
 	WriteJSON(c.Response(), 200, map[string]any{"source": sourceDTO(source), "status": "applied", "counts": actionCounts(counts)})
 	return nil
+}
+
+func (h *SyncHandler) planSource(ctx context.Context, source models.SyncSource) (any, map[datasync.Action]int, error) {
+	body, err := h.service.Fetch(ctx, source)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer body.Close()
+	q := models.New(h.pool)
+	switch source.Kind {
+	case "roles":
+		docs, _, err := datasync.ParseRolesCSV(body, models.Alignment(source.Alignment))
+		if err != nil {
+			return nil, nil, err
+		}
+		plan, err := datasync.PlanRoles(ctx, q, models.Alignment(source.Alignment), docs)
+		if err != nil {
+			return nil, nil, err
+		}
+		return plan, plan.Counts, nil
+	case "items":
+		docs, _, err := datasync.ParseItemsCSV(body)
+		if err != nil {
+			return nil, nil, err
+		}
+		plan, err := datasync.PlanItems(ctx, q, docs)
+		if err != nil {
+			return nil, nil, err
+		}
+		return plan, plan.Counts, nil
+	default:
+		return nil, nil, errors.New("unsupported sync source kind")
+	}
 }
 
 func (h *SyncHandler) applySource(ctx context.Context, source models.SyncSource) (map[datasync.Action]int, error) {

@@ -34,9 +34,10 @@
 </svelte:head>
 
 <main class="min-h-screen bg-slate-950 p-6 text-slate-100">
-  <header class="mx-auto max-w-5xl border-b border-slate-700 pb-5">
-    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Betrayal Admin</p>
-    <h1 class="mt-2 text-3xl font-semibold">Players</h1>
+  <header class="mx-auto flex max-w-5xl items-end justify-between border-b border-slate-700 pb-5">
+    <div><p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Betrayal Admin</p>
+    <h1 class="mt-2 text-3xl font-semibold">Players</h1></div>
+    <a href="/players/new" class="rounded border border-teal-400 px-4 py-2 text-sm text-teal-300 hover:bg-teal-400/10">New player</a>
   </header>
 
   {#if loading}
@@ -62,7 +63,7 @@
         <tbody>
           {#each players as player (player.id)}
             <tr class="border-b border-slate-800">
-              <td class="p-3 font-mono">{player.id}</td>
+              <td class="p-3 font-mono"><a class="text-teal-300 hover:underline" href={`/players/${player.id}`}>{player.id}</a></td>
               <td class="p-3">{player.role}</td>
               <td class="p-3">{player.alignment}</td>
               <td class="p-3">{player.alive ? 'Alive' : 'Dead'}</td>

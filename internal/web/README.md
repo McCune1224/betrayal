@@ -24,7 +24,7 @@ All application data routes are authenticated JSON APIs under `/api/v1`:
 - `/sync` — source listing/editing, preview, and apply.
 - `/admin` — audit, migrations, reset, and Railway redeploy.
 
-SvelteKit filesystem routes provide the corresponding pages, including `/login`, `/players`, `/players/new`, `/players/[id]`, `/players/[id]/edit`, catalog pages, operational pages, `/sync`, and admin pages.
+SvelteKit filesystem routes provide the corresponding pages, including `/login`, `/players`, `/players/new`, `/players/[id]`, `/players/[id]/edit`, catalog pages, operational pages, `/sync`, `/admin/audit`, `/admin/migrations`, `/admin/reset`, and `/admin/redeploy`.
 
 Browser behavior is preserved at the boundary: unauthenticated `/` and client routes redirect to `/login`; unauthenticated `/api/v1/**` requests return canonical JSON `401` responses. Unknown API routes remain JSON `404`s.
 

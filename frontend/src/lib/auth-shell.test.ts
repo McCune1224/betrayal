@@ -27,8 +27,12 @@ describe('auth shell', () => {
 
     render(AuthShell, { children: () => 'Protected content' });
 
-    expect(await screen.findByRole('button', { name: /log out/i })).toBeInTheDocument();
-    await fireEvent.click(screen.getByRole('button', { name: /log out/i }));
+    const logoutButtons = await screen.findAllByRole('button', { name: /log out/i });
+    expect(logoutButtons).toHaveLength(2);
+    for (const label of ['Dashboard', 'Players', 'Cycle', 'Channels', 'Votes', 'Setup', 'Healthcheck', 'Roles', 'Items', 'Abilities', 'Statuses', 'Sync', 'Audit log', 'Migrations', 'Reset game', 'Redeploy']) {
+      expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
+    }
+    await fireEvent.click(logoutButtons[0]);
 
     expect(await screen.findByRole('status')).toHaveTextContent(/signed out/i);
     expect(screen.queryByRole('button', { name: /log out/i })).not.toBeInTheDocument();
