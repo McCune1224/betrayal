@@ -60,8 +60,8 @@ func TestLoginFlow(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("GET /login: expected 200, got %d", resp.StatusCode)
 	}
-	if !strings.Contains(client.body(resp), "PASSWORD") {
-		t.Fatal("login page should contain the password field")
+	if !strings.Contains(client.body(resp), "_app/") {
+		t.Fatal("login page should serve the SvelteKit shell")
 	}
 
 	// Unauthenticated dashboard redirects to login

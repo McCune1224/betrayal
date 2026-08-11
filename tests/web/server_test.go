@@ -149,6 +149,9 @@ func (s *WebServerSuite) TestLoginPage() {
 	resp := s.get("/login")
 	defer resp.Body.Close()
 	s.Require().Equal(http.StatusOK, resp.StatusCode)
+	body, err := io.ReadAll(resp.Body)
+	s.Require().NoError(err)
+	s.Require().Contains(string(body), "_app/", "GET /login must serve the SvelteKit shell")
 }
 
 func (s *WebServerSuite) TestLoginWrongPasswordRedirectsToError() {
