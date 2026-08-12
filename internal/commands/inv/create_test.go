@@ -8,9 +8,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/mccune1224/betrayal/internal/models"
+	"github.com/mccune1224/betrayal/tests/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	os.Exit(testutil.Bootstrap(m))
+}
 
 // knownStatusNames is the set of statuses seeded by migration 000008. Every
 // immunity/status referenced by the role ops map must exist in it — a typo'd
