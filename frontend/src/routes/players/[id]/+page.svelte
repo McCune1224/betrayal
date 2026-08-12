@@ -3,12 +3,67 @@
   import { page } from '$app/state';
   import { createApiClient } from '$lib/api/client';
   import type { PlayerDetail } from '$lib/player-types';
-  let player = $state<PlayerDetail | null>(null); let error = $state(''); let loading = $state(true); let mutating = $state(false); let mutationError = $state('');
+
+  let player = $state<PlayerDetail | null>(null);
+  let error = $state('');
+  let loading = $state(true);
+  let mutating = $state(false);
+  let mutationError = $state('');
   const id = $derived(page.params.id);
-  async function load() { loading = true; error = ''; try { player = await createApiClient().get<PlayerDetail>(`/api/v1/players/${id}`); } catch (e) { error = e instanceof Error ? e.message : 'Could not load player'; } finally { loading = false; } }
-  async function mutate(path: string, body: unknown) { mutating = true; mutationError = ''; try { player = await createApiClient().post<PlayerDetail>(`/api/v1/players/${id}/${path}`, { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); } catch (e) { mutationError = e instanceof Error ? e.message : 'Mutation failed'; } finally { mutating = false; } }
+
+  async function load() {
+    loading = true;
+    error = '';
+    try { player = await createApiClient().get<PlayerDetail>(`/api/v1/players/${id}`); }
+    catch (cause) { error = cause instanceof Error ? cause.message : 'Could not load player'; }
+    finally { loading = false; }
+  }
+
+  async function mutate(path: string, body: unknown) {
+    mutating = true;
+    mutationError = '';
+    try { player = await createApiClient().post<PlayerDetail>(`/api/v1/players/${id}/${path}`, { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); }
+    catch (cause) { mutationError = cause instanceof Error ? cause.message : 'Mutation failed'; }
+    finally { mutating = false; }
+  }
+
   onMount(load);
 </script>
-<svelte:head><title>Player {id} | Betrayal Admin</title></svelte:head>
-<main class="min-h-screen bg-slate-950 p-6 text-slate-100"><header class="mx-auto max-w-5xl border-b border-slate-700 pb-5"><a href="/players" class="text-slate-400">← Players</a><h1 class="mt-2 text-3xl font-semibold">Player {id}</h1></header>
-{#if loading}<p role="status" class="mx-auto max-w-5xl py-10">Loading player…</p>{:else if error}<p role="alert" class="mx-auto max-w-5xl py-10 text-red-300">{error}</p>{:else if player}<section class="mx-auto max-w-5xl space-y-6 py-8"><div class="grid grid-cols-2 gap-3 border border-slate-700 p-5"><p>Role: {player.role}</p><p>Alignment: {player.alignment}</p><p>State: {player.alive ? 'Alive' : 'Dead'}</p><p>Coins: {player.coins}</p><p>Luck: {player.luck}</p><p>Item limit: {player.item_limit}</p></div><a class="border border-slate-600 px-4 py-2" href={`/players/${id}/edit`}>Edit player</a>{#if mutationError}<p role="alert" class="text-red-300">{mutationError}</p>{/if}<h2 class="text-xl">Inventory</h2><ul aria-label="Items" class="space-y-2">{#each player.items as item (item.id)}<li>{item.name} × {item.quantity} <button disabled={mutating} onclick={() => mutate('items/remove',{name:item.name})}>Remove</button></li>{:else}<li>No items.</li>{/each}</ul><form onsubmit={(e)=>{e.preventDefault(); const f=new FormData(e.currentTarget); mutate('items/add',{name:f.get('name'),quantity:Number(f.get('quantity')||1)});}} class="flex gap-2"><input name="name" aria-label="Item name" placeholder="Item name"/><input name="quantity" type="number" min="1" value="1" aria-label="Quantity"/><button disabled={mutating}>Add item</button></form><h2 class="text-xl">Notes</h2><ul aria-label="Notes">{#each player.notes as note (note.id)}<li>{note.info} <button disabled={mutating} onclick={() => mutate('notes/remove',{note_id:note.id})}>Remove</button></li>{:else}<li>No notes.</li>{/each}</ul></section>{/if}</main>
+
+<svelte:head><title>Player profile | Betrayal Admin</title></svelte:head>
+
+<main class="page-shell">
+  <div class="form-page">
+    <a href="/players" class="back-link">← Back to roster</a>
+    {#if loading}
+      <p role="status" class="state">Loading player profile…</p>
+    {:else if error}
+      <p role="alert" class="state state-error">{error}</p>
+    {:else if player}
+      <header class="profile-header">
+        <div><p class="eyebrow">Player profile</p><h1 class="display-title">{player.role}</h1><p class="lede">{player.alive ? 'Active in the game' : 'Eliminated from the game'} · {player.alignment}</p></div>
+        <a class="btn btn-primary" href={`/players/${id}/edit`}>Edit profile</a>
+      </header>
+      <section class="profile-stats">
+        <div><small>State</small><strong>{player.alive ? 'Alive' : 'Dead'}</strong></div>
+        <div><small>Coins</small><strong>{player.coins}</strong></div>
+        <div><small>Luck</small><strong>{player.luck}</strong></div>
+        <div><small>Capacity</small><strong>{player.item_limit}</strong></div>
+      </section>
+      {#if mutationError}<p role="alert" class="state state-error">{mutationError}</p>{/if}
+      <section class="profile-section">
+        <div class="section-heading"><div><p class="eyebrow">Resources</p><h2>Inventory</h2></div><span>{player.items.length} items</span></div>
+        <ul aria-label="Items" class="resource-list">
+          {#each player.items as item (item.id)}<li><span>{item.name} <small>× {item.quantity}</small></span><button class="btn" disabled={mutating} onclick={() => mutate('items/remove', { name: item.name })}>Remove</button></li>{:else}<li class="empty-row">No items assigned.</li>{/each}
+        </ul>
+        <form onsubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); mutate('items/add', { name: form.get('name'), quantity: Number(form.get('quantity') || 1) }); }} class="inline-form"><input name="name" aria-label="Item name" placeholder="Add an item" /><input name="quantity" type="number" min="1" value="1" aria-label="Quantity" /><button class="btn btn-primary" disabled={mutating}>Add item</button></form>
+      </section>
+      <section class="profile-section">
+        <div class="section-heading"><div><p class="eyebrow">Game log</p><h2>Notes</h2></div><span>{player.notes.length} notes</span></div>
+        <ul aria-label="Notes" class="resource-list">
+          {#each player.notes as note (note.id)}<li><span>{note.info}</span><button class="btn" disabled={mutating} onclick={() => mutate('notes/remove', { note_id: note.id })}>Remove</button></li>{:else}<li class="empty-row">No notes yet.</li>{/each}
+        </ul>
+      </section>
+    {/if}
+  </div>
+</main>

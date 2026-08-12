@@ -13,7 +13,7 @@ describe('players page', () => {
 
     render(Page);
 
-    expect(screen.getByRole('status')).toHaveTextContent('Loading players…');
+    expect(screen.getByRole('status')).toHaveTextContent('Loading player roster…');
   });
 
   it('shows an error state when the player request fails', async () => {
@@ -40,12 +40,12 @@ describe('players page', () => {
 
     render(Page);
 
-    expect(await screen.findByText('No players are available.')).toBeInTheDocument();
+    expect(await screen.findByText(/No players are available yet/)).toBeInTheDocument();
   });
 
   it('loads player DTOs from the shared API client endpoint', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(
         JSON.stringify([
           {
             id: 701,
@@ -58,17 +58,19 @@ describe('players page', () => {
           }
         ]),
         { headers: { 'content-type': 'application/json' } }
-      )
-    );
+      ))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ members: [{ id: '701', username: 'oracle_user', nickname: 'Oracle', bot: false }] }), { headers: { 'content-type': 'application/json' } }));
     vi.stubGlobal('fetch', fetchMock);
 
     render(Page);
 
     expect(await screen.findByText('Oracle')).toBeInTheDocument();
-    expect(screen.getByText('701')).toBeInTheDocument();
+    expect(screen.queryByText('701')).not.toBeInTheDocument();
     expect(screen.getByText('42')).toBeInTheDocument();
     expect(screen.getByText('7')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByText('Capacity 3')).toBeInTheDocument();
+    expect(screen.getByText('Alive')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /open player 1 profile/i })).toHaveAttribute('href', '/players/701');
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/players', {
       credentials: 'include',
       headers: expect.any(Headers),
