@@ -33,24 +33,38 @@ func ApplyRoles(ctx context.Context, pool *pgxpool.Pool, plan *RoleSourcePlan) e
 // used by the all-or-nothing game reset flow as well as the normal sync page.
 func ApplyRolesTx(ctx context.Context, tx models.DBTX, plan *RoleSourcePlan) error {
 	q := models.New(tx)
+	roleIDs := make(map[string]int32, len(plan.Roles))
+	abilityIDs := make(map[string]int32)
+	perkIDs := make(map[string]int32)
+	categoryIDs := make(map[string]int32)
 
 	for _, rp := range plan.Roles {
-		roleID, err := upsertRole(ctx, q, rp)
-		if err != nil {
-			return err
+		roleID, ok := roleIDs[rp.Doc.Name]
+		if !ok {
+			var err error
+			roleID, err = upsertRole(ctx, q, rp)
+			if err != nil {
+				return err
+			}
+			roleIDs[rp.Doc.Name] = roleID
 		}
 
 		for _, ap := range rp.Abilities {
-			abilityID, err := upsertAbility(ctx, q, ap.Doc)
-			if err != nil {
-				return err
+			abilityID, ok := abilityIDs[ap.Doc.Name]
+			if !ok {
+				var err error
+				abilityID, err = upsertAbility(ctx, q, ap.Doc)
+				if err != nil {
+					return err
+				}
+				abilityIDs[ap.Doc.Name] = abilityID
 			}
 			if err := q.CreateRoleAbilityJoin(ctx, models.CreateRoleAbilityJoinParams{
 				RoleID: roleID, AbilityID: abilityID,
 			}); err != nil {
 				return fmt.Errorf("link ability %q to role %q: %w", ap.Doc.Name, rp.Doc.Name, err)
 			}
-			if err := linkCategories(ctx, q, ap.Doc.Categories, func(catID int32) error {
+			if err := linkCategories(ctx, q, ap.Doc.Categories, categoryIDs, func(catID int32) error {
 				return q.CreateAbilityCategoryJoin(ctx, models.CreateAbilityCategoryJoinParams{
 					AbilityID: abilityID, CategoryID: catID,
 				})
@@ -60,9 +74,14 @@ func ApplyRolesTx(ctx context.Context, tx models.DBTX, plan *RoleSourcePlan) err
 		}
 
 		for _, pp := range rp.Perks {
-			perkID, err := upsertPerk(ctx, q, pp.Doc)
-			if err != nil {
-				return err
+			perkID, ok := perkIDs[pp.Doc.Name]
+			if !ok {
+				var err error
+				perkID, err = upsertPerk(ctx, q, pp.Doc)
+				if err != nil {
+					return err
+				}
+				perkIDs[pp.Doc.Name] = perkID
 			}
 			if err := q.CreateRolePerkJoin(ctx, models.CreateRolePerkJoinParams{
 				RoleID: roleID, PerkID: perkID,
@@ -92,13 +111,20 @@ func ApplyItems(ctx context.Context, pool *pgxpool.Pool, plan *ItemSourcePlan) e
 // ApplyItemsTx applies an item plan using the caller's transaction.
 func ApplyItemsTx(ctx context.Context, tx models.DBTX, plan *ItemSourcePlan) error {
 	q := models.New(tx)
+	itemIDs := make(map[string]int32, len(plan.Items))
+	categoryIDs := make(map[string]int32)
 
 	for _, ip := range plan.Items {
-		itemID, err := upsertItem(ctx, q, ip.Doc)
-		if err != nil {
-			return err
+		itemID, ok := itemIDs[ip.Doc.Name]
+		if !ok {
+			var err error
+			itemID, err = upsertItem(ctx, q, ip.Doc)
+			if err != nil {
+				return err
+			}
+			itemIDs[ip.Doc.Name] = itemID
 		}
-		if err := linkCategories(ctx, q, ip.Doc.Categories, func(catID int32) error {
+		if err := linkCategories(ctx, q, ip.Doc.Categories, categoryIDs, func(catID int32) error {
 			return q.CreateItemCategoryJoin(ctx, models.CreateItemCategoryJoinParams{
 				ItemID: itemID, CategoryID: catID,
 			})
@@ -210,16 +236,21 @@ func upsertItem(ctx context.Context, q *models.Queries, doc ItemDoc) (int32, err
 // linkCategories resolves category names to IDs and invokes fn per ID.
 // Unknown categories are skipped silently (they are surfaced as warnings in
 // the preview plan).
-func linkCategories(ctx context.Context, q *models.Queries, names []string, fn func(catID int32) error) error {
+func linkCategories(ctx context.Context, q *models.Queries, names []string, cache map[string]int32, fn func(catID int32) error) error {
 	for _, name := range names {
-		cat, err := q.GetCategoryByName(ctx, name)
-		if errors.Is(err, pgx.ErrNoRows) {
-			continue
+		catID, ok := cache[name]
+		if !ok {
+			cat, err := q.GetCategoryByName(ctx, name)
+			if errors.Is(err, pgx.ErrNoRows) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			catID = cat.ID
+			cache[name] = catID
 		}
-		if err != nil {
-			return err
-		}
-		if err := fn(cat.ID); err != nil {
+		if err := fn(catID); err != nil {
 			return err
 		}
 	}

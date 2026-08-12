@@ -151,13 +151,15 @@ type Service struct {
 	allowUnsafeURLs bool
 }
 
+const syncFetchTimeout = 90 * time.Second
+
 // New creates a Service. envURLs is the map built from GOOD_ROLES_CSV /
 // EVIL_ROLES_CSV / NEUTRAL_ROLES_CSV / ITEM_CSV (empty values are fine).
 func New(pool *pgxpool.Pool, envURLs map[string]string) *Service {
 	return &Service{
 		pool:    pool,
 		envURLs: envURLs,
-		client:  &http.Client{Timeout: 30 * time.Second},
+		client:  &http.Client{Timeout: syncFetchTimeout},
 	}
 }
 

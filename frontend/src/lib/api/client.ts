@@ -9,6 +9,7 @@ interface ErrorEnvelope {
   error?: {
     code?: string;
     message?: string;
+    fields?: Record<string, unknown>;
   };
 }
 
@@ -16,7 +17,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly code?: string
+    public readonly code?: string,
+    public readonly fields?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'ApiError';
@@ -52,7 +54,12 @@ export function createApiClient({ fetcher = fetch, csrfPath = '/api/v1/auth/csrf
 
     const body = (await response.json()) as T & ErrorEnvelope;
     if (!response.ok) {
-      throw new ApiError(body.error?.message ?? `Request failed (${response.status})`, response.status, body.error?.code);
+      throw new ApiError(
+        body.error?.message ?? `Request failed (${response.status})`,
+        response.status,
+        body.error?.code,
+        body.error?.fields
+      );
     }
 
     return body;

@@ -3,11 +3,13 @@
   import { createApiClient } from '$lib/api/client';
 
   type Source = { id: number; name: string; kind: string; alignment: string; url: string; enabled: boolean };
+  type SyncRun = { id: number; source_id: number; source_name: string; status: string; phase: string; progress: number; total: number; counts: Record<string, number>; error: string };
   let sources = $state<Source[]>([]);
   let error = $state<string | null>(null);
   let status = $state<string | null>(null);
   let preview = $state<{ source: Source; status: string; counts?: Record<string, number>; error?: string }[]>([]);
   let busy = $state<number | 'preview' | null>(null);
+  let runs = $state<Record<number, SyncRun>>({});
   const api = createApiClient();
 
   async function load() {
@@ -33,11 +35,43 @@
     if (!source.enabled || !source.url) { error = 'Enable and configure the source before applying it.'; return; }
     if (!confirm(`Apply ${source.name} to the game catalog?`)) return;
     busy = source.id; error = null; status = null;
-    try { await api.post('/api/v1/sync/apply', { body: JSON.stringify({ source_id: source.id }), headers: { 'Content-Type': 'application/json' } }); status = `${source.name} applied successfully.`; }
-    catch (cause) { error = cause instanceof Error ? cause.message : 'Sync apply failed'; }
+    try {
+      const result = await api.post<{ run: SyncRun }>('/api/v1/sync/apply', { body: JSON.stringify({ source_id: source.id }), headers: { 'Content-Type': 'application/json' } });
+      runs = { ...runs, [source.id]: result.run };
+      status = `${source.name} queued. This page will update as the sync runs.`;
+      await pollRun(source, result.run.id);
+    }
+    catch (cause) {
+      if (cause instanceof Error && 'fields' in cause) {
+        const fields = (cause as Error & { fields?: Record<string, unknown> }).fields;
+        const phase = typeof fields?.phase === 'string' ? ` (${fields.phase})` : '';
+        const detail = typeof fields?.detail === 'string' ? `: ${fields.detail}` : '';
+        error = `${cause.message}${phase}${detail}`;
+      } else {
+        error = cause instanceof Error ? cause.message : 'Sync apply failed';
+      }
+    }
     finally { busy = null; }
   }
-  onMount(load);
+  async function pollRun(source: Source, runID: number) {
+    for (let attempt = 0; attempt < 120; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const result = await api.get<{ run: SyncRun }>(`/api/v1/sync/runs/${runID}`);
+      runs = { ...runs, [source.id]: result.run };
+      if (result.run.status === 'applied') {
+        status = `${source.name} applied successfully.`;
+        return;
+      }
+      if (result.run.status === 'failed') {
+        error = `${source.name} sync failed${result.run.phase ? ` (${result.run.phase})` : ''}: ${result.run.error || 'unknown error'}`;
+        return;
+      }
+    }
+    error = `${source.name} is still running. Refresh this page to check its status.`;
+  }
+  onMount(() => {
+    void load();
+  });
 </script>
 
 <svelte:head><title>Sync | Betrayal Admin</title></svelte:head>
@@ -63,6 +97,14 @@
             <button type="button" class="rounded border border-slate-600 px-3 py-2 text-sm hover:border-slate-400 disabled:opacity-50" disabled={busy !== null} onclick={() => saveSource(source)}>Save</button>
             <button type="button" class="rounded border border-amber-500 px-3 py-2 text-sm text-amber-200 hover:bg-amber-500/10 disabled:opacity-50" disabled={busy !== null} onclick={() => apply(source)}>Apply</button>
           </div>
+          {#if runs[source.id]}
+            {@const run = runs[source.id]}
+            <div class="mt-4 rounded border border-slate-800 bg-slate-950/50 p-3 text-sm">
+              <div class="flex justify-between gap-3 text-slate-400"><span>Run #{run.id} · {run.phase || run.status}</span><span>{run.status}</span></div>
+              {#if run.total > 0}<progress class="mt-2 h-2 w-full accent-teal-400" max={run.total} value={run.progress}></progress>{/if}
+              {#if run.error}<p class="mt-2 text-red-300">{run.error}</p>{/if}
+            </div>
+          {/if}
         </article>
       {:else}
         <p class="rounded border border-slate-800 p-6 text-slate-400">No sync sources configured.</p>

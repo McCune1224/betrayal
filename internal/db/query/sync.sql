@@ -27,5 +27,26 @@ INSERT INTO sync_run (source_id, source_name, status, action_counts, run_by, err
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING *;
 
+-- name: CreatePendingSyncRun :one
+INSERT INTO sync_run (source_id, source_name, status, action_counts, run_by, error_message, started_at, phase, progress, total)
+VALUES ($1, $2, 'pending', '{}', $3, '', NOW(), 'queued', 0, 4)
+RETURNING *;
+
+-- name: GetSyncRun :one
+SELECT * FROM sync_run WHERE id = $1;
+
+-- name: GetActiveSyncRunBySource :one
+SELECT * FROM sync_run
+WHERE source_id = $1 AND status IN ('pending', 'running')
+ORDER BY started_at DESC
+LIMIT 1;
+
+-- name: UpdateSyncRun :one
+UPDATE sync_run
+SET status = $2, phase = $3, progress = $4, total = $5,
+    action_counts = $6, error_message = $7, finished_at = $8
+WHERE id = $1
+RETURNING *;
+
 -- name: ListSyncRuns :many
 SELECT * FROM sync_run ORDER BY started_at DESC LIMIT $1;

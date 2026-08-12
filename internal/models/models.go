@@ -117,6 +117,11 @@ type AbilityInfo struct {
 	Rarity         Rarity      `json:"rarity"`
 }
 
+type AbilityNameMap struct {
+	ID          int32       `json:"id"`
+	CanonicalID interface{} `json:"canonical_id"`
+}
+
 type ActionChannel struct {
 	ChannelID string `json:"channel_id"`
 }
@@ -180,6 +185,11 @@ type ItemCategory struct {
 	CategoryID int32 `json:"category_id"`
 }
 
+type ItemNameMap struct {
+	ID          int32       `json:"id"`
+	CanonicalID interface{} `json:"canonical_id"`
+}
+
 type Log struct {
 	ID            int32              `json:"id"`
 	Timestamp     pgtype.Timestamptz `json:"timestamp"`
@@ -198,6 +208,11 @@ type PerkInfo struct {
 	ID          int32  `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+}
+
+type PerkNameMap struct {
+	ID          int32       `json:"id"`
+	CanonicalID interface{} `json:"canonical_id"`
 }
 
 type Player struct {
@@ -272,6 +287,11 @@ type RoleAbility struct {
 	AbilityID int32 `json:"ability_id"`
 }
 
+type RoleNameMap struct {
+	ID          int32       `json:"id"`
+	CanonicalID interface{} `json:"canonical_id"`
+}
+
 type RolePerk struct {
 	RoleID int32 `json:"role_id"`
 	PerkID int32 `json:"perk_id"`
@@ -294,6 +314,9 @@ type SyncRun struct {
 	ErrorMessage string             `json:"error_message"`
 	StartedAt    pgtype.Timestamptz `json:"started_at"`
 	FinishedAt   pgtype.Timestamptz `json:"finished_at"`
+	Phase        string             `json:"phase"`
+	Progress     int32              `json:"progress"`
+	Total        int32              `json:"total"`
 }
 
 type SyncSource struct {

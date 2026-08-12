@@ -2,10 +2,8 @@ package datasync
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/mccune1224/betrayal/internal/models"
 )
 
@@ -17,6 +15,38 @@ func PlanRoles(ctx context.Context, q *models.Queries, alignment models.Alignmen
 		Alignment: alignment,
 		Counts:    map[Action]int{},
 	}
+	roles, err := q.Listrole(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list roles: %w", err)
+	}
+	abilities, err := q.ListAbilityInfo(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list abilities: %w", err)
+	}
+	perks, err := q.ListPerkInfo(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list perks: %w", err)
+	}
+	categories, err := q.ListCategory(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list categories: %w", err)
+	}
+	rolesByName := make(map[string]models.Role, len(roles))
+	for _, role := range roles {
+		rolesByName[role.Name] = role
+	}
+	abilitiesByName := make(map[string]models.AbilityInfo, len(abilities))
+	for _, ability := range abilities {
+		abilitiesByName[ability.Name] = ability
+	}
+	perksByName := make(map[string]models.PerkInfo, len(perks))
+	for _, perk := range perks {
+		perksByName[perk.Name] = perk
+	}
+	categoriesByName := make(map[string]models.Category, len(categories))
+	for _, category := range categories {
+		categoriesByName[category.Name] = category
+	}
 
 	for _, doc := range docs {
 		rp := RolePlan{
@@ -25,14 +55,11 @@ func PlanRoles(ctx context.Context, q *models.Queries, alignment models.Alignmen
 			Perks:     []PerkPlan{},
 		}
 
-		existing, err := q.GetRoleByName(ctx, doc.Name)
-		switch {
-		case errors.Is(err, pgx.ErrNoRows):
+		existing, exists := rolesByName[doc.Name]
+		if !exists {
 			rp.Action = ActionCreate
 			rp.Changes = append(rp.Changes, "new role")
-		case err != nil:
-			return nil, fmt.Errorf("lookup role %q: %w", doc.Name, err)
-		default:
+		} else {
 			rp.OldDesc = existing.Description
 			rp.Changes = diffString(existing.Description, doc.Description, "description", rp.Changes)
 			if existing.Alignment != doc.Alignment {
@@ -46,14 +73,11 @@ func PlanRoles(ctx context.Context, q *models.Queries, alignment models.Alignmen
 		// Abilities.
 		for _, a := range doc.Abilities {
 			ap := AbilityPlan{Doc: a}
-			existingAbility, err := q.GetAbilityInfoByName(ctx, a.Name)
-			switch {
-			case errors.Is(err, pgx.ErrNoRows):
+			existingAbility, exists := abilitiesByName[a.Name]
+			if !exists {
 				ap.Action = ActionCreate
 				ap.Changes = append(ap.Changes, "new ability")
-			case err != nil:
-				return nil, fmt.Errorf("lookup ability %q: %w", a.Name, err)
-			default:
+			} else {
 				ap.OldDesc = existingAbility.Description
 				ap.Changes = diffString(existingAbility.Description, a.Description, "description", ap.Changes)
 				if existingAbility.DefaultCharges != a.DefaultCharges {
@@ -73,11 +97,9 @@ func PlanRoles(ctx context.Context, q *models.Queries, alignment models.Alignmen
 
 			// Flag categories that don't exist yet so the UI can warn before apply.
 			for _, cat := range a.Categories {
-				if _, err := q.GetCategoryByName(ctx, cat); errors.Is(err, pgx.ErrNoRows) {
+				if _, exists := categoriesByName[cat]; !exists {
 					plan.Warnings = append(plan.Warnings,
 						fmt.Sprintf("ability %q: category %q not found — link will be skipped", a.Name, cat))
-				} else if err != nil {
-					return nil, fmt.Errorf("lookup category %q: %w", cat, err)
 				}
 			}
 		}
@@ -85,14 +107,11 @@ func PlanRoles(ctx context.Context, q *models.Queries, alignment models.Alignmen
 		// Perks.
 		for _, p := range doc.Perks {
 			pp := PerkPlan{Doc: p}
-			existingPerk, err := q.GetPerkInfoByName(ctx, p.Name)
-			switch {
-			case errors.Is(err, pgx.ErrNoRows):
+			existingPerk, exists := perksByName[p.Name]
+			if !exists {
 				pp.Action = ActionCreate
 				pp.Changes = append(pp.Changes, "new passive")
-			case err != nil:
-				return nil, fmt.Errorf("lookup perk %q: %w", p.Name, err)
-			default:
+			} else {
 				pp.OldDesc = existingPerk.Description
 				pp.Changes = diffString(existingPerk.Description, p.Description, "description", pp.Changes)
 				pp.Action = actionFor(pp.Changes)
@@ -109,17 +128,30 @@ func PlanRoles(ctx context.Context, q *models.Queries, alignment models.Alignmen
 // PlanItems diffs parsed item documents against the database (read-only).
 func PlanItems(ctx context.Context, q *models.Queries, docs []ItemDoc) (*ItemSourcePlan, error) {
 	plan := &ItemSourcePlan{Counts: map[Action]int{}}
+	items, err := q.ListItem(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list items: %w", err)
+	}
+	categories, err := q.ListCategory(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list categories: %w", err)
+	}
+	itemsByName := make(map[string]models.Item, len(items))
+	for _, item := range items {
+		itemsByName[item.Name] = item
+	}
+	categoriesByName := make(map[string]models.Category, len(categories))
+	for _, category := range categories {
+		categoriesByName[category.Name] = category
+	}
 
 	for _, doc := range docs {
 		ip := ItemPlan{Doc: doc}
-		existing, err := q.GetItemByName(ctx, doc.Name)
-		switch {
-		case errors.Is(err, pgx.ErrNoRows):
+		existing, exists := itemsByName[doc.Name]
+		if !exists {
 			ip.Action = ActionCreate
 			ip.Changes = append(ip.Changes, "new item")
-		case err != nil:
-			return nil, fmt.Errorf("lookup item %q: %w", doc.Name, err)
-		default:
+		} else {
 			ip.OldDesc = existing.Description
 			ip.Changes = diffString(existing.Description, doc.Description, "description", ip.Changes)
 			if existing.Rarity != doc.Rarity {
@@ -134,11 +166,9 @@ func PlanItems(ctx context.Context, q *models.Queries, docs []ItemDoc) (*ItemSou
 		plan.Items = append(plan.Items, ip)
 
 		for _, cat := range doc.Categories {
-			if _, err := q.GetCategoryByName(ctx, cat); errors.Is(err, pgx.ErrNoRows) {
+			if _, exists := categoriesByName[cat]; !exists {
 				plan.Warnings = append(plan.Warnings,
 					fmt.Sprintf("item %q: category %q not found — link will be skipped", doc.Name, cat))
-			} else if err != nil {
-				return nil, fmt.Errorf("lookup category %q: %w", cat, err)
 			}
 		}
 	}

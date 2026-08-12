@@ -34,7 +34,7 @@ func TestMigration32ReconcilesDuplicateAbilityNames(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { r.Close() })
 	require.NoError(t, r.Up())
-	require.NoError(t, r.DownSteps(2))
+	require.NoError(t, r.DownSteps(3))
 
 	conn, err := pgx.Connect(context.Background(), dsn)
 	require.NoError(t, err)
@@ -52,7 +52,7 @@ func TestMigration32ReconcilesDuplicateAbilityNames(t *testing.T) {
 }
 
 func TestEnsureUpToDateRejectsDirtyVersion(t *testing.T) {
-	for _, version := range []uint{32, 33} {
+	for _, version := range []uint{32, 33, 34} {
 		t.Run(fmt.Sprintf("version_%d", version), func(t *testing.T) {
 			dsn := scratchDB(t)
 			r, err := dbmigrate.New(dsn)

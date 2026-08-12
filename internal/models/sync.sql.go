@@ -11,10 +11,42 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createPendingSyncRun = `-- name: CreatePendingSyncRun :one
+INSERT INTO sync_run (source_id, source_name, status, action_counts, run_by, error_message, started_at, phase, progress, total)
+VALUES ($1, $2, 'pending', '{}', $3, '', NOW(), 'queued', 0, 4)
+RETURNING id, source_id, source_name, status, action_counts, run_by, error_message, started_at, finished_at, phase, progress, total
+`
+
+type CreatePendingSyncRunParams struct {
+	SourceID   pgtype.Int4 `json:"source_id"`
+	SourceName string      `json:"source_name"`
+	RunBy      string      `json:"run_by"`
+}
+
+func (q *Queries) CreatePendingSyncRun(ctx context.Context, arg CreatePendingSyncRunParams) (SyncRun, error) {
+	row := q.db.QueryRow(ctx, createPendingSyncRun, arg.SourceID, arg.SourceName, arg.RunBy)
+	var i SyncRun
+	err := row.Scan(
+		&i.ID,
+		&i.SourceID,
+		&i.SourceName,
+		&i.Status,
+		&i.ActionCounts,
+		&i.RunBy,
+		&i.ErrorMessage,
+		&i.StartedAt,
+		&i.FinishedAt,
+		&i.Phase,
+		&i.Progress,
+		&i.Total,
+	)
+	return i, err
+}
+
 const createSyncRun = `-- name: CreateSyncRun :one
 INSERT INTO sync_run (source_id, source_name, status, action_counts, run_by, error_message, started_at, finished_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, source_id, source_name, status, action_counts, run_by, error_message, started_at, finished_at
+RETURNING id, source_id, source_name, status, action_counts, run_by, error_message, started_at, finished_at, phase, progress, total
 `
 
 type CreateSyncRunParams struct {
@@ -50,6 +82,60 @@ func (q *Queries) CreateSyncRun(ctx context.Context, arg CreateSyncRunParams) (S
 		&i.ErrorMessage,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.Phase,
+		&i.Progress,
+		&i.Total,
+	)
+	return i, err
+}
+
+const getActiveSyncRunBySource = `-- name: GetActiveSyncRunBySource :one
+SELECT id, source_id, source_name, status, action_counts, run_by, error_message, started_at, finished_at, phase, progress, total FROM sync_run
+WHERE source_id = $1 AND status IN ('pending', 'running')
+ORDER BY started_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetActiveSyncRunBySource(ctx context.Context, sourceID pgtype.Int4) (SyncRun, error) {
+	row := q.db.QueryRow(ctx, getActiveSyncRunBySource, sourceID)
+	var i SyncRun
+	err := row.Scan(
+		&i.ID,
+		&i.SourceID,
+		&i.SourceName,
+		&i.Status,
+		&i.ActionCounts,
+		&i.RunBy,
+		&i.ErrorMessage,
+		&i.StartedAt,
+		&i.FinishedAt,
+		&i.Phase,
+		&i.Progress,
+		&i.Total,
+	)
+	return i, err
+}
+
+const getSyncRun = `-- name: GetSyncRun :one
+SELECT id, source_id, source_name, status, action_counts, run_by, error_message, started_at, finished_at, phase, progress, total FROM sync_run WHERE id = $1
+`
+
+func (q *Queries) GetSyncRun(ctx context.Context, id int64) (SyncRun, error) {
+	row := q.db.QueryRow(ctx, getSyncRun, id)
+	var i SyncRun
+	err := row.Scan(
+		&i.ID,
+		&i.SourceID,
+		&i.SourceName,
+		&i.Status,
+		&i.ActionCounts,
+		&i.RunBy,
+		&i.ErrorMessage,
+		&i.StartedAt,
+		&i.FinishedAt,
+		&i.Phase,
+		&i.Progress,
+		&i.Total,
 	)
 	return i, err
 }
@@ -75,7 +161,7 @@ func (q *Queries) GetSyncSourceByName(ctx context.Context, name string) (SyncSou
 }
 
 const listSyncRuns = `-- name: ListSyncRuns :many
-SELECT id, source_id, source_name, status, action_counts, run_by, error_message, started_at, finished_at FROM sync_run ORDER BY started_at DESC LIMIT $1
+SELECT id, source_id, source_name, status, action_counts, run_by, error_message, started_at, finished_at, phase, progress, total FROM sync_run ORDER BY started_at DESC LIMIT $1
 `
 
 func (q *Queries) ListSyncRuns(ctx context.Context, limit int32) ([]SyncRun, error) {
@@ -97,6 +183,9 @@ func (q *Queries) ListSyncRuns(ctx context.Context, limit int32) ([]SyncRun, err
 			&i.ErrorMessage,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.Phase,
+			&i.Progress,
+			&i.Total,
 		); err != nil {
 			return nil, err
 		}
@@ -139,6 +228,54 @@ func (q *Queries) ListSyncSources(ctx context.Context) ([]SyncSource, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateSyncRun = `-- name: UpdateSyncRun :one
+UPDATE sync_run
+SET status = $2, phase = $3, progress = $4, total = $5,
+    action_counts = $6, error_message = $7, finished_at = $8
+WHERE id = $1
+RETURNING id, source_id, source_name, status, action_counts, run_by, error_message, started_at, finished_at, phase, progress, total
+`
+
+type UpdateSyncRunParams struct {
+	ID           int64              `json:"id"`
+	Status       string             `json:"status"`
+	Phase        string             `json:"phase"`
+	Progress     int32              `json:"progress"`
+	Total        int32              `json:"total"`
+	ActionCounts []byte             `json:"action_counts"`
+	ErrorMessage string             `json:"error_message"`
+	FinishedAt   pgtype.Timestamptz `json:"finished_at"`
+}
+
+func (q *Queries) UpdateSyncRun(ctx context.Context, arg UpdateSyncRunParams) (SyncRun, error) {
+	row := q.db.QueryRow(ctx, updateSyncRun,
+		arg.ID,
+		arg.Status,
+		arg.Phase,
+		arg.Progress,
+		arg.Total,
+		arg.ActionCounts,
+		arg.ErrorMessage,
+		arg.FinishedAt,
+	)
+	var i SyncRun
+	err := row.Scan(
+		&i.ID,
+		&i.SourceID,
+		&i.SourceName,
+		&i.Status,
+		&i.ActionCounts,
+		&i.RunBy,
+		&i.ErrorMessage,
+		&i.StartedAt,
+		&i.FinishedAt,
+		&i.Phase,
+		&i.Progress,
+		&i.Total,
+	)
+	return i, err
 }
 
 const updateSyncSource = `-- name: UpdateSyncSource :one

@@ -71,6 +71,7 @@ type Server struct {
 	sessionStore   *sessions.CookieStore
 	railwayClient  *railway.Client
 	syncService    *datasync.Service
+	syncHandler    *api.SyncHandler
 
 	// migrateRunner is built lazily on first use (the embedded runner opens a
 	// connection eagerly, so constructing it at startup would add a blocking
@@ -211,6 +212,7 @@ func (s *Server) setupRoutes() {
 	apiReadinessHandler := api.NewReadinessHandler(s.dbPool, s.discordSession)
 	apiAdminHandler := api.NewAdminHandler(s.dbPool, s.railwayClient, s.getMigrateRunner, gamereset.New(s.dbPool, s.syncService))
 	apiSyncHandler := api.NewSyncHandler(s.dbPool, s.syncService)
+	s.syncHandler = apiSyncHandler
 	apiDiscordResourceHandler := api.NewDiscordResourceHandler(s.discordSession)
 	apiAuthMiddleware := api.NewAuthMiddleware(s.sessionStore)
 	browserAuth := webmiddleware.NewAuthMiddleware(s.sessionStore)
@@ -308,6 +310,7 @@ func (s *Server) setupRoutes() {
 	apiSync.GET("/sources", apiSyncHandler.Sources)
 	apiSync.POST("/preview", apiSyncHandler.Preview, apiMigrateRate)
 	apiSync.POST("/apply", apiSyncHandler.Apply, apiMigrateRate)
+	apiSync.GET("/runs/:id", apiSyncHandler.Run)
 	apiSync.PUT("/sources/:id", apiSyncHandler.UpdateSource, apiMigrateRate)
 
 	serveUI := func(c echo.Context) error { ui.Handler(c.Response(), c.Request()); return nil }
@@ -340,5 +343,8 @@ func (s *Server) Start() error {
 // Shutdown gracefully stops the server
 func (s *Server) Shutdown(ctx context.Context) error {
 	s.logger.Info().Msg("Shutting down web server")
+	if s.syncHandler != nil {
+		s.syncHandler.Shutdown()
+	}
 	return s.echo.Shutdown(ctx)
 }

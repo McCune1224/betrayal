@@ -86,6 +86,27 @@ describe('API client', () => {
     });
   });
 
+  it('preserves diagnostic fields from JSON error envelopes', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: {
+            code: 'sync_apply_failed',
+            message: 'sync apply failed',
+            fields: { phase: 'plan', detail: 'database timeout', duration_ms: 30000 }
+          }
+        }),
+        { status: 502, headers: { 'content-type': 'application/json' } }
+      )
+    );
+    const client = createApiClient({ fetcher });
+
+    await expect(client.get('/api/v1/sync/apply')).rejects.toMatchObject({
+      code: 'sync_apply_failed',
+      fields: { phase: 'plan', detail: 'database timeout', duration_ms: 30000 }
+    });
+  });
+
   it('rejects HTML returned with a successful HTTP status', async () => {
     const fetcher = vi.fn().mockResolvedValue(
       new Response('<!doctype html><title>Login</title>', {
