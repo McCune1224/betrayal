@@ -4,7 +4,9 @@
   import { createApiClient } from '$lib/api/client';
   import type { PlayerDetail } from '$lib/player-types';
 
+  type CatalogItem = { id: number; name: string; description: string; rarity: string; cost: number };
   let player = $state<PlayerDetail | null>(null);
+  let catalogItems = $state<CatalogItem[]>([]);
   let error = $state('');
   let loading = $state(true);
   let mutating = $state(false);
@@ -14,17 +16,50 @@
   async function load() {
     loading = true;
     error = '';
-    try { player = await createApiClient().get<PlayerDetail>(`/api/v1/players/${id}`); }
-    catch (cause) { error = cause instanceof Error ? cause.message : 'Could not load player'; }
-    finally { loading = false; }
+    try {
+      const api = createApiClient();
+      const [detail, items] = await Promise.all([
+        api.get<PlayerDetail>(`/api/v1/players/${id}`),
+        api.get<CatalogItem[]>('/api/v1/catalog/items').catch(() => [] as CatalogItem[])
+      ]);
+      player = detail;
+      catalogItems = items;
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : 'Could not load player';
+    } finally {
+      loading = false;
+    }
   }
 
   async function mutate(path: string, body: unknown) {
     mutating = true;
     mutationError = '';
-    try { player = await createApiClient().post<PlayerDetail>(`/api/v1/players/${id}/${path}`, { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); }
-    catch (cause) { mutationError = cause instanceof Error ? cause.message : 'Mutation failed'; }
-    finally { mutating = false; }
+    try {
+      player = await createApiClient().post<PlayerDetail>(`/api/v1/players/${id}/${path}`, {
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+    } catch (cause) {
+      mutationError = cause instanceof Error ? cause.message : 'Mutation failed';
+    } finally {
+      mutating = false;
+    }
+  }
+
+  function submitItem(event: SubmitEvent) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget as HTMLFormElement);
+    const name = String(form.get('name') ?? '');
+    if (name) void mutate('items/add', { name, quantity: Number(form.get('quantity') || 1) });
+  }
+
+  function submitNote(event: SubmitEvent) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget as HTMLFormElement);
+    const info = String(form.get('info') ?? '').trim();
+    const position = Number(form.get('position') || 1);
+    if (info) void mutate('notes/add', { info, position });
+    (event.currentTarget as HTMLFormElement).reset();
   }
 
   onMount(load);
@@ -56,13 +91,25 @@
         <ul aria-label="Items" class="resource-list">
           {#each player.items as item (item.id)}<li><span>{item.name} <small>× {item.quantity}</small></span><button class="btn" disabled={mutating} onclick={() => mutate('items/remove', { name: item.name })}>Remove</button></li>{:else}<li class="empty-row">No items assigned.</li>{/each}
         </ul>
-        <form onsubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); mutate('items/add', { name: form.get('name'), quantity: Number(form.get('quantity') || 1) }); }} class="inline-form"><input name="name" aria-label="Item name" placeholder="Add an item" /><input name="quantity" type="number" min="1" value="1" aria-label="Quantity" /><button class="btn btn-primary" disabled={mutating}>Add item</button></form>
+        <form onsubmit={submitItem} class="inline-form">
+          <select name="name" aria-label="Item to add" required>
+            <option value="">Select an item…</option>
+            {#each catalogItems as item (item.id)}<option value={item.name}>{item.name}</option>{/each}
+          </select>
+          <input name="quantity" type="number" min="1" value="1" aria-label="Quantity" />
+          <button class="btn btn-primary" disabled={mutating}>Add item</button>
+        </form>
       </section>
       <section class="profile-section">
         <div class="section-heading"><div><p class="eyebrow">Game log</p><h2>Notes</h2></div><span>{player.notes.length} notes</span></div>
         <ul aria-label="Notes" class="resource-list">
           {#each player.notes as note (note.id)}<li><span>{note.info}</span><button class="btn" disabled={mutating} onclick={() => mutate('notes/remove', { note_id: note.id })}>Remove</button></li>{:else}<li class="empty-row">No notes yet.</li>{/each}
         </ul>
+        <form onsubmit={submitNote} class="inline-form">
+          <input name="info" aria-label="Note text" placeholder="Add a note" required />
+          <input name="position" type="number" min="1" value="1" aria-label="Note position" />
+          <button class="btn btn-primary" disabled={mutating}>Add note</button>
+        </form>
       </section>
     {/if}
   </div>

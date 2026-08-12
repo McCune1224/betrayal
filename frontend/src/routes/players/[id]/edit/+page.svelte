@@ -1,6 +1,51 @@
 <script lang="ts">
-  import { page } from '$app/state'; import { createApiClient } from '$lib/api/client'; import { goto } from '$app/navigation';
-  let id = $derived(page.params.id); let error = $state(''); let saving = $state(false);
-  async function save(event: SubmitEvent) { event.preventDefault(); saving=true; error=''; const f=new FormData(event.currentTarget as HTMLFormElement); try { await createApiClient().put(`/api/v1/players/${id}`, { headers:{'content-type':'application/json'}, body:JSON.stringify({coins:Number(f.get('coins')),luck:Number(f.get('luck')),alive:f.get('alive')==='true',alignment:f.get('alignment'),item_limit:Number(f.get('item_limit')),role:f.get('role')}) }); await goto(`/players/${id}`); } catch(e) { error=e instanceof Error?e.message:'Could not save player'; } finally { saving=false; } }
+  import { onMount } from 'svelte';
+  import { page } from '$app/state';
+  import { createApiClient } from '$lib/api/client';
+  import { goto } from '$app/navigation';
+  import type { Player } from '$lib/player-types';
+
+  let id = $derived(page.params.id);
+  let player = $state<Player | null>(null);
+  let error = $state('');
+  let loading = $state(true);
+  let saving = $state(false);
+
+  onMount(async () => {
+    try {
+      player = await createApiClient().get<Player>(`/api/v1/players/${id}`);
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : 'Could not load player';
+    } finally {
+      loading = false;
+    }
+  });
+
+  async function save(event: SubmitEvent) {
+    event.preventDefault();
+    saving = true;
+    error = '';
+    const f = new FormData(event.currentTarget as HTMLFormElement);
+    try {
+      await createApiClient().put(`/api/v1/players/${id}`, {
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          coins: Number(f.get('coins')),
+          luck: Number(f.get('luck')),
+          alive: f.get('alive') === 'true',
+          alignment: f.get('alignment'),
+          item_limit: Number(f.get('item_limit')),
+          role: f.get('role')
+        })
+      });
+      await goto(`/players/${id}`);
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : 'Could not save player';
+    } finally {
+      saving = false;
+    }
+  }
 </script>
-<svelte:head><title>Edit player profile | Betrayal Admin</title></svelte:head><main class="page-shell"><div class="form-page"><a href={`/players/${id}`} class="back-link">← Back to profile</a><p class="eyebrow">Player profile / settings</p><h1 class="display-title">Edit profile</h1><p class="lede">Update game state and resources. Discord identity remains managed by the roster.</p>{#if error}<p role="alert" class="state state-error">{error}</p>{/if}<form onsubmit={save} class="form-card"><div class="form-intro"><span class="form-step">02</span><div><h2>Game state</h2><p>These values affect the live roster immediately after saving.</p></div></div><label class="field">Role<input name="role" required placeholder="Role name" /></label><div class="two-col"><label class="field">Coins<input name="coins" type="number" required /></label><label class="field">Luck<input name="luck" type="number" required /></label></div><label class="field">Item capacity<input name="item_limit" type="number" min="0" required /></label><label class="field">Alignment<select name="alignment"><option>GOOD</option><option>NEUTRAL</option><option>EVIL</option></select></label><label class="field">Roster state<select name="alive"><option value="true">Alive</option><option value="false">Dead</option></select></label><div class="form-actions"><a href={`/players/${id}`} class="btn">Cancel</a><button class="btn btn-primary" disabled={saving}>{saving?'Saving…':'Save changes'}</button></div></form></div></main>
+
+<svelte:head><title>Edit player profile | Betrayal Admin</title></svelte:head>
+<main class="page-shell"><div class="form-page"><a href={`/players/${id}`} class="back-link">← Back to profile</a><p class="eyebrow">Player profile / settings</p><h1 class="display-title">Edit profile</h1><p class="lede">Update game state and resources. Discord identity remains managed by the roster.</p>{#if loading}<p role="status" class="state">Loading player profile…</p>{:else if error && !player}<p role="alert" class="state state-error">{error}</p>{:else if player}{#if error}<p role="alert" class="state state-error">{error}</p>{/if}<form onsubmit={save} class="form-card"><div class="form-intro"><span class="form-step">02</span><div><h2>Game state</h2><p>These values affect the live roster immediately after saving.</p></div></div><label class="field">Role<input name="role" required value={player.role} /></label><div class="two-col"><label class="field">Coins<input name="coins" type="number" required value={player.coins} /></label><label class="field">Luck<input name="luck" type="number" required value={player.luck} /></label></div><label class="field">Item capacity<input name="item_limit" type="number" min="0" required value={player.item_limit} /></label><label class="field">Alignment<select name="alignment" value={player.alignment}><option>GOOD</option><option>NEUTRAL</option><option>EVIL</option></select></label><label class="field">Roster state<select name="alive" value={String(player.alive)}><option value="true">Alive</option><option value="false">Dead</option></select></label><div class="form-actions"><a href={`/players/${id}`} class="btn">Cancel</a><button class="btn btn-primary" disabled={saving}>{saving?'Saving…':'Save changes'}</button></div></form>{/if}</div></main>
