@@ -69,7 +69,7 @@ func (h *DiscordResourceHandler) Resources(c echo.Context) error {
 				channels = append(channels, DiscordChannelDTO{ID: channel.ID, GuildID: guild.ID, Name: channel.Name, Type: strconv.Itoa(int(channel.Type)), Category: category})
 			}
 		}
-		guildMembers, err := h.discord.GuildMembers(guild.ID, "", 1000)
+		guildMembers, err := allGuildMembers(h.discord, guild.ID)
 		if err == nil {
 			for _, member := range guildMembers {
 				if member == nil || member.User == nil {
@@ -81,4 +81,28 @@ func (h *DiscordResourceHandler) Resources(c echo.Context) error {
 	}
 	WriteJSON(c.Response(), http.StatusOK, map[string]any{"guilds": guilds, "channels": channels, "members": members})
 	return nil
+}
+
+// allGuildMembers walks Discord's paginated member endpoint. A single request
+// is capped at 1000 members, so only fetching the first page silently hides
+// valid players from admin selectors on larger guilds.
+func allGuildMembers(session *discordgo.Session, guildID string) ([]*discordgo.Member, error) {
+	const pageSize = 1000
+	var members []*discordgo.Member
+	after := ""
+	for {
+		page, err := session.GuildMembers(guildID, after, pageSize)
+		if err != nil {
+			return nil, err
+		}
+		members = append(members, page...)
+		if len(page) < pageSize {
+			return members, nil
+		}
+		last := page[len(page)-1]
+		if last == nil || last.User == nil || last.User.ID == after {
+			return members, nil
+		}
+		after = last.User.ID
+	}
 }

@@ -214,7 +214,7 @@ func (s *Server) setupRoutes() {
 	apiSyncHandler := api.NewSyncHandler(s.dbPool, s.syncService)
 	s.syncHandler = apiSyncHandler
 	apiDiscordResourceHandler := api.NewDiscordResourceHandler(s.discordSession)
-	apiWhisperHandler := api.NewWhisperHandler(s.dbPool)
+	apiWhisperHandler := api.NewWhisperHandler(s.dbPool, s.discordSession)
 	apiAuthMiddleware := api.NewAuthMiddleware(s.sessionStore)
 	browserAuth := webmiddleware.NewAuthMiddleware(s.sessionStore)
 

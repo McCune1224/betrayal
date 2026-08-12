@@ -6,7 +6,7 @@
   let { children } = $props();
   let authState = $state<'loading' | 'authenticated' | 'signed-out' | 'login'>('loading');
   let error = $state<string | null>(null);
-  let lastPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  let lastPath = $state(typeof window !== 'undefined' ? window.location.pathname : '');
 
   const onLoginRoute = () => typeof window !== 'undefined' && window.location.pathname === '/login';
   const sections = [
@@ -103,7 +103,7 @@
             <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">{section.label}</p>
             <div class="flex gap-1 lg:block">
               {#each section.links as link}
-                <a href={link.href} class="block rounded px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white">{link.label}</a>
+                <a href={link.href} aria-current={lastPath === link.href ? 'page' : undefined} class={`block rounded px-3 py-2 text-sm ${lastPath === link.href ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>{link.label}</a>
               {/each}
             </div>
           </div>
