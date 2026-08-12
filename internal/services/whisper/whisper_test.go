@@ -48,7 +48,6 @@ func TestDeliverSendsAllRecipientsThenSenderReceiptAndOptionalWarning(t *testing
 		SenderChannelID:     "sender-channel",
 		RecipientChannelIDs: []string{"twin-1", "twin-2", "twin-3"},
 		Message:             "The door is open.",
-		Timestamp:           "<t:1700000000:F>",
 	}, sender, roller, pool)
 	if err != nil {
 		t.Fatalf("Deliver returned error: %v", err)
@@ -57,13 +56,13 @@ func TestDeliverSendsAllRecipientsThenSenderReceiptAndOptionalWarning(t *testing
 		t.Fatal("Deliver did not report warning sent")
 	}
 	want := []sendCall{
-		{ChannelID: "twin-1", Content: "<t:1700000000:F>\n\nThe door is open."},
-		{ChannelID: "twin-2", Content: "<t:1700000000:F>\n\nThe door is open."},
-		{ChannelID: "twin-3", Content: "<t:1700000000:F>\n\nThe door is open."},
+		{ChannelID: "twin-1", Content: "Your twin whispers:\n\n> The door is open.\n\nA message passed quietly through the mirrors."},
+		{ChannelID: "twin-2", Content: "Your twin whispers:\n\n> The door is open.\n\nA message passed quietly through the mirrors."},
+		{ChannelID: "twin-3", Content: "Your twin whispers:\n\n> The door is open.\n\nA message passed quietly through the mirrors."},
 		{ChannelID: "twin-1", Content: "Keep your guard up."},
 		{ChannelID: "twin-2", Content: "Keep your guard up."},
 		{ChannelID: "twin-3", Content: "Keep your guard up."},
-		{ChannelID: "sender-channel", Content: "Whisper sent at <t:1700000000:F>\n\nThe door is open."},
+		{ChannelID: "sender-channel", Content: "Whisper sent.\n\n> The door is open.\n\nYour message found its way to your twin."},
 	}
 	if !reflect.DeepEqual(sender.calls, want) {
 		t.Fatalf("send calls = %#v, want %#v", sender.calls, want)

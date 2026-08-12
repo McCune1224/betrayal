@@ -116,7 +116,6 @@ func (w *Whisper) send(ctx ken.Context) error {
 		SenderChannelID:     util.Itoa64(senderConf.ChannelID),
 		RecipientChannelIDs: recipients,
 		Message:             message,
-		Timestamp:           discord.AbsoluteTimestamp(time.Now().Unix()),
 	}, sender, secureRoller{}, warningPool)
 	if err != nil {
 		return discord.ErrorMessage(ctx, "Whisper delivery failed", "The complete whisper could not be delivered. Please try again later.")

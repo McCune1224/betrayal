@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 )
 
 const SuspicionChance = 0.02
@@ -139,7 +140,6 @@ type DeliveryRequest struct {
 	SenderChannelID     string
 	RecipientChannelIDs []string
 	Message             string
-	Timestamp           string
 }
 
 type DeliveryResult struct {
@@ -154,7 +154,7 @@ func Deliver(req DeliveryRequest, sender Sender, roller Roller, warningPool []st
 		return DeliveryResult{}, ErrInvalidMessage
 	}
 	result := DeliveryResult{DeliveredRecipientChannels: make([]string, 0, len(req.RecipientChannelIDs))}
-	primary := fmt.Sprintf("%s\n\n%s", req.Timestamp, req.Message)
+	primary := fmt.Sprintf("Your twin whispers:\n\n> %s\n\nA message passed quietly through the mirrors.", quoteMessage(req.Message))
 	for _, channelID := range req.RecipientChannelIDs {
 		if err := sender.Send(channelID, primary); err != nil {
 			return result, fmt.Errorf("send whisper to %s: %w", channelID, err)
@@ -172,9 +172,13 @@ func Deliver(req DeliveryRequest, sender Sender, roller Roller, warningPool []st
 		result.WarningSent = true
 	}
 
-	receipt := fmt.Sprintf("Whisper sent at %s\n\n%s", req.Timestamp, req.Message)
+	receipt := fmt.Sprintf("Whisper sent.\n\n> %s\n\nYour message found its way to your twin.", quoteMessage(req.Message))
 	if err := sender.Send(req.SenderChannelID, receipt); err != nil {
 		return result, fmt.Errorf("send whisper receipt: %w", err)
 	}
 	return result, nil
+}
+
+func quoteMessage(message string) string {
+	return strings.ReplaceAll(message, "\n", "\n> ")
 }
