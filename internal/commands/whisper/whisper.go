@@ -22,31 +22,43 @@ const maxMessageLength = 1000
 
 type Whisper struct{ dbPool *pgxpool.Pool }
 
+type WhisperAdmin struct{ Whisper }
+
 var _ ken.SlashCommand = (*Whisper)(nil)
+var _ ken.SlashCommand = (*WhisperAdmin)(nil)
 
 func (*Whisper) Name() string                    { return "whisper" }
 func (*Whisper) Description() string             { return "Send a private bot-delivered message to a player" }
 func (*Whisper) Version() string                 { return "1.0.0" }
 func (w *Whisper) Initialize(pool *pgxpool.Pool) { w.dbPool = pool }
 
+func (*WhisperAdmin) Name() string                    { return "whisper-admin" }
+func (*WhisperAdmin) Description() string             { return "Manage whisper groups and doubt messages" }
+func (*WhisperAdmin) Version() string                 { return "1.0.0" }
+func (w *WhisperAdmin) Initialize(pool *pgxpool.Pool) { w.dbPool = pool }
+
 func (*Whisper) Options() []*discordgo.ApplicationCommandOption {
-	return []*discordgo.ApplicationCommandOption{{
-		Type:        discordgo.ApplicationCommandOptionSubCommand,
-		Name:        "send",
-		Description: "Send a message to a player's complete linked group",
-		Options: []*discordgo.ApplicationCommandOption{
-			discord.UserCommandArg(true),
-			discord.StringCommandArg("message", "Message to send", true),
-		},
-	}, (&Whisper{}).adminCommandArgBuilder()}
+	return []*discordgo.ApplicationCommandOption{
+		discord.StringCommandArg("message", "Message to send to your complete linked group", true),
+	}
+}
+
+func (w *WhisperAdmin) Options() []*discordgo.ApplicationCommandOption {
+	return (&Whisper{}).adminOptions()
 }
 
 func (w *Whisper) Run(ctx ken.Context) error {
 	defer logger.RecoverWithLog(*logger.Get())
-	return ctx.HandleSubCommands(ken.SubCommandHandler{Name: "send", Run: w.send}, w.adminCommandGroupBuilder())
+	return w.send(ctx)
 }
 
-func (w *Whisper) send(ctx ken.SubCommandContext) error {
+func (w *WhisperAdmin) Run(ctx ken.Context) error {
+	defer logger.RecoverWithLog(*logger.Get())
+	group := w.Whisper.adminCommandGroupBuilder()
+	return ctx.HandleSubCommands(group.SubHandler...)
+}
+
+func (w *Whisper) send(ctx ken.Context) error {
 	if err := ctx.Defer(); err != nil {
 		return err
 	}
@@ -58,18 +70,6 @@ func (w *Whisper) send(ctx ken.SubCommandContext) error {
 	if err != nil {
 		return discord.ErrorMessage(ctx, "Whisper unavailable", "This command could not identify the sending player.")
 	}
-	targetOption, ok := ctx.Options().GetByNameOptional("user")
-	if !ok || targetOption == nil {
-		return discord.ErrorMessage(ctx, "Whisper unavailable", "A target player is required.")
-	}
-	target := targetOption.UserValue(ctx)
-	if target == nil {
-		return discord.ErrorMessage(ctx, "Whisper unavailable", "The target player could not be resolved.")
-	}
-	targetID, err := util.Atoi64(target.ID)
-	if err != nil {
-		return discord.ErrorMessage(ctx, "Whisper unavailable", "The target player could not be resolved.")
-	}
 	message := strings.TrimSpace(ctx.Options().GetByName("message").StringValue())
 	if message == "" || len([]rune(message)) > maxMessageLength {
 		return discord.ErrorMessage(ctx, "Whisper unavailable", "Your message must contain between 1 and 1000 characters.")
@@ -78,9 +78,6 @@ func (w *Whisper) send(ctx ken.SubCommandContext) error {
 	q := models.New(w.dbPool)
 	dbCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if _, err := q.GetPlayer(dbCtx, targetID); err != nil {
-		return discord.ErrorMessage(ctx, "Whisper unavailable", "That player is not available for whisper delivery.")
-	}
 	senderConf, err := q.GetPlayerConfessional(dbCtx, senderID)
 	if err != nil {
 		return discord.ErrorMessage(ctx, "Whisper unavailable", "Your confessional is not available for message receipts.")
@@ -98,20 +95,7 @@ func (w *Whisper) send(ctx ken.SubCommandContext) error {
 		}
 		confessionals = append(confessionals, whispersvc.PlayerConfessional{PlayerID: row.PlayerID, ChannelID: channelID, GroupID: util.Itoa64(row.GroupID)})
 	}
-	if _, err := q.GetPlayerConfessional(dbCtx, targetID); err == nil {
-		targetConf, _ := q.GetPlayerConfessional(dbCtx, targetID)
-		found := false
-		for _, conf := range confessionals {
-			if conf.PlayerID == targetID {
-				found = true
-				break
-			}
-		}
-		if !found {
-			confessionals = append(confessionals, whispersvc.PlayerConfessional{PlayerID: targetID, ChannelID: util.Itoa64(targetConf.ChannelID)})
-		}
-	}
-	recipients, err := whispersvc.ResolveRecipients(senderID, targetID, confessionals)
+	recipients, err := whispersvc.ResolveSenderRecipients(senderID, confessionals)
 	if err != nil {
 		if errors.Is(err, whispersvc.ErrSelfTarget) {
 			return discord.ErrorMessage(ctx, "Whisper unavailable", "You cannot whisper to yourself.")

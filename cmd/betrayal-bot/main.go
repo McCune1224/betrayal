@@ -239,6 +239,7 @@ func main() {
 			new(help.Help),
 			new(vote.Vote),
 			new(whisper.Whisper),
+			new(whisper.WhisperAdmin),
 			new(setup.Setup),
 			new(echo.Echo),
 			new(list.List),

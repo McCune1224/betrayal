@@ -70,6 +70,21 @@ func TestDeliverSendsAllRecipientsThenSenderReceiptAndOptionalWarning(t *testing
 	}
 }
 
+func TestResolveSenderRecipientsSendsToEveryLinkedMemberExceptSender(t *testing.T) {
+	players := []PlayerConfessional{
+		{PlayerID: 10, ChannelID: "sender-channel", GroupID: "pair"},
+		{PlayerID: 11, ChannelID: "twin-channel", GroupID: "pair"},
+	}
+
+	got, err := ResolveSenderRecipients(10, players)
+	if err != nil {
+		t.Fatalf("ResolveSenderRecipients returned error: %v", err)
+	}
+	if want := []string{"twin-channel"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("ResolveSenderRecipients = %#v, want %#v", got, want)
+	}
+}
+
 type recordingSender struct{ calls []sendCall }
 type sendCall struct{ ChannelID, Content string }
 

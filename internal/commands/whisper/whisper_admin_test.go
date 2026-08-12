@@ -8,20 +8,24 @@ import (
 
 func TestOptionsExposeAdminWhisperManagement(t *testing.T) {
 	options := (&Whisper{}).Options()
-	admin := findOption(options, "admin", discordgo.ApplicationCommandOptionSubCommandGroup)
-	if admin == nil {
-		t.Fatal("whisper command must expose an admin subcommand group")
+	message := findNestedOption(options, "message")
+	if message == nil || message.Type != discordgo.ApplicationCommandOptionString {
+		t.Fatal("/whisper must expose a message option")
 	}
+	if findOption(options, "admin", discordgo.ApplicationCommandOptionSubCommandGroup) != nil {
+		t.Fatal("player /whisper command must not expose admin subcommands")
+	}
+	admin := (&WhisperAdmin{}).Options()
 	for _, name := range []string{"group-list", "group-create", "group-delete", "member-add", "member-remove", "message-list", "message-create", "message-update", "message-enable", "message-disable", "message-delete"} {
-		if findOption(admin.Options, name, discordgo.ApplicationCommandOptionSubCommand) == nil {
-			t.Errorf("missing /whisper admin %s subcommand", name)
+		if findOption(admin, name, discordgo.ApplicationCommandOptionSubCommand) == nil {
+			t.Errorf("missing /whisper-admin %s subcommand", name)
 		}
 	}
 	for _, name := range []string{"member-add", "member-remove"} {
-		option := findOption(admin.Options, name, discordgo.ApplicationCommandOptionSubCommand)
+		option := findOption(admin, name, discordgo.ApplicationCommandOptionSubCommand)
 		player := findNestedOption(option.Options, "user")
 		if player == nil || player.Type != discordgo.ApplicationCommandOptionUser {
-			t.Errorf("/whisper admin %s must target a Discord user, not a raw ID", name)
+			t.Errorf("/whisper-admin %s must target a Discord user, not a raw ID", name)
 		}
 	}
 }

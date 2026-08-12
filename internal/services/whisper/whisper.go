@@ -81,6 +81,51 @@ func ResolveRecipients(senderID, targetID int64, confessionals []PlayerConfessio
 	return channels, nil
 }
 
+// ResolveSenderRecipients resolves the sender's complete linked group and
+// excludes the sender's own confessional from delivery.
+func ResolveSenderRecipients(senderID int64, confessionals []PlayerConfessional) ([]string, error) {
+	var sender *PlayerConfessional
+	for i := range confessionals {
+		if confessionals[i].PlayerID == senderID {
+			sender = &confessionals[i]
+			break
+		}
+	}
+	if sender == nil || sender.GroupID == "" {
+		return nil, ErrNoRecipients
+	}
+
+	members := make([]PlayerConfessional, 0, len(confessionals))
+	for _, conf := range confessionals {
+		if conf.GroupID == sender.GroupID {
+			members = append(members, conf)
+		}
+	}
+	if len(members) < 2 {
+		return nil, ErrIncompleteGroup
+	}
+	sort.Slice(members, func(i, j int) bool { return members[i].PlayerID < members[j].PlayerID })
+	channels := make([]string, 0, len(members)-1)
+	seen := make(map[string]struct{}, len(members))
+	for _, member := range members {
+		if member.ChannelID == "" {
+			return nil, ErrIncompleteGroup
+		}
+		if member.PlayerID == senderID {
+			continue
+		}
+		if _, ok := seen[member.ChannelID]; ok {
+			continue
+		}
+		seen[member.ChannelID] = struct{}{}
+		channels = append(channels, member.ChannelID)
+	}
+	if len(channels) == 0 {
+		return nil, ErrNoRecipients
+	}
+	return channels, nil
+}
+
 type Sender interface {
 	Send(channelID, content string) error
 }

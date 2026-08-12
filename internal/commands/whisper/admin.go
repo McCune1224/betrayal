@@ -50,6 +50,10 @@ func (w *Whisper) adminCommandArgBuilder() *discordgo.ApplicationCommandOption {
 	}
 }
 
+func (w *Whisper) adminOptions() []*discordgo.ApplicationCommandOption {
+	return w.adminCommandArgBuilder().Options
+}
+
 func adminSubcommand(name, description string, options ...*discordgo.ApplicationCommandOption) *discordgo.ApplicationCommandOption {
 	return &discordgo.ApplicationCommandOption{Type: discordgo.ApplicationCommandOptionSubCommand, Name: name, Description: description, Options: options}
 }
