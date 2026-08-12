@@ -10,8 +10,7 @@ import (
 )
 
 // TestRollRarityLevel pins the deterministic luck-table mapping: a fixed
-// (level, roll) must always yield the same rarity. These boundaries were
-// derived from the chance curves in internal/services/roll/luck.go.
+// (level, roll) must always yield the same rarity.
 func TestRollRarityLevel(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -27,17 +26,17 @@ func TestRollRarityLevel(t *testing.T) {
 		{"level 0 roll 0.98", 0, 0.98, models.RarityEPIC},
 		{"level 0 roll 0.99", 0, 0.99, models.RarityLEGENDARY},
 		{"level 0 roll 0.999", 0, 0.999, models.RarityMYTHICAL},
-		// Level 50: common/uncommon floor to 0; rare .47 / epic .265 / legendary .135 / mythical .13
-		{"level 50 roll 0.10", 50, 0.10, models.RarityRARE},
-		{"level 50 roll 0.50", 50, 0.50, models.RarityEPIC},
-		{"level 50 roll 0.80", 50, 0.80, models.RarityLEGENDARY},
-		{"level 50 roll 0.95", 50, 0.95, models.RarityMYTHICAL},
-		// Level 100: epic .495 / legendary .26 / mythical .255
-		{"level 100 roll 0.30", 100, 0.30, models.RarityEPIC},
-		{"level 100 roll 0.60", 100, 0.60, models.RarityLEGENDARY},
-		{"level 100 roll 0.90", 100, 0.90, models.RarityMYTHICAL},
-		// Anything above level 397 is always mythical.
-		{"level 500 roll 0.00", 500, 0.0, models.RarityMYTHICAL},
+		// Level 50: common .50 / uncommon .20 / rare .12 / epic .08 / legendary .06 / mythical .04
+		{"level 50 roll 0.10", 50, 0.10, models.RarityCOMMON},
+		{"level 50 roll 0.72", 50, 0.72, models.RarityRARE},
+		{"level 50 roll 0.85", 50, 0.85, models.RarityEPIC},
+		{"level 50 roll 0.95", 50, 0.95, models.RarityLEGENDARY},
+		// Level 100: common .25 / uncommon .20 / rare .15 / epic .10 / legendary .20 / mythical .10
+		{"level 100 roll 0.50", 100, 0.50, models.RarityRARE},
+		{"level 100 roll 0.85", 100, 0.85, models.RarityLEGENDARY},
+		{"level 100 roll 0.95", 100, 0.95, models.RarityMYTHICAL},
+		// Luck is capped at the level-100 distribution.
+		{"level 500 roll 0.00", 500, 0.0, models.RarityCOMMON},
 	}
 
 	for _, tt := range tests {
@@ -58,18 +57,31 @@ func TestBaseLuckChances(t *testing.T) {
 	assert.InDelta(t, 0.005, rollsvc.MythicalLuckChance(0), 0.0001)
 }
 
-// TestLuckChanceEdgeCases pins documented quirks of the curves.
+// TestLuckChanceEdgeCases pins the checkpoint distributions and invariants.
 func TestLuckChanceEdgeCases(t *testing.T) {
-	// Rare is constant 0.49 at level 48 (documented edge case).
-	assert.InDelta(t, 0.49, rollsvc.RareLuckChance(48), 0.0001)
+	for _, tt := range []struct {
+		level float64
+		want  []float64
+	}{
+		{0, []float64{.80, .15, .02, .015, .01, .005}},
+		{25, []float64{.65, .17, .08, .05, .035, .015}},
+		{50, []float64{.50, .20, .12, .08, .06, .04}},
+		{75, []float64{.35, .20, .15, .10, .12, .08}},
+		{100, []float64{.25, .20, .15, .10, .20, .10}},
+		{500, []float64{.25, .20, .15, .10, .20, .10}},
+	} {
+		got := []float64{rollsvc.CommonLuckChance(tt.level), rollsvc.UncommonLuckChance(tt.level), rollsvc.RareLuckChance(tt.level), rollsvc.EpicLuckChance(tt.level), rollsvc.LegendaryLuckChance(tt.level), rollsvc.MythicalLuckChance(tt.level)}
+		sum := 0.0
+		for i := range got {
+			assert.InDelta(t, tt.want[i], got[i], .0001)
+			sum += got[i]
+		}
+		assert.InDelta(t, 1.0, sum, .0001)
+	}
 
-	// Level 50 curves sum to ~1.0 (common/uncommon floored to 0).
-	sum := rollsvc.RareLuckChance(50) + rollsvc.EpicLuckChance(50) +
-		rollsvc.LegendaryLuckChance(50) + rollsvc.MythicalLuckChance(50)
-	assert.InDelta(t, 1.0, sum, 0.0001)
-
-	// Mythical is capped at 1.
-	assert.InDelta(t, 1.0, rollsvc.MythicalLuckChance(1000), 0.0001)
+	// Intermediate levels are linearly interpolated between checkpoints.
+	assert.InDelta(t, .725, rollsvc.CommonLuckChance(12.5), .0001)
+	assert.InDelta(t, .185, rollsvc.UncommonLuckChance(37.5), .0001)
 }
 
 // TestRollAtRarity verifies that roll-at-minimum-rarity only ever returns an

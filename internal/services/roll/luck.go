@@ -4,115 +4,57 @@
 package roll
 
 import (
-	"math"
 	"math/rand"
 
 	"github.com/mccune1224/betrayal/internal/models"
 )
 
-// Base luck type chances (at level 0).
+// Base luck type chances (at level 0). The checkpoint table below moves these
+// probabilities toward rarer tiers while keeping the total exactly 100%.
 var (
-	// 80%
-	CommonLuck = 0.800
-	// 15%
-	UncommonLuck = 0.150
-	// 2%
-	RareLuck = 0.020
-	// 1.5%
-	EpicLuck = 0.015
-	// 1%
-	LegendaryLuck = 0.010
-	// 0.5%
-	MythicalLuck = 0.005
-
 	// RarityPriorities lists rarities in order of scarcity.
 	RarityPriorities = []models.Rarity{models.RarityCOMMON, models.RarityUNCOMMON, models.RarityRARE, models.RarityEPIC, models.RarityLEGENDARY, models.RarityMYTHICAL}
+	luckCheckpoints  = [...]float64{0, 25, 50, 75, 100}
+	luckChances      = [...][6]float64{
+		{.80, .15, .02, .015, .01, .005},
+		{.65, .17, .08, .05, .035, .015},
+		{.50, .20, .12, .08, .06, .04},
+		{.35, .20, .15, .10, .12, .08},
+		{.25, .20, .15, .10, .20, .10},
+	}
 )
 
-func CommonLuckChance(level float64) float64 {
-	scale := -0.050 * float64(level)
-	chance := CommonLuck + scale
-
-	// round to 4th decimal place
-	chance = math.Round(chance*10000) / 10000
-	return math.Max(chance, 0)
-}
-
-// sanatized rounds down to the 4th decimal place and floors at 0.
-func sanatized(num float64) float64 {
-	r := math.Round(num*10000) / 10000
-	return math.Max(r, 0)
-}
-
-func UncommonLuckChance(level float64) float64 {
-	flipLevel := 16.00
-	neg := 0.02
-	pos := 0.03
-	if level > flipLevel {
-		return sanatized(UncommonLuckChance(flipLevel) - (level-flipLevel)*neg)
+// luckChance linearly interpolates between the approved luck checkpoints.
+// Luck is clamped to [0, 100], so it cannot create discontinuities or
+// probabilities whose sum exceeds 100%.
+func luckChance(level float64, rarity int) float64 {
+	if level <= luckCheckpoints[0] {
+		return luckChances[0][rarity]
 	}
-	scale := pos * float64(level)
-	chance := UncommonLuck + scale
-	return sanatized(chance)
+	if level >= luckCheckpoints[len(luckCheckpoints)-1] {
+		return luckChances[len(luckChances)-1][rarity]
+	}
+
+	for i := 1; i < len(luckCheckpoints); i++ {
+		if level <= luckCheckpoints[i] {
+			fraction := (level - luckCheckpoints[i-1]) / (luckCheckpoints[i] - luckCheckpoints[i-1])
+			return luckChances[i-1][rarity] + fraction*(luckChances[i][rarity]-luckChances[i-1][rarity])
+		}
+	}
+	return luckChances[len(luckChances)-1][rarity]
 }
 
-func RareLuckChance(level float64) float64 {
-	// rare has random edge case at luck level 48 where it is constant at .49
-	if level == 48 {
-		return 0.49
-	}
-	flipLevel := 48.00
-	neg := 0.01
-	pos := 0.01
-	if level > flipLevel {
-		return sanatized(RareLuckChance(flipLevel) - (level-flipLevel)*neg)
-	}
-	scale := pos * float64(level)
-	chance := RareLuck + scale
-	return sanatized(chance)
-}
-
-func EpicLuckChance(level float64) float64 {
-	flipLevel := 98.00
-	neg := 0.005
-	pos := 0.005
-	if level > flipLevel {
-		return sanatized(EpicLuckChance(flipLevel) - (level-flipLevel)*neg)
-	}
-	scale := pos * float64(level)
-	chance := EpicLuck + scale
-	return sanatized(chance)
-}
-
-func LegendaryLuckChance(level float64) float64 {
-	flipLevel := 198.00
-	neg := 0.0025
-	pos := 0.0025
-	if level > flipLevel {
-		return sanatized(LegendaryLuckChance(flipLevel) - (level-flipLevel)*neg)
-	}
-	scale := pos * float64(level)
-	chance := LegendaryLuck + scale
-	return sanatized(chance)
-}
-
-func MythicalLuckChance(level float64) float64 {
-	// mythical just scales 0.25% per level
-	scale := 0.0025 * float64(level)
-	if MythicalLuck+scale > 1 {
-		return 1
-	}
-	return sanatized(MythicalLuck + scale)
-}
+func CommonLuckChance(level float64) float64    { return luckChance(level, 0) }
+func UncommonLuckChance(level float64) float64  { return luckChance(level, 1) }
+func RareLuckChance(level float64) float64      { return luckChance(level, 2) }
+func EpicLuckChance(level float64) float64      { return luckChance(level, 3) }
+func LegendaryLuckChance(level float64) float64 { return luckChance(level, 4) }
+func MythicalLuckChance(level float64) float64  { return luckChance(level, 5) }
 
 // RollRarityLevel picks a rarity for a luck level given a roll in [0, 1).
 // Deterministic for a fixed (level, roll) — the command layer supplies the
 // random draw, which keeps this unit-testable.
 func RollRarityLevel(level float64, roll float64) models.Rarity {
-	if level > 397 {
-		return models.RarityMYTHICAL
-	}
-
 	cc := CommonLuckChance(level)
 	uc := UncommonLuckChance(level)
 	rc := RareLuckChance(level)
