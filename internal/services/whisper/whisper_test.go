@@ -46,7 +46,7 @@ func TestDeliverSendsAllRecipientsThenSenderReceiptAndOptionalWarning(t *testing
 
 	result, err := Deliver(DeliveryRequest{
 		SenderChannelID:     "sender-channel",
-		RecipientChannelIDs: []string{"twin-1", "twin-2", "twin-3"},
+		RecipientChannelIDs: []string{"twin-1", "twin-2"},
 		Message:             "The door is open.",
 	}, sender, roller, pool)
 	if err != nil {
@@ -56,13 +56,11 @@ func TestDeliverSendsAllRecipientsThenSenderReceiptAndOptionalWarning(t *testing
 		t.Fatal("Deliver did not report warning sent")
 	}
 	want := []sendCall{
-		{ChannelID: "twin-1", Content: "Your twin whispers:\n\n> The door is open.\n\nA message passed quietly through the mirrors."},
-		{ChannelID: "twin-2", Content: "Your twin whispers:\n\n> The door is open.\n\nA message passed quietly through the mirrors."},
-		{ChannelID: "twin-3", Content: "Your twin whispers:\n\n> The door is open.\n\nA message passed quietly through the mirrors."},
+		{ChannelID: "twin-1", Content: "Your triplet whispers:\n\n> The door is open.\n\nA message passed quietly through the mirrors."},
+		{ChannelID: "twin-2", Content: "Your triplet whispers:\n\n> The door is open.\n\nA message passed quietly through the mirrors."},
 		{ChannelID: "twin-1", Content: "Keep your guard up."},
 		{ChannelID: "twin-2", Content: "Keep your guard up."},
-		{ChannelID: "twin-3", Content: "Keep your guard up."},
-		{ChannelID: "sender-channel", Content: "Whisper sent.\n\n> The door is open.\n\nYour message found its way to your twin."},
+		{ChannelID: "sender-channel", Content: "Whisper sent.\n\n> The door is open.\n\nYour message found its way to your triplet."},
 	}
 	if !reflect.DeepEqual(sender.calls, want) {
 		t.Fatalf("send calls = %#v, want %#v", sender.calls, want)
@@ -81,6 +79,20 @@ func TestResolveSenderRecipientsSendsToEveryLinkedMemberExceptSender(t *testing.
 	}
 	if want := []string{"twin-channel"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("ResolveSenderRecipients = %#v, want %#v", got, want)
+	}
+}
+
+func TestRelationshipLabelSupportsLargerGroups(t *testing.T) {
+	for size, want := range map[int]string{2: "twin", 3: "triplet", 4: "group of 4", 9: "group of 9"} {
+		if got := relationshipLabel(size); got != want {
+			t.Errorf("relationshipLabel(%d) = %q, want %q", size, got, want)
+		}
+	}
+}
+
+func TestSuspicionChanceIsFivePercent(t *testing.T) {
+	if SuspicionChance != 0.05 {
+		t.Fatalf("SuspicionChance = %v, want 0.05", SuspicionChance)
 	}
 }
 

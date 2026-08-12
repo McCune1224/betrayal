@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const SuspicionChance = 0.02
+const SuspicionChance = 0.05
 
 var (
 	ErrSelfTarget       = errors.New("cannot whisper to yourself")
@@ -154,7 +154,8 @@ func Deliver(req DeliveryRequest, sender Sender, roller Roller, warningPool []st
 		return DeliveryResult{}, ErrInvalidMessage
 	}
 	result := DeliveryResult{DeliveredRecipientChannels: make([]string, 0, len(req.RecipientChannelIDs))}
-	primary := fmt.Sprintf("Your twin whispers:\n\n> %s\n\nA message passed quietly through the mirrors.", quoteMessage(req.Message))
+	groupLabel := relationshipLabel(len(req.RecipientChannelIDs) + 1)
+	primary := fmt.Sprintf("Your %s whispers:\n\n> %s\n\nA message passed quietly through the mirrors.", groupLabel, quoteMessage(req.Message))
 	for _, channelID := range req.RecipientChannelIDs {
 		if err := sender.Send(channelID, primary); err != nil {
 			return result, fmt.Errorf("send whisper to %s: %w", channelID, err)
@@ -172,7 +173,7 @@ func Deliver(req DeliveryRequest, sender Sender, roller Roller, warningPool []st
 		result.WarningSent = true
 	}
 
-	receipt := fmt.Sprintf("Whisper sent.\n\n> %s\n\nYour message found its way to your twin.", quoteMessage(req.Message))
+	receipt := fmt.Sprintf("Whisper sent.\n\n> %s\n\nYour message found its way to your %s.", quoteMessage(req.Message), groupLabel)
 	if err := sender.Send(req.SenderChannelID, receipt); err != nil {
 		return result, fmt.Errorf("send whisper receipt: %w", err)
 	}
@@ -181,4 +182,15 @@ func Deliver(req DeliveryRequest, sender Sender, roller Roller, warningPool []st
 
 func quoteMessage(message string) string {
 	return strings.ReplaceAll(message, "\n", "\n> ")
+}
+
+func relationshipLabel(groupSize int) string {
+	switch groupSize {
+	case 2:
+		return "twin"
+	case 3:
+		return "triplet"
+	default:
+		return fmt.Sprintf("group of %d", groupSize)
+	}
 }
