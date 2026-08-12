@@ -73,6 +73,36 @@ func (q *Queries) DeleteWhisperGroup(ctx context.Context, id int64) error {
 	return err
 }
 
+const getWhisperDoubtMessage = `-- name: GetWhisperDoubtMessage :one
+SELECT id, message, enabled, created_at, updated_at, deleted_at FROM whisper_doubt_message
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) GetWhisperDoubtMessage(ctx context.Context, id int64) (WhisperDoubtMessage, error) {
+	row := q.db.QueryRow(ctx, getWhisperDoubtMessage, id)
+	var i WhisperDoubtMessage
+	err := row.Scan(
+		&i.ID,
+		&i.Message,
+		&i.Enabled,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getWhisperGroup = `-- name: GetWhisperGroup :one
+SELECT id, name, created_at FROM whisper_group WHERE id = $1
+`
+
+func (q *Queries) GetWhisperGroup(ctx context.Context, id int64) (WhisperGroup, error) {
+	row := q.db.QueryRow(ctx, getWhisperGroup, id)
+	var i WhisperGroup
+	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	return i, err
+}
+
 const listEnabledWhisperDoubtMessages = `-- name: ListEnabledWhisperDoubtMessages :many
 SELECT id, message, enabled, created_at, updated_at, deleted_at FROM whisper_doubt_message
 WHERE enabled AND deleted_at IS NULL

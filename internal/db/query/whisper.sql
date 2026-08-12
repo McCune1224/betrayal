@@ -17,6 +17,9 @@ INSERT INTO whisper_group (name) VALUES ($1) RETURNING *;
 -- name: DeleteWhisperGroup :exec
 DELETE FROM whisper_group WHERE id = $1;
 
+-- name: GetWhisperGroup :one
+SELECT * FROM whisper_group WHERE id = $1;
+
 -- name: AddWhisperGroupMember :exec
 INSERT INTO whisper_group_member (group_id, player_id) VALUES ($1, $2);
 
@@ -32,6 +35,10 @@ ORDER BY id;
 SELECT * FROM whisper_doubt_message
 WHERE deleted_at IS NULL
 ORDER BY id;
+
+-- name: GetWhisperDoubtMessage :one
+SELECT * FROM whisper_doubt_message
+WHERE id = $1 AND deleted_at IS NULL;
 
 -- name: CreateWhisperDoubtMessage :one
 INSERT INTO whisper_doubt_message (message) VALUES ($1) RETURNING *;

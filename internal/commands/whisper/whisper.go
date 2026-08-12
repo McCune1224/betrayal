@@ -38,12 +38,12 @@ func (*Whisper) Options() []*discordgo.ApplicationCommandOption {
 			discord.UserCommandArg(true),
 			discord.StringCommandArg("message", "Message to send", true),
 		},
-	}}
+	}, (&Whisper{}).adminCommandArgBuilder()}
 }
 
 func (w *Whisper) Run(ctx ken.Context) error {
 	defer logger.RecoverWithLog(*logger.Get())
-	return ctx.HandleSubCommands(ken.SubCommandHandler{Name: "send", Run: w.send})
+	return ctx.HandleSubCommands(ken.SubCommandHandler{Name: "send", Run: w.send}, w.adminCommandGroupBuilder())
 }
 
 func (w *Whisper) send(ctx ken.SubCommandContext) error {

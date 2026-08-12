@@ -4,7 +4,7 @@
     label,
     placeholder = 'Search…',
     options,
-    value = $bindable(''),
+    value = $bindable(),
     disabled = false,
     emptyText = 'No matches'
   }: { label: string; placeholder?: string; options: Option[]; value?: string; disabled?: boolean; emptyText?: string } = $props();
