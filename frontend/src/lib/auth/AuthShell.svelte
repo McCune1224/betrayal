@@ -10,35 +10,35 @@
 
   const onLoginRoute = () => typeof window !== 'undefined' && window.location.pathname === '/login';
   const sections = [
-    { label: 'Overview', links: [{ label: 'Dashboard', href: '/' }, { label: 'Players', href: '/players' }] },
+    { label: 'Overview', links: [{ label: 'Dashboard', href: '/', glyph: '◈' }, { label: 'Players', href: '/players', glyph: '♙' }] },
     {
       label: 'Game operations',
       links: [
-        { label: 'Cycle', href: '/cycle' },
-        { label: 'Channels', href: '/channels' },
-        { label: 'Votes', href: '/votes' },
-        { label: 'Setup', href: '/setup' },
-        { label: 'Whispers', href: '/whispers' },
-        { label: 'Healthcheck', href: '/healthcheck' }
+        { label: 'Cycle', href: '/cycle', glyph: '◌' },
+        { label: 'Channels', href: '/channels', glyph: '⌁' },
+        { label: 'Votes', href: '/votes', glyph: '◇' },
+        { label: 'Setup', href: '/setup', glyph: '✧' },
+        { label: 'Whispers', href: '/whispers', glyph: '⌇' },
+        { label: 'Healthcheck', href: '/healthcheck', glyph: '⊙' }
       ]
     },
     {
       label: 'Catalog',
       links: [
-        { label: 'Roles', href: '/roles' },
-        { label: 'Items', href: '/items' },
-        { label: 'Abilities', href: '/abilities' },
-        { label: 'Statuses', href: '/statuses' }
+        { label: 'Roles', href: '/roles', glyph: '♜' },
+        { label: 'Items', href: '/items', glyph: '◈' },
+        { label: 'Abilities', href: '/abilities', glyph: '✦' },
+        { label: 'Statuses', href: '/statuses', glyph: '☽' }
       ]
     },
     {
       label: 'System',
       links: [
-        { label: 'Sync', href: '/sync' },
-        { label: 'Audit log', href: '/admin/audit' },
-        { label: 'Migrations', href: '/admin/migrations' },
-        { label: 'Reset game', href: '/admin/reset' },
-        { label: 'Redeploy', href: '/admin/redeploy' }
+        { label: 'Sync', href: '/sync', glyph: '⇄' },
+        { label: 'Audit log', href: '/admin/audit', glyph: '≡' },
+        { label: 'Migrations', href: '/admin/migrations', glyph: '⟲' },
+        { label: 'Reset game', href: '/admin/reset', glyph: '⊗' },
+        { label: 'Redeploy', href: '/admin/redeploy', glyph: '↗' }
       ]
     }
   ];
@@ -91,10 +91,10 @@
 {#if authState === 'loading'}
   <p class="p-6 text-slate-300" role="status">Checking session…</p>
 {:else if authState === 'authenticated'}
-  <div class="min-h-screen bg-[#080b12] text-slate-100 lg:flex">
-    <aside class="border-b border-slate-800 bg-[#0d111b] lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r" aria-label="Admin navigation">
+  <div class="admin-shell min-h-screen text-slate-100 lg:flex">
+    <aside class="admin-sidebar border-b border-slate-800 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r" aria-label="Admin navigation">
       <div class="flex items-center justify-between px-5 py-5 lg:block">
-        <a href="/" class="text-lg font-semibold tracking-tight">Betrayal <span class="text-teal-300">/</span> Admin</a>
+        <a href="/" class="brand-mark"><span class="brand-glyph">◇</span><span>Betrayal <small>ADMIN CONSOLE</small></span></a>
         <button type="button" class="rounded border border-slate-700 px-3 py-2 text-xs text-slate-300 lg:hidden" onclick={logout}>Log out</button>
       </div>
       <nav class="flex gap-6 overflow-x-auto px-5 pb-5 lg:block lg:space-y-6 lg:px-4" aria-label="Admin sections">
@@ -103,7 +103,7 @@
             <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">{section.label}</p>
             <div class="flex gap-1 lg:block">
               {#each section.links as link}
-                <a href={link.href} aria-current={lastPath === link.href ? 'page' : undefined} class={`block rounded px-3 py-2 text-sm ${lastPath === link.href ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>{link.label}</a>
+                <a href={link.href} aria-current={lastPath === link.href ? 'page' : undefined} class={`nav-link ${lastPath === link.href ? 'nav-link-active' : ''}`}><span aria-hidden="true">{link.glyph}</span>{link.label}</a>
               {/each}
             </div>
           </div>
