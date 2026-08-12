@@ -21,10 +21,11 @@ All application data routes are authenticated JSON APIs under `/api/v1`:
 - `/dashboard`, `/players` — dashboard, player list/detail/create/edit, inventory and note mutations.
 - `/catalog` — roles, items, abilities, and statuses CRUD.
 - `/ops` — cycle, channels, votes, readiness, and setup/role-pool generation.
+- `/whisper` — symmetric twin-group management and the enabled doubt-message pool.
 - `/sync` — source listing/editing, preview, and apply.
 - `/admin` — audit, migrations, reset, and Railway redeploy.
 
-SvelteKit filesystem routes provide the corresponding pages, including `/login`, `/players`, `/players/new`, `/players/[id]`, `/players/[id]/edit`, catalog pages, operational pages, `/sync`, `/admin/audit`, `/admin/migrations`, `/admin/reset`, and `/admin/redeploy`.
+SvelteKit filesystem routes provide the corresponding pages, including `/login`, `/players`, `/players/new`, `/players/[id]`, `/players/[id]/edit`, catalog pages, operational pages, `/whispers`, `/sync`, `/admin/audit`, `/admin/migrations`, `/admin/reset`, and `/admin/redeploy`.
 
 Browser behavior is preserved at the boundary: unauthenticated `/` and client routes redirect to `/login`; unauthenticated `/api/v1/**` requests return canonical JSON `401` responses. Unknown API routes remain JSON `404`s.
 

@@ -134,5 +134,5 @@ func TestStatusNamesAndOrder(t *testing.T) {
 		}
 	}
 	require.Equal(t, uint(len(st)), st[len(st)-1].Version, "latest migration version matches the count")
-	require.Equal(t, "sync_run_progress", st[len(st)-1].Name)
+	require.Equal(t, "whisper", st[len(st)-1].Name)
 }

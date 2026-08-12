@@ -34,7 +34,7 @@ func TestMigration32ReconcilesDuplicateAbilityNames(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { r.Close() })
 	require.NoError(t, r.Up())
-	require.NoError(t, r.DownSteps(3))
+	require.NoError(t, r.DownSteps(4))
 
 	conn, err := pgx.Connect(context.Background(), dsn)
 	require.NoError(t, err)

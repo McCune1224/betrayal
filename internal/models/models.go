@@ -345,3 +345,23 @@ type Vote struct {
 type VoteChannel struct {
 	ChannelID string `json:"channel_id"`
 }
+
+type WhisperDoubtMessage struct {
+	ID        int64              `json:"id"`
+	Message   string             `json:"message"`
+	Enabled   bool               `json:"enabled"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
+}
+
+type WhisperGroup struct {
+	ID        int64              `json:"id"`
+	Name      string             `json:"name"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type WhisperGroupMember struct {
+	GroupID  int64 `json:"group_id"`
+	PlayerID int64 `json:"player_id"`
+}

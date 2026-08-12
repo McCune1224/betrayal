@@ -214,6 +214,7 @@ func (s *Server) setupRoutes() {
 	apiSyncHandler := api.NewSyncHandler(s.dbPool, s.syncService)
 	s.syncHandler = apiSyncHandler
 	apiDiscordResourceHandler := api.NewDiscordResourceHandler(s.discordSession)
+	apiWhisperHandler := api.NewWhisperHandler(s.dbPool)
 	apiAuthMiddleware := api.NewAuthMiddleware(s.sessionStore)
 	browserAuth := webmiddleware.NewAuthMiddleware(s.sessionStore)
 
@@ -239,6 +240,15 @@ func (s *Server) setupRoutes() {
 	apiV1.POST("/auth/login", apiAuthHandler.Login, middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{Store: loginLimiter}))
 	apiV1.POST("/auth/logout", apiAuthHandler.Logout, apiAuthMiddleware.RequireAuth)
 	apiV1.GET("/discord/resources", apiDiscordResourceHandler.Resources, apiAuthMiddleware.RequireAuth)
+	apiWhisper := apiV1.Group("/whisper", apiAuthMiddleware.RequireAuth)
+	apiWhisper.GET("", apiWhisperHandler.Get)
+	apiWhisper.POST("/groups", apiWhisperHandler.CreateGroup)
+	apiWhisper.DELETE("/groups/:id", apiWhisperHandler.DeleteGroup)
+	apiWhisper.POST("/groups/:id/members", apiWhisperHandler.AddMember)
+	apiWhisper.DELETE("/groups/:id/members", apiWhisperHandler.RemoveMember)
+	apiWhisper.POST("/messages", apiWhisperHandler.CreateMessage)
+	apiWhisper.PUT("/messages/:id", apiWhisperHandler.UpdateMessage)
+	apiWhisper.DELETE("/messages/:id", apiWhisperHandler.DeleteMessage)
 	apiV1.GET("/dashboard", apiDashboardHandler.Dashboard, apiAuthMiddleware.RequireAuth)
 	apiV1.GET("/players", apiPlayersHandler.List, apiAuthMiddleware.RequireAuth)
 	apiV1.GET("/players/:id", apiPlayersAdminHandler.Detail, apiAuthMiddleware.RequireAuth)

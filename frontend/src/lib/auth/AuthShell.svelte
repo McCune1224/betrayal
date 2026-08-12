@@ -18,6 +18,7 @@
         { label: 'Channels', href: '/channels' },
         { label: 'Votes', href: '/votes' },
         { label: 'Setup', href: '/setup' },
+        { label: 'Whispers', href: '/whispers' },
         { label: 'Healthcheck', href: '/healthcheck' }
       ]
     },

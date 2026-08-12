@@ -63,6 +63,7 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 | `/healthcheck` | bot health | admin |
 | `/cycle` | current/next/set phase + broadcast to confessionals/funnels/alliances | admin |
 | `/tarot` | tarot draws (deterministic/per-user/guild-deck/random) | both |
+| `/whisper` | one-way bot-authored message to a target player's complete symmetric twin group | player |
 
 **Admin roles** (`internal/discord/role.go`): Host, Co-Host, Bot Developer — check with `discord.IsAdminRole(ctx, discord.AdminRoles...)`, respond with `discord.NotAdminError(ctx)`.
 

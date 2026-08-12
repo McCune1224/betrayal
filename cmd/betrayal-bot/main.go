@@ -30,6 +30,7 @@ import (
 	"github.com/mccune1224/betrayal/internal/commands/tarot"
 	"github.com/mccune1224/betrayal/internal/commands/view"
 	"github.com/mccune1224/betrayal/internal/commands/vote"
+	"github.com/mccune1224/betrayal/internal/commands/whisper"
 	dbmigrate "github.com/mccune1224/betrayal/internal/db/migrate"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/logger"
@@ -237,6 +238,7 @@ func main() {
 			new(channels.Channel),
 			new(help.Help),
 			new(vote.Vote),
+			new(whisper.Whisper),
 			new(setup.Setup),
 			new(echo.Echo),
 			new(list.List),
