@@ -147,33 +147,34 @@ type DeliveryResult struct {
 	DeliveredRecipientChannels []string
 }
 
-// Deliver sends to all preflighted recipients, then sends the sender receipt.
-// The sender receipt is deliberately not included in the suspicion fan-out.
+// Deliver sends the original or doubt-replaced message to all preflighted
+// recipients, then sends the sender receipt. The sender receipt is deliberately
+// not included in the recipient fan-out and never reveals the original message
+// when doubt replaces it.
 func Deliver(req DeliveryRequest, sender Sender, roller Roller, warningPool []string) (DeliveryResult, error) {
 	if req.SenderChannelID == "" || len(req.RecipientChannelIDs) == 0 || req.Message == "" {
 		return DeliveryResult{}, ErrInvalidMessage
 	}
 	result := DeliveryResult{DeliveredRecipientChannels: make([]string, 0, len(req.RecipientChannelIDs))}
 	groupLabel := relationshipLabel(len(req.RecipientChannelIDs) + 1)
+	warningSent := roller != nil && len(warningPool) > 0 && roller.Hit(SuspicionChance)
 	primary := fmt.Sprintf("Your %s whispers:\n\n> %s\n\nA message passed quietly through the mirrors.", groupLabel, quoteMessage(req.Message))
+	if warningSent {
+		warning := warningPool[roller.Intn(len(warningPool))]
+		primary = warning
+	}
 	for _, channelID := range req.RecipientChannelIDs {
 		if err := sender.Send(channelID, primary); err != nil {
 			return result, fmt.Errorf("send whisper to %s: %w", channelID, err)
 		}
 		result.DeliveredRecipientChannels = append(result.DeliveredRecipientChannels, channelID)
 	}
+	result.WarningSent = warningSent
 
-	if roller != nil && len(warningPool) > 0 && roller.Hit(SuspicionChance) {
-		warning := warningPool[roller.Intn(len(warningPool))]
-		for _, channelID := range result.DeliveredRecipientChannels {
-			if err := sender.Send(channelID, warning); err != nil {
-				return result, fmt.Errorf("send whisper suspicion to %s: %w", channelID, err)
-			}
-		}
-		result.WarningSent = true
+	receipt := fmt.Sprintf("Whisper sent.\n\nYour message found its way to your %s.", groupLabel)
+	if result.WarningSent {
+		receipt = "Whisper sent.\n\nSomething blurred between intention and arrival. The mirrors did not carry your words as spoken."
 	}
-
-	receipt := fmt.Sprintf("Whisper sent.\n\n> %s\n\nYour message found its way to your %s.", quoteMessage(req.Message), groupLabel)
 	if err := sender.Send(req.SenderChannelID, receipt); err != nil {
 		return result, fmt.Errorf("send whisper receipt: %w", err)
 	}

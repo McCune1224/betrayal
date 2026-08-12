@@ -56,11 +56,9 @@ func TestDeliverSendsAllRecipientsThenSenderReceiptAndOptionalWarning(t *testing
 		t.Fatal("Deliver did not report warning sent")
 	}
 	want := []sendCall{
-		{ChannelID: "twin-1", Content: "Your triplet whispers:\n\n> The door is open.\n\nA message passed quietly through the mirrors."},
-		{ChannelID: "twin-2", Content: "Your triplet whispers:\n\n> The door is open.\n\nA message passed quietly through the mirrors."},
 		{ChannelID: "twin-1", Content: "Keep your guard up."},
 		{ChannelID: "twin-2", Content: "Keep your guard up."},
-		{ChannelID: "sender-channel", Content: "Whisper sent.\n\n> The door is open.\n\nYour message found its way to your triplet."},
+		{ChannelID: "sender-channel", Content: "Whisper sent.\n\nSomething blurred between intention and arrival. The mirrors did not carry your words as spoken."},
 	}
 	if !reflect.DeepEqual(sender.calls, want) {
 		t.Fatalf("send calls = %#v, want %#v", sender.calls, want)
@@ -79,6 +77,26 @@ func TestResolveSenderRecipientsSendsToEveryLinkedMemberExceptSender(t *testing.
 	}
 	if want := []string{"twin-channel"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("ResolveSenderRecipients = %#v, want %#v", got, want)
+	}
+}
+
+func TestDeliverSendsOriginalMessageWhenDoubtDoesNotTrigger(t *testing.T) {
+	sender := &recordingSender{}
+
+	_, err := Deliver(DeliveryRequest{
+		SenderChannelID:     "sender-channel",
+		RecipientChannelIDs: []string{"twin-channel"},
+		Message:             "The door is open.",
+	}, sender, fixedRoller{hit: false}, []string{"Keep your guard up."})
+	if err != nil {
+		t.Fatalf("Deliver returned error: %v", err)
+	}
+	want := []sendCall{
+		{ChannelID: "twin-channel", Content: "Your twin whispers:\n\n> The door is open.\n\nA message passed quietly through the mirrors."},
+		{ChannelID: "sender-channel", Content: "Whisper sent.\n\nYour message found its way to your twin."},
+	}
+	if !reflect.DeepEqual(sender.calls, want) {
+		t.Fatalf("send calls = %#v, want %#v", sender.calls, want)
 	}
 }
 
