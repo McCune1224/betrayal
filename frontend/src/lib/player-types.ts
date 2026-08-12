@@ -1,2 +1,2 @@
-export type Player = { id:number; alive:boolean; coins:number; luck:number; item_limit:number; alignment:string; role:string };
+export type Player = { id:string; alive:boolean; coins:number; luck:number; item_limit:number; alignment:string; role:string };
 export type PlayerDetail = Player & { items:{id:number;name:string;quantity:number;description:string;cost:number}[]; abilities:{id:number;name:string;quantity:number;description:string}[]; statuses:{id:number;name:string;quantity:number;description:string}[]; immunities:{id:number;name:string;one_time:boolean;description:string}[]; perks:{id:number;name:string}[]; notes:{id:number;position:number;info:string}[] };

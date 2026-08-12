@@ -29,7 +29,7 @@
     event.preventDefault(); saving = true; error = '';
     const form = new FormData(event.currentTarget as HTMLFormElement);
     try {
-      const player = await createApiClient().post<{ id: number }>('/api/v1/players', {
+      const player = await createApiClient().post<{ id: string }>('/api/v1/players', {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ id: String(form.get('member_id')), role: form.get('role') })
       });

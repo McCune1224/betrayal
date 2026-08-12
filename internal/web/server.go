@@ -219,6 +219,10 @@ func (s *Server) setupRoutes() {
 		api.Health(c.Response(), c.Request())
 		return nil
 	})
+	s.echo.HEAD("/health", func(c echo.Context) error {
+		api.Health(c.Response(), c.Request())
+		return nil
+	})
 	apiV1 := s.echo.Group("/api/v1")
 	apiMigrateLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{Rate: redeployRate, Burst: redeployRateBurst, ExpiresIn: 10 * time.Minute})
 	apiMigrateRate := middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{Store: apiMigrateLimiter})
@@ -226,6 +230,7 @@ func (s *Server) setupRoutes() {
 	apiV1.GET("", apiNotFound)
 	apiV1.RouteNotFound("/*", apiNotFound)
 	apiV1.GET("/health", func(c echo.Context) error { api.Health(c.Response(), c.Request()); return nil })
+	apiV1.HEAD("/health", func(c echo.Context) error { api.Health(c.Response(), c.Request()); return nil })
 	apiV1.GET("/auth/session", apiAuthHandler.Session)
 	apiV1.GET("/auth/csrf", apiAuthHandler.CSRF)
 	loginLimiter := middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{Rate: loginRateLimit, Burst: loginRateBurst, ExpiresIn: 10 * time.Minute})
@@ -307,8 +312,16 @@ func (s *Server) setupRoutes() {
 
 	serveUI := func(c echo.Context) error { ui.Handler(c.Response(), c.Request()); return nil }
 	s.echo.GET("/login", serveUI)
+	s.echo.HEAD("/login", serveUI)
+	// SvelteKit's hashed JavaScript and CSS assets must remain publicly
+	// readable so the unauthenticated login shell can bootstrap in the browser.
+	// The page routes themselves stay behind the browser session guard below.
+	s.echo.GET("/_app/*", serveUI)
+	s.echo.HEAD("/_app/*", serveUI)
 	s.echo.GET("/", serveUI, browserAuth.RequireAuth)
+	s.echo.HEAD("/", serveUI, browserAuth.RequireAuth)
 	s.echo.GET("/*", serveUI, browserAuth.RequireAuth)
+	s.echo.HEAD("/*", serveUI, browserAuth.RequireAuth)
 }
 
 // Handler exposes the underlying Echo router as a plain http.Handler.

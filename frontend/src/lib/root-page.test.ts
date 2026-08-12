@@ -28,5 +28,6 @@ describe('dashboard page', () => {
     expect(screen.getByText('8 alive')).toBeInTheDocument();
     expect(screen.getByText('2 dead')).toBeInTheDocument();
     expect(screen.getByText('10 players')).toBeInTheDocument();
+    expect(screen.getByText('Online')).toBeInTheDocument();
   });
 });

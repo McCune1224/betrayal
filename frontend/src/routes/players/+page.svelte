@@ -4,7 +4,7 @@
   import { createApiClient } from '$lib/api/client';
 
   type Player = {
-    id: number;
+    id: string;
     alive: boolean;
     coins: number;
     luck: number;

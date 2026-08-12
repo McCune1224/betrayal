@@ -23,13 +23,13 @@ var migrationFS embed.FS
 
 // Migration is one schema migration as surfaced to the UI.
 type Migration struct {
-	Version uint
-	Name    string
-	Applied bool
+	Version uint   `json:"version"`
+	Name    string `json:"name"`
+	Applied bool   `json:"applied"`
 	// Dirty is only meaningful for the current version: it means the last
 	// migration was applied but did not finish cleanly (schema_migrations
 	// rows exist but the migration's own rows may be partial).
-	Dirty bool
+	Dirty bool `json:"dirty"`
 }
 
 // Runner wraps a golang-migrate instance bound to a single database URL.

@@ -12,4 +12,12 @@ describe('votes page', () => {
     expect(await screen.findByText('Target 11')).toBeInTheDocument();
     expect(screen.getByText('2 votes')).toBeInTheDocument();
   });
+
+  it('explains the empty tally state', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      cycle: { day: 0, phase: 'Day' }, votes: [], tallies: [], total_votes: 0
+    }), { headers: { 'content-type': 'application/json' } })));
+    render(Page);
+    expect(await screen.findByText('No votes have been cast for this cycle.')).toBeInTheDocument();
+  });
 });

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,7 +22,7 @@ func NewPlayersHandler(pool *pgxpool.Pool) *PlayersHandler {
 }
 
 type playerListDTO struct {
-	ID        int64  `json:"id"`
+	ID        string `json:"id"`
 	Alive     bool   `json:"alive"`
 	Coins     int    `json:"coins"`
 	Luck      int    `json:"luck"`
@@ -51,7 +52,7 @@ func (h *PlayersHandler) List(c echo.Context) error {
 			}
 		}
 		result[i] = playerListDTO{
-			ID:        player.ID,
+			ID:        strconv.FormatInt(player.ID, 10),
 			Alive:     player.Alive,
 			Coins:     int(player.Coins),
 			Luck:      int(player.Luck),

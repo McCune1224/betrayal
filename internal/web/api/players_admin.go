@@ -16,7 +16,7 @@ import (
 )
 
 type playerDTO struct {
-	ID        int64  `json:"id"`
+	ID        string `json:"id"`
 	Alive     bool   `json:"alive"`
 	Coins     int32  `json:"coins"`
 	Luck      int32  `json:"luck"`
@@ -133,7 +133,7 @@ func (h *PlayersHandler) getPlayer(ctx context.Context, id int64) (models.Player
 	return p, role, nil
 }
 func playerDTOFor(p models.Player, role string) playerDTO {
-	return playerDTO{p.ID, p.Alive, p.Coins, p.Luck, p.ItemLimit, string(p.Alignment), role}
+	return playerDTO{strconv.FormatInt(p.ID, 10), p.Alive, p.Coins, p.Luck, p.ItemLimit, string(p.Alignment), role}
 }
 
 func (h *PlayersHandler) Detail(c echo.Context) error {

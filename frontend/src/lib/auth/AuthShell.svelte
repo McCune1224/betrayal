@@ -1,11 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
+  import { afterNavigate, goto } from '$app/navigation';
   import { createApiClient, type ApiError } from '$lib/api/client';
 
   let { children } = $props();
   let authState = $state<'loading' | 'authenticated' | 'signed-out' | 'login'>('loading');
   let error = $state<string | null>(null);
+  let lastPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
   const onLoginRoute = () => typeof window !== 'undefined' && window.location.pathname === '/login';
   const sections = [
@@ -41,7 +42,7 @@
     }
   ];
 
-  onMount(async () => {
+  async function checkSession() {
     if (onLoginRoute()) {
       authState = 'login';
       return;
@@ -60,6 +61,17 @@
       authState = 'login';
       await goto('/login');
     }
+  }
+
+  onMount(() => {
+    void checkSession();
+  });
+
+  afterNavigate(() => {
+    const path = window.location.pathname;
+    if (path === lastPath) return;
+    lastPath = path;
+    void checkSession();
   });
 
   async function logout() {

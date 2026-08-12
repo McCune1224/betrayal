@@ -1,12 +1,16 @@
-import { fireEvent, render, screen } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('$app/navigation', () => ({ goto: vi.fn() }));
+const navigation = vi.hoisted(() => ({ goto: vi.fn(), afterNavigate: vi.fn() }));
+vi.mock('$app/navigation', () => navigation);
 
 import AuthShell from '../lib/auth/AuthShell.svelte';
 
 afterEach(() => {
+  cleanup();
   vi.unstubAllGlobals();
+  window.history.replaceState({}, '', '/');
+  navigation.afterNavigate.mockReset();
 });
 
 function json(body: unknown, status = 200) {
@@ -41,5 +45,22 @@ describe('auth shell', () => {
       '/api/v1/auth/logout',
       expect.objectContaining({ method: 'POST' })
     );
+  });
+
+  it('rechecks authentication when navigating away from the login route', async () => {
+    window.history.pushState({}, '', '/login');
+    let navigate: (() => void) | undefined;
+    navigation.afterNavigate.mockImplementation((callback: () => void) => {
+      navigate = callback;
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json({ authenticated: true })));
+
+    render(AuthShell, { children: () => 'Protected content' });
+    expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
+
+    window.history.pushState({}, '', '/');
+    navigate?.();
+
+    expect(await screen.findByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
   });
 });

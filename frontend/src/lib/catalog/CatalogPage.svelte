@@ -37,6 +37,7 @@
     finally { saving = false; }
   }
   async function remove(record: CatalogRecord) {
+    if (!confirm(`Delete ${record.name}?`)) return;
     try { await api.delete(`${endpoint()}/${record.id}`); await load(); }
     catch (e) { error = e instanceof Error ? e.message : 'Could not delete record'; }
   }

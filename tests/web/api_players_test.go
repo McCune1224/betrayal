@@ -11,7 +11,7 @@ import (
 )
 
 type apiPlayer struct {
-	ID        int64  `json:"id"`
+	ID        string `json:"id"`
 	Alive     bool   `json:"alive"`
 	Coins     int    `json:"coins"`
 	Luck      int    `json:"luck"`
@@ -94,7 +94,7 @@ func TestAPIPlayers(t *testing.T) {
 		if len(players) != 1 {
 			t.Fatalf("players = %#v, want one player", players)
 		}
-		if got, want := players[0], (apiPlayer{ID: 701, Alive: true, Coins: 42, Luck: 7, ItemLimit: 3, Alignment: "GOOD", Role: "Oracle"}); got != want {
+		if got, want := players[0], (apiPlayer{ID: "701", Alive: true, Coins: 42, Luck: 7, ItemLimit: 3, Alignment: "GOOD", Role: "Oracle"}); got != want {
 			t.Errorf("player = %#v, want %#v", got, want)
 		}
 
