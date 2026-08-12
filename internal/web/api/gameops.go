@@ -166,6 +166,7 @@ type ChannelEntryDTO struct {
 	Name      string `json:"name"`
 	Kind      string `json:"kind"`
 	ChannelID string `json:"channel_id,omitempty"`
+	Label     string `json:"label,omitempty"`
 	Status    string `json:"status"`
 	Note      string `json:"note,omitempty"`
 }
@@ -326,17 +327,36 @@ func (h *ChannelsHandler) Delete(c echo.Context) error {
 }
 
 func (h *ChannelsHandler) channelEntry(name, kind, id string) ChannelEntryDTO {
-	entry := ChannelEntryDTO{Name: name, Kind: kind, ChannelID: id}
+	entry := ChannelEntryDTO{Name: name, Kind: kind, ChannelID: id, Label: "Configured Discord channel"}
 	if h.discord == nil {
 		entry.Status, entry.Note = "unverified", "Discord is disabled"
 		return entry
 	}
-	if _, err := h.discord.Channel(id); err != nil {
+	channel := cachedDiscordChannel(h.discord, id)
+	if channel == nil {
 		entry.Status, entry.Note = "orphaned", "Discord channel no longer exists"
 		return entry
 	}
+	entry.Label = "#" + channel.Name
 	entry.Status = "configured"
 	return entry
+}
+
+func cachedDiscordChannel(session *discordgo.Session, id string) *discordgo.Channel {
+	if session == nil || session.State == nil {
+		return nil
+	}
+	for _, guild := range session.State.Guilds {
+		if guild == nil {
+			continue
+		}
+		for _, channel := range guild.Channels {
+			if channel != nil && channel.ID == id {
+				return channel
+			}
+		}
+	}
+	return nil
 }
 
 type VoteDTO struct {
