@@ -171,6 +171,9 @@ func Deliver(req DeliveryRequest, sender Sender, roller Roller, warningPool []st
 	}
 	result.WarningSent = warningSent
 
+	if groupLabel != "twin" {
+		groupLabel += groupLabel + "s"
+	}
 	receipt := fmt.Sprintf("Whisper sent.\n\nYour message found its way to your %s.", groupLabel)
 	if result.WarningSent {
 		receipt = "Whisper sent.\n\nSomething blurred between intention and arrival. The mirrors did not carry your words as spoken."
@@ -187,11 +190,11 @@ func quoteMessage(message string) string {
 
 func relationshipLabel(groupSize int) string {
 	switch groupSize {
-	case 2:
-		return "twin"
+	case 4:
+		return "quadruplet"
 	case 3:
 		return "triplet"
 	default:
-		return fmt.Sprintf("group of %d", groupSize)
+		return "twin"
 	}
 }
