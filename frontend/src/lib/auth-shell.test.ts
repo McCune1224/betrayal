@@ -31,6 +31,9 @@ describe('auth shell', () => {
 
     render(AuthShell, { children: () => 'Protected content' });
 
+    const menuButton = await screen.findByRole('button', { name: /menu/i });
+    await fireEvent.click(menuButton);
+    expect(menuButton).toHaveAttribute('aria-expanded', 'true');
     const logoutButtons = await screen.findAllByRole('button', { name: /log out/i });
     expect(logoutButtons).toHaveLength(2);
     for (const label of ['Dashboard', 'Players', 'Cycle', 'Channels', 'Votes', 'Setup', 'Healthcheck', 'Roles', 'Items', 'Abilities', 'Statuses', 'Sync', 'Audit log', 'Migrations', 'Reset game', 'Redeploy']) {

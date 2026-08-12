@@ -7,6 +7,7 @@
   let authState = $state<'loading' | 'authenticated' | 'signed-out' | 'login'>('loading');
   let error = $state<string | null>(null);
   let lastPath = $state(typeof window !== 'undefined' ? window.location.pathname : '');
+  let menuOpen = $state(false);
 
   const onLoginRoute = () => typeof window !== 'undefined' && window.location.pathname === '/login';
   const sections = [
@@ -86,6 +87,10 @@
       error = apiError.message ?? 'Could not log out';
     }
   }
+
+  function closeMenu() {
+    menuOpen = false;
+  }
 </script>
 
 {#if authState === 'loading'}
@@ -93,21 +98,25 @@
 {:else if authState === 'authenticated'}
   <div class="admin-shell min-h-screen text-slate-100 lg:flex">
     <aside class="admin-sidebar border-b border-slate-800 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r" aria-label="Admin navigation">
-      <div class="flex items-center justify-between px-5 py-5 lg:block">
+      <div class="mobile-nav-bar flex items-center justify-between px-4 py-3 lg:block">
         <a href="/" class="brand-mark"><span class="brand-glyph">◇</span><span>Betrayal <small>ADMIN CONSOLE</small></span></a>
-        <button type="button" class="rounded border border-slate-700 px-3 py-2 text-xs text-slate-300 lg:hidden" onclick={logout}>Log out</button>
+        <button type="button" class="menu-toggle lg:hidden" aria-expanded={menuOpen} aria-controls="mobile-admin-menu" onclick={() => (menuOpen = !menuOpen)}>
+          <span class="menu-toggle-icon" aria-hidden="true">{menuOpen ? '×' : '☰'}</span>
+          <span>{menuOpen ? 'Close' : 'Menu'}</span>
+        </button>
       </div>
-      <nav class="flex gap-6 overflow-x-auto px-5 pb-5 lg:block lg:space-y-6 lg:px-4" aria-label="Admin sections">
+      <nav id="mobile-admin-menu" class:mobile-menu-open={menuOpen} class="mobile-admin-menu" aria-label="Admin sections">
         {#each sections as section}
-          <div class="min-w-max lg:min-w-0">
-            <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">{section.label}</p>
-            <div class="flex gap-1 lg:block">
+          <div class="mobile-menu-section">
+            <p>{section.label}</p>
+            <div>
               {#each section.links as link}
-                <a href={link.href} aria-current={lastPath === link.href ? 'page' : undefined} class={`nav-link ${lastPath === link.href ? 'nav-link-active' : ''}`}><span aria-hidden="true">{link.glyph}</span>{link.label}</a>
+                <a href={link.href} aria-current={lastPath === link.href ? 'page' : undefined} class={`nav-link ${lastPath === link.href ? 'nav-link-active' : ''}`} onclick={closeMenu}><span aria-hidden="true">{link.glyph}</span>{link.label}</a>
               {/each}
             </div>
           </div>
         {/each}
+        <button type="button" class="mobile-menu-logout" onclick={logout}>Log out</button>
       </nav>
       <div class="hidden border-t border-slate-800 p-4 lg:block">
         <button type="button" class="w-full rounded border border-slate-700 px-3 py-2 text-left text-sm text-slate-300 hover:border-slate-500 hover:text-white" onclick={logout}>Log out</button>

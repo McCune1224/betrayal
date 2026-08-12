@@ -9,9 +9,16 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 .admin-shell { min-height: 100vh; background: #10100f; }
 .admin-sidebar { position: sticky; top: 0; z-index: 10; width: 100%; border-color: #2c2b28; background: #151513; }
-.admin-sidebar nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem .75rem; max-height: 17rem; overflow-y: auto; padding: 0 1rem 1rem; }
-.admin-sidebar nav > div { min-width: 0; }
-.admin-sidebar nav > div > p { margin: 0 0 .35rem; }
+.mobile-nav-bar { min-height: 4.25rem; }
+.menu-toggle { display: inline-flex; min-height: 2.75rem; align-items: center; gap: .5rem; border: 1px solid #5d5a53; padding: .55rem .75rem; color: #eeeae1; background: #201f1c; font-size: .78rem; font-weight: 700; }
+.menu-toggle-icon { min-width: 1rem; color: #d6d0c2; font-size: 1.1rem; line-height: 1; }
+.mobile-admin-menu { display: none; border-top: 1px solid #2c2b28; padding: 1rem; background: #151513; }
+.mobile-admin-menu.mobile-menu-open { display: block; }
+.mobile-menu-section + .mobile-menu-section { margin-top: 1.25rem; }
+.mobile-menu-section > p { margin: 0 0 .35rem; color: #8e8a81; font-size: .66rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.mobile-menu-section > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem; }
+.mobile-menu-section .nav-link { width: 100%; }
+.mobile-menu-logout { width: 100%; min-height: 2.75rem; margin-top: 1.25rem; border: 1px solid #45433d; padding: .65rem .75rem; color: #aaa69d; text-align: left; background: transparent; font-size: .82rem; }
 .brand-mark { display: inline-flex; align-items: center; gap: .7rem; color: #f1eee7; font-size: 1rem; font-weight: 800; text-decoration: none; }
 .brand-mark small { display: block; margin-top: .15rem; color: #8e8a81; font-size: .55rem; font-weight: 700; letter-spacing: .16em; }
 .brand-glyph { display: grid; width: 2rem; height: 2rem; place-items: center; border: 1px solid #817d73; color: #e8e3d8; font-size: 1.1rem; }
@@ -74,4 +81,4 @@ main.min-h-screen [class*="shadow-"] { box-shadow: none; }
 main.min-h-screen [class*="text-teal-"], main.min-h-screen [class*="text-violet-"], main.min-h-screen [class*="text-indigo-"] { color: #d6d0c2; }
 main.min-h-screen [class*="border-teal-"], main.min-h-screen [class*="border-violet-"], main.min-h-screen [class*="border-indigo-"] { border-color: #8e8a81; }
 @media (min-width: 640px) { .page-shell { padding: 1.5rem; }.stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }.toolbar { grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; }.toolbar select { width: auto; }.player-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.form-card { padding: 1.5rem; } }
-@media (min-width: 960px) { .admin-shell { display: flex; }.admin-sidebar { position: sticky; width: 15rem; min-height: 100vh; border-right: 1px solid #2c2b28; }.admin-sidebar > div:first-child { padding: 1.5rem 1.25rem; }.admin-sidebar nav { display: block; max-height: none; overflow: visible; padding: 0 1rem 1rem; }.admin-sidebar nav > div { margin-top: 1.5rem; }.admin-sidebar nav > div:first-child { margin-top: 0; }.nav-link { display: flex; width: 100%; }.admin-shell > .min-w-0 { flex: 1; min-width: 0; }.page-shell { padding: 2.5rem 3rem; }.player-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }.two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 960px) { .admin-shell { display: flex; }.admin-sidebar { position: sticky; width: 15rem; min-height: 100vh; border-right: 1px solid #2c2b28; }.admin-sidebar > div:first-child { padding: 1.5rem 1.25rem; }.mobile-admin-menu { display: block; border-top: 0; padding: 0 1rem 1rem; }.mobile-menu-section + .mobile-menu-section { margin-top: 1.5rem; }.mobile-menu-section > div { display: block; }.mobile-menu-logout { margin-top: 1.5rem; }.nav-link { display: flex; width: 100%; }.admin-shell > .min-w-0 { flex: 1; min-width: 0; }.page-shell { padding: 2.5rem 3rem; }.player-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }.two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
