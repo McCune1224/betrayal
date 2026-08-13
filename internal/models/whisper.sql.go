@@ -170,10 +170,11 @@ func (q *Queries) ListWhisperDoubtMessages(ctx context.Context) ([]WhisperDoubtM
 }
 
 const listWhisperGroupMembers = `-- name: ListWhisperGroupMembers :many
-SELECT g.id AS group_id, g.name, gm.player_id, pc.channel_id
+SELECT g.id AS group_id, g.name, gm.player_id, pc.channel_id, p.alive
 FROM whisper_group g
 JOIN whisper_group_member gm ON gm.group_id = g.id
 LEFT JOIN player_confessional pc ON pc.player_id = gm.player_id
+JOIN player p ON p.id = gm.player_id
 ORDER BY g.name, gm.player_id
 `
 
@@ -182,6 +183,7 @@ type ListWhisperGroupMembersRow struct {
 	Name      string      `json:"name"`
 	PlayerID  int64       `json:"player_id"`
 	ChannelID pgtype.Int8 `json:"channel_id"`
+	Alive     bool        `json:"alive"`
 }
 
 func (q *Queries) ListWhisperGroupMembers(ctx context.Context) ([]ListWhisperGroupMembersRow, error) {
@@ -198,6 +200,7 @@ func (q *Queries) ListWhisperGroupMembers(ctx context.Context) ([]ListWhisperGro
 			&i.Name,
 			&i.PlayerID,
 			&i.ChannelID,
+			&i.Alive,
 		); err != nil {
 			return nil, err
 		}

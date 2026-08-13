@@ -83,6 +83,14 @@ func (w *Whisper) send(ctx ken.Context) error {
 		return discord.ErrorMessage(ctx, "Whisper unavailable", "Your confessional is not available for message receipts.")
 	}
 
+	senderPlayer, err := q.GetPlayer(dbCtx, senderID)
+	if err != nil {
+		return discord.ErrorMessage(ctx, "Whisper unavailable", "Your player record is not available for message delivery.")
+	}
+	if !senderPlayer.Alive {
+		return discord.ErrorMessage(ctx, "Whisper unavailable", "The dead cannot send whispers through the mirrors.")
+	}
+
 	rows, err := q.ListWhisperGroupMembers(dbCtx)
 	if err != nil {
 		return discord.ErrorMessage(ctx, "Whisper unavailable", "Whisper delivery is temporarily unavailable.")
@@ -93,9 +101,9 @@ func (w *Whisper) send(ctx ken.Context) error {
 		if row.ChannelID.Valid {
 			channelID = util.Itoa64(row.ChannelID.Int64)
 		}
-		confessionals = append(confessionals, whispersvc.PlayerConfessional{PlayerID: row.PlayerID, ChannelID: channelID, GroupID: util.Itoa64(row.GroupID)})
+		confessionals = append(confessionals, whispersvc.PlayerConfessional{PlayerID: row.PlayerID, ChannelID: channelID, GroupID: util.Itoa64(row.GroupID), Alive: row.Alive})
 	}
-	recipients, err := whispersvc.ResolveSenderRecipients(senderID, confessionals)
+	delivery, err := whispersvc.ResolveSenderDelivery(senderID, confessionals)
 	if err != nil {
 		if errors.Is(err, whispersvc.ErrSelfTarget) {
 			return discord.ErrorMessage(ctx, "Whisper unavailable", "You cannot whisper to yourself.")
@@ -114,8 +122,11 @@ func (w *Whisper) send(ctx ken.Context) error {
 	sender := sessionSender{session: ctx.GetSession()}
 	_, err = whispersvc.Deliver(whispersvc.DeliveryRequest{
 		SenderChannelID:     util.Itoa64(senderConf.ChannelID),
-		RecipientChannelIDs: recipients,
+		RecipientChannelIDs: delivery.ChannelIDs,
 		Message:             message,
+		GroupSize:           delivery.GroupSize,
+		AliveRecipients:     delivery.AliveRecipients,
+		DeadRecipients:      delivery.DeadRecipients,
 	}, sender, secureRoller{}, warningPool)
 	if err != nil {
 		return discord.ErrorMessage(ctx, "Whisper delivery failed", "The complete whisper could not be delivered. Please try again later.")

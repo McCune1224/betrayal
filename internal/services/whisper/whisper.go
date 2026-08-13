@@ -11,6 +11,7 @@ const SuspicionChance = 0.05
 
 var (
 	ErrSelfTarget       = errors.New("cannot whisper to yourself")
+	ErrDeadSender       = errors.New("dead players cannot whisper")
 	ErrIncompleteGroup  = errors.New("linked whisper group is incomplete")
 	ErrNoRecipients     = errors.New("whisper has no recipients")
 	ErrInvalidMessage   = errors.New("whisper message is invalid")
@@ -21,6 +22,14 @@ type PlayerConfessional struct {
 	PlayerID  int64
 	ChannelID string
 	GroupID   string
+	Alive     bool
+}
+
+type SenderDelivery struct {
+	ChannelIDs      []string
+	GroupSize       int
+	AliveRecipients int
+	DeadRecipients  int
 }
 
 // ResolveRecipients resolves the target player to the complete linked group.
@@ -83,8 +92,16 @@ func ResolveRecipients(senderID, targetID int64, confessionals []PlayerConfessio
 }
 
 // ResolveSenderRecipients resolves the sender's complete linked group and
-// excludes the sender's own confessional from delivery.
+// excludes dead members and the sender's own confessional from delivery.
 func ResolveSenderRecipients(senderID int64, confessionals []PlayerConfessional) ([]string, error) {
+	delivery, err := ResolveSenderDelivery(senderID, confessionals)
+	if err != nil {
+		return nil, err
+	}
+	return delivery.ChannelIDs, nil
+}
+
+func ResolveSenderDelivery(senderID int64, confessionals []PlayerConfessional) (SenderDelivery, error) {
 	var sender *PlayerConfessional
 	for i := range confessionals {
 		if confessionals[i].PlayerID == senderID {
@@ -93,7 +110,10 @@ func ResolveSenderRecipients(senderID int64, confessionals []PlayerConfessional)
 		}
 	}
 	if sender == nil || sender.GroupID == "" {
-		return nil, ErrNoRecipients
+		return SenderDelivery{}, ErrNoRecipients
+	}
+	if !sender.Alive {
+		return SenderDelivery{}, ErrDeadSender
 	}
 
 	members := make([]PlayerConfessional, 0, len(confessionals))
@@ -103,28 +123,33 @@ func ResolveSenderRecipients(senderID int64, confessionals []PlayerConfessional)
 		}
 	}
 	if len(members) < 2 {
-		return nil, ErrIncompleteGroup
+		return SenderDelivery{}, ErrIncompleteGroup
 	}
 	sort.Slice(members, func(i, j int) bool { return members[i].PlayerID < members[j].PlayerID })
-	channels := make([]string, 0, len(members)-1)
+	delivery := SenderDelivery{ChannelIDs: make([]string, 0, len(members)-1), GroupSize: len(members)}
 	seen := make(map[string]struct{}, len(members))
 	for _, member := range members {
-		if member.ChannelID == "" {
-			return nil, ErrIncompleteGroup
-		}
 		if member.PlayerID == senderID {
+			if member.ChannelID == "" {
+				return SenderDelivery{}, ErrIncompleteGroup
+			}
 			continue
 		}
+		if !member.Alive {
+			delivery.DeadRecipients++
+			continue
+		}
+		if member.ChannelID == "" {
+			return SenderDelivery{}, ErrIncompleteGroup
+		}
+		delivery.AliveRecipients++
 		if _, ok := seen[member.ChannelID]; ok {
 			continue
 		}
 		seen[member.ChannelID] = struct{}{}
-		channels = append(channels, member.ChannelID)
+		delivery.ChannelIDs = append(delivery.ChannelIDs, member.ChannelID)
 	}
-	if len(channels) == 0 {
-		return nil, ErrNoRecipients
-	}
-	return channels, nil
+	return delivery, nil
 }
 
 type Sender interface {
@@ -140,6 +165,9 @@ type DeliveryRequest struct {
 	SenderChannelID     string
 	RecipientChannelIDs []string
 	Message             string
+	GroupSize           int
+	AliveRecipients     int
+	DeadRecipients      int
 }
 
 type DeliveryResult struct {
@@ -152,12 +180,16 @@ type DeliveryResult struct {
 // not included in the recipient fan-out and never reveals the original message
 // when doubt replaces it.
 func Deliver(req DeliveryRequest, sender Sender, roller Roller, warningPool []string) (DeliveryResult, error) {
-	if req.SenderChannelID == "" || len(req.RecipientChannelIDs) == 0 || req.Message == "" {
+	if req.SenderChannelID == "" || req.Message == "" {
 		return DeliveryResult{}, ErrInvalidMessage
 	}
 	result := DeliveryResult{DeliveredRecipientChannels: make([]string, 0, len(req.RecipientChannelIDs))}
-	groupLabel := relationshipLabel(len(req.RecipientChannelIDs) + 1)
-	warningSent := roller != nil && len(warningPool) > 0 && roller.Hit(SuspicionChance)
+	groupSize := req.GroupSize
+	if groupSize == 0 {
+		groupSize = len(req.RecipientChannelIDs) + 1
+	}
+	groupLabel := relationshipLabel(groupSize)
+	warningSent := len(req.RecipientChannelIDs) > 0 && roller != nil && len(warningPool) > 0 && roller.Hit(SuspicionChance)
 	primary := fmt.Sprintf("Your %s whispers:\n\n> %s\n\nA message passed quietly through the mirrors.", groupLabel, quoteMessage(req.Message))
 	if warningSent {
 		warning := warningPool[roller.Intn(len(warningPool))]
@@ -171,11 +203,11 @@ func Deliver(req DeliveryRequest, sender Sender, roller Roller, warningPool []st
 	}
 	result.WarningSent = warningSent
 
-	if groupLabel != "twin" {
-		groupLabel += groupLabel + "s"
-	}
 	receipt := fmt.Sprintf("Whisper sent.\n\nYour message found its way to your %s.", groupLabel)
-	if result.WarningSent {
+	if req.DeadRecipients > 0 {
+		receipt = deadRecipientReceipt(groupLabel, req.AliveRecipients)
+	}
+	if result.WarningSent && req.DeadRecipients == 0 {
 		receipt = "Whisper sent.\n\nSomething blurred between intention and arrival. The mirrors did not carry your words as spoken."
 	}
 	if err := sender.Send(req.SenderChannelID, receipt); err != nil {
@@ -184,17 +216,27 @@ func Deliver(req DeliveryRequest, sender Sender, roller Roller, warningPool []st
 	return result, nil
 }
 
+func deadRecipientReceipt(groupLabel string, alive int) string {
+	if alive == 0 {
+		return fmt.Sprintf("Whisper sent.\n\nThe %s window has shattered. There is no living reflection left to receive your words.", groupLabel)
+	}
+	if groupLabel == "twin" {
+		return "Whisper sent.\n\nA crack has spread across the twin’s mirror. Your words reached no living reflection."
+	}
+	return "Whisper sent.\n\nA crack runs through the triplet’s mirror. Your words reached the reflections that remain."
+}
+
 func quoteMessage(message string) string {
 	return strings.ReplaceAll(message, "\n", "\n> ")
 }
 
 func relationshipLabel(groupSize int) string {
 	switch groupSize {
-	case 4:
-		return "quadruplet"
+	case 2:
+		return "twin"
 	case 3:
 		return "triplet"
 	default:
-		return "twin"
+		return fmt.Sprintf("group of %d", groupSize)
 	}
 }

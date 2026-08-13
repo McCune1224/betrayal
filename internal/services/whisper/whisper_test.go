@@ -8,9 +8,9 @@ import (
 
 func TestResolveRecipientsRequiresCompleteTwinGroup(t *testing.T) {
 	players := []PlayerConfessional{
-		{PlayerID: 10, ChannelID: "channel-10", GroupID: "triplet"},
-		{PlayerID: 11, ChannelID: "channel-11", GroupID: "triplet"},
-		{PlayerID: 12, ChannelID: "channel-12", GroupID: "triplet"},
+		{PlayerID: 10, ChannelID: "channel-10", GroupID: "triplet", Alive: true},
+		{PlayerID: 11, ChannelID: "channel-11", GroupID: "triplet", Alive: true},
+		{PlayerID: 12, ChannelID: "channel-12", GroupID: "triplet", Alive: true},
 	}
 
 	got, err := ResolveRecipients(10, 11, players)
@@ -67,8 +67,8 @@ func TestDeliverSendsAllRecipientsThenSenderReceiptAndOptionalWarning(t *testing
 
 func TestResolveSenderRecipientsSendsToEveryLinkedMemberExceptSender(t *testing.T) {
 	players := []PlayerConfessional{
-		{PlayerID: 10, ChannelID: "sender-channel", GroupID: "pair"},
-		{PlayerID: 11, ChannelID: "twin-channel", GroupID: "pair"},
+		{PlayerID: 10, ChannelID: "sender-channel", GroupID: "pair", Alive: true},
+		{PlayerID: 11, ChannelID: "twin-channel", GroupID: "pair", Alive: true},
 	}
 
 	got, err := ResolveSenderRecipients(10, players)
@@ -111,6 +111,76 @@ func TestRelationshipLabelSupportsLargerGroups(t *testing.T) {
 func TestSuspicionChanceIsFivePercent(t *testing.T) {
 	if SuspicionChance != 0.05 {
 		t.Fatalf("SuspicionChance = %v, want 0.05", SuspicionChance)
+	}
+}
+
+func TestResolveSenderDeliveryExcludesDeadRecipientsAndReportsStatus(t *testing.T) {
+	players := []PlayerConfessional{
+		{PlayerID: 10, ChannelID: "sender-channel", GroupID: "triplet", Alive: true},
+		{PlayerID: 11, ChannelID: "living-twin", GroupID: "triplet", Alive: true},
+		{PlayerID: 12, ChannelID: "dead-twin", GroupID: "triplet", Alive: false},
+	}
+
+	got, err := ResolveSenderDelivery(10, players)
+	if err != nil {
+		t.Fatalf("ResolveSenderDelivery returned error: %v", err)
+	}
+	if want := []string{"living-twin"}; !reflect.DeepEqual(got.ChannelIDs, want) {
+		t.Fatalf("ResolveSenderDelivery channels = %#v, want %#v", got.ChannelIDs, want)
+	}
+	if got.GroupSize != 3 || got.AliveRecipients != 1 || got.DeadRecipients != 1 {
+		t.Fatalf("ResolveSenderDelivery status = %#v, want triplet with one alive and one dead recipient", got)
+	}
+}
+
+func TestResolveSenderDeliveryRejectsDeadSender(t *testing.T) {
+	players := []PlayerConfessional{
+		{PlayerID: 10, ChannelID: "sender-channel", GroupID: "pair", Alive: false},
+		{PlayerID: 11, ChannelID: "twin-channel", GroupID: "pair", Alive: true},
+	}
+	if _, err := ResolveSenderDelivery(10, players); !errors.Is(err, ErrDeadSender) {
+		t.Fatalf("dead sender error = %v, want %v", err, ErrDeadSender)
+	}
+}
+
+func TestDeliverUsesShatteredWindowReceiptWhenAllRecipientsAreDead(t *testing.T) {
+	sender := &recordingSender{}
+
+	_, err := Deliver(DeliveryRequest{
+		SenderChannelID: "sender-channel",
+		Message:         "The door is open.",
+		GroupSize:       2,
+		DeadRecipients:  1,
+	}, sender, fixedRoller{hit: true}, []string{"Keep your guard up."})
+	if err != nil {
+		t.Fatalf("Deliver returned error: %v", err)
+	}
+	want := []sendCall{{ChannelID: "sender-channel", Content: "Whisper sent.\n\nThe twin window has shattered. There is no living reflection left to receive your words."}}
+	if !reflect.DeepEqual(sender.calls, want) {
+		t.Fatalf("send calls = %#v, want %#v", sender.calls, want)
+	}
+}
+
+func TestDeliverUsesCrackedMirrorReceiptWhenSomeTripletMembersAreDead(t *testing.T) {
+	sender := &recordingSender{}
+
+	_, err := Deliver(DeliveryRequest{
+		SenderChannelID:     "sender-channel",
+		RecipientChannelIDs: []string{"living-sibling"},
+		Message:             "The door is open.",
+		GroupSize:           3,
+		AliveRecipients:     1,
+		DeadRecipients:      1,
+	}, sender, fixedRoller{hit: true}, []string{"Keep your guard up."})
+	if err != nil {
+		t.Fatalf("Deliver returned error: %v", err)
+	}
+	want := []sendCall{
+		{ChannelID: "living-sibling", Content: "Keep your guard up."},
+		{ChannelID: "sender-channel", Content: "Whisper sent.\n\nA crack runs through the triplet’s mirror. Your words reached the reflections that remain."},
+	}
+	if !reflect.DeepEqual(sender.calls, want) {
+		t.Fatalf("send calls = %#v, want %#v", sender.calls, want)
 	}
 }
 
