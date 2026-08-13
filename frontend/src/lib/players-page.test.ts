@@ -77,4 +77,21 @@ describe('players page', () => {
       method: 'GET'
     });
   });
+
+  it('uses colored state and alignment classes for roster cards', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([
+        { id: '701', alive: true, coins: 42, luck: 7, item_limit: 3, alignment: 'GOOD', role: 'Oracle' },
+        { id: '702', alive: false, coins: 0, luck: 0, item_limit: 3, alignment: 'EVIL', role: 'Mimic' }
+      ]), { headers: { 'content-type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ members: [
+        { id: '701', username: 'oracle_user', nickname: 'Oracle', bot: false },
+        { id: '702', username: 'mimic_user', nickname: 'Mimic', bot: false }
+      ] }), { headers: { 'content-type': 'application/json' } })));
+
+    render(Page);
+
+    expect(await screen.findByRole('link', { name: /open oracle profile/i })).toHaveClass('player-card-alignment-good', 'player-card-alive');
+    expect(screen.getByRole('link', { name: /open mimic profile/i })).toHaveClass('player-card-alignment-evil', 'player-card-dead');
+  });
 });

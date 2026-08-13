@@ -54,6 +54,17 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .player-grid { display: grid; grid-template-columns: 1fr; gap: .75rem; padding: .5rem 0 3rem; }
 .player-card { display: block; min-width: 0; padding: 1rem; color: inherit; text-decoration: none; }
 .player-card:hover { border-color: #777269; background: #1e1d1a; }
+.player-card-alignment-good { border-color: #2f806d; background: linear-gradient(145deg, #142a27, #181816 52%); }
+.player-card-alignment-evil { border-color: #99545d; background: linear-gradient(145deg, #321b24, #181816 52%); }
+.player-card-alignment-neutral { border-color: #85723e; background: linear-gradient(145deg, #2a2519, #181816 52%); }
+.player-card-alignment-good .player-meta span:first-child { color: #75d6b6; }
+.player-card-alignment-evil .player-meta span:first-child { color: #f09aa3; }
+.player-card-alignment-neutral .player-meta span:first-child { color: #e2c878; }
+.player-card-alive .status-dot { background: #48d6a9; box-shadow: 0 0 .55rem #48d6a9; }
+.player-card-alive .status-label { color: #75d6b6; }
+.player-card-dead { filter: saturate(.72); }
+.player-card-dead .status-dot { background: #e06a78; box-shadow: 0 0 .45rem #e06a78; }
+.player-card-dead .status-label { color: #f09aa3; }
 .player-card-top, .card-footer { display: flex; align-items: center; gap: .5rem; }
 .card-arrow { margin-left: auto; color: #c8c1b4; }
 .status-dot { width: .55rem; height: .55rem; flex: 0 0 auto; border-radius: 50%; background: #d6d0c2; }

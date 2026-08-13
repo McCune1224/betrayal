@@ -5,12 +5,14 @@
   import type { PlayerDetail } from '$lib/player-types';
 
   type CatalogItem = { id: number; name: string; description: string; rarity: string; cost: number };
+  type Member = { id: string; username: string; nickname?: string; bot: boolean };
   let player = $state<PlayerDetail | null>(null);
   let catalogItems = $state<CatalogItem[]>([]);
   let error = $state('');
   let loading = $state(true);
   let mutating = $state(false);
   let mutationError = $state('');
+  let playerLabel = $state('');
   const id = $derived(page.params.id);
 
   async function load() {
@@ -18,12 +20,15 @@
     error = '';
     try {
       const api = createApiClient();
-      const [detail, items] = await Promise.all([
+      const [detail, items, resources] = await Promise.all([
         api.get<PlayerDetail>(`/api/v1/players/${id}`),
-        api.get<CatalogItem[]>('/api/v1/catalog/items').catch(() => [] as CatalogItem[])
+        api.get<CatalogItem[]>('/api/v1/catalog/items').catch(() => [] as CatalogItem[]),
+        api.get<{ members: Member[] }>('/api/v1/discord/resources').catch(() => ({ members: [] }))
       ]);
       player = detail;
       catalogItems = items;
+      const member = resources.members.find((candidate) => candidate.id === detail.id);
+      playerLabel = member?.nickname || member?.username || `Player ${detail.id}`;
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'Could not load player';
     } finally {
@@ -76,7 +81,7 @@
       <p role="alert" class="state state-error">{error}</p>
     {:else if player}
       <header class="profile-header">
-        <div><p class="eyebrow">Player profile</p><h1 class="display-title">{player.role}</h1><p class="lede">{player.alive ? 'Active in the game' : 'Eliminated from the game'} · {player.alignment}</p></div>
+        <div><p class="eyebrow">Player profile</p><h1 class="display-title">{playerLabel}</h1><p class="lede">{player.role} · {player.alive ? 'Active in the game' : 'Eliminated from the game'} · {player.alignment}</p></div>
         <a class="btn btn-primary" href={`/players/${id}/edit`}>Edit profile</a>
       </header>
       <section class="profile-stats">
