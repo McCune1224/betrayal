@@ -68,7 +68,7 @@ func CreateChannelWithinCategory(s *discordgo.Session, e *discordgo.InteractionC
 	return subChannel, err
 }
 
-func GetChannelsWithinCategory(s *discordgo.Session, e *discordgo.InteractionCreate, categoryName string) (*[]discordgo.Channel, error) {
+func GetChannelsWithinCategory(s *discordgo.Session, e *discordgo.InteractionCreate, categoryName string) ([]discordgo.Channel, error) {
 	category, err := GetGuildChannelCategory(s, e, categoryName)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func GetChannelsWithinCategory(s *discordgo.Session, e *discordgo.InteractionCre
 		return nil, ErrChannelNotFound
 	}
 
-	return &matchingChannels, nil
+	return matchingChannels, nil
 }
 
 // Wrapper ontop of discordgo.GuildChannelCreate to create a hidden channel besided for the user and the admin

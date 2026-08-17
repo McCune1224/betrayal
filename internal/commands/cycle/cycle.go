@@ -2,11 +2,13 @@ package cycle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/mccune1224/betrayal/internal/logger"
 	"strconv"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mccune1224/betrayal/internal/discord"
 	"github.com/mccune1224/betrayal/internal/models"
@@ -124,7 +126,7 @@ func (c *Cycle) set(ctx ken.SubCommandContext) error {
 	channels, err := c.getCycleChannelIDs(ctx.GetSession(), ctx.GetEvent())
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
-		return discord.AlexError(ctx, "Failed to get channels for cycle messages")
+		return discord.AlexError(ctx, fmt.Sprintf("Failed to get channels for cycle messages: %v", err))
 	}
 	svc := cyclesvc.New(c.dbPool)
 	dbCtx := context.Background()
@@ -165,7 +167,7 @@ func (c *Cycle) next(ctx ken.SubCommandContext) error {
 	channelIDSendList, err := c.getCycleChannelIDs(sesh, ctx.GetEvent())
 	if err != nil {
 		logger.Get().Error().Err(err).Msg("operation failed")
-		return discord.AlexError(ctx, "Failed to get channels for cycle update messages")
+		return discord.AlexError(ctx, fmt.Sprintf("Failed to get channels for cycle update messages: %v", err))
 	}
 
 	dbCtx := context.Background()
@@ -210,16 +212,26 @@ func (c *Cycle) getCycleChannelIDs(sesh *discordgo.Session, event *discordgo.Int
 
 	actionChannelID, err := q.GetActionChannel(dbCtx)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return channels, fmt.Errorf("action channel not configured (run /channel action update)")
+		}
 		return channels, err
 	}
 	voteChannelID, err := q.GetVoteChannel(dbCtx)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return channels, fmt.Errorf("vote channel not configured (run /channel vote update)")
+		}
 		return channels, err
 	}
-	allianceChannels, err := discord.GetChannelsWithinCategory(sesh, event, "alliances")
 	allianceChannelIDs := []string{}
-	for _, ch := range *allianceChannels {
-		allianceChannelIDs = append(allianceChannelIDs, ch.ID)
+	allianceChannels, err := discord.GetChannelsWithinCategory(sesh, event, "alliances")
+	if err != nil {
+		logger.Get().Warn().Err(err).Msg("unable to get alliance channels; continuing without alliance broadcasts")
+	} else {
+		for _, ch := range allianceChannels {
+			allianceChannelIDs = append(allianceChannelIDs, ch.ID)
+		}
 	}
 	channels = []string{voteChannelID, actionChannelID}
 	channels = append(channels, playerChannelIds...)

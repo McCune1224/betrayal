@@ -135,6 +135,20 @@ Five channel types drive the game; all are configured via `/channel` (admin-only
 Still open (don't perpetuate): `inv/create.go` placeholder embed copy
 ("Idk finished inventory lol"), `roll` `luckTable` is dead (unregistered).
 
+**WT-7 landed 2026-08-17** (`cycle-crash-fix`): `/cycle set|next` panicked with
+a nil-pointer dereference (cycle.go:221) when the guild had no `alliances`
+category — `GetChannelsWithinCategory` returned `(nil, error)` and the caller
+dereferenced it unchecked. Fix: `GetChannelsWithinCategory` now returns a value
+slice (nil slice can't panic on range); `getCycleChannelIDs` checks the error.
+By maintainer decision, a missing/empty `alliances` category is a **warn-and-
+continue** (logged at WARN, alliance broadcasts skipped) — `/cycle set|next`
+still messages confessionals + vote/action funnels. This is intentional, not a
+bug; do not reintroduce fail-hard. Unconfigured vote/action channels remain a
+hard error naming the missing config (`/channel vote|action update`), surfaced
+in the `set`/`next` error embed titles. Covered by
+`internal/commands/cycle/channels_test.go` (note: that package, not
+`tests/cycle`, which tests the service).
+
 ## Missing Features (roadmap)
 
 Documented gaps from the 2026-08 admin analysis (tracked under WT-5/WT-6 — don't build ad-hoc versions):
