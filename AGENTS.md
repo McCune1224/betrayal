@@ -165,7 +165,7 @@ clock + fake fetcher).
 Documented gaps from the 2026-08 admin analysis (tracked under WT-5/WT-6 — don't build ad-hoc versions):
 - No `/admin health` or `/admin status` command: can't verify configured channels still exist in Discord, detect orphaned confessionals, or check configuration completeness before a game starts.
 - No channel validation / recovery tooling for channels deleted mid-game (error paths above are manual).
-- Web panel covers the full catalog (roles, items, abilities, statuses, perks, categories CRUD), player create/edit/remove, and role↔ability/perk linking as of 2026-08-16 (see `docs/plans/2026-08-16_web-catalog-crud-without-sync.md`); the item/ability category-assignment UI and role link editors landed as API endpoints — the inline detail forms for those still use the shared `CatalogPage` and do not yet render the category/link editors.
+- Web panel covers the full catalog (roles, items, abilities, statuses, perks, categories CRUD), player create/edit/remove, role↔ability/perk link editors, and item/ability category assignment APIs as of 2026-08-16 (see `docs/plans/2026-08-16_web-catalog-crud-without-sync.md`); item/ability category assignment still lacks an inline form — the endpoints exist and the category list renders in item/ability DTOs.
 
 ## Deployment
 

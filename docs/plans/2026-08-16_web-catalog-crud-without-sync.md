@@ -1,7 +1,7 @@
 # Web catalog CRUD without spreadsheet sync
 
-> **Status:** In progress (2026-08-16). Phases 1–3 and the whisper verification
-> (phase 5) are implemented and green; phase 4 (role link editors) remains.
+> **Status:** Complete as of 2026-08-16: phases 1–4 and the whisper verification
+> (phase 5) are implemented, tested, and committed on `main` (not pushed).
 > Coordinates with the WT-6 web-panel workstream; supersedes the stale
 > "web panel lacks item/ability/status CRUD" note in `AGENTS.md` (that CRUD
 > landed — see `internal/web/api/catalog.go`).
