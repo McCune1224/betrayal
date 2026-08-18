@@ -1,4 +1,4 @@
-export type CatalogKind = 'roles' | 'items' | 'abilities' | 'statuses';
+export type CatalogKind = 'roles' | 'items' | 'abilities' | 'statuses' | 'perks' | 'categories';
 
 export type CatalogRecord = {
   id: number;

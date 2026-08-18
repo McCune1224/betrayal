@@ -24,6 +24,21 @@ func (q *Queries) CreateAbilityCategoryJoin(ctx context.Context, arg CreateAbili
 	return err
 }
 
+const deleteAbilityCategoryJoin = `-- name: DeleteAbilityCategoryJoin :exec
+DELETE FROM ability_category
+WHERE ability_id = $1 AND category_id = $2
+`
+
+type DeleteAbilityCategoryJoinParams struct {
+	AbilityID  int32 `json:"ability_id"`
+	CategoryID int32 `json:"category_id"`
+}
+
+func (q *Queries) DeleteAbilityCategoryJoin(ctx context.Context, arg DeleteAbilityCategoryJoinParams) error {
+	_, err := q.db.Exec(ctx, deleteAbilityCategoryJoin, arg.AbilityID, arg.CategoryID)
+	return err
+}
+
 const listAbilityCategoryNames = `-- name: ListAbilityCategoryNames :many
 select category.name
 from ability_category

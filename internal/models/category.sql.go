@@ -30,6 +30,19 @@ func (q *Queries) DeleteCategory(ctx context.Context, id int32) error {
 	return err
 }
 
+const getCategory = `-- name: GetCategory :one
+select id, name
+from category
+where id = $1
+`
+
+func (q *Queries) GetCategory(ctx context.Context, id int32) (Category, error) {
+	row := q.db.QueryRow(ctx, getCategory, id)
+	var i Category
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
+}
+
 const getCategoryByFuzzy = `-- name: GetCategoryByFuzzy :one
 select id, name
 from category
@@ -80,4 +93,23 @@ func (q *Queries) ListCategory(ctx context.Context) ([]Category, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateCategory = `-- name: UpdateCategory :one
+UPDATE category
+SET name = $2
+WHERE id = $1
+RETURNING id, name
+`
+
+type UpdateCategoryParams struct {
+	ID   int32  `json:"id"`
+	Name string `json:"name"`
+}
+
+func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error) {
+	row := q.db.QueryRow(ctx, updateCategory, arg.ID, arg.Name)
+	var i Category
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
 }

@@ -9,3 +9,7 @@ inner join category on ability_category.category_id = category.id
 where ability_category.ability_id = $1
 ;
 
+-- name: DeleteAbilityCategoryJoin :exec
+DELETE FROM ability_category
+WHERE ability_id = $1 AND category_id = $2;
+

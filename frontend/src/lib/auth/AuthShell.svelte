@@ -29,7 +29,9 @@
         { label: 'Roles', href: '/roles', glyph: '♜' },
         { label: 'Items', href: '/items', glyph: '◈' },
         { label: 'Abilities', href: '/abilities', glyph: '✦' },
-        { label: 'Statuses', href: '/statuses', glyph: '☽' }
+        { label: 'Statuses', href: '/statuses', glyph: '☽' },
+        { label: 'Perks', href: '/perks', glyph: '⚜' },
+        { label: 'Categories', href: '/categories', glyph: '⊞' }
       ]
     },
     {

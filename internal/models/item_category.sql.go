@@ -23,3 +23,45 @@ func (q *Queries) CreateItemCategoryJoin(ctx context.Context, arg CreateItemCate
 	_, err := q.db.Exec(ctx, createItemCategoryJoin, arg.ItemID, arg.CategoryID)
 	return err
 }
+
+const deleteItemCategoryJoin = `-- name: DeleteItemCategoryJoin :exec
+DELETE FROM item_category
+WHERE item_id = $1 AND category_id = $2
+`
+
+type DeleteItemCategoryJoinParams struct {
+	ItemID     int32 `json:"item_id"`
+	CategoryID int32 `json:"category_id"`
+}
+
+func (q *Queries) DeleteItemCategoryJoin(ctx context.Context, arg DeleteItemCategoryJoinParams) error {
+	_, err := q.db.Exec(ctx, deleteItemCategoryJoin, arg.ItemID, arg.CategoryID)
+	return err
+}
+
+const listItemCategoryNames = `-- name: ListItemCategoryNames :many
+select category.name
+from item_category
+inner join category on item_category.category_id = category.id
+where item_category.item_id = $1
+`
+
+func (q *Queries) ListItemCategoryNames(ctx context.Context, itemID int32) ([]string, error) {
+	rows, err := q.db.Query(ctx, listItemCategoryNames, itemID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
