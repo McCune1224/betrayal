@@ -213,8 +213,9 @@ func (s *Server) setupRoutes() {
 	apiAdminHandler := api.NewAdminHandler(s.dbPool, s.railwayClient, s.getMigrateRunner, gamereset.New(s.dbPool, s.syncService))
 	apiSyncHandler := api.NewSyncHandler(s.dbPool, s.syncService)
 	s.syncHandler = apiSyncHandler
-	apiDiscordResourceHandler := api.NewDiscordResourceHandler(s.discordSession)
-	apiWhisperHandler := api.NewWhisperHandler(s.dbPool, s.discordSession)
+	apiDiscordResourceCache := api.NewResourceCache(s.discordSession, api.ResourcesCacheTTL)
+	apiDiscordResourceHandler := api.NewDiscordResourceHandler(s.discordSession, apiDiscordResourceCache)
+	apiWhisperHandler := api.NewWhisperHandler(s.dbPool, s.discordSession, apiDiscordResourceCache)
 	apiAuthMiddleware := api.NewAuthMiddleware(s.sessionStore)
 	browserAuth := webmiddleware.NewAuthMiddleware(s.sessionStore)
 

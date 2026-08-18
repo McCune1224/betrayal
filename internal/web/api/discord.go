@@ -3,18 +3,19 @@ package api
 import (
 	"net/http"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/labstack/echo/v4"
 )
 
-type DiscordResourceHandler struct {
-	discord *discordgo.Session
-}
-
-func NewDiscordResourceHandler(discord *discordgo.Session) *DiscordResourceHandler {
-	return &DiscordResourceHandler{discord: discord}
-}
+// ResourcesCacheTTL is how long a Discord resources snapshot is served from
+// memory before the next request refreshes it from the Discord REST API.
+// The scrape (channels + paginated member list) costs seconds of round-trips;
+// nicknames and channels rarely change mid-game, so a time-bounded cache turns
+// every page load after the first into an in-memory read.
+const ResourcesCacheTTL = 60 * time.Second
 
 type DiscordGuildDTO struct {
 	ID   string `json:"id"`
@@ -36,51 +37,132 @@ type DiscordMemberDTO struct {
 	Bot      bool   `json:"bot"`
 }
 
+// resourceSnapshot is one immutable scrape of Discord guild/channel/member
+// data. Sections are best-effort exactly like the previous uncached behavior:
+// a failed section is left empty rather than failing the whole page.
+type resourceSnapshot struct {
+	guilds   []DiscordGuildDTO
+	channels []DiscordChannelDTO
+	members  []DiscordMemberDTO
+}
+
+// ResourceCache memoizes a resourceSnapshot for a bounded window. A single
+// cache is shared by every web handler that needs Discord identities, so the
+// expensive REST scrape happens at most once per TTL across all pages.
+type ResourceCache struct {
+	mu        sync.Mutex
+	fetch     func() *resourceSnapshot
+	ttl       time.Duration
+	now       func() time.Time
+	snapshot  *resourceSnapshot
+	fetchedAt time.Time
+}
+
+// NewResourceCache returns a cache backed by the given Discord session. A nil
+// session yields an empty snapshot (local/web-only mode).
+func NewResourceCache(session *discordgo.Session, ttl time.Duration) *ResourceCache {
+	return &ResourceCache{
+		fetch: func() *resourceSnapshot { return fetchDiscordSnapshot(session) },
+		ttl:   ttl,
+		now:   time.Now,
+	}
+}
+
+// Get returns the cached snapshot if it is still fresh, otherwise it refetches
+// and stores a new one. Safe for concurrent use.
+func (c *ResourceCache) Get() *resourceSnapshot {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.snapshot != nil && c.now().Sub(c.fetchedAt) < c.ttl {
+		return c.snapshot
+	}
+	c.snapshot = c.fetch()
+	c.fetchedAt = c.now()
+	return c.snapshot
+}
+
+type DiscordResourceHandler struct {
+	discord *discordgo.Session
+	cache   *ResourceCache
+}
+
+func NewDiscordResourceHandler(discord *discordgo.Session, cache *ResourceCache) *DiscordResourceHandler {
+	if cache == nil {
+		cache = NewResourceCache(discord, ResourcesCacheTTL)
+	}
+	return &DiscordResourceHandler{discord: discord, cache: cache}
+}
+
 func (h *DiscordResourceHandler) Resources(c echo.Context) error {
 	if h.discord == nil {
 		WriteError(c.Response(), http.StatusServiceUnavailable, "discord_unavailable", "Discord is disabled or not connected", nil)
 		return nil
 	}
-	guilds := make([]DiscordGuildDTO, 0)
-	channels := make([]DiscordChannelDTO, 0)
-	members := make([]DiscordMemberDTO, 0)
 	if h.discord.State == nil {
 		WriteError(c.Response(), http.StatusServiceUnavailable, "discord_unavailable", "Discord state is not ready", nil)
 		return nil
 	}
-	for _, guild := range h.discord.State.Guilds {
+	snapshot := h.cache.Get()
+	WriteJSON(c.Response(), http.StatusOK, map[string]any{"guilds": snapshot.guilds, "channels": snapshot.channels, "members": snapshot.members})
+	return nil
+}
+
+// fetchDiscordSnapshot scrapes the current guilds from gateway state and
+// refreshes channel/member data over the Discord REST API. Each section is
+// best-effort: failures fall back to an empty section, matching the historical
+// behavior of the Resources endpoint.
+func fetchDiscordSnapshot(session *discordgo.Session) *resourceSnapshot {
+	snapshot := &resourceSnapshot{
+		guilds:   make([]DiscordGuildDTO, 0),
+		channels: make([]DiscordChannelDTO, 0),
+		members:  make([]DiscordMemberDTO, 0),
+	}
+	if session == nil || session.State == nil {
+		return snapshot
+	}
+	for _, guild := range session.State.Guilds {
 		if guild == nil {
 			continue
 		}
-		guilds = append(guilds, DiscordGuildDTO{ID: guild.ID, Name: guild.Name})
-		guildChannels, err := h.discord.GuildChannels(guild.ID)
-		if err == nil {
+		snapshot.guilds = append(snapshot.guilds, DiscordGuildDTO{ID: guild.ID, Name: guild.Name})
+		if guildChannels, err := session.GuildChannels(guild.ID); err == nil {
+			categoryNames := channelCategoryNames(guildChannels)
 			for _, channel := range guildChannels {
 				if channel == nil || channel.Type == discordgo.ChannelTypeGuildCategory {
 					continue
 				}
-				category := ""
-				for _, candidate := range guildChannels {
-					if candidate != nil && candidate.ID == channel.ParentID {
-						category = candidate.Name
-						break
-					}
-				}
-				channels = append(channels, DiscordChannelDTO{ID: channel.ID, GuildID: guild.ID, Name: channel.Name, Type: strconv.Itoa(int(channel.Type)), Category: category})
+				snapshot.channels = append(snapshot.channels, DiscordChannelDTO{
+					ID:       channel.ID,
+					GuildID:  guild.ID,
+					Name:     channel.Name,
+					Type:     strconv.Itoa(int(channel.Type)),
+					Category: categoryNames[channel.ParentID],
+				})
 			}
 		}
-		guildMembers, err := allGuildMembers(h.discord, guild.ID)
-		if err == nil {
+		if guildMembers, err := allGuildMembers(session, guild.ID); err == nil {
 			for _, member := range guildMembers {
 				if member == nil || member.User == nil {
 					continue
 				}
-				members = append(members, DiscordMemberDTO{ID: member.User.ID, Username: member.User.Username, Nickname: member.Nick, Bot: member.User.Bot})
+				snapshot.members = append(snapshot.members, DiscordMemberDTO{ID: member.User.ID, Username: member.User.Username, Nickname: member.Nick, Bot: member.User.Bot})
 			}
 		}
 	}
-	WriteJSON(c.Response(), http.StatusOK, map[string]any{"guilds": guilds, "channels": channels, "members": members})
-	return nil
+	return snapshot
+}
+
+// channelCategoryNames builds a channel-ID → name map in one pass. The previous
+// implementation scanned every channel for every channel (O(n²)); the map makes
+// category resolution O(n) and is definitionally equivalent.
+func channelCategoryNames(channels []*discordgo.Channel) map[string]string {
+	names := make(map[string]string, len(channels))
+	for _, channel := range channels {
+		if channel != nil {
+			names[channel.ID] = channel.Name
+		}
+	}
+	return names
 }
 
 // allGuildMembers walks Discord's paginated member endpoint. A single request

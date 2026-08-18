@@ -149,6 +149,17 @@ in the `set`/`next` error embed titles. Covered by
 `internal/commands/cycle/channels_test.go` (note: that package, not
 `tests/cycle`, which tests the service).
 
+**WT-8 landed 2026-08-18** (`discord-resources-cache`): the web panel's
+`/api/v1/discord/resources` scraped Discord's REST API (channels + paginated
+members) on EVERY page load — production HAR captures showed a single request
+taking 5+ seconds while the parallel DB fetch took ~50ms. `internal/web/api/
+discord.go` now memoizes the snapshot in a shared in-memory `ResourceCache`
+(const `ResourcesCacheTTL`, 60s) reused by the whisper handler, and the O(n²)
+channel-category lookup is a one-pass map. Server boots with a cold cache, so
+the first request after boot/expiry is still slow; loads in between are
+in-memory reads. Covered by `internal/web/api/discord_test.go` (injectable
+clock + fake fetcher).
+
 ## Missing Features (roadmap)
 
 Documented gaps from the 2026-08 admin analysis (tracked under WT-5/WT-6 — don't build ad-hoc versions):

@@ -15,12 +15,16 @@ import (
 )
 
 type WhisperHandler struct {
-	pool    *pgxpool.Pool
-	discord *discordgo.Session
+	pool      *pgxpool.Pool
+	discord   *discordgo.Session
+	resources *ResourceCache
 }
 
-func NewWhisperHandler(pool *pgxpool.Pool, discord *discordgo.Session) *WhisperHandler {
-	return &WhisperHandler{pool: pool, discord: discord}
+func NewWhisperHandler(pool *pgxpool.Pool, discord *discordgo.Session, resources *ResourceCache) *WhisperHandler {
+	if resources == nil {
+		resources = NewResourceCache(discord, ResourcesCacheTTL)
+	}
+	return &WhisperHandler{pool: pool, discord: discord, resources: resources}
 }
 
 type whisperGroupDTO struct {
@@ -96,24 +100,16 @@ func (h *WhisperHandler) discordPlayerNames() map[string][2]string {
 	if h.discord == nil || h.discord.State == nil {
 		return names
 	}
-	for _, guild := range h.discord.State.Guilds {
-		if guild == nil {
+	snapshot := h.resources.Get()
+	for _, member := range snapshot.members {
+		if member.ID == "" {
 			continue
 		}
-		members, err := allGuildMembers(h.discord, guild.ID)
-		if err != nil {
-			members = guild.Members
+		label := member.Nickname
+		if label == "" {
+			label = member.Username
 		}
-		for _, member := range members {
-			if member == nil || member.User == nil {
-				continue
-			}
-			label := member.Nick
-			if label == "" {
-				label = member.User.Username
-			}
-			names[member.User.ID] = [2]string{label, "Discord member"}
-		}
+		names[member.ID] = [2]string{label, "Discord member"}
 	}
 	return names
 }
