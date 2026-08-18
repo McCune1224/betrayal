@@ -2,7 +2,11 @@
 # Usage: docker compose up -d   (or `make db-up`)
 #
 # Point DATABASE_URL / MOCK_DATABASE at this in your env file:
-#   postgres://postgres:postgres@localhost:5432/betrayal?sslmode=disable
+#   postgres://postgres:***@localhost:5433/betrayal?sslmode=disable
+#
+# Host port 5433 (not the conventional 5432): 5432 on this machine is owned by
+# another project's postgres container; the canonical env file
+# (~/.config/betrayal/env) carries the same 5433 mapping.
 #
 # NOTE: tests must never use DATABASE_POOLER_URL (production).
 services:
@@ -14,7 +18,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: betrayal
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - betrayal_pgdata:/var/lib/postgresql/data
     healthcheck:

@@ -17,7 +17,7 @@ Discord game-management bot for "Betrayal" (battle-royale game). Go 1.23, discor
 - **Tests**: `go test ./...` — REQUIRES local Postgres (`make db-up` first; migrations are applied by the test bootstrap itself). Tests must never touch the production DB — a hard guard enforces it (see Testing Workflow).
 - **CI**: `.github/workflows/test.yml` — postgres service container + `go vet ./...` + `go test ./...` + `make build` on push/PR.
 - **Migrations**: `make migrate-up/down` (prod via `DATABASE_POOLER_URL`), `make mock-migrate-up/down` (local via `MOCK_DATABASE`). Never run migrate-up against prod casually.
-- **Local DB**: `make db-up` / `make db-down` (docker compose, postgres:16 on 5432). **Run `db-up` ONCE per machine — all worktrees share the same compose container** (stable name `betrayal-postgres`, so `docker exec betrayal-postgres ...` works from any worktree). Running `db-up` from a second worktree fails with a container-name conflict — that's expected. No Redis — Ken state is internal.
+- **Local DB**: `make db-up` / `make db-down` (docker compose, postgres:16 on host port **5433**). The canonical env and compose files both use 5433 because host 5432 is occupied by another project's postgres; all worktrees share the same compose container (stable name `betrayal-postgres`, so `docker exec betrayal-postgres ...` works from any worktree). Running `db-up` from a second worktree fails with a container-name conflict — that's expected; if the container exists but is stopped, `docker start betrayal-postgres` brings it back. No Redis — Ken state is internal.
 
 ## Worktrees & Env (READ FIRST)
 
