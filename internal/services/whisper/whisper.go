@@ -173,6 +173,7 @@ type DeliveryRequest struct {
 type DeliveryResult struct {
 	WarningSent                bool
 	DeliveredRecipientChannels []string
+	SenderStatus               string
 }
 
 // Deliver sends the original or doubt-replaced message to all preflighted
@@ -210,9 +211,7 @@ func Deliver(req DeliveryRequest, sender Sender, roller Roller, warningPool []st
 	if result.WarningSent && req.DeadRecipients == 0 {
 		receipt = "Whisper sent.\n\nSomething blurred between intention and arrival. The mirrors did not carry your words as spoken."
 	}
-	if err := sender.Send(req.SenderChannelID, receipt); err != nil {
-		return result, fmt.Errorf("send whisper receipt: %w", err)
-	}
+	result.SenderStatus = strings.TrimPrefix(receipt, "Whisper sent.\n\n")
 	return result, nil
 }
 

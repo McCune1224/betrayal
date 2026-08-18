@@ -70,6 +70,9 @@ var allTables = []string{
 	"ability_info",
 	"role",
 	"game_cycle",
+	"whisper_group_member",
+	"whisper_group",
+	"whisper_doubt_message",
 }
 
 // repoRoot returns the absolute path of the repository root (parent of tests/).

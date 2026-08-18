@@ -120,7 +120,7 @@ func (w *Whisper) send(ctx ken.Context) error {
 	}
 
 	sender := sessionSender{session: ctx.GetSession()}
-	_, err = whispersvc.Deliver(whispersvc.DeliveryRequest{
+	result, err := whispersvc.Deliver(whispersvc.DeliveryRequest{
 		SenderChannelID:     util.Itoa64(senderConf.ChannelID),
 		RecipientChannelIDs: delivery.ChannelIDs,
 		Message:             message,
@@ -132,7 +132,7 @@ func (w *Whisper) send(ctx ken.Context) error {
 		return discord.ErrorMessage(ctx, "Whisper delivery failed", "The complete whisper could not be delivered. Please try again later.")
 	}
 	ctx.SetEphemeral(true)
-	return ctx.RespondEmbed(&discordgo.MessageEmbed{Title: "Whisper sent", Description: "Your message was delivered by the bot.", Color: discord.ColorThemeGreen})
+	return ctx.RespondEmbed(&discordgo.MessageEmbed{Title: "Whisper sent", Description: result.SenderStatus, Color: discord.ColorThemeGreen})
 }
 
 type sessionSender struct{ session *discordgo.Session }

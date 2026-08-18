@@ -55,10 +55,12 @@ func TestDeliverSendsAllRecipientsThenSenderReceiptAndOptionalWarning(t *testing
 	if !result.WarningSent {
 		t.Fatal("Deliver did not report warning sent")
 	}
+	if result.SenderStatus != "Something blurred between intention and arrival. The mirrors did not carry your words as spoken." {
+		t.Fatalf("sender status = %q, want vague doubt status", result.SenderStatus)
+	}
 	want := []sendCall{
 		{ChannelID: "twin-1", Content: "Keep your guard up."},
 		{ChannelID: "twin-2", Content: "Keep your guard up."},
-		{ChannelID: "sender-channel", Content: "Whisper sent.\n\nSomething blurred between intention and arrival. The mirrors did not carry your words as spoken."},
 	}
 	if !reflect.DeepEqual(sender.calls, want) {
 		t.Fatalf("send calls = %#v, want %#v", sender.calls, want)
@@ -91,10 +93,10 @@ func TestDeliverSendsOriginalMessageWhenDoubtDoesNotTrigger(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Deliver returned error: %v", err)
 	}
-	want := []sendCall{
-		{ChannelID: "twin-channel", Content: "Your twin whispers:\n\n> The door is open.\n\nA message passed quietly through the mirrors."},
-		{ChannelID: "sender-channel", Content: "Whisper sent.\n\nYour message found its way to your twin."},
+	if len(sender.calls) != 1 {
+		t.Fatalf("sender calls = %#v, want only recipient delivery", sender.calls)
 	}
+	want := []sendCall{{ChannelID: "twin-channel", Content: "Your twin whispers:\n\n> The door is open.\n\nA message passed quietly through the mirrors."}}
 	if !reflect.DeepEqual(sender.calls, want) {
 		t.Fatalf("send calls = %#v, want %#v", sender.calls, want)
 	}
@@ -146,7 +148,7 @@ func TestResolveSenderDeliveryRejectsDeadSender(t *testing.T) {
 func TestDeliverUsesShatteredWindowReceiptWhenAllRecipientsAreDead(t *testing.T) {
 	sender := &recordingSender{}
 
-	_, err := Deliver(DeliveryRequest{
+	result, err := Deliver(DeliveryRequest{
 		SenderChannelID: "sender-channel",
 		Message:         "The door is open.",
 		GroupSize:       2,
@@ -155,7 +157,10 @@ func TestDeliverUsesShatteredWindowReceiptWhenAllRecipientsAreDead(t *testing.T)
 	if err != nil {
 		t.Fatalf("Deliver returned error: %v", err)
 	}
-	want := []sendCall{{ChannelID: "sender-channel", Content: "Whisper sent.\n\nThe twin window has shattered. There is no living reflection left to receive your words."}}
+	var want []sendCall
+	if result.SenderStatus != "The twin window has shattered. There is no living reflection left to receive your words." {
+		t.Fatalf("sender status = %q, want shattered-window status", result.SenderStatus)
+	}
 	if !reflect.DeepEqual(sender.calls, want) {
 		t.Fatalf("send calls = %#v, want %#v", sender.calls, want)
 	}
@@ -164,7 +169,7 @@ func TestDeliverUsesShatteredWindowReceiptWhenAllRecipientsAreDead(t *testing.T)
 func TestDeliverUsesCrackedMirrorReceiptWhenSomeTripletMembersAreDead(t *testing.T) {
 	sender := &recordingSender{}
 
-	_, err := Deliver(DeliveryRequest{
+	result, err := Deliver(DeliveryRequest{
 		SenderChannelID:     "sender-channel",
 		RecipientChannelIDs: []string{"living-sibling"},
 		Message:             "The door is open.",
@@ -175,9 +180,9 @@ func TestDeliverUsesCrackedMirrorReceiptWhenSomeTripletMembersAreDead(t *testing
 	if err != nil {
 		t.Fatalf("Deliver returned error: %v", err)
 	}
-	want := []sendCall{
-		{ChannelID: "living-sibling", Content: "Keep your guard up."},
-		{ChannelID: "sender-channel", Content: "Whisper sent.\n\nA crack runs through the triplet’s mirror. Your words reached the reflections that remain."},
+	want := []sendCall{{ChannelID: "living-sibling", Content: "Keep your guard up."}}
+	if result.SenderStatus != "A crack runs through the triplet’s mirror. Your words reached the reflections that remain." {
+		t.Fatalf("sender status = %q, want cracked-mirror status", result.SenderStatus)
 	}
 	if !reflect.DeepEqual(sender.calls, want) {
 		t.Fatalf("send calls = %#v, want %#v", sender.calls, want)
