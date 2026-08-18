@@ -799,6 +799,11 @@ func (h *CatalogHandler) AbilityAddCategory(c echo.Context) error {
 	)
 }
 
+type catalogRoleLinkInput struct {
+	Ability string `json:"ability"`
+	Perk    string `json:"perk"`
+}
+
 func (h *CatalogHandler) AbilityRemoveCategory(c echo.Context) error {
 	id, err := catalogID(c)
 	if err != nil {
@@ -817,6 +822,141 @@ func (h *CatalogHandler) AbilityRemoveCategory(c echo.Context) error {
 	}
 	if err := q.DeleteAbilityCategoryJoin(ctx, models.DeleteAbilityCategoryJoinParams{AbilityID: id, CategoryID: int32(cid)}); err != nil {
 		return catalogFailure(c, "ability_category_update_failed")
+	}
+	c.NoContent(204)
+	return nil
+}
+
+func (h *CatalogHandler) roleLinkResponse(ctx context.Context, roleID int32) (catalogRoleDTO, error) {
+	q := models.New(h.pool)
+	role, err := q.GetRole(ctx, roleID)
+	if err != nil {
+		return catalogRoleDTO{}, err
+	}
+	abilities, err := q.ListRoleAbilityForRole(ctx, roleID)
+	if err != nil {
+		return catalogRoleDTO{}, err
+	}
+	perks, err := q.ListRolePerkForRole(ctx, roleID)
+	if err != nil {
+		return catalogRoleDTO{}, err
+	}
+	return h.roleDTO(ctx, role, abilities, perks), nil
+}
+
+func (h *CatalogHandler) RoleAddAbility(c echo.Context) error {
+	id, err := catalogID(c)
+	if err != nil {
+		return catalogBad(c, "invalid role id")
+	}
+	var in catalogRoleLinkInput
+	if decodeCatalog(c, &in) != nil {
+		return nil
+	}
+	ctx, cancel := catalogContext(c)
+	defer cancel()
+	q := models.New(h.pool)
+	if _, err := q.GetRole(ctx, id); err != nil {
+		WriteError(c.Response(), 404, "role_not_found", "role not found", nil)
+		return nil
+	}
+	if strings.TrimSpace(in.Ability) == "" {
+		WriteError(c.Response(), 400, "ability_not_found", "ability not found", nil)
+		return nil
+	}
+	ability, err := q.GetAbilityInfoByName(ctx, in.Ability)
+	if err != nil {
+		WriteError(c.Response(), 400, "ability_not_found", "ability not found", nil)
+		return nil
+	}
+	if err := q.CreateRoleAbilityJoin(ctx, models.CreateRoleAbilityJoinParams{RoleID: id, AbilityID: ability.ID}); err != nil {
+		return catalogFailure(c, "role_ability_update_failed")
+	}
+	dto, err := h.roleLinkResponse(ctx, id)
+	if err != nil {
+		return catalogFailure(c, "roles_unavailable")
+	}
+	WriteJSON(c.Response(), 200, dto)
+	return nil
+}
+
+func (h *CatalogHandler) RoleRemoveAbility(c echo.Context) error {
+	id, err := catalogID(c)
+	if err != nil {
+		return catalogBad(c, "invalid role id")
+	}
+	abilityID, err := strconv.ParseInt(c.Param("abilityID"), 10, 32)
+	if err != nil || abilityID <= 0 {
+		return catalogBad(c, "invalid ability id")
+	}
+	ctx, cancel := catalogContext(c)
+	defer cancel()
+	q := models.New(h.pool)
+	if _, err := q.GetRole(ctx, id); err != nil {
+		WriteError(c.Response(), 404, "role_not_found", "role not found", nil)
+		return nil
+	}
+	if err := q.DeleteRoleAbilityJoin(ctx, models.DeleteRoleAbilityJoinParams{RoleID: id, AbilityID: int32(abilityID)}); err != nil {
+		return catalogFailure(c, "role_ability_update_failed")
+	}
+	c.NoContent(204)
+	return nil
+}
+
+func (h *CatalogHandler) RoleAddPerk(c echo.Context) error {
+	id, err := catalogID(c)
+	if err != nil {
+		return catalogBad(c, "invalid role id")
+	}
+	var in catalogRoleLinkInput
+	if decodeCatalog(c, &in) != nil {
+		return nil
+	}
+	ctx, cancel := catalogContext(c)
+	defer cancel()
+	q := models.New(h.pool)
+	if _, err := q.GetRole(ctx, id); err != nil {
+		WriteError(c.Response(), 404, "role_not_found", "role not found", nil)
+		return nil
+	}
+	if strings.TrimSpace(in.Perk) == "" {
+		WriteError(c.Response(), 400, "perk_not_found", "perk not found", nil)
+		return nil
+	}
+	perk, err := q.GetPerkInfoByName(ctx, in.Perk)
+	if err != nil {
+		WriteError(c.Response(), 400, "perk_not_found", "perk not found", nil)
+		return nil
+	}
+	if err := q.CreateRolePerkJoin(ctx, models.CreateRolePerkJoinParams{RoleID: id, PerkID: perk.ID}); err != nil {
+		return catalogFailure(c, "role_perk_update_failed")
+	}
+	dto, err := h.roleLinkResponse(ctx, id)
+	if err != nil {
+		return catalogFailure(c, "roles_unavailable")
+	}
+	WriteJSON(c.Response(), 200, dto)
+	return nil
+}
+
+func (h *CatalogHandler) RoleRemovePerk(c echo.Context) error {
+	id, err := catalogID(c)
+	if err != nil {
+		return catalogBad(c, "invalid role id")
+	}
+	perkID, err := strconv.ParseInt(c.Param("perkID"), 10, 32)
+	if err != nil || perkID <= 0 {
+		return catalogBad(c, "invalid perk id")
+	}
+	ctx, cancel := catalogContext(c)
+	defer cancel()
+	q := models.New(h.pool)
+	if _, err := q.GetRole(ctx, id); err != nil {
+		WriteError(c.Response(), 404, "role_not_found", "role not found", nil)
+		return nil
+	}
+	if err := q.DeleteRolePerkJoin(ctx, models.DeleteRolePerkJoinParams{RoleID: id, PerkID: int32(perkID)}); err != nil {
+		return catalogFailure(c, "role_perk_update_failed")
 	}
 	c.NoContent(204)
 	return nil

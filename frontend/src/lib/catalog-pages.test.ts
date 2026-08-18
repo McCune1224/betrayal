@@ -31,7 +31,8 @@ it('does not delete a catalog record when the confirmation is cancelled', async 
   await fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
 
   expect(confirmMock).toHaveBeenCalledWith(expect.stringContaining('Delete Oracle'));
-  expect(fetchMock).toHaveBeenCalledTimes(1);
+  const deletes = fetchMock.mock.calls.filter(([, init]) => (init?.method ?? 'GET').toUpperCase() === 'DELETE');
+  expect(deletes).toHaveLength(0);
 });
 
 it('renders the perks library with create affordances', async () => {
