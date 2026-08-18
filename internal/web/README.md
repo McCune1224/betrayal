@@ -18,8 +18,8 @@ Production has no SSR/Node service: the frontend is generated during the image b
 All application data routes are authenticated JSON APIs under `/api/v1`:
 
 - `/auth` — session, CSRF, login, logout.
-- `/dashboard`, `/players` — dashboard, player list/detail/create/edit, inventory and note mutations.
-- `/catalog` — roles, items, abilities, and statuses CRUD.
+- `/dashboard`, `/players` — dashboard, player list/detail/create/edit/delete, inventory and note mutations.
+- `/catalog` — roles, items, abilities, statuses, perks, and categories CRUD plus item/ability category assignment and role ability/perk linking.
 - `/ops` — cycle, channels, votes, readiness, and setup/role-pool generation.
 - `/whisper` — symmetric twin-group management and the enabled doubt-message pool.
 - `/sync` — source listing/editing, preview, and apply.
