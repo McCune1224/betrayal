@@ -300,6 +300,30 @@ func (h *PlayersHandler) Update(c echo.Context) error {
 func (h *PlayersHandler) UpdateStats(c echo.Context) error { return h.Update(c) }
 func (h *PlayersHandler) UpdateState(c echo.Context) error { return h.Update(c) }
 
+// Delete removes a player from the roster. Dependent rows (inventory,
+// confessional, votes, whisper membership, notes) cascade via ON DELETE
+// CASCADE; the lifeboard channel is not FK-bound and must be rebuilt with
+// `/channel lifeboard set` afterwards.
+func (h *PlayersHandler) Delete(c echo.Context) error {
+	id, ok := playerID(c)
+	if !ok {
+		WriteError(c.Response(), 400, "invalid_player_id", "player ID must be a positive integer", nil)
+		return nil
+	}
+	ctx, cn := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cn()
+	if _, _, err := h.getPlayer(ctx, id); err != nil {
+		WriteError(c.Response(), 404, "player_not_found", "player not found", nil)
+		return nil
+	}
+	if err := models.New(h.pool).DeletePlayer(ctx, id); err != nil {
+		WriteError(c.Response(), 500, "player_delete_failed", "could not delete player", nil)
+		return nil
+	}
+	c.NoContent(204)
+	return nil
+}
+
 func (h *PlayersHandler) mutate(c echo.Context, op string) error {
 	id, ok := playerID(c)
 	if !ok {

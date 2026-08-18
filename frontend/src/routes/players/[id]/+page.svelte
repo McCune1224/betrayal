@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import { createApiClient } from '$lib/api/client';
   import type { PlayerDetail } from '$lib/player-types';
@@ -13,6 +14,7 @@
   let mutating = $state(false);
   let mutationError = $state('');
   let playerLabel = $state('');
+  let confirmPhrase = $state('');
   const id = $derived(page.params.id);
 
   async function load() {
@@ -67,6 +69,19 @@
     (event.currentTarget as HTMLFormElement).reset();
   }
 
+  async function removePlayer() {
+    if (confirmPhrase !== playerLabel) return;
+    mutating = true;
+    mutationError = '';
+    try {
+      await createApiClient().delete(`/api/v1/players/${id}`);
+      await goto('/players');
+    } catch (cause) {
+      mutationError = cause instanceof Error ? cause.message : 'Could not remove player';
+      mutating = false;
+    }
+  }
+
   onMount(load);
 </script>
 
@@ -115,6 +130,14 @@
           <input name="position" type="number" min="1" value="1" aria-label="Note position" />
           <button class="btn btn-primary" disabled={mutating}>Add note</button>
         </form>
+      </section>
+      <section class="profile-section profile-section-danger" aria-label="Remove player">
+        <div class="section-heading"><div><p class="eyebrow">Danger zone</p><h2>Remove player</h2></div></div>
+        <p class="danger-copy">Permanently removes {playerLabel} from the roster. Inventory, confessional, notes, votes, and whisper membership are deleted. The pinned lifeboard must be set again afterwards.</p>
+        <div class="inline-form">
+          <input aria-label="Type player label to confirm" bind:value={confirmPhrase} placeholder={`Type ${playerLabel} to confirm`} />
+          <button type="button" class="btn btn-danger" disabled={mutating || confirmPhrase !== playerLabel} onclick={removePlayer}>Remove player</button>
+        </div>
       </section>
     {/if}
   </div>

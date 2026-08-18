@@ -38,6 +38,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .btn:hover { border-color: #aaa69d; background: #292823; }
 .btn-primary { border-color: #d6d0c2; background: #d6d0c2; color: #181714; }
 .btn-primary:hover { border-color: #f0ebe0; background: #f0ebe0; }
+.btn-danger { border-color: #7a3e39; background: #2c1513; color: #e0a6a0; }
+.btn-danger:hover { border-color: #a0524a; background: #3a1b18; }
+.btn-danger:disabled { opacity: .45; cursor: not-allowed; }
+.profile-section-danger { border-color: #5a2c28; }
+.danger-copy { color: #c9b3ae; font-size: .85rem; line-height: 1.5; }
 .stat-grid { display: grid; grid-template-columns: 1fr; gap: .65rem; padding: 1rem 0; }
 .stat-card, .player-card, .form-card, .profile-section { border: 1px solid #302f2b; background: #181816; }
 .panel { border: 1px solid #302f2b; background: #181816; padding: 1rem; }
