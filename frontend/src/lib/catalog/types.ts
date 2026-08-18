@@ -12,4 +12,5 @@ export type CatalogRecord = {
   hour_duration?: number;
   abilities?: Array<{ id: number; name: string }>;
   perks?: Array<{ id: number; name: string }>;
+  categories?: string[];
 };
